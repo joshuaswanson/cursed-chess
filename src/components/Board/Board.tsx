@@ -1,4 +1,10 @@
-import { useCallback, useRef, useState, useEffect } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  useEffect,
+  useLayoutEffect,
+} from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { toIndex, fileOf, rankOf } from "../../utils/squareUtils";
 import { Color, PieceType } from "../../engine";
@@ -74,6 +80,8 @@ export function Board() {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [anim, setAnim] = useState<AnimState | null>(null);
   const [returnAnim, setReturnAnim] = useState<ReturnAnim | null>(null);
+  const [pickupTransition, setPickupTransition] = useState(false);
+  const dragJustStarted = useRef(false);
   const wasDrag = useRef(false);
   const prevLastMove = useRef(lastMove);
 
@@ -98,9 +106,16 @@ export function Board() {
         prevVx: 0,
         prevVy: 0,
       };
+      setPickupTransition(false);
+      dragJustStarted.current = false;
       cancelAnimationFrame(rafRef.current);
       return;
     }
+
+    // Mark that drag just started so layoutEffect can set initial position
+    dragJustStarted.current = true;
+    setPickupTransition(true);
+    const pickupTimer = setTimeout(() => setPickupTransition(false), 200);
 
     const R = 50;
     const DAMPING = 0.95;
@@ -130,8 +145,36 @@ export function Board() {
     };
 
     rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      clearTimeout(pickupTimer);
+    };
   }, [drag?.isDragging]);
+
+  // Position drag element at board square before first paint, then let React move it to cursor
+  useLayoutEffect(() => {
+    if (!dragJustStarted.current || !dragImgRef.current || !drag?.isDragging)
+      return;
+    dragJustStarted.current = false;
+
+    const center = getSquareScreenCenter(drag.sq);
+    if (!center) return;
+
+    const el = dragImgRef.current;
+    const sqSize = boardRef.current
+      ? boardRef.current.getBoundingClientRect().width / 8
+      : 72;
+    const boardPieceSize = sqSize * 0.9;
+
+    // Position at board square before browser paints
+    el.style.left = `${center.x - boardPieceSize / 2}px`;
+    el.style.top = `${center.y - boardPieceSize / 2}px`;
+    el.style.width = `${boardPieceSize}px`;
+    el.style.height = `${boardPieceSize}px`;
+
+    // Force reflow so the browser registers the starting position
+    el.getBoundingClientRect();
+  });
 
   // Slide animation on click-to-move
   useEffect(() => {
@@ -385,9 +428,6 @@ export function Board() {
             if (!drag) selectSquare(sq);
           }}
         >
-          {visualCol === 0 && <span className="coord-rank">{rank + 1}</span>}
-          {visualRow === 7 && <span className="coord-file">{FILES[file]}</span>}
-
           {isLegalTarget && !drag?.isDragging && (
             <div className={piece ? "capture-hint" : "move-hint"} />
           )}
@@ -419,11 +459,15 @@ export function Board() {
 
   let dragElement = null;
   if (drag?.isDragging) {
+    const dragClass = pickupTransition
+      ? "piece-dragging piece-pickup"
+      : "piece-dragging";
+
     dragElement = (
       <img
         ref={dragImgRef}
         src={getPieceImage(drag.piece)}
-        className="piece-dragging"
+        className={dragClass}
         style={{
           left: drag.x - squareSize * 0.55,
           top: drag.y - squareSize * 0.2,
@@ -438,19 +482,22 @@ export function Board() {
   // Piece returning to its square after invalid drop
   let returnElement = null;
   if (returnAnim) {
-    const pos = returnAnim.started
+    const isBack = returnAnim.started;
+    const pos = isBack
       ? { x: returnAnim.toX, y: returnAnim.toY }
       : { x: returnAnim.fromX, y: returnAnim.fromY };
-    const angle = returnAnim.started ? 0 : returnAnim.startAngle;
+    const angle = isBack ? 0 : returnAnim.startAngle;
+    const size = isBack ? squareSize * 0.9 : squareSize * 1.1;
+    const offset = size / 2;
     returnElement = (
       <img
         src={getPieceImage(returnAnim.piece)}
         className="piece-returning"
         style={{
-          left: pos.x - squareSize * 0.55,
-          top: pos.y - squareSize * 0.55,
-          width: squareSize * 1.1,
-          height: squareSize * 1.1,
+          left: pos.x - offset,
+          top: pos.y - offset,
+          width: size,
+          height: size,
           transform: `rotate(${angle}deg)`,
         }}
         draggable={false}

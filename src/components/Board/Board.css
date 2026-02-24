@@ -25,10 +25,10 @@
 }
 
 .square.light {
-  background-color: #d8c0ff;
+  background-color: #f0d9b5;
 }
 .square.dark {
-  background-color: #8844dd;
+  background-color: #b58863;
 }
 
 .square.selected {
@@ -96,6 +96,14 @@
   transform-origin: center 18%;
 }
 
+.piece-dragging.piece-pickup {
+  transition:
+    left 0.15s ease-out,
+    top 0.15s ease-out,
+    width 0.15s ease-out,
+    height 0.15s ease-out;
+}
+
 .piece-returning {
   position: fixed;
   pointer-events: none;
@@ -104,7 +112,9 @@
   transition:
     left 0.2s ease-in-out,
     top 0.2s ease-in-out,
-    transform 0.2s ease-in-out;
+    transform 0.2s ease-in-out,
+    width 0.2s ease-in-out,
+    height 0.2s ease-in-out;
 }
 
 /* --- Slide-in animation (click-to-move) --- */
