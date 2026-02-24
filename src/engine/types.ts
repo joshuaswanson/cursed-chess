@@ -28,6 +28,7 @@ export enum MoveFlag {
   KingsideCastle = 1 << 3,
   QueensideCastle = 1 << 4,
   DoublePawnPush = 1 << 5,
+  Portal = 1 << 6,
 }
 
 export interface Move {

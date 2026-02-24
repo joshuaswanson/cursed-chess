@@ -198,6 +198,26 @@ export class Game {
     return true;
   }
 
+  /** Execute a pre-validated move (skips legal move check). Used by plugins. */
+  executeTrustedMove(move: Move): boolean {
+    const allLegal = this.getLegalMoves();
+    const san = moveToSan(
+      { board: this.board, turn: this.turn, legalMoves: allLegal },
+      move,
+    );
+    const record: MoveRecord = {
+      move,
+      san,
+      fen: this.toFen(),
+      previousCastling: cloneCastling(this.castling),
+      previousEnPassant: this.enPassant,
+      previousHalfMoveClock: this.halfMoveClock,
+    };
+    this.executeMove(move);
+    this.history.push(record);
+    return true;
+  }
+
   /** Execute a move on the board (assumes move is legal) */
   private executeMove(move: Move): void {
     const piece = move.piece;

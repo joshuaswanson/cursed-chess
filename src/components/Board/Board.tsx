@@ -6,6 +6,7 @@ import {
   useLayoutEffect,
 } from "react";
 import { useGameStore } from "../../stores/gameStore";
+import type { PortalMoveInfo } from "../../stores/gameStore";
 import { toIndex, fileOf, rankOf } from "../../utils/squareUtils";
 import { Color, PieceType } from "../../engine";
 import type { Piece, SquareIndex } from "../../engine";
@@ -30,7 +31,6 @@ function getPieceImage(piece: Piece): string {
   return PIECE_IMAGES[piece.color + piece.type];
 }
 
-const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const DRAG_THRESHOLD = 6;
 
 interface DragState {
@@ -66,13 +66,17 @@ export function Board() {
   const {
     selectedSquare,
     legalMoveSquares,
+    hasPortalMoves,
+    portalEntrance,
     lastMove,
+    lastPortalMove,
     flipped,
     status,
     selectSquare,
     makeMove,
     getPiece,
     game,
+    pluginManager,
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -80,10 +84,15 @@ export function Board() {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [anim, setAnim] = useState<AnimState | null>(null);
   const [returnAnim, setReturnAnim] = useState<ReturnAnim | null>(null);
+  const [portalAnim, setPortalAnim] = useState<{
+    phase: "shrink" | "pop" | "slide";
+    info: PortalMoveInfo;
+  } | null>(null);
   const [pickupTransition, setPickupTransition] = useState(false);
   const dragJustStarted = useRef(false);
   const wasDrag = useRef(false);
   const prevLastMove = useRef(lastMove);
+  const prevPortalMove = useRef(lastPortalMove);
 
   // Pendulum physics for drag swing
   const swingRef = useRef({
@@ -176,7 +185,7 @@ export function Board() {
     el.getBoundingClientRect();
   });
 
-  // Slide animation on click-to-move
+  // Slide animation on click-to-move (skip for portal moves)
   useEffect(() => {
     const prev = prevLastMove.current;
     prevLastMove.current = lastMove;
@@ -186,6 +195,8 @@ export function Board() {
       wasDrag.current = false;
       return;
     }
+    // Skip normal slide for portal moves — portal anim handles it
+    if (lastPortalMove) return;
 
     const dFile = fileOf(lastMove.from) - fileOf(lastMove.to);
     const dRank = rankOf(lastMove.from) - rankOf(lastMove.to);
@@ -204,7 +215,30 @@ export function Board() {
     setAnim({ sq: lastMove.to, offsetX, offsetY, arrivalAngle });
     const timer = setTimeout(() => setAnim(null), 600);
     return () => clearTimeout(timer);
-  }, [lastMove, flipped]);
+  }, [lastMove, lastPortalMove, flipped]);
+
+  // Portal move animation: shrink → pop → slide
+  useEffect(() => {
+    const prev = prevPortalMove.current;
+    prevPortalMove.current = lastPortalMove;
+    if (!lastPortalMove || lastPortalMove === prev) return;
+    setPortalAnim({ phase: "shrink", info: lastPortalMove });
+  }, [lastPortalMove]);
+
+  useEffect(() => {
+    if (!portalAnim) return;
+    const durations = { shrink: 300, pop: 300, slide: 250 };
+    const timer = setTimeout(() => {
+      if (portalAnim.phase === "shrink") {
+        setPortalAnim({ phase: "pop", info: portalAnim.info });
+      } else if (portalAnim.phase === "pop") {
+        setPortalAnim({ phase: "slide", info: portalAnim.info });
+      } else {
+        setPortalAnim(null);
+      }
+    }, durations[portalAnim.phase]);
+    return () => clearTimeout(timer);
+  }, [portalAnim]);
 
   const getSquareScreenCenter = useCallback(
     (sq: SquareIndex): { x: number; y: number } | null => {
@@ -319,7 +353,11 @@ export function Board() {
         // Complete drag-and-drop
         const targetSq = getSquareFromPoint(e.clientX, e.clientY);
         if (targetSq !== null && targetSq !== drag.sq) {
-          const legalMoves = game.getLegalMoves(drag.sq);
+          const rawMoves = game.getLegalMoves(drag.sq);
+          const legalMoves = pluginManager.invokeModifyLegalMoves(
+            rawMoves,
+            game.turn,
+          );
           const isLegal = legalMoves.some((m) => m.to === targetSq);
           if (isLegal) {
             moveMade = true;
@@ -379,6 +417,20 @@ export function Board() {
     ],
   );
 
+  // Collect portal overlay data for rendering
+  const overlays = pluginManager.getAllOverlays();
+  const portalSquares = new Map<number, string>();
+  const portalPairs: { a: SquareIndex; b: SquareIndex; color: string }[] = [];
+  for (const overlay of overlays) {
+    if (overlay.type === "portal" && overlay.squares.length === 2) {
+      const color = (overlay.data as { color: string })?.color ?? "blue";
+      portalPairs.push({ a: overlay.squares[0], b: overlay.squares[1], color });
+      for (const sq of overlay.squares) {
+        portalSquares.set(sq, color);
+      }
+    }
+  }
+
   const rows = [];
   for (let visualRow = 0; visualRow < 8; visualRow++) {
     const rank = flipped ? visualRow : 7 - visualRow;
@@ -396,10 +448,12 @@ export function Board() {
         piece?.type === PieceType.King &&
         piece.color === game.turn &&
         (status === "check" || status === "checkmate");
+      const portalColor = portalSquares.get(sq);
 
       const isDragSource =
         (drag?.isDragging && drag.sq === sq) ||
-        (returnAnim !== null && returnAnim.sq === sq);
+        (returnAnim !== null && returnAnim.sq === sq) ||
+        (portalAnim !== null && portalAnim.info.landing === sq);
       const isAnimating = anim && anim.sq === sq;
 
       let className = "square";
@@ -428,6 +482,10 @@ export function Board() {
             if (!drag) selectSquare(sq);
           }}
         >
+          {portalColor && (
+            <div className={`portal-overlay portal-${portalColor}`} />
+          )}
+
           {isLegalTarget && !drag?.isDragging && (
             <div className={piece ? "capture-hint" : "move-hint"} />
           )}
@@ -505,6 +563,138 @@ export function Board() {
     );
   }
 
+  // Portal arrow: only when selected piece can use portals
+  // Portal arrows: one per pair, only when selected piece can use them
+  let portalArrows = null;
+  if (
+    portalPairs.length > 0 &&
+    hasPortalMoves &&
+    selectedSquare !== null &&
+    portalEntrance !== null
+  ) {
+    // Find which pair the entrance belongs to
+    const activePair = portalPairs.find(
+      (p) => p.a === portalEntrance || p.b === portalEntrance,
+    );
+    if (activePair) {
+      const entrance = portalEntrance;
+      const exit = entrance === activePair.a ? activePair.b : activePair.a;
+
+      const colFrom = flipped ? 7 - fileOf(entrance) : fileOf(entrance);
+      const rowFrom = flipped ? rankOf(entrance) : 7 - rankOf(entrance);
+      const colTo = flipped ? 7 - fileOf(exit) : fileOf(exit);
+      const rowTo = flipped ? rankOf(exit) : 7 - rankOf(exit);
+      const x1 = (colFrom + 0.5) * 12.5;
+      const y1 = (rowFrom + 0.5) * 12.5;
+      const x2 = (colTo + 0.5) * 12.5;
+      const y2 = (rowTo + 0.5) * 12.5;
+      const arrowColor =
+        activePair.color === "blue"
+          ? "rgba(30, 144, 255, 0.6)"
+          : "rgba(255, 140, 0, 0.6)";
+
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+      const motionPath = `M${x1},${y1} L${x2},${y2}`;
+      const spacing = 4;
+      const numChevrons = Math.max(3, Math.round(dist / spacing));
+      const duration = numChevrons * 0.3;
+      const chevrons = [];
+      for (let i = 0; i < numChevrons; i++) {
+        const delay = (i * duration) / numChevrons;
+        chevrons.push(
+          <g
+            key={i}
+            className="portal-chevron"
+            style={
+              {
+                "--chevron-dur": `${duration}s`,
+                animationDelay: `${delay}s`,
+              } as React.CSSProperties
+            }
+          >
+            <animateMotion
+              dur={`${duration}s`}
+              repeatCount="indefinite"
+              begin={`${delay}s`}
+              path={motionPath}
+            />
+            <text
+              textAnchor="middle"
+              dy="0.35em"
+              fill={arrowColor}
+              fontSize="6"
+              fontWeight="bold"
+              transform={`rotate(${angle})`}
+            >
+              {"\u203A"}
+            </text>
+          </g>,
+        );
+      }
+
+      portalArrows = (
+        <svg className="portal-arrow-svg" viewBox="0 0 100 100">
+          {chevrons}
+        </svg>
+      );
+    }
+  }
+
+  // Portal animation element (shrink into entrance, pop out of exit, slide to landing)
+  let portalAnimElement = null;
+  if (portalAnim) {
+    const { phase, info } = portalAnim;
+    let animSq: SquareIndex;
+    let animClass: string;
+    let animStyle: React.CSSProperties = {};
+
+    if (phase === "shrink") {
+      animSq = info.entrance;
+      animClass = "portal-anim-piece portal-anim-shrink";
+    } else if (phase === "pop") {
+      animSq = info.exit;
+      animClass = "portal-anim-piece portal-anim-pop";
+    } else {
+      animSq = info.landing;
+      animClass = "portal-anim-piece portal-anim-slide";
+      const dFile = fileOf(info.exit) - fileOf(info.landing);
+      const dRank = rankOf(info.exit) - rankOf(info.landing);
+      const sqSz = boardRef.current
+        ? boardRef.current.getBoundingClientRect().width / 8
+        : 72;
+      const ox = (flipped ? -dFile : dFile) * sqSz;
+      const oy = (flipped ? dRank : -dRank) * sqSz;
+      animStyle = {
+        "--slide-from-x": `${ox}px`,
+        "--slide-from-y": `${oy}px`,
+        animation: "slide-in 0.2s ease-out forwards",
+      } as React.CSSProperties;
+    }
+
+    const af = fileOf(animSq);
+    const ar = rankOf(animSq);
+    const ac = flipped ? 7 - af : af;
+    const arw = flipped ? ar : 7 - ar;
+
+    portalAnimElement = (
+      <img
+        src={getPieceImage(info.piece)}
+        className={animClass}
+        style={{
+          left: `${ac * 12.5 + 0.625}%`,
+          top: `${arw * 12.5 + 0.625}%`,
+          width: "11.25%",
+          height: "11.25%",
+          ...animStyle,
+        }}
+        draggable={false}
+      />
+    );
+  }
+
   return (
     <div
       className="board"
@@ -513,6 +703,8 @@ export function Board() {
       onPointerUp={handlePointerUp}
     >
       {rows}
+      {portalArrows}
+      {portalAnimElement}
       {dragElement}
       {returnElement}
     </div>

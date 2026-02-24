@@ -1,7 +1,7 @@
 .board {
   display: inline-flex;
   flex-direction: column;
-  border: 3px solid #5533aa;
+  border: 3px solid #6b4e2e;
   border-radius: 4px;
   user-select: none;
   -webkit-user-select: none;
@@ -32,30 +32,30 @@
 }
 
 .square.selected {
-  background-color: #ff55dd !important;
-  box-shadow: inset 0 0 16px rgba(255, 85, 221, 0.6);
+  background-color: #829769 !important;
+  box-shadow: inset 0 0 12px rgba(130, 151, 105, 0.5);
 }
 
 .square.last-move.light {
-  background-color: #88ffcc;
+  background-color: #f6f680;
 }
 .square.last-move.dark {
-  background-color: #44cc88;
+  background-color: #b9ca43;
 }
 
 .square.drag-target.light {
-  background-color: #aaeeff;
+  background-color: #d4e157;
 }
 .square.drag-target.dark {
-  background-color: #3399cc;
+  background-color: #9e9d24;
 }
 
 .square.in-check {
   background: radial-gradient(
     ellipse at center,
-    #ff3377 0%,
-    #ff1155 30%,
-    rgba(200, 0, 50, 0) 80%
+    #e53935 0%,
+    #c62828 30%,
+    rgba(198, 40, 40, 0) 80%
   ) !important;
   animation: check-pulse 0.8s ease-in-out infinite;
 }
@@ -63,10 +63,10 @@
 @keyframes check-pulse {
   0%,
   100% {
-    box-shadow: inset 0 0 10px rgba(255, 51, 119, 0.5);
+    box-shadow: inset 0 0 10px rgba(229, 57, 53, 0.4);
   }
   50% {
-    box-shadow: inset 0 0 25px rgba(255, 51, 119, 0.8);
+    box-shadow: inset 0 0 25px rgba(229, 57, 53, 0.7);
   }
 }
 
@@ -151,26 +151,8 @@
   width: 30%;
   height: 30%;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(51, 255, 238, 0.8) 0%,
-    rgba(51, 255, 238, 0.3) 100%
-  );
+  background: rgba(0, 0, 0, 0.2);
   z-index: 1;
-  box-shadow: 0 0 12px rgba(51, 255, 238, 0.6);
-  animation: hint-glow 1.5s ease-in-out infinite;
-}
-
-@keyframes hint-glow {
-  0%,
-  100% {
-    opacity: 0.8;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
 }
 
 .capture-hint {
@@ -178,21 +160,9 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 5px solid rgba(255, 51, 119, 0.7);
+  border: 5px solid rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
   z-index: 1;
-  box-shadow: inset 0 0 16px rgba(255, 51, 119, 0.4);
-  animation: capture-glow 1.2s ease-in-out infinite;
-}
-
-@keyframes capture-glow {
-  0%,
-  100% {
-    border-color: rgba(255, 51, 119, 0.5);
-  }
-  50% {
-    border-color: rgba(255, 51, 119, 1);
-  }
 }
 
 /* --- Coordinates --- */
@@ -224,4 +194,162 @@
 .dark .coord-rank,
 .dark .coord-file {
   color: #d8c0ff;
+}
+
+/* --- Portal overlays --- */
+
+.portal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 50%;
+  animation: portal-spin 3s linear infinite;
+}
+
+.portal-overlay.portal-blue {
+  background: radial-gradient(
+    circle,
+    rgba(30, 144, 255, 0.5) 0%,
+    rgba(30, 144, 255, 0.2) 40%,
+    transparent 70%
+  );
+  box-shadow:
+    inset 0 0 12px rgba(30, 144, 255, 0.8),
+    0 0 16px rgba(30, 144, 255, 0.4);
+}
+
+.portal-overlay.portal-orange {
+  background: radial-gradient(
+    circle,
+    rgba(255, 140, 0, 0.5) 0%,
+    rgba(255, 140, 0, 0.2) 40%,
+    transparent 70%
+  );
+  box-shadow:
+    inset 0 0 12px rgba(255, 140, 0, 0.8),
+    0 0 16px rgba(255, 140, 0, 0.4);
+}
+
+@keyframes portal-spin {
+  0% {
+    transform: rotate(0deg);
+    box-shadow:
+      inset 0 0 12px currentColor,
+      0 0 16px currentColor;
+  }
+  50% {
+    box-shadow:
+      inset 0 0 20px currentColor,
+      0 0 24px currentColor;
+  }
+  100% {
+    transform: rotate(360deg);
+    box-shadow:
+      inset 0 0 12px currentColor,
+      0 0 16px currentColor;
+  }
+}
+
+.portal-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 15%;
+  border-radius: 50%;
+  border: 2px solid;
+  animation: portal-ring 2s ease-in-out infinite;
+}
+
+.portal-blue::before {
+  border-color: rgba(100, 180, 255, 0.7);
+}
+
+.portal-orange::before {
+  border-color: rgba(255, 180, 80, 0.7);
+}
+
+@keyframes portal-ring {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+/* --- Portal arrow connecting the two portals --- */
+
+.portal-arrow-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+  overflow: visible;
+}
+
+.portal-chevron {
+  animation: chevron-fade var(--chevron-dur, 2s) ease-in-out infinite;
+}
+
+@keyframes chevron-fade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  30%,
+  70% {
+    opacity: 0.8;
+  }
+}
+
+/* --- Portal move animation --- */
+
+.portal-anim-piece {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+  filter: drop-shadow(1px 2px 3px rgba(0, 0, 0, 0.5));
+}
+
+.portal-anim-shrink {
+  animation: portal-shrink 0.3s ease-in forwards;
+}
+
+.portal-anim-pop {
+  animation: portal-pop 0.3s ease-out forwards;
+}
+
+.portal-anim-slide {
+  /* slide-in animation is applied inline */
+}
+
+@keyframes portal-shrink {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes portal-pop {
+  0% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }

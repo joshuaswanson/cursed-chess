@@ -1,5 +1,6 @@
 import { useGameStore } from "../../stores/gameStore";
 import { Color, GameStatus } from "../../engine";
+import { PortalChessPlugin } from "../../plugins/portalChess";
 import "./GameControls.css";
 
 function statusText(status: GameStatus, turn: Color): string {
@@ -39,7 +40,13 @@ export function GameControls() {
       </div>
       <div className="controls-row">
         <button onClick={() => newGame()} className="control-btn">
-          New Game
+          Normal
+        </button>
+        <button
+          onClick={() => newGame(undefined, [new PortalChessPlugin()])}
+          className="control-btn"
+        >
+          Portal
         </button>
         <button
           onClick={undoMove}

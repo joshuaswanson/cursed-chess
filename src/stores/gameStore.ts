@@ -1,8 +1,16 @@
 import { create } from "zustand";
-import { Game, Color, PieceType, GameStatus } from "../engine";
-import type { SquareIndex, Piece, MoveRecord } from "../engine";
+import { Game, Color, PieceType, GameStatus, MoveFlag } from "../engine";
+import type { SquareIndex, Piece, MoveRecord, Move } from "../engine";
 import { PluginManager } from "../plugins/manager";
 import type { ModePlugin } from "../plugins/types";
+import { fileOf, rankOf } from "../utils/squareUtils";
+
+export interface PortalMoveInfo {
+  piece: Piece;
+  entrance: SquareIndex;
+  exit: SquareIndex;
+  landing: SquareIndex;
+}
 
 export interface GameStore {
   // Game state
@@ -15,7 +23,10 @@ export interface GameStore {
   // UI state
   selectedSquare: SquareIndex | null;
   legalMoveSquares: SquareIndex[];
+  hasPortalMoves: boolean;
+  portalEntrance: SquareIndex | null;
   lastMove: { from: SquareIndex; to: SquareIndex } | null;
+  lastPortalMove: PortalMoveInfo | null;
   promotionPending: { from: SquareIndex; to: SquareIndex } | null;
   flipped: boolean;
 
@@ -41,7 +52,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   selectedSquare: null,
   legalMoveSquares: [],
+  hasPortalMoves: false,
+  portalEntrance: null,
   lastMove: null,
+  lastPortalMove: null,
   promotionPending: null,
   flipped: false,
 
@@ -69,16 +83,65 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // If clicking own piece, select it
     const piece = game.board.get(square);
     if (piece && piece.color === game.turn) {
-      const moves = game.getLegalMoves(square);
+      const rawMoves = game.getLegalMoves(square);
+      const moves = state.pluginManager.invokeModifyLegalMoves(
+        rawMoves,
+        game.turn,
+      );
+      const hasPortal = moves.some((m) => m.flags & MoveFlag.Portal);
+      // Find which portal is the entrance by checking portal moves' to squares
+      let portalEntrance: SquareIndex | null = null;
+      if (hasPortal) {
+        const overlays = state.pluginManager.getAllOverlays();
+        let bestDist = Infinity;
+        for (const po of overlays) {
+          if (po.type !== "portal" || po.squares.length !== 2) continue;
+          const [a, b] = po.squares;
+          const targetsA = moves.some(
+            (m) => m.to === a && m.flags & MoveFlag.Portal,
+          );
+          const targetsB = moves.some(
+            (m) => m.to === b && m.flags & MoveFlag.Portal,
+          );
+          let candidate: SquareIndex | null = null;
+          if (targetsA && !targetsB) candidate = a;
+          else if (targetsB && !targetsA) candidate = b;
+          else if (targetsA && targetsB) {
+            const dA =
+              Math.abs(fileOf(square) - fileOf(a)) +
+              Math.abs(rankOf(square) - rankOf(a));
+            const dB =
+              Math.abs(fileOf(square) - fileOf(b)) +
+              Math.abs(rankOf(square) - rankOf(b));
+            candidate = dA <= dB ? a : b;
+          }
+          if (candidate !== null) {
+            const dist =
+              Math.abs(fileOf(square) - fileOf(candidate)) +
+              Math.abs(rankOf(square) - rankOf(candidate));
+            if (dist < bestDist) {
+              bestDist = dist;
+              portalEntrance = candidate;
+            }
+          }
+        }
+      }
       set({
         selectedSquare: square,
         legalMoveSquares: moves.map((m) => m.to),
+        hasPortalMoves: hasPortal,
+        portalEntrance,
       });
       return;
     }
 
     // Clicking empty square or opponent piece without selection - clear
-    set({ selectedSquare: null, legalMoveSquares: [] });
+    set({
+      selectedSquare: null,
+      legalMoveSquares: [],
+      hasPortalMoves: false,
+      portalEntrance: null,
+    });
   },
 
   makeMove: (from: SquareIndex, to: SquareIndex, promotion?: PieceType) => {
@@ -86,8 +149,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const piece = game.board.get(from);
     if (!piece) return;
 
-    // Find the matching legal move
-    const legalMoves = game.getLegalMoves(from);
+    // Find the matching legal move (with plugin modifications)
+    const rawMoves = game.getLegalMoves(from);
+    const legalMoves = pluginManager.invokeModifyLegalMoves(
+      rawMoves,
+      game.turn,
+    );
     const move = legalMoves.find((m) => {
       if (m.to !== to) return false;
       if (promotion && m.promotion !== promotion) return false;
@@ -97,15 +164,79 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     if (!move) return;
 
-    const success = game.makeMove(move);
+    const processedMove = pluginManager.invokeOnBeforeMove(move);
+    if (!processedMove) return;
+
+    const previousTurn = game.turn;
+
+    // Portal or plugin-modified moves bypass engine validation
+    let success: boolean;
+    if (processedMove.flags & MoveFlag.Portal) {
+      success = game.executeTrustedMove(processedMove);
+    } else {
+      success = game.makeMove(processedMove);
+    }
     if (!success) return;
 
+    pluginManager.invokeOnAfterMove(processedMove);
+    pluginManager.invokeOnTurnEnd(previousTurn);
+
     const status = game.getStatus();
+
+    // Compute portal animation info if this was a portal move
+    let lastPortalMove: PortalMoveInfo | null = null;
+    if (processedMove.flags & MoveFlag.Portal) {
+      const overlays = pluginManager.getAllOverlays();
+      for (const portalOverlay of overlays) {
+        if (
+          portalOverlay.type !== "portal" ||
+          portalOverlay.squares.length !== 2
+        )
+          continue;
+        const [a, b] = portalOverlay.squares;
+        let entrance: SquareIndex | null = null;
+        let exit: SquareIndex | null = null;
+        if (to === a) {
+          entrance = a;
+          exit = b;
+        } else if (to === b) {
+          entrance = b;
+          exit = a;
+        } else {
+          // Check if this pair is the one the piece went through (closer to from)
+          const distA =
+            Math.abs(fileOf(from) - fileOf(a)) +
+            Math.abs(rankOf(from) - rankOf(a));
+          const distB =
+            Math.abs(fileOf(from) - fileOf(b)) +
+            Math.abs(rankOf(from) - rankOf(b));
+          const candidate = distA <= distB ? a : b;
+          const other = candidate === a ? b : a;
+          // Only use this pair if the candidate is reasonably close
+          if (!lastPortalMove || distA < 4 || distB < 4) {
+            entrance = candidate;
+            exit = other;
+          }
+        }
+        if (entrance !== null && exit !== null) {
+          lastPortalMove = {
+            piece,
+            entrance,
+            exit,
+            landing: processedMove.to,
+          };
+          break;
+        }
+      }
+    }
 
     set({
       selectedSquare: null,
       legalMoveSquares: [],
-      lastMove: { from, to },
+      hasPortalMoves: false,
+      portalEntrance: null,
+      lastMove: { from, to: processedMove.to },
+      lastPortalMove,
       promotionPending: null,
       turn: game.turn,
       status,
@@ -121,7 +252,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       selectedSquare: null,
       legalMoveSquares: [],
+      hasPortalMoves: false,
+      portalEntrance: null,
       lastMove: { from: record.move.to, to: record.move.from },
+      lastPortalMove: null,
       promotionPending: null,
       turn: game.turn,
       status: game.getStatus(),
@@ -150,7 +284,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       moveHistory: [],
       selectedSquare: null,
       legalMoveSquares: [],
+      hasPortalMoves: false,
+      portalEntrance: null,
       lastMove: null,
+      lastPortalMove: null,
       promotionPending: null,
     });
   },
@@ -158,7 +295,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   flipBoard: () => set((state) => ({ flipped: !state.flipped })),
 
   clearSelection: () =>
-    set({ selectedSquare: null, legalMoveSquares: [], promotionPending: null }),
+    set({
+      selectedSquare: null,
+      legalMoveSquares: [],
+      hasPortalMoves: false,
+      portalEntrance: null,
+      promotionPending: null,
+    }),
 
   getPiece: (square: SquareIndex) => get().game.board.get(square),
 
