@@ -1,0 +1,71 @@
+.game-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 200px;
+}
+
+.status-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #eeddff;
+  padding: 12px 16px;
+  background: #251848;
+  border: 1px solid #5533aa;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.status-text.in-check {
+  color: #ff3377;
+  border-color: #ff3377;
+  background: rgba(255, 51, 119, 0.15);
+  animation: status-flash 1s ease-in-out infinite;
+}
+
+@keyframes status-flash {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(255, 51, 119, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 51, 119, 0.4);
+  }
+}
+
+.status-text.game-over {
+  color: #ffee44;
+  border-color: #ffee44;
+  background: rgba(255, 238, 68, 0.1);
+  box-shadow: 0 0 25px rgba(255, 238, 68, 0.2);
+}
+
+.controls-row {
+  display: flex;
+  gap: 8px;
+}
+
+.control-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid #6644bb;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #2d1860, #3d2280);
+  color: #d8c0ff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4d3090, #5d40a0);
+  border-color: #bb66ff;
+  color: #fff;
+  box-shadow: 0 0 16px rgba(187, 102, 255, 0.4);
+}
+
+.control-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

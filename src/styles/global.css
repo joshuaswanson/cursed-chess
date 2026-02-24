@@ -1,0 +1,208 @@
+@import url("https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  --square-size: 72px;
+  --bg-primary: #1a0e30;
+  --bg-secondary: #251848;
+  --text-primary: #ffffff;
+  --text-secondary: #c4b0f0;
+  --accent-hot: #ff3377;
+  --accent-warm: #ff8833;
+  --accent-gold: #ffee44;
+  --accent-electric: #bb66ff;
+  --accent-cyan: #33ffee;
+  --accent-lime: #66ff33;
+  --accent-pink: #ff55dd;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated background blobs */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(
+      circle at 15% 50%,
+      rgba(187, 102, 255, 0.25) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 85% 20%,
+      rgba(255, 51, 119, 0.2) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 50% 85%,
+      rgba(51, 255, 238, 0.15) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 70% 60%,
+      rgba(102, 255, 51, 0.1) 0%,
+      transparent 40%
+    );
+  pointer-events: none;
+  z-index: -1;
+  animation: bg-drift 12s ease-in-out infinite alternate;
+}
+
+@keyframes bg-drift {
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+  100% {
+    transform: scale(1.1) translate(-2%, 3%);
+  }
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+  gap: 24px;
+}
+
+.app-header {
+  text-align: center;
+}
+
+.app-title {
+  font-family: "Bangers", cursive;
+  font-size: 56px;
+  letter-spacing: 6px;
+  line-height: 1;
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+}
+
+.title-chess {
+  color: #ffffff;
+  text-shadow:
+    0 0 15px rgba(255, 255, 255, 0.5),
+    2px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.title-unhinged {
+  background: linear-gradient(
+    135deg,
+    #ff3377,
+    #ff8833,
+    #ffee44,
+    #66ff33,
+    #33ffee,
+    #bb66ff,
+    #ff55dd
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: chaos-gradient 4s ease-in-out infinite;
+  filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.3));
+}
+
+@keyframes chaos-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.app-subtitle {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.game-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.board-container {
+  flex-shrink: 0;
+  border-radius: 6px;
+  box-shadow:
+    0 0 50px rgba(187, 102, 255, 0.3),
+    0 0 100px rgba(255, 51, 119, 0.15),
+    0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 240px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6b40b0;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8855cc;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  :root {
+    --square-size: calc((100vw - 32px) / 8);
+  }
+
+  .app-title {
+    font-size: 36px;
+  }
+
+  .game-layout {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-width: calc(var(--square-size) * 8 + 6px);
+  }
+}
