@@ -121,13 +121,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       selectedSquare: null,
       legalMoveSquares: [],
-      lastMove:
-        game.history.length > 0
-          ? {
-              from: game.history[game.history.length - 1].move.from,
-              to: game.history[game.history.length - 1].move.to,
-            }
-          : null,
+      lastMove: { from: record.move.to, to: record.move.from },
       promotionPending: null,
       turn: game.turn,
       status: game.getStatus(),

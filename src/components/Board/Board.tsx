@@ -52,6 +52,7 @@ interface ReturnAnim {
   fromY: number;
   toX: number;
   toY: number;
+  startAngle: number;
   started: boolean;
 }
 
@@ -78,11 +79,11 @@ export function Board() {
 
   // Pendulum physics for drag swing
   const swingRef = useRef({
-    theta: 0, // angle in radians
-    omega: 0, // angular velocity
-    smoothVx: 0, // smoothed mouse velocity x
-    smoothVy: 0, // smoothed mouse velocity y
-    prevVx: 0, // previous smoothed velocity (for acceleration)
+    theta: 0,
+    omega: 0,
+    smoothVx: 0,
+    smoothVy: 0,
+    prevVx: 0,
     prevVy: 0,
   });
   const rafRef = useRef<number>(0);
@@ -108,23 +109,17 @@ export function Board() {
     const tick = () => {
       const s = swingRef.current;
 
-      // Compute smoothed acceleration
       const ax = s.smoothVx - s.prevVx;
       const ay = s.smoothVy - s.prevVy;
       s.prevVx = s.smoothVx;
       s.prevVy = s.smoothVy;
 
-      // Moveable pendulum: cursor acceleration creates torque
-      // Positive: piece lags behind cursor movement (swings opposite direction)
       const torque =
         (Math.cos(s.theta) / R) * ax + (Math.sin(s.theta) / R) * ay;
 
-      // Gravity restoring force
       s.omega += torque - GRAVITY * Math.sin(s.theta);
       s.omega *= DAMPING;
       s.theta += s.omega;
-
-      // No clamp — let it go full circle
 
       if (dragImgRef.current) {
         const deg = s.theta * (180 / Math.PI);
@@ -312,6 +307,10 @@ export function Board() {
               fromY: e.clientY,
               toX: center.x,
               toY: center.y,
+              startAngle:
+                ((((swingRef.current.theta * (180 / Math.PI)) % 360) + 540) %
+                  360) -
+                180,
               started: false,
             });
           }
@@ -427,7 +426,7 @@ export function Board() {
         className="piece-dragging"
         style={{
           left: drag.x - squareSize * 0.55,
-          top: drag.y + squareSize * 0.05,
+          top: drag.y - squareSize * 0.2,
           width: squareSize * 1.1,
           height: squareSize * 1.1,
         }}
@@ -442,6 +441,7 @@ export function Board() {
     const pos = returnAnim.started
       ? { x: returnAnim.toX, y: returnAnim.toY }
       : { x: returnAnim.fromX, y: returnAnim.fromY };
+    const angle = returnAnim.started ? 0 : returnAnim.startAngle;
     returnElement = (
       <img
         src={getPieceImage(returnAnim.piece)}
@@ -451,6 +451,7 @@ export function Board() {
           top: pos.y - squareSize * 0.55,
           width: squareSize * 1.1,
           height: squareSize * 1.1,
+          transform: `rotate(${angle}deg)`,
         }}
         draggable={false}
       />
