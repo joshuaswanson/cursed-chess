@@ -85,6 +85,7 @@ export function Board() {
     pluginManager,
     timeWhite,
     turn,
+    deployPieceType,
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -98,10 +99,18 @@ export function Board() {
     info: PortalMoveInfo;
   } | null>(null);
   const [pickupTransition, setPickupTransition] = useState(false);
+  const [closingPortals, setClosingPortals] = useState<Map<number, string>>(
+    new Map(),
+  );
+  const [openingPortals, setOpeningPortals] = useState<Set<number>>(new Set());
   const dragJustStarted = useRef(false);
   const wasDrag = useRef(false);
   const prevLastMove = useRef(lastMove);
   const prevPortalMove = useRef(lastPortalMove);
+  const prevPortalKeys = useRef<string>("");
+  const prevPortalColors = useRef<Map<number, string>>(new Map());
+  const [fogExiting, setFogExiting] = useState(false);
+  const prevFog = useRef(false);
 
   // Pendulum physics for drag swing
   const swingRef = useRef({
@@ -516,8 +525,57 @@ export function Board() {
     }
   }
 
+  // Detect portal repositioning
+  const portalKey = [...portalSquares.keys()].sort().join(",");
+  useEffect(() => {
+    const prev = prevPortalKeys.current;
+    const prevColors = prevPortalColors.current;
+    prevPortalKeys.current = portalKey;
+    prevPortalColors.current = new Map(portalSquares);
+    if (!prev || prev === portalKey || portalKey === "") return;
+
+    const oldSquares = new Set(prev.split(",").map(Number));
+    const newSquares = new Set(portalKey.split(",").map(Number));
+
+    // Old squares that are no longer portals = closing (with their old color)
+    const closing = new Map<number, string>();
+    for (const sq of oldSquares) {
+      if (!newSquares.has(sq)) {
+        closing.set(sq, prevColors.get(sq) ?? "blue");
+      }
+    }
+
+    // New squares that weren't portals before = opening
+    const opening = new Set<number>();
+    for (const sq of newSquares) {
+      if (!oldSquares.has(sq)) {
+        opening.add(sq);
+      }
+    }
+
+    if (closing.size > 0) setClosingPortals(closing);
+    if (opening.size > 0) setOpeningPortals(opening);
+
+    const timer = setTimeout(() => {
+      setClosingPortals(new Map());
+      setOpeningPortals(new Set());
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [portalKey]);
+
+  // Detect fog mode ending — keep fog visible while fading out
+  useEffect(() => {
+    if (prevFog.current && !hasFogOverlay) {
+      setFogExiting(true);
+      const timer = setTimeout(() => setFogExiting(false), 1500);
+      return () => clearTimeout(timer);
+    }
+    prevFog.current = hasFogOverlay;
+  }, [hasFogOverlay]);
+
   // Fog always covers the enemy half (human plays White, enemy = top)
-  const fogOnTop = hasFogOverlay && !flipped;
+  const showFog = hasFogOverlay || fogExiting;
+  const fogOnTop = showFog && !flipped;
 
   const rows = [];
   for (let visualRow = 0; visualRow < 8; visualRow++) {
@@ -540,9 +598,6 @@ export function Board() {
       const squareMods = pluginManager.getSquareModifiers(sq);
       const isDead = squareMods.some((m) => m.className === "dead-square");
 
-      // Fog hides pieces on the enemy half (human plays White, enemy = ranks 4-7)
-      const isOnEnemyHalf = hasFogOverlay && rank >= 4;
-
       const isDragSource =
         (drag?.isDragging && drag.sq === sq) ||
         (returnAnim !== null && returnAnim.sq === sq) ||
@@ -564,6 +619,10 @@ export function Board() {
       if (isCheck) className += " in-check";
       if (drag?.isDragging && isLegalTarget) className += " drag-target";
 
+      // Deploy target highlight: empty square on player's half (ranks 0-3)
+      const isDeployTarget = deployPieceType && !piece && !isDead && rank <= 3;
+      if (isDeployTarget) className += " deploy-target";
+
       // Inline style for slide + rock animation
       const pieceStyle: React.CSSProperties | undefined = isAnimating
         ? ({
@@ -575,23 +634,35 @@ export function Board() {
           } as React.CSSProperties)
         : undefined;
 
+      const isClosingPortal = closingPortals.has(sq);
+      const isOpeningPortal = openingPortals.has(sq);
+
       cols.push(
         <div
           key={sq}
+          data-sq={sq}
           className={className}
           onClick={() => {
             if (!drag) selectSquare(sq);
           }}
         >
           {portalColor && (
-            <div className={`portal-overlay portal-${portalColor}`} />
+            <div
+              className={`portal-overlay portal-${portalColor}${isOpeningPortal ? " portal-spawn" : ""}`}
+            />
+          )}
+
+          {isClosingPortal && (
+            <div
+              className={`portal-overlay portal-${closingPortals.get(sq) ?? "blue"} portal-despawn`}
+            />
           )}
 
           {isLegalTarget && !drag?.isDragging && (
             <div className={piece ? "capture-hint" : "move-hint"} />
           )}
 
-          {piece && !isDragSource && !isDead && !isOnEnemyHalf && (
+          {piece && !isDragSource && !isDead && (
             <img
               src={getPieceImage(piece)}
               alt={`${piece.color}${piece.type}`}
@@ -809,7 +880,7 @@ export function Board() {
 
   return (
     <div
-      className={`board${hasFogOverlay ? " fog-active" : ""}`}
+      className={`board${showFog ? " fog-active" : ""}`}
       ref={boardRef}
       style={
         shrinkRing > 0 || dangerProgress > 0
@@ -825,11 +896,22 @@ export function Board() {
       {rows}
       {portalArrows}
       {portalAnimElement}
-      {hasFogOverlay && (
-        <div className={`fog-overlay ${fogOnTop ? "fog-top" : "fog-bottom"}`}>
+      {showFog && (
+        <div
+          className={`fog-overlay ${fogOnTop ? "fog-top" : "fog-bottom"}${fogExiting ? " fog-exit" : ""}`}
+        >
           <div className="fog-layer fog-layer-1" />
           <div className="fog-layer fog-layer-2" />
           <div className="fog-layer fog-layer-3" />
+          <div className="fog-layer fog-layer-4" />
+          <div className="fog-layer fog-layer-5" />
+          <div className="fog-layer fog-layer-6" />
+          <div className="fog-layer fog-layer-7" />
+          <div className="fog-layer fog-layer-8" />
+          <div className="fog-layer fog-layer-9" />
+          <div className="fog-layer fog-layer-10" />
+          <div className="fog-layer fog-layer-11" />
+          <div className="fog-layer fog-layer-12" />
         </div>
       )}
       {dragElement}

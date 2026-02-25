@@ -107,6 +107,10 @@ export class PluginManager {
     return mods;
   }
 
+  getPlugins(): ModePlugin[] {
+    return this.plugins;
+  }
+
   isAutonomous(): boolean {
     return this.plugins.some((p) => p.isAutonomous);
   }

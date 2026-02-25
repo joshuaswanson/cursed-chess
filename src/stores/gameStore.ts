@@ -7,7 +7,7 @@ import { fileOf, rankOf, isValidSquare } from "../utils/squareUtils";
 import { PortalChessPlugin } from "../plugins/portalChess";
 import { FogOfWarPlugin } from "../plugins/fogOfWar";
 import { BattleRoyalePlugin } from "../plugins/battleRoyale";
-import { RallyPlugin } from "../plugins/rallyTheTroops";
+import { RallyPlugin, PIECE_COST } from "../plugins/rallyTheTroops";
 
 export interface GameMode {
   name: string;
@@ -72,6 +72,9 @@ export interface GameStore {
   currentModeIndex: number;
   modeTimeRemaining: number;
 
+  // Rally deployment
+  deployPieceType: PieceType | null;
+
   // Actions
   selectSquare: (square: SquareIndex) => void;
   makeMove: (from: SquareIndex, to: SquareIndex, promotion?: PieceType) => void;
@@ -80,6 +83,8 @@ export interface GameStore {
   flipBoard: () => void;
   clearSelection: () => void;
   togglePause: () => void;
+  setDeployPieceType: (type: PieceType | null) => void;
+  deployPiece: (square: SquareIndex) => boolean;
   showAnnouncement: (
     text: string,
     durationMs?: number,
@@ -123,11 +128,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
   currentModeIndex: -1,
   modeTimeRemaining: 60,
 
+  deployPieceType: null,
+
   selectSquare: (square: SquareIndex) => {
     const state = get();
     if (state.paused) return;
-    // Block all interaction during autonomous mode
-    if (state.pluginManager.isAutonomous()) return;
+    // During autonomous mode, only allow deployment clicks
+    if (state.pluginManager.isAutonomous()) {
+      if (state.deployPieceType) {
+        state.deployPiece(square);
+      }
+      return;
+    }
     // Human plays White only — block interaction during Black's turn
     if (state.game.turn === Color.Black) return;
     const { game, selectedSquare, legalMoveSquares } = state;
@@ -361,15 +373,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
       moveTimerActive: true,
     });
 
-    // Normal chess: switch to chaos after 3 full rounds (6 half-moves)
-    if (isNormalChess && game.history.length >= 6) {
-      get().showAnnouncement("GET READY!", 1500, "intro");
+    // Normal chess: switch to chaos after 3 moves (white, black, white)
+    if (isNormalChess && game.history.length >= 3) {
+      // Wait for the piece movement animation to finish before announcing
       setTimeout(() => {
-        get().showAnnouncement("CHAOS CHESS", 2000, "intro");
+        get().showAnnouncement("GET READY!", 1500, "intro");
         setTimeout(() => {
-          get().switchMode();
-        }, 2000);
-      }, 1800);
+          get().showAnnouncement("CHAOS CHESS", 2000, "intro");
+          setTimeout(() => {
+            get().switchMode();
+          }, 2000);
+        }, 1800);
+      }, 600);
     }
   },
 
@@ -437,6 +452,37 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }),
 
   togglePause: () => set((state) => ({ paused: !state.paused })),
+
+  setDeployPieceType: (type: PieceType | null) => {
+    set({ deployPieceType: type });
+  },
+
+  deployPiece: (square: SquareIndex) => {
+    const { game, pluginManager, deployPieceType } = get();
+    if (!deployPieceType) return false;
+
+    // Find the rally plugin
+    const rallyPlugin = pluginManager
+      .getPlugins()
+      .find((p) => p.id === "rally") as RallyPlugin | undefined;
+    if (!rallyPlugin) return false;
+
+    // Check cost
+    const cost = PIECE_COST[deployPieceType];
+    if (cost === undefined || rallyPlugin.resourceWhite < cost) return false;
+
+    // Only deploy on White's half (ranks 0-3), must be empty
+    const rank = rankOf(square);
+    if (rank > 3) return false;
+    if (game.board.get(square)) return false;
+
+    // Deploy the piece
+    game.board.put(square, { type: deployPieceType, color: Color.White });
+    rallyPlugin.resourceWhite -= cost;
+
+    set({ deployPieceType: null });
+    return true;
+  },
 
   showAnnouncement: (
     text: string,
@@ -535,6 +581,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
     pluginManager.invokeOnGameStart();
 
+    // Fog of war: show announcement briefly, then pause while fog rolls in
+    const isFog = pluginManager.getPlugins().some((p) => p.id === "fog-of-war");
+
     set({
       currentModeIndex: nextIndex,
       modeTimeRemaining: 60,
@@ -549,6 +598,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
 
     get().showAnnouncement(mode.name);
+
+    if (isFog) {
+      // Keep the game paused after the announcement ends while fog rolls in
+      setTimeout(() => {
+        set({ paused: true });
+        setTimeout(() => {
+          set({ paused: false });
+        }, 6000);
+      }, 2000);
+    }
   },
 
   getPiece: (square: SquareIndex) => get().game.board.get(square),

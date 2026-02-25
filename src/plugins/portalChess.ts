@@ -38,10 +38,22 @@ export class PortalChessPlugin implements ModePlugin {
 
   private portals: PortalPair[] = [];
   private portalRedirects = new Map<string, Move>();
+  private moveCount = 0;
+  private repositionInterval = 4;
 
   onGameStart(ctx: PluginContext): void {
     this.portals = [];
+    this.moveCount = 0;
     this.spawnPortals(ctx);
+  }
+
+  onTurnEnd(ctx: PluginContext, color: Color): void {
+    if (color === Color.Black) {
+      this.moveCount++;
+      if (this.moveCount % this.repositionInterval === 0) {
+        this.spawnPortals(ctx);
+      }
+    }
   }
 
   onBeforeMove(_ctx: PluginContext, move: Move): Move | null {

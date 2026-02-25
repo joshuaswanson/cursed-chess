@@ -9,12 +9,12 @@ import type {
 import { rankOf } from "../utils/squareUtils";
 
 const PIECE_SPEED: Record<string, number> = {
-  [PieceType.Pawn]: 2000,
-  [PieceType.Knight]: 1500,
-  [PieceType.Bishop]: 1500,
-  [PieceType.Rook]: 1800,
-  [PieceType.Queen]: 2500,
-  [PieceType.King]: 3000,
+  [PieceType.Pawn]: 6000,
+  [PieceType.Knight]: 5000,
+  [PieceType.Bishop]: 5000,
+  [PieceType.Rook]: 7000,
+  [PieceType.Queen]: 9000,
+  [PieceType.King]: 12000,
 };
 
 export const PIECE_COST: Record<string, number> = {

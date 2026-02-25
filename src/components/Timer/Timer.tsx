@@ -44,7 +44,11 @@ export function Timer() {
     return () => clearInterval(interval);
   }, [isGameOver, tickModeTimer]);
 
-  const whiteUrgent = turn === Color.White && timeWhite <= 3;
+  const whiteUrgent = !isAutonomous && turn === Color.White && timeWhite <= 3;
+
+  if (isAutonomous) {
+    return <div className="timer-container" />;
+  }
 
   return (
     <div className="timer-container">

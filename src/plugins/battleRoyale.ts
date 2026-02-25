@@ -101,10 +101,10 @@ export class BattleRoyalePlugin implements ModePlugin {
             // Swap: king takes the safe square, occupant sacrifices itself
             ctx.board.remove(sq);
             ctx.board.remove(safeSq);
-            ctx.board.set(safeSq, piece);
+            ctx.board.put(safeSq, piece);
           } else {
             ctx.board.remove(sq);
-            ctx.board.set(safeSq, piece);
+            ctx.board.put(safeSq, piece);
           }
         }
       }

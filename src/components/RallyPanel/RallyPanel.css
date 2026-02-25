@@ -1,0 +1,139 @@
+.rally-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: linear-gradient(135deg, #1a0e30, #251848);
+  border: 1px solid #5533aa;
+  border-radius: 8px;
+}
+
+/* --- Resource bars --- */
+
+.rally-resources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resource-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resource-label {
+  font-family: "Bangers", cursive;
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: #bb66ff;
+  width: 32px;
+}
+
+.resource-row.enemy .resource-label {
+  color: #ff3377;
+}
+
+.resource-bar {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+.resource-pip {
+  flex: 1;
+  height: 14px;
+  border-radius: 2px;
+  background: #2a1850;
+  border: 1px solid #443388;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.resource-pip.filled {
+  background: linear-gradient(180deg, #bb66ff, #8833cc);
+  border-color: #cc88ff;
+  box-shadow: 0 0 4px rgba(187, 102, 255, 0.4);
+}
+
+.resource-pip.enemy.filled {
+  background: linear-gradient(180deg, #ff3377, #cc1155);
+  border-color: #ff6699;
+  box-shadow: 0 0 4px rgba(255, 51, 119, 0.4);
+}
+
+.resource-count {
+  font-family: "Inter", monospace;
+  font-weight: 700;
+  font-size: 16px;
+  color: #eeddff;
+  width: 24px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Deploy grid --- */
+
+.deploy-label {
+  font-family: "Bangers", cursive;
+  font-size: 16px;
+  letter-spacing: 3px;
+  color: #c4b0f0;
+  text-align: center;
+}
+
+.deploy-grid {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.deploy-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 2px solid #443388;
+  border-radius: 6px;
+  background: #2a1850;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.deploy-btn:hover:not(:disabled) {
+  border-color: #bb66ff;
+  background: #3d2280;
+  box-shadow: 0 0 10px rgba(187, 102, 255, 0.3);
+}
+
+.deploy-btn.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.deploy-piece-img {
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.deploy-cost {
+  font-family: "Bangers", cursive;
+  font-size: 14px;
+  color: #bb66ff;
+  line-height: 1;
+}
+
+.deploy-floating-piece {
+  position: fixed;
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+  z-index: 1000;
+  filter: drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.6));
+  opacity: 0.9;
+}
+}

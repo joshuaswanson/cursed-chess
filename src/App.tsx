@@ -4,6 +4,7 @@ import { PromotionDialog } from "./components/PromotionDialog/PromotionDialog";
 import { Announcement } from "./components/Announcement/Announcement";
 import { Timer } from "./components/Timer/Timer";
 import { ModePanel } from "./components/ModePanel/ModePanel";
+import { RallyPanel } from "./components/RallyPanel/RallyPanel";
 import "./styles/global.css";
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
           <div className="sidebar">
             <ModePanel />
             <Timer />
+            <RallyPanel />
             <GameControls />
           </div>
         </main>

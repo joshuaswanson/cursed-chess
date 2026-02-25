@@ -53,6 +53,16 @@
   background-color: transparent;
 }
 
+/* --- Rally deploy target --- */
+.square.deploy-target {
+  box-shadow: inset 0 0 12px rgba(102, 255, 51, 0.3);
+  cursor: crosshair;
+}
+
+.square.deploy-target:hover {
+  box-shadow: inset 0 0 20px rgba(102, 255, 51, 0.5);
+}
+
 /* --- Battle Royale --- */
 .square.dead-square {
   background-color: transparent !important;
@@ -93,7 +103,7 @@
   z-index: 6;
   pointer-events: none;
   overflow: visible;
-  animation: fog-enter 1.5s ease-out forwards;
+  animation: fog-enter 8s ease-out forwards;
 }
 
 .fog-overlay.fog-top {
@@ -119,24 +129,106 @@
 
 .fog-layer-1 {
   background-image: url("/fog/fog3.png");
-  animation: fog-scroll-right 18s linear infinite;
-  opacity: 0.95;
+  animation:
+    fog-scroll-right 18s linear infinite,
+    fog-breathe 12s ease-in-out infinite;
 }
 
 .fog-layer-2 {
   background-image: url("/fog/fog4.png");
-  animation: fog-scroll-left 25s linear infinite;
-  opacity: 0.7;
+  animation:
+    fog-scroll-left 25s linear infinite,
+    fog-breathe 17s ease-in-out 3s infinite;
   top: -15%;
   height: 130%;
 }
 
 .fog-layer-3 {
   background-image: url("/fog/fog5.png");
-  animation: fog-scroll-right 32s linear infinite;
-  opacity: 0.5;
+  animation:
+    fog-scroll-right 32s linear infinite,
+    fog-breathe 14s ease-in-out 7s infinite;
   top: -10%;
   height: 120%;
+}
+
+.fog-layer-4 {
+  background-image: url("/fog/fog3.png");
+  animation:
+    fog-scroll-left 22s linear infinite,
+    fog-breathe 19s ease-in-out 2s infinite;
+  top: -5%;
+  height: 110%;
+}
+
+.fog-layer-5 {
+  background-image: url("/fog/fog5.png");
+  animation:
+    fog-scroll-right 28s linear infinite,
+    fog-breathe 11s ease-in-out 5s infinite;
+  top: -20%;
+  height: 140%;
+}
+
+.fog-layer-6 {
+  background-image: url("/fog/fog4.png");
+  animation:
+    fog-scroll-left 15s linear infinite,
+    fog-breathe 16s ease-in-out 9s infinite;
+}
+
+.fog-layer-7 {
+  background-image: url("/fog/fog3.png");
+  animation:
+    fog-scroll-right 20s linear infinite,
+    fog-breathe 13s ease-in-out 1s infinite;
+  top: -8%;
+  height: 116%;
+}
+
+.fog-layer-8 {
+  background-image: url("/fog/fog5.png");
+  animation:
+    fog-scroll-left 35s linear infinite,
+    fog-breathe 18s ease-in-out 8s infinite;
+  top: -12%;
+  height: 124%;
+}
+
+.fog-layer-9 {
+  background-image: url("/fog/fog4.png");
+  animation:
+    fog-scroll-right 14s linear infinite,
+    fog-breathe 15s ease-in-out 4s infinite;
+  top: -3%;
+  height: 106%;
+}
+
+.fog-layer-10 {
+  background-image: url("/fog/fog3.png");
+  animation:
+    fog-scroll-left 27s linear infinite,
+    fog-breathe 20s ease-in-out 6s infinite;
+  top: -18%;
+  height: 136%;
+}
+
+.fog-layer-11 {
+  background-image: url("/fog/fog5.png");
+  animation:
+    fog-scroll-right 24s linear infinite,
+    fog-breathe 10s ease-in-out 11s infinite;
+  top: -6%;
+  height: 112%;
+}
+
+.fog-layer-12 {
+  background-image: url("/fog/fog4.png");
+  animation:
+    fog-scroll-left 30s linear infinite,
+    fog-breathe 21s ease-in-out 3s infinite;
+  top: -14%;
+  height: 128%;
 }
 
 @keyframes fog-scroll-right {
@@ -157,12 +249,35 @@
   }
 }
 
+@keyframes fog-breathe {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
 @keyframes fog-enter {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
+  }
+}
+
+.fog-overlay.fog-exit {
+  animation: fog-exit 1.5s ease-in forwards;
+}
+
+@keyframes fog-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 
@@ -382,6 +497,41 @@
   }
   50% {
     transform: scale(1.08);
+  }
+}
+
+/* Portal spawn / despawn transitions */
+.portal-overlay.portal-spawn {
+  animation: portal-spawn-in 0.5s ease-out forwards;
+}
+
+.portal-overlay.portal-despawn {
+  animation: portal-despawn-out 0.5s ease-in forwards;
+}
+
+@keyframes portal-spawn-in {
+  0% {
+    transform: scale(0) rotate(-360deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes portal-despawn-out {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0) rotate(360deg);
+    opacity: 0;
   }
 }
 
