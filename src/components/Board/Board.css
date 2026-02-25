@@ -30,6 +30,9 @@
 .square.dark {
   background-color: #b58863;
 }
+.square.portal-square {
+  background-color: #1a0e30;
+}
 
 .square.selected {
   background-color: #829769 !important;
@@ -203,80 +206,110 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  border-radius: 50%;
-  animation: portal-spin 3s linear infinite;
 }
 
 .portal-overlay.portal-blue {
-  background: radial-gradient(
-    circle,
-    rgba(30, 144, 255, 0.5) 0%,
-    rgba(30, 144, 255, 0.2) 40%,
-    transparent 70%
-  );
-  box-shadow:
-    inset 0 0 12px rgba(30, 144, 255, 0.8),
-    0 0 16px rgba(30, 144, 255, 0.4);
+  --portal-color: 30, 144, 255;
+  --portal-highlight: rgba(100, 180, 255, 0.35);
 }
 
 .portal-overlay.portal-orange {
+  --portal-color: 255, 140, 0;
+  --portal-highlight: rgba(255, 200, 100, 0.35);
+}
+
+/* Dark void center + colored ring, all gradient — no hard edges */
+.portal-overlay.portal-blue,
+.portal-overlay.portal-orange {
   background: radial-gradient(
     circle,
-    rgba(255, 140, 0, 0.5) 0%,
-    rgba(255, 140, 0, 0.2) 40%,
-    transparent 70%
+    #000 0%,
+    #000 14%,
+    rgba(var(--portal-color), 0.85) 23%,
+    rgba(var(--portal-color), 0.3) 32%,
+    transparent 44%
   );
-  box-shadow:
-    inset 0 0 12px rgba(255, 140, 0, 0.8),
-    0 0 16px rgba(255, 140, 0, 0.4);
+  animation: portal-breathe 2.5s ease-in-out infinite;
 }
 
-@keyframes portal-spin {
-  0% {
-    transform: rotate(0deg);
-    box-shadow:
-      inset 0 0 12px currentColor,
-      0 0 16px currentColor;
+@keyframes portal-breathe {
+  0%,
+  100% {
+    transform: scale(1);
   }
   50% {
-    box-shadow:
-      inset 0 0 20px currentColor,
-      0 0 24px currentColor;
-  }
-  100% {
-    transform: rotate(360deg);
-    box-shadow:
-      inset 0 0 12px currentColor,
-      0 0 16px currentColor;
+    transform: scale(1.08);
   }
 }
 
+/* Spinning light streaks in the ring */
 .portal-overlay::before {
   content: "";
   position: absolute;
-  inset: 15%;
+  inset: 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    var(--portal-highlight) 12%,
+    transparent 25%,
+    var(--portal-highlight) 37%,
+    transparent 50%,
+    var(--portal-highlight) 62%,
+    transparent 75%,
+    var(--portal-highlight) 87%,
+    transparent 100%
+  );
+  -webkit-mask: radial-gradient(
+    circle,
+    transparent 10%,
+    #000 16%,
+    #000 38%,
+    transparent 46%
+  );
+  mask: radial-gradient(
+    circle,
+    transparent 10%,
+    #000 16%,
+    #000 38%,
+    transparent 46%
+  );
+  animation: portal-spin 4s linear infinite;
+}
+
+/* Pulsing outer glow */
+.portal-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 20%;
   border-radius: 50%;
-  border: 2px solid;
-  animation: portal-ring 2s ease-in-out infinite;
+  animation: portal-glow 2.5s ease-in-out infinite;
 }
 
-.portal-blue::before {
-  border-color: rgba(100, 180, 255, 0.7);
+.portal-blue::after {
+  box-shadow: 0 0 12px 6px rgba(30, 144, 255, 0.3);
 }
 
-.portal-orange::before {
-  border-color: rgba(255, 180, 80, 0.7);
+.portal-orange::after {
+  box-shadow: 0 0 12px 6px rgba(255, 140, 0, 0.3);
 }
 
-@keyframes portal-ring {
+@keyframes portal-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes portal-glow {
   0%,
   100% {
-    transform: scale(0.8);
-    opacity: 0.5;
+    opacity: 0.6;
   }
   50% {
-    transform: scale(1.1);
     opacity: 1;
+    transform: scale(1.1);
   }
 }
 
@@ -335,6 +368,41 @@
   }
   100% {
     transform: scale(0) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* --- Countdown overlay --- */
+
+.countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.countdown-number {
+  font-family: "Bangers", cursive;
+  font-size: 180px;
+  color: rgba(255, 255, 255, 0.15);
+  text-shadow: 0 0 40px rgba(255, 51, 119, 0.4);
+  animation: countdown-pop 1s ease-out forwards;
+}
+
+@keyframes countdown-pop {
+  0% {
+    transform: scale(2);
+    opacity: 0.6;
+  }
+  20% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
     opacity: 0;
   }
 }

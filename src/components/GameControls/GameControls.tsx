@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { Color, GameStatus } from "../../engine";
 import { PortalChessPlugin } from "../../plugins/portalChess";
@@ -21,9 +22,19 @@ function statusText(status: GameStatus, turn: Color): string {
   }
 }
 
+function startPortalGame() {
+  const { newGame, showAnnouncement } = useGameStore.getState();
+  newGame(undefined, [new PortalChessPlugin()]);
+  showAnnouncement("PORTAL CHESS");
+}
+
 export function GameControls() {
-  const { status, turn, moveHistory, newGame, undoMove, flipBoard } =
-    useGameStore();
+  const { status, turn, undoMove, flipBoard, moveHistory } = useGameStore();
+
+  // Start first game on mount
+  useEffect(() => {
+    startPortalGame();
+  }, []);
 
   const isGameOver =
     status === GameStatus.Checkmate ||
@@ -39,14 +50,8 @@ export function GameControls() {
         {statusText(status, turn)}
       </div>
       <div className="controls-row">
-        <button onClick={() => newGame()} className="control-btn">
-          Normal
-        </button>
-        <button
-          onClick={() => newGame(undefined, [new PortalChessPlugin()])}
-          className="control-btn"
-        >
-          Portal
+        <button onClick={startPortalGame} className="control-btn">
+          New Game
         </button>
         <button
           onClick={undoMove}

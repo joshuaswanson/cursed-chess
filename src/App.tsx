@@ -1,7 +1,8 @@
 import { Board } from "./components/Board/Board";
 import { GameControls } from "./components/GameControls/GameControls";
-import { MoveHistory } from "./components/MoveHistory/MoveHistory";
 import { PromotionDialog } from "./components/PromotionDialog/PromotionDialog";
+import { Announcement } from "./components/Announcement/Announcement";
+import { Timer } from "./components/Timer/Timer";
 import "./styles/global.css";
 
 function App() {
@@ -20,12 +21,13 @@ function App() {
           <Board />
         </div>
         <div className="sidebar">
+          <Timer />
           <GameControls />
-          <MoveHistory />
         </div>
       </main>
 
       <PromotionDialog />
+      <Announcement />
     </div>
   );
 }

@@ -37,23 +37,11 @@ export class PortalChessPlugin implements ModePlugin {
     "Portals spawn on the board. Pieces that enter one exit the other.";
 
   private portals: PortalPair[] = [];
-  private turnCount = 0;
-  private spawnInterval = 5;
   private portalRedirects = new Map<string, Move>();
 
   onGameStart(ctx: PluginContext): void {
     this.portals = [];
-    this.turnCount = 0;
     this.spawnPortals(ctx);
-  }
-
-  onTurnEnd(ctx: PluginContext, color: Color): void {
-    if (color === Color.Black) {
-      this.turnCount++;
-      if (this.turnCount % this.spawnInterval === 0) {
-        this.spawnPortals(ctx);
-      }
-    }
   }
 
   onBeforeMove(ctx: PluginContext, move: Move): Move | null {
@@ -74,6 +62,8 @@ export class PortalChessPlugin implements ModePlugin {
     for (const move of moves) {
       const portalSq = this.getPortalEntrance(move.to);
       if (portalSq === null) {
+        // Block moves that pass through a portal (except knights)
+        if (this.isPathBlockedByPortal(move)) continue;
         result.push(move);
         continue;
       }
@@ -235,6 +225,36 @@ export class PortalChessPlugin implements ModePlugin {
       if (sq === p.b) return p.a;
     }
     return null;
+  }
+
+  /** Check if a move's path passes through any portal square */
+  private isPathBlockedByPortal(move: Move): boolean {
+    // Knights jump over everything
+    if (move.piece.type === PieceType.Knight) return false;
+
+    // Sliding pieces: check each intermediate square along the path
+    const directions = SLIDING_DIRECTIONS[move.piece.type];
+    if (directions) {
+      const dir = this.getMoveDirection(move.from, move.to);
+      if (dir === null || !directions.includes(dir)) return false;
+      let sq = (move.from + dir) as SquareIndex;
+      while (sq !== move.to) {
+        if (this.getPortalEntrance(sq) !== null) return true;
+        sq = (sq + dir) as SquareIndex;
+      }
+      return false;
+    }
+
+    // Pawns: double push — check intermediate square
+    if (move.piece.type === PieceType.Pawn) {
+      const dRank = rankOf(move.to) - rankOf(move.from);
+      if (Math.abs(dRank) === 2) {
+        const midSq = (move.from + (dRank > 0 ? NORTH : SOUTH)) as SquareIndex;
+        if (this.getPortalEntrance(midSq) !== null) return true;
+      }
+    }
+
+    return false;
   }
 
   private getMoveDirection(from: SquareIndex, to: SquareIndex): number | null {

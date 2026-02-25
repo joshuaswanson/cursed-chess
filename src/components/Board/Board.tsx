@@ -77,6 +77,9 @@ export function Board() {
     getPiece,
     game,
     pluginManager,
+    timeWhite,
+    timeBlack,
+    turn,
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -85,7 +88,7 @@ export function Board() {
   const [anim, setAnim] = useState<AnimState | null>(null);
   const [returnAnim, setReturnAnim] = useState<ReturnAnim | null>(null);
   const [portalAnim, setPortalAnim] = useState<{
-    phase: "shrink" | "pop" | "slide";
+    phase: "approach" | "shrink" | "pop" | "slide";
     info: PortalMoveInfo;
   } | null>(null);
   const [pickupTransition, setPickupTransition] = useState(false);
@@ -217,19 +220,43 @@ export function Board() {
     return () => clearTimeout(timer);
   }, [lastMove, lastPortalMove, flipped]);
 
-  // Portal move animation: shrink → pop → slide
+  // Portal move animation: approach → shrink → pop → slide
   useEffect(() => {
     const prev = prevPortalMove.current;
     prevPortalMove.current = lastPortalMove;
     if (!lastPortalMove || lastPortalMove === prev) return;
-    setPortalAnim({ phase: "shrink", info: lastPortalMove });
+    // Skip approach if piece is already at the entrance (same square)
+    if (lastPortalMove.from === lastPortalMove.entrance) {
+      setPortalAnim({ phase: "shrink", info: lastPortalMove });
+    } else {
+      setPortalAnim({ phase: "approach", info: lastPortalMove });
+    }
   }, [lastPortalMove]);
 
   useEffect(() => {
     if (!portalAnim) return;
-    const durations = { shrink: 300, pop: 300, slide: 250 };
+    // Approach duration scales with distance
+    let approachDuration = 200;
+    if (portalAnim.phase === "approach") {
+      const dFile = Math.abs(
+        fileOf(portalAnim.info.from) - fileOf(portalAnim.info.entrance),
+      );
+      const dRank = Math.abs(
+        rankOf(portalAnim.info.from) - rankOf(portalAnim.info.entrance),
+      );
+      const dist = Math.max(dFile, dRank);
+      approachDuration = Math.max(100, dist * 60);
+    }
+    const durations = {
+      approach: approachDuration,
+      shrink: 300,
+      pop: 300,
+      slide: 250,
+    };
     const timer = setTimeout(() => {
-      if (portalAnim.phase === "shrink") {
+      if (portalAnim.phase === "approach") {
+        setPortalAnim({ phase: "shrink", info: portalAnim.info });
+      } else if (portalAnim.phase === "shrink") {
         setPortalAnim({ phase: "pop", info: portalAnim.info });
       } else if (portalAnim.phase === "pop") {
         setPortalAnim({ phase: "slide", info: portalAnim.info });
@@ -457,7 +484,11 @@ export function Board() {
       const isAnimating = anim && anim.sq === sq;
 
       let className = "square";
-      className += isLight ? " light" : " dark";
+      if (portalColor) {
+        className += " portal-square";
+      } else {
+        className += isLight ? " light" : " dark";
+      }
       if (isSelected) className += " selected";
       if (isLastMoveSquare) className += " last-move";
       if (isCheck) className += " in-check";
@@ -598,9 +629,9 @@ export function Board() {
       const dist = Math.sqrt(dx * dx + dy * dy);
       const angle = Math.atan2(dy, dx) * (180 / Math.PI);
       const motionPath = `M${x1},${y1} L${x2},${y2}`;
-      const spacing = 4;
-      const numChevrons = Math.max(3, Math.round(dist / spacing));
-      const duration = numChevrons * 0.3;
+      const spacing = 2.5;
+      const numChevrons = Math.max(4, Math.round(dist / spacing));
+      const duration = numChevrons * 0.2;
       const chevrons = [];
       for (let i = 0; i < numChevrons; i++) {
         const delay = (i * duration) / numChevrons;
@@ -611,14 +642,14 @@ export function Board() {
             style={
               {
                 "--chevron-dur": `${duration}s`,
-                animationDelay: `${delay}s`,
+                animationDelay: `-${duration - delay}s`,
               } as React.CSSProperties
             }
           >
             <animateMotion
               dur={`${duration}s`}
               repeatCount="indefinite"
-              begin={`${delay}s`}
+              begin={`-${delay}s`}
               path={motionPath}
             />
             <text
@@ -643,7 +674,7 @@ export function Board() {
     }
   }
 
-  // Portal animation element (shrink into entrance, pop out of exit, slide to landing)
+  // Portal animation element (approach → shrink → pop → slide)
   let portalAnimElement = null;
   if (portalAnim) {
     const { phase, info } = portalAnim;
@@ -651,7 +682,24 @@ export function Board() {
     let animClass: string;
     let animStyle: React.CSSProperties = {};
 
-    if (phase === "shrink") {
+    if (phase === "approach") {
+      animSq = info.entrance;
+      animClass = "portal-anim-piece portal-anim-slide";
+      const dFile = fileOf(info.from) - fileOf(info.entrance);
+      const dRank = rankOf(info.from) - rankOf(info.entrance);
+      const dist = Math.max(Math.abs(dFile), Math.abs(dRank));
+      const dur = Math.max(0.1, dist * 0.06);
+      const sqSz = boardRef.current
+        ? boardRef.current.getBoundingClientRect().width / 8
+        : 72;
+      const ox = (flipped ? -dFile : dFile) * sqSz;
+      const oy = (flipped ? dRank : -dRank) * sqSz;
+      animStyle = {
+        "--slide-from-x": `${ox}px`,
+        "--slide-from-y": `${oy}px`,
+        animation: `slide-in ${dur}s ease-in forwards`,
+      } as React.CSSProperties;
+    } else if (phase === "shrink") {
       animSq = info.entrance;
       animClass = "portal-anim-piece portal-anim-shrink";
     } else if (phase === "pop") {
@@ -695,6 +743,11 @@ export function Board() {
     );
   }
 
+  // Countdown overlay for last 5 seconds
+  const activeTime = turn === Color.White ? timeWhite : timeBlack;
+  const countdownNumber =
+    activeTime <= 5 && activeTime > 0 ? Math.ceil(activeTime) : null;
+
   return (
     <div
       className="board"
@@ -707,6 +760,11 @@ export function Board() {
       {portalAnimElement}
       {dragElement}
       {returnElement}
+      {countdownNumber !== null && (
+        <div className="countdown-overlay" key={countdownNumber}>
+          <span className="countdown-number">{countdownNumber}</span>
+        </div>
+      )}
     </div>
   );
 }
