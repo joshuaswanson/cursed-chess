@@ -10,7 +10,7 @@ A web-based chess game where the rules change every 45 seconds. Play through rot
 - **Portal Mode** -- Portals spawn on the board. Pieces that enter one exit the other, continuing their trajectory
 - **Fog of War** -- Dense fog rolls over the enemy half. You can't see their pieces until you're adjacent
 - **Battle Royale** -- The board shrinks inward over time. Pieces on the edge are eliminated
-- **Rally the Troops** -- Pieces move on their own. Spend resources to deploy reinforcements via drag and drop
+- **Clash Royale** -- Pieces move on their own. Spend resources to deploy reinforcements via drag and drop
 - **Minefield** -- Hidden mines are scattered across the board. Step on one and your piece explodes
 - **King of the Hill** -- Control 3+ of the 4 center squares for 3 consecutive rounds to win
 - **Gravity** -- Gravity pulls all pieces in one direction, shifting 45 degrees every few turns. The board rotates to match

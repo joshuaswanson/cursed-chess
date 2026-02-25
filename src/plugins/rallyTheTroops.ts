@@ -27,7 +27,7 @@ export const PIECE_COST: Record<string, number> = {
 
 export class RallyPlugin implements ModePlugin {
   id = "rally";
-  name = "Rally the Troops";
+  name = "Clash Royale";
   description =
     "Pieces move on their own. Spend resources to deploy reinforcements.";
   isAutonomous = true;
