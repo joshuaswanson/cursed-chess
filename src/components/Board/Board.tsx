@@ -48,7 +48,6 @@ interface AnimState {
   sq: SquareIndex;
   offsetX: number;
   offsetY: number;
-  arrivalAngle: number;
 }
 
 interface ReturnAnim {
@@ -233,11 +232,7 @@ export function Board() {
     const offsetX = (flipped ? -dFile : dFile) * squareSize;
     const offsetY = (flipped ? dRank : -dRank) * squareSize;
 
-    // Lean angle: piece tips forward in the direction it traveled
-    const angle = Math.atan2(dFile, Math.abs(dRank) || 1) * (180 / Math.PI);
-    const arrivalAngle = Math.max(-14, Math.min(14, -angle));
-
-    setAnim({ sq: lastMove.to, offsetX, offsetY, arrivalAngle });
+    setAnim({ sq: lastMove.to, offsetX, offsetY });
     const timer = setTimeout(() => setAnim(null), 600);
     return () => clearTimeout(timer);
   }, [lastMove, lastPortalMove, flipped]);
@@ -718,9 +713,7 @@ export function Board() {
         ? ({
             "--slide-from-x": `${anim.offsetX}px`,
             "--slide-from-y": `${anim.offsetY}px`,
-            "--rock-angle": `${anim.arrivalAngle}deg`,
-            animation:
-              "slide-in 0.2s ease-out forwards, rock-settle 0.35s ease-in-out 0.2s",
+            animation: "slide-in 0.2s ease-out forwards",
           } as React.CSSProperties)
         : gravFall
           ? ({

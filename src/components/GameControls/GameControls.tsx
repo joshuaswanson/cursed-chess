@@ -1,11 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useGameStore, GAME_MODES } from "../../stores/gameStore";
 import "./GameControls.css";
 
 export function GameControls() {
-  const { newGame, togglePause, paused, currentModeIndex, switchMode } =
-    useGameStore();
-  const [devMode, setDevMode] = useState(false);
+  const {
+    newGame,
+    togglePause,
+    paused,
+    currentModeIndex,
+    switchMode,
+    devMode,
+  } = useGameStore();
 
   // Start with normal chess on mount
   useEffect(() => {
@@ -17,7 +22,7 @@ export function GameControls() {
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === "D") {
         e.preventDefault();
-        setDevMode((prev) => !prev);
+        useGameStore.setState((s) => ({ devMode: !s.devMode }));
       }
     };
     window.addEventListener("keydown", handler);

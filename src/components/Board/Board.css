@@ -642,22 +642,6 @@
   }
 }
 
-/* Rock on arrival: piece leans forward from momentum, then springs back */
-@keyframes rock-settle {
-  0% {
-    transform: rotate(0deg);
-  }
-  30% {
-    transform: rotate(var(--rock-angle));
-  }
-  70% {
-    transform: rotate(calc(var(--rock-angle) * -0.3));
-  }
-  100% {
-    transform: rotate(0deg);
-  }
-}
-
 /* --- Move hints --- */
 
 .move-hint {

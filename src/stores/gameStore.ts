@@ -82,6 +82,9 @@ export interface GameStore {
   currentModeIndex: number;
   modeTimeRemaining: number;
 
+  // Dev mode
+  devMode: boolean;
+
   // Rally deployment
   deployPieceType: PieceType | null;
 
@@ -142,6 +145,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   currentModeIndex: -1,
   modeTimeRemaining: 45,
+
+  devMode: false,
 
   deployPieceType: null,
 
@@ -583,8 +588,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   tickTimer: () => {
-    const { turn, moveTimerActive, paused } = get();
-    if (!moveTimerActive || paused) return;
+    const { turn, moveTimerActive, paused, devMode } = get();
+    if (!moveTimerActive || paused || devMode) return;
     const key = turn === Color.White ? "timeWhite" : "timeBlack";
     const current = get()[key];
     const next = Math.max(0, current - 0.1);
@@ -655,8 +660,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   tickModeTimer: () => {
-    const { paused, modeTimeRemaining } = get();
-    if (paused) return;
+    const { paused, modeTimeRemaining, devMode } = get();
+    if (paused || devMode) return;
     const next = Math.max(0, modeTimeRemaining - 1);
     set({ modeTimeRemaining: next });
     if (next <= 0) {
