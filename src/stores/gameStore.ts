@@ -18,7 +18,7 @@ export interface GameMode {
 }
 
 export const GAME_MODES: GameMode[] = [
-  { name: "PORTAL MODE", create: () => [new PortalChessPlugin()] },
+  { name: "PORTALS", create: () => [new PortalChessPlugin()] },
   { name: "FOG OF WAR", create: () => [new FogOfWarPlugin()] },
   { name: "BATTLE ROYALE", create: () => [new BattleRoyalePlugin()] },
   { name: "RALLY THE TROOPS", create: () => [new RallyPlugin()] },

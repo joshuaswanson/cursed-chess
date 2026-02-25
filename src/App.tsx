@@ -11,8 +11,7 @@ import "./styles/global.css";
 function App() {
   const currentModeIndex = useGameStore((s) => s.currentModeIndex);
   const isPortalMode =
-    currentModeIndex >= 0 &&
-    GAME_MODES[currentModeIndex].name === "PORTAL MODE";
+    currentModeIndex >= 0 && GAME_MODES[currentModeIndex].name === "PORTALS";
 
   return (
     <div className={isPortalMode ? "space-bg" : ""}>

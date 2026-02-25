@@ -7,6 +7,7 @@ import type {
   SquareModifier,
 } from "./types";
 import { fileOf, rankOf, isValidSquare } from "../utils/squareUtils";
+import { isSquareAttacked, opponent } from "../engine/moves";
 
 // Direction offsets in 0x88
 const NORTH = 16;
@@ -154,7 +155,28 @@ export class PortalChessPlugin implements ModePlugin {
       this.addEntranceMove(result, move, portalMove);
     }
 
-    return result;
+    // Filter out portal moves that leave the king in check
+    return result.filter((m) => {
+      if (!(m.flags & MoveFlag.Portal)) return true;
+      // Simulate the move on a cloned board
+      const clone = ctx.board.clone();
+      clone.remove(m.from);
+      if (m.captured) clone.remove(m.to);
+      clone.put(m.to, m.piece);
+      // Find the king
+      let kingSq: SquareIndex | null = null;
+      for (let r = 0; r < 8; r++) {
+        for (let f = 0; f < 8; f++) {
+          const sq = ((r << 4) | f) as SquareIndex;
+          const p = clone.get(sq);
+          if (p && p.type === PieceType.King && p.color === color) {
+            kingSq = sq;
+          }
+        }
+      }
+      if (kingSq === null) return true;
+      return !isSquareAttacked(clone, kingSq, opponent(color));
+    });
   }
 
   getBoardOverlays(_ctx: PluginContext): BoardOverlay[] {
