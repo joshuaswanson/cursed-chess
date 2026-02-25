@@ -37,7 +37,9 @@ function App() {
             <span className="title-unhinged">CHAOS</span>
             <span className="title-chess">CHESS</span>
           </h1>
-          <p className="app-subtitle">Chess, but nothing is sacred</p>
+          <p className="app-subtitle">
+            You've never played chess like this before
+          </p>
         </header>
 
         <main className="game-layout">

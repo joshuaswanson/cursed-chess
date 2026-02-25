@@ -1,6 +1,6 @@
 # Chaos Chess
 
-Chess, but nothing is sacred.
+You've never played chess like this before.
 
 A web-based chess game where the rules change every 45 seconds. Play through rotating game modes that twist the classic game into something unpredictable.
 
