@@ -912,6 +912,12 @@ export function Board() {
           <div className="fog-layer fog-layer-10" />
           <div className="fog-layer fog-layer-11" />
           <div className="fog-layer fog-layer-12" />
+          <div className="fog-layer-static fog-layer-13" />
+          <div className="fog-layer-static fog-layer-14" />
+          <div className="fog-layer-static fog-layer-15" />
+          <div className="fog-layer-static fog-layer-16" />
+          <div className="fog-layer-static fog-layer-17" />
+          <div className="fog-layer-static fog-layer-18" />
         </div>
       )}
       {dragElement}

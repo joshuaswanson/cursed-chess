@@ -231,6 +231,59 @@
   height: 128%;
 }
 
+/* Static (unmoving) fog layers for dense coverage directly over the board */
+.fog-layer-static {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+.fog-layer-13 {
+  background-image: url("/fog/fog3.png");
+  opacity: 0.85;
+}
+
+.fog-layer-14 {
+  background-image: url("/fog/fog4.png");
+  opacity: 0.7;
+  top: -5%;
+  height: 110%;
+}
+
+.fog-layer-15 {
+  background-image: url("/fog/fog5.png");
+  opacity: 0.8;
+  top: 5%;
+  height: 95%;
+}
+
+.fog-layer-16 {
+  background-image: url("/fog/fog3.png");
+  opacity: 0.6;
+  top: -10%;
+  height: 120%;
+  transform: scaleX(-1);
+}
+
+.fog-layer-17 {
+  background-image: url("/fog/fog5.png");
+  opacity: 0.75;
+  top: 10%;
+  height: 90%;
+  transform: scaleX(-1);
+}
+
+.fog-layer-18 {
+  background-image: url("/fog/fog4.png");
+  opacity: 0.65;
+  top: -3%;
+  height: 106%;
+}
+
 @keyframes fog-scroll-right {
   from {
     transform: translateX(0);
