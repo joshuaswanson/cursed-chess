@@ -589,7 +589,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   tickTimer: () => {
     const { turn, moveTimerActive, paused, devMode } = get();
-    if (!moveTimerActive || paused || devMode) return;
+    if (!moveTimerActive || paused) return;
+    // In dev mode, only tick Black's timer (AI) — no move timer for White
+    if (devMode && turn === Color.White) return;
     const key = turn === Color.White ? "timeWhite" : "timeBlack";
     const current = get()[key];
     const next = Math.max(0, current - 0.1);
