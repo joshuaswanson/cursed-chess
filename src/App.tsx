@@ -5,11 +5,17 @@ import { Announcement } from "./components/Announcement/Announcement";
 import { Timer } from "./components/Timer/Timer";
 import { ModePanel } from "./components/ModePanel/ModePanel";
 import { RallyPanel } from "./components/RallyPanel/RallyPanel";
+import { useGameStore, GAME_MODES } from "./stores/gameStore";
 import "./styles/global.css";
 
 function App() {
+  const currentModeIndex = useGameStore((s) => s.currentModeIndex);
+  const isPortalMode =
+    currentModeIndex >= 0 &&
+    GAME_MODES[currentModeIndex].name === "PORTAL MODE";
+
   return (
-    <>
+    <div className={isPortalMode ? "space-bg" : ""}>
       <div className="page-fog">
         <div className="page-fog-layer page-fog-layer-1" />
         <div className="page-fog-layer page-fog-layer-2" />
@@ -50,7 +56,7 @@ function App() {
         <PromotionDialog />
         <Announcement />
       </div>
-    </>
+    </div>
   );
 }
 

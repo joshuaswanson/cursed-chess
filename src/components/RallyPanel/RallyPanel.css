@@ -55,12 +55,29 @@
   background: linear-gradient(180deg, #bb66ff, #8833cc);
   border-color: #cc88ff;
   box-shadow: 0 0 4px rgba(187, 102, 255, 0.4);
+  animation: pip-fill 0.3s ease-out;
 }
 
 .resource-pip.enemy.filled {
   background: linear-gradient(180deg, #ff3377, #cc1155);
   border-color: #ff6699;
   box-shadow: 0 0 4px rgba(255, 51, 119, 0.4);
+  animation: pip-fill 0.3s ease-out;
+}
+
+@keyframes pip-fill {
+  0% {
+    transform: scaleY(0.3);
+    opacity: 0.4;
+  }
+  60% {
+    transform: scaleY(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
 }
 
 .resource-count {

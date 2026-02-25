@@ -76,6 +76,116 @@ body::before {
   }
 }
 
+/* --- Space background for Portal Mode --- */
+.space-bg {
+  position: relative;
+}
+
+.space-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(1px 1px at 10% 15%, #fff 50%, transparent 100%),
+    radial-gradient(
+      1px 1px at 25% 45%,
+      rgba(255, 255, 255, 0.8) 50%,
+      transparent 100%
+    ),
+    radial-gradient(1px 1px at 40% 10%, #fff 50%, transparent 100%),
+    radial-gradient(
+      1px 1px at 55% 70%,
+      rgba(200, 220, 255, 0.9) 50%,
+      transparent 100%
+    ),
+    radial-gradient(1px 1px at 70% 25%, #fff 50%, transparent 100%),
+    radial-gradient(
+      1px 1px at 85% 55%,
+      rgba(255, 255, 255, 0.7) 50%,
+      transparent 100%
+    ),
+    radial-gradient(1px 1px at 15% 80%, #fff 50%, transparent 100%),
+    radial-gradient(
+      1px 1px at 92% 12%,
+      rgba(200, 200, 255, 0.9) 50%,
+      transparent 100%
+    ),
+    radial-gradient(1px 1px at 5% 50%, #fff 50%, transparent 100%),
+    radial-gradient(
+      1px 1px at 60% 90%,
+      rgba(255, 255, 255, 0.6) 50%,
+      transparent 100%
+    ),
+    radial-gradient(1px 1px at 35% 35%, #fff 50%, transparent 100%),
+    radial-gradient(
+      1px 1px at 78% 80%,
+      rgba(180, 200, 255, 0.8) 50%,
+      transparent 100%
+    ),
+    radial-gradient(
+      2px 2px at 48% 52%,
+      rgba(100, 150, 255, 0.6) 50%,
+      transparent 100%
+    ),
+    radial-gradient(1px 1px at 22% 68%, #fff 50%, transparent 100%),
+    radial-gradient(
+      1px 1px at 88% 38%,
+      rgba(255, 255, 255, 0.7) 50%,
+      transparent 100%
+    ),
+    radial-gradient(1px 1px at 65% 5%, #fff 50%, transparent 100%),
+    radial-gradient(
+      1px 1px at 3% 92%,
+      rgba(200, 220, 255, 0.8) 50%,
+      transparent 100%
+    ),
+    radial-gradient(1px 1px at 50% 30%, #fff 50%, transparent 100%),
+    radial-gradient(
+      2px 2px at 30% 60%,
+      rgba(120, 160, 255, 0.5) 50%,
+      transparent 100%
+    ),
+    radial-gradient(1px 1px at 95% 72%, #fff 50%, transparent 100%),
+    radial-gradient(
+      ellipse at 20% 80%,
+      rgba(40, 20, 80, 0.4) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 80% 30%,
+      rgba(20, 10, 60, 0.3) 0%,
+      transparent 50%
+    );
+  background-color: #050510;
+  pointer-events: none;
+  z-index: -2;
+  animation: stars-twinkle 8s ease-in-out infinite alternate;
+}
+
+/* Override default background blobs in portal mode */
+.space-bg body::before,
+.space-bg ~ body::before {
+  display: none;
+}
+
+/* Hide page fog during space mode */
+.space-bg .page-fog,
+.space-bg .page-fog-bottom,
+.space-bg .page-fog-left,
+.space-bg .page-fog-right {
+  opacity: 0;
+  transition: opacity 1s ease-out;
+}
+
+@keyframes stars-twinkle {
+  0% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 /* Ambient fog along top of page */
 .page-fog {
   position: fixed;
@@ -247,10 +357,12 @@ body::before {
   line-height: 1;
   display: flex;
   gap: 14px;
-  align-items: baseline;
+  align-items: center;
 }
 
 .title-chess {
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: 46px;
   color: #ffffff;
   text-shadow:
     0 0 15px rgba(255, 255, 255, 0.5),

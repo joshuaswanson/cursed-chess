@@ -27,6 +27,11 @@
   transition: all 0.8s ease-in-out;
 }
 
+/* Hide glow during portal mode */
+.board.portal-active::before {
+  box-shadow: none;
+}
+
 .board-row {
   display: flex;
 }
@@ -53,7 +58,20 @@
   background-color: transparent;
 }
 
-/* --- Rally deploy target --- */
+/* --- Rally deploy zone (player's half) --- */
+.square.deploy-zone {
+  box-shadow: inset 0 0 8px rgba(102, 255, 51, 0.12);
+}
+
+.square.deploy-zone.light {
+  background-color: #e8ddb0;
+}
+
+.square.deploy-zone.dark {
+  background-color: #a8855e;
+}
+
+/* --- Rally deploy target (active drag) --- */
 .square.deploy-target {
   box-shadow: inset 0 0 12px rgba(102, 255, 51, 0.3);
   cursor: crosshair;
@@ -61,6 +79,171 @@
 
 .square.deploy-target:hover {
   box-shadow: inset 0 0 20px rgba(102, 255, 51, 0.5);
+}
+
+/* --- Minefield --- */
+.square.mine-warning {
+  box-shadow: inset 0 0 14px rgba(255, 200, 0, 0.4);
+  animation: mine-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mine-pulse {
+  0%,
+  100% {
+    box-shadow: inset 0 0 10px rgba(255, 200, 0, 0.3);
+  }
+  50% {
+    box-shadow: inset 0 0 20px rgba(255, 200, 0, 0.6);
+  }
+}
+
+.square.mine-exploded {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* --- King of the Hill --- */
+.square.hill-square {
+  background: radial-gradient(
+    circle,
+    rgba(255, 215, 0, 0.25) 0%,
+    transparent 70%
+  );
+  box-shadow:
+    inset 0 0 20px rgba(255, 215, 0, 0.4),
+    0 0 10px rgba(255, 215, 0, 0.2);
+  animation: hill-pulse 2s ease-in-out infinite;
+}
+
+.square.hill-square.light {
+  background-color: #ddc860;
+}
+
+.square.hill-square.dark {
+  background-color: #b8a040;
+}
+
+@keyframes hill-pulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 16px rgba(255, 215, 0, 0.3),
+      0 0 6px rgba(255, 215, 0, 0.15);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 28px rgba(255, 215, 0, 0.6),
+      0 0 16px rgba(255, 215, 0, 0.3);
+  }
+}
+
+.square.hill-white {
+  box-shadow:
+    inset 0 0 20px rgba(100, 200, 255, 0.6),
+    0 0 12px rgba(100, 200, 255, 0.4);
+  animation: hill-glow-white 1.2s ease-in-out infinite;
+}
+
+.square.hill-white.light {
+  background-color: #a8d8e8;
+}
+
+.square.hill-white.dark {
+  background-color: #78a8c0;
+}
+
+.square.hill-black {
+  box-shadow:
+    inset 0 0 20px rgba(255, 50, 50, 0.6),
+    0 0 12px rgba(255, 50, 50, 0.4);
+  animation: hill-glow-black 1.2s ease-in-out infinite;
+}
+
+.square.hill-black.light {
+  background-color: #e8a8a8;
+}
+
+.square.hill-black.dark {
+  background-color: #c07878;
+}
+
+@keyframes hill-glow-white {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 16px rgba(100, 200, 255, 0.5),
+      0 0 8px rgba(100, 200, 255, 0.3);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 30px rgba(100, 200, 255, 0.8),
+      0 0 18px rgba(100, 200, 255, 0.5);
+  }
+}
+
+@keyframes hill-glow-black {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 16px rgba(255, 50, 50, 0.5),
+      0 0 8px rgba(255, 50, 50, 0.3);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 30px rgba(255, 50, 50, 0.8),
+      0 0 18px rgba(255, 50, 50, 0.5);
+  }
+}
+
+/* --- Gravity --- */
+.board.gravity-active {
+  transform: rotate(var(--gravity-rotation, 0deg));
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Counter-rotate pieces so they stay upright */
+.board.gravity-active .piece-img {
+  transform: rotate(calc(-1 * var(--gravity-rotation, 0deg)));
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Counter-rotate coordinates */
+.board.gravity-active .coord-rank,
+.board.gravity-active .coord-file {
+  transform: rotate(calc(-1 * var(--gravity-rotation, 0deg)));
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Minefield explosion --- */
+.mine-explosion {
+  position: absolute;
+  inset: -50%;
+  z-index: 10;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 200, 0, 0.9) 0%,
+    rgba(255, 100, 0, 0.7) 30%,
+    rgba(255, 50, 0, 0.4) 60%,
+    transparent 80%
+  );
+  animation: mine-boom 0.6s ease-out forwards;
+}
+
+@keyframes mine-boom {
+  0% {
+    transform: scale(0.2);
+    opacity: 1;
+  }
+  40% {
+    transform: scale(1.5);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
 }
 
 /* --- Battle Royale --- */
@@ -114,6 +297,12 @@
 .fog-overlay.fog-bottom {
   bottom: -100px;
   height: calc(50% + 120px);
+}
+
+/* Friendly-side fog: over pieces but transparent enough to see through */
+.fog-overlay.fog-friendly {
+  z-index: 5;
+  opacity: 0.45;
 }
 
 /* Scrolling fog layers using PNG images */
@@ -257,7 +446,7 @@
 .fog-layer-15 {
   background-image: url("/fog/fog5.png");
   opacity: 0.8;
-  top: 5%;
+  top: 25%;
   height: 95%;
 }
 
@@ -315,9 +504,11 @@
 @keyframes fog-enter {
   from {
     opacity: 0;
+    transform: translateY(-40%);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -340,10 +531,7 @@
   z-index: 8;
 }
 
-/* Selected square shows above fog */
-.board.fog-active .square.selected {
-  z-index: 7;
-}
+/* Selected square stays under fog — only move hints show above */
 
 .square.selected {
   background-color: #829769 !important;

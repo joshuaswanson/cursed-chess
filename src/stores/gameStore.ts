@@ -8,6 +8,9 @@ import { PortalChessPlugin } from "../plugins/portalChess";
 import { FogOfWarPlugin } from "../plugins/fogOfWar";
 import { BattleRoyalePlugin } from "../plugins/battleRoyale";
 import { RallyPlugin, PIECE_COST } from "../plugins/rallyTheTroops";
+import { MinefieldPlugin } from "../plugins/minefield";
+import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
+import { GravityPlugin } from "../plugins/gravity";
 
 export interface GameMode {
   name: string;
@@ -19,6 +22,9 @@ export const GAME_MODES: GameMode[] = [
   { name: "FOG OF WAR", create: () => [new FogOfWarPlugin()] },
   { name: "BATTLE ROYALE", create: () => [new BattleRoyalePlugin()] },
   { name: "RALLY THE TROOPS", create: () => [new RallyPlugin()] },
+  { name: "MINEFIELD", create: () => [new MinefieldPlugin()] },
+  { name: "KING OF THE HILL", create: () => [new KingOfTheHillPlugin()] },
+  { name: "GRAVITY", create: () => [new GravityPlugin()] },
 ];
 
 /** Get normalized sliding direction from origin to target, or null if not a straight line */
@@ -64,7 +70,7 @@ export interface GameStore {
 
   // Announcement
   announcement: string | null;
-  announcementType: "mode" | "intro";
+  announcementType: "mode" | "intro" | "hint";
   paused: boolean;
 
   // Timer
@@ -93,12 +99,13 @@ export interface GameStore {
   showAnnouncement: (
     text: string,
     durationMs?: number,
-    type?: "mode" | "intro",
+    type?: "mode" | "intro" | "hint",
   ) => void;
   tickTimer: () => void;
   expireTimer: () => void;
   tickModeTimer: () => void;
   tickAutonomous: () => void;
+  resolveExplosion: (square: SquareIndex) => void;
   switchMode: () => void;
 
   // Helpers
@@ -126,10 +133,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   scoreBlack: 0,
 
   announcement: null,
-  announcementType: "mode" as const,
+  announcementType: "mode" as "mode" | "intro" | "hint",
   paused: false,
 
-  timeWhite: 15,
+  timeWhite: 10,
   timeBlack: 1,
   moveTimerActive: false,
 
@@ -271,7 +278,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     pluginManager.invokeOnAfterMove(processedMove);
     pluginManager.invokeOnTurnEnd(previousTurn);
 
-    const status = game.getStatus();
+    const rawStatus = game.getStatus();
+    const status = pluginManager.invokeModifyGameStatus(rawStatus);
 
     // Compute portal animation info if this was a portal move
     let lastPortalMove: PortalMoveInfo | null = null;
@@ -375,11 +383,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
       timeWhite: isNormalChess
         ? 999
         : game.turn === Color.White
-          ? 15
+          ? 10
           : get().timeWhite,
       timeBlack: 1,
       moveTimerActive: true,
     });
+
+    // Battle royale 4x4: cap mode time to 5 seconds
+    const brOverlay = pluginManager
+      .getAllOverlays()
+      .find((o) => o.type === "battle-royale");
+    if (brOverlay) {
+      const brData = brOverlay.data as { shrinkRing: number } | undefined;
+      if (brData && brData.shrinkRing >= 2 && get().modeTimeRemaining > 5) {
+        set({ modeTimeRemaining: 5 });
+      }
+    }
 
     // Check for game-ending status — award point and move on
     if (
@@ -555,7 +574,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   showAnnouncement: (
     text: string,
     durationMs = 2000,
-    type: "mode" | "intro" = "mode",
+    type: "mode" | "intro" | "hint" = "mode",
   ) => {
     set({ announcement: text, announcementType: type, paused: true });
     setTimeout(() => {
@@ -576,27 +595,38 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   expireTimer: () => {
-    const { game } = get();
+    const { game, pluginManager } = get();
     // Random move when time expires
-    const allMoves: { from: SquareIndex; to: SquareIndex }[] = [];
+    const allMoves: {
+      from: SquareIndex;
+      to: SquareIndex;
+      isPortal: boolean;
+    }[] = [];
     for (let rank = 0; rank < 8; rank++) {
       for (let file = 0; file < 8; file++) {
         const sq = ((rank << 4) | file) as SquareIndex;
         const piece = game.board.get(sq);
         if (piece && piece.color === game.turn) {
           const moves = game.getLegalMoves(sq);
-          const modified = get().pluginManager.invokeModifyLegalMoves(
+          const modified = pluginManager.invokeModifyLegalMoves(
             moves,
             game.turn,
           );
           for (const m of modified) {
-            allMoves.push({ from: sq, to: m.to });
+            allMoves.push({
+              from: sq,
+              to: m.to,
+              isPortal: !!(m.flags & MoveFlag.Portal),
+            });
           }
         }
       }
     }
     if (allMoves.length > 0) {
-      const pick = allMoves[Math.floor(Math.random() * allMoves.length)];
+      // In portal mode, strongly prefer portal moves to showcase the mechanic
+      const portalMoves = allMoves.filter((m) => m.isPortal);
+      const pool = portalMoves.length > 0 ? portalMoves : allMoves;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
       get().makeMove(pick.from, pick.to);
     }
   },
@@ -634,6 +664,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
+  resolveExplosion: (square: SquareIndex) => {
+    const { pluginManager, game } = get();
+    const minePlugin = pluginManager
+      .getPlugins()
+      .find((p) => p.id === "minefield") as MinefieldPlugin | undefined;
+    if (minePlugin) {
+      minePlugin.resolveExplosion({ game, board: game.board }, square);
+      // Force re-render
+      set({ turn: game.turn });
+    }
+  },
+
   switchMode: () => {
     const { currentModeIndex, game } = get();
     // -1 = Normal Chess (initial only), transition to first chaos mode
@@ -651,23 +693,83 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     // Fog of war: show announcement briefly, then pause while fog rolls in
     const isFog = pluginManager.getPlugins().some((p) => p.id === "fog-of-war");
+    const isPortal = pluginManager
+      .getPlugins()
+      .some((p) => p.id === "portal-chess");
+    const isBattleRoyale = pluginManager
+      .getPlugins()
+      .some((p) => p.id === "battle-royale");
+    const isRally = pluginManager.getPlugins().some((p) => p.id === "rally");
 
     set({
       currentModeIndex: nextIndex,
-      modeTimeRemaining: 45,
+      modeTimeRemaining: isRally ? 75 : 45,
       pluginManager,
       selectedSquare: null,
       legalMoveSquares: [],
       hasPortalMoves: false,
       portalEntrance: null,
       moveTimerActive: true,
-      timeWhite: 15,
+      timeWhite: 10,
       timeBlack: 1,
     });
 
     get().showAnnouncement(mode.name);
 
+    if (isPortal) {
+      setTimeout(() => {
+        get().showAnnouncement(
+          "PIECES TELEPORT THROUGH PORTALS!",
+          2500,
+          "hint",
+        );
+      }, 2200);
+    }
+
+    if (isBattleRoyale) {
+      setTimeout(() => {
+        get().showAnnouncement("MOVE AWAY FROM EDGES!", 2500, "hint");
+      }, 2200);
+    }
+
+    if (isRally) {
+      setTimeout(() => {
+        get().showAnnouncement("DRAG AND DROP TO DEPLOY!", 2500, "hint");
+      }, 2200);
+    }
+
+    const isMinefield = pluginManager
+      .getPlugins()
+      .some((p) => p.id === "minefield");
+    const isKingOfHill = pluginManager
+      .getPlugins()
+      .some((p) => p.id === "king-of-hill");
+    const isGravity = pluginManager
+      .getPlugins()
+      .some((p) => p.id === "gravity");
+
+    if (isMinefield) {
+      setTimeout(() => {
+        get().showAnnouncement("WATCH YOUR STEP!", 2500, "hint");
+      }, 2200);
+    }
+
+    if (isKingOfHill) {
+      setTimeout(() => {
+        get().showAnnouncement("CONTROL THE CENTER!", 2500, "hint");
+      }, 2200);
+    }
+
+    if (isGravity) {
+      setTimeout(() => {
+        get().showAnnouncement("GRAVITY SHIFTS EVERY FEW TURNS!", 2500, "hint");
+      }, 2200);
+    }
+
     if (isFog) {
+      setTimeout(() => {
+        get().showAnnouncement("THE ENEMY HIDES IN THE FOG!", 2500, "hint");
+      }, 2200);
       // Keep the game paused after the announcement ends while fog rolls in
       setTimeout(() => {
         set({ paused: true });

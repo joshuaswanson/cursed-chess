@@ -86,6 +86,7 @@ export function Board() {
     timeWhite,
     turn,
     deployPieceType,
+    resolveExplosion,
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -111,6 +112,12 @@ export function Board() {
   const prevPortalColors = useRef<Map<number, string>>(new Map());
   const [fogExiting, setFogExiting] = useState(false);
   const prevFog = useRef(false);
+  const [explosions, setExplosions] = useState<Set<number>>(new Set());
+  const prevExploded = useRef<Set<number>>(new Set());
+  const [gravityAnims, setGravityAnims] = useState<
+    Map<number, { offsetX: number; offsetY: number }>
+  >(new Map());
+  const prevGravityKey = useRef("");
 
   // Pendulum physics for drag swing
   const swingRef = useRef({
@@ -502,8 +509,11 @@ export function Board() {
   const portalSquares = new Map<number, string>();
   const portalPairs: { a: SquareIndex; b: SquareIndex; color: string }[] = [];
   let hasFogOverlay = false;
+  let hasRallyOverlay = false;
   let shrinkRing = 0;
   let dangerProgress = 0;
+  let gravityDirection: string | null = null;
+  let gravityMovesFromOverlay: { from: number; to: number }[] = [];
   for (const overlay of overlays) {
     if (overlay.type === "portal" && overlay.squares.length === 2) {
       const color = (overlay.data as { color: string })?.color ?? "blue";
@@ -514,6 +524,17 @@ export function Board() {
     }
     if (overlay.type === "fog-overlay") {
       hasFogOverlay = true;
+    }
+    if (overlay.type === "rally-resources") {
+      hasRallyOverlay = true;
+    }
+    if (overlay.type === "gravity") {
+      const gData = overlay.data as {
+        direction: string;
+        moves?: { from: number; to: number }[];
+      };
+      gravityDirection = gData?.direction ?? null;
+      gravityMovesFromOverlay = gData?.moves ?? [];
     }
     if (overlay.type === "battle-royale") {
       const brData = overlay.data as {
@@ -573,6 +594,67 @@ export function Board() {
     prevFog.current = hasFogOverlay;
   }, [hasFogOverlay]);
 
+  // Detect mine pending explosions from overlay data
+  const minefieldOverlay = overlays.find((o) => o.type === "minefield");
+  const pendingExplosionSquares = minefieldOverlay?.squares ?? [];
+  const pendingKey = pendingExplosionSquares.join(",");
+
+  useEffect(() => {
+    if (pendingExplosionSquares.length === 0) return;
+
+    // Wait for slide animation to finish, then show explosion
+    const slideTimer = setTimeout(() => {
+      setExplosions(new Set(pendingExplosionSquares));
+
+      // After explosion animation, remove the pieces
+      const resolveTimer = setTimeout(() => {
+        for (const sq of pendingExplosionSquares) {
+          resolveExplosion(sq);
+        }
+        setExplosions(new Set());
+      }, 600);
+
+      return () => clearTimeout(resolveTimer);
+    }, 350);
+
+    return () => clearTimeout(slideTimer);
+  }, [pendingKey]);
+
+  // Gravity piece slide animation
+  const gravityMoveKey = gravityMovesFromOverlay
+    .map((m) => `${m.from}-${m.to}`)
+    .join(",");
+  useEffect(() => {
+    if (gravityMoveKey === prevGravityKey.current || gravityMoveKey === "")
+      return;
+    prevGravityKey.current = gravityMoveKey;
+
+    const sqSize = boardRef.current
+      ? boardRef.current.getBoundingClientRect().width / 8
+      : 72;
+
+    // Set initial offsets (pieces start visually at old positions)
+    const offsets = new Map<number, { offsetX: number; offsetY: number }>();
+    for (const { from, to } of gravityMovesFromOverlay) {
+      const fromCol = flipped ? 7 - fileOf(from) : fileOf(from);
+      const fromRow = flipped ? rankOf(from) : 7 - rankOf(from);
+      const toCol = flipped ? 7 - fileOf(to) : fileOf(to);
+      const toRow = flipped ? rankOf(to) : 7 - rankOf(to);
+      offsets.set(to, {
+        offsetX: (fromCol - toCol) * sqSize,
+        offsetY: (fromRow - toRow) * sqSize,
+      });
+    }
+    setGravityAnims(offsets);
+
+    // Next frame: clear offsets so CSS transition animates pieces to final positions
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setGravityAnims(new Map());
+      });
+    });
+  }, [gravityMoveKey, flipped]);
+
   // Fog always covers the enemy half (human plays White, enemy = top)
   const showFog = hasFogOverlay || fogExiting;
   const fogOnTop = showFog && !flipped;
@@ -619,11 +701,15 @@ export function Board() {
       if (isCheck) className += " in-check";
       if (drag?.isDragging && isLegalTarget) className += " drag-target";
 
+      // Deploy zone indicator: player's half during rally mode
+      if (hasRallyOverlay && !isDead && rank <= 3) className += " deploy-zone";
+
       // Deploy target highlight: empty square on player's half (ranks 0-3)
       const isDeployTarget = deployPieceType && !piece && !isDead && rank <= 3;
       if (isDeployTarget) className += " deploy-target";
 
       // Inline style for slide + rock animation
+      const gravityOffset = gravityAnims.get(sq);
       const pieceStyle: React.CSSProperties | undefined = isAnimating
         ? ({
             "--slide-from-x": `${anim.offsetX}px`,
@@ -632,7 +718,12 @@ export function Board() {
             animation:
               "slide-in 0.2s ease-out forwards, rock-settle 0.35s ease-in-out 0.2s",
           } as React.CSSProperties)
-        : undefined;
+        : gravityOffset
+          ? {
+              transform: `translate(${gravityOffset.offsetX}px, ${gravityOffset.offsetY}px)`,
+              transition: "transform 0.5s ease-in-out",
+            }
+          : undefined;
 
       const isClosingPortal = closingPortals.has(sq);
       const isOpeningPortal = openingPortals.has(sq);
@@ -672,6 +763,8 @@ export function Board() {
               onPointerDown={(e) => handlePointerDown(e, sq, piece)}
             />
           )}
+
+          {explosions.has(sq) && <div className="mine-explosion" />}
         </div>,
       );
     }
@@ -878,17 +971,37 @@ export function Board() {
       ? Math.ceil(timeWhite)
       : null;
 
+  const GRAVITY_ANGLES: Record<string, number> = {
+    south: 0,
+    sw: 45,
+    west: 90,
+    nw: 135,
+    north: 180,
+    ne: -135,
+    east: -90,
+    se: -45,
+  };
+  const gravityRotation =
+    gravityDirection !== null
+      ? (GRAVITY_ANGLES[gravityDirection] ?? null)
+      : null;
+
   return (
     <div
-      className={`board${showFog ? " fog-active" : ""}`}
+      className={`board${showFog ? " fog-active" : ""}${portalPairs.length > 0 ? " portal-active" : ""}${gravityDirection ? " gravity-active" : ""}`}
       ref={boardRef}
       style={
-        shrinkRing > 0 || dangerProgress > 0
-          ? ({
-              "--shrink-ring": shrinkRing,
-              "--danger-speed": `${Math.max(0.2, 1 - dangerProgress * 0.8)}s`,
-            } as React.CSSProperties)
-          : undefined
+        {
+          ...(shrinkRing > 0 || dangerProgress > 0
+            ? {
+                "--shrink-ring": shrinkRing,
+                "--danger-speed": `${Math.max(0.2, 1 - dangerProgress * 0.8)}s`,
+              }
+            : {}),
+          ...(gravityRotation !== null
+            ? { "--gravity-rotation": `${gravityRotation}deg` }
+            : {}),
+        } as React.CSSProperties
       }
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -897,28 +1010,37 @@ export function Board() {
       {portalArrows}
       {portalAnimElement}
       {showFog && (
-        <div
-          className={`fog-overlay ${fogOnTop ? "fog-top" : "fog-bottom"}${fogExiting ? " fog-exit" : ""}`}
-        >
-          <div className="fog-layer fog-layer-1" />
-          <div className="fog-layer fog-layer-2" />
-          <div className="fog-layer fog-layer-3" />
-          <div className="fog-layer fog-layer-4" />
-          <div className="fog-layer fog-layer-5" />
-          <div className="fog-layer fog-layer-6" />
-          <div className="fog-layer fog-layer-7" />
-          <div className="fog-layer fog-layer-8" />
-          <div className="fog-layer fog-layer-9" />
-          <div className="fog-layer fog-layer-10" />
-          <div className="fog-layer fog-layer-11" />
-          <div className="fog-layer fog-layer-12" />
-          <div className="fog-layer-static fog-layer-13" />
-          <div className="fog-layer-static fog-layer-14" />
-          <div className="fog-layer-static fog-layer-15" />
-          <div className="fog-layer-static fog-layer-16" />
-          <div className="fog-layer-static fog-layer-17" />
-          <div className="fog-layer-static fog-layer-18" />
-        </div>
+        <>
+          <div
+            className={`fog-overlay ${fogOnTop ? "fog-top" : "fog-bottom"}${fogExiting ? " fog-exit" : ""}`}
+          >
+            <div className="fog-layer fog-layer-1" />
+            <div className="fog-layer fog-layer-2" />
+            <div className="fog-layer fog-layer-3" />
+            <div className="fog-layer fog-layer-4" />
+            <div className="fog-layer fog-layer-5" />
+            <div className="fog-layer fog-layer-6" />
+            <div className="fog-layer fog-layer-7" />
+            <div className="fog-layer fog-layer-8" />
+            <div className="fog-layer fog-layer-9" />
+            <div className="fog-layer fog-layer-10" />
+            <div className="fog-layer fog-layer-11" />
+            <div className="fog-layer fog-layer-12" />
+            <div className="fog-layer-static fog-layer-13" />
+            <div className="fog-layer-static fog-layer-14" />
+            <div className="fog-layer-static fog-layer-15" />
+            <div className="fog-layer-static fog-layer-16" />
+            <div className="fog-layer-static fog-layer-17" />
+          </div>
+          <div
+            className={`fog-overlay fog-friendly ${fogOnTop ? "fog-bottom" : "fog-top"}${fogExiting ? " fog-exit" : ""}`}
+          >
+            <div className="fog-layer fog-layer-1" />
+            <div className="fog-layer fog-layer-3" />
+            <div className="fog-layer fog-layer-5" />
+            <div className="fog-layer fog-layer-8" />
+          </div>
+        </>
       )}
       {dragElement}
       {returnElement}

@@ -9,12 +9,12 @@ import type {
 import { rankOf } from "../utils/squareUtils";
 
 const PIECE_SPEED: Record<string, number> = {
-  [PieceType.Pawn]: 6000,
-  [PieceType.Knight]: 5000,
-  [PieceType.Bishop]: 5000,
-  [PieceType.Rook]: 7000,
-  [PieceType.Queen]: 9000,
-  [PieceType.King]: 12000,
+  [PieceType.Pawn]: 10000,
+  [PieceType.Knight]: 8000,
+  [PieceType.Bishop]: 8000,
+  [PieceType.Rook]: 12000,
+  [PieceType.Queen]: 15000,
+  [PieceType.King]: 4000,
 };
 
 export const PIECE_COST: Record<string, number> = {
@@ -60,10 +60,10 @@ export class RallyPlugin implements ModePlugin {
     ctx: PluginContext,
     tickMs: number,
   ): { from: SquareIndex; to: SquareIndex } | null {
-    // Accumulate resources (+1 per second)
+    // Accumulate resources (+1 per 1.5 seconds)
     this.resourceAccumulator += tickMs;
-    while (this.resourceAccumulator >= 1000) {
-      this.resourceAccumulator -= 1000;
+    while (this.resourceAccumulator >= 1500) {
+      this.resourceAccumulator -= 1500;
       this.resourceWhite = Math.min(10, this.resourceWhite + 1);
       this.resourceBlack = Math.min(10, this.resourceBlack + 1);
     }
@@ -90,6 +90,15 @@ export class RallyPlugin implements ModePlugin {
         if (moves.length > 0) {
           ready.push({ sq, moves });
         }
+      }
+    }
+
+    // AI deployment: Black spends resources to deploy pieces
+    if (currentColor === Color.Black && this.resourceBlack >= 3) {
+      // Deploy with some probability each tick
+      if (Math.random() < 0.15) {
+        const deployed = this.aiDeploy(ctx);
+        if (deployed) return null; // deployment doesn't count as a move
       }
     }
 
@@ -182,5 +191,45 @@ export class RallyPlugin implements ModePlugin {
     }
 
     return moves[Math.floor(Math.random() * moves.length)];
+  }
+
+  private aiDeploy(ctx: PluginContext): boolean {
+    // Pick a piece type the AI can afford, weighted toward cheaper pieces
+    const options = [
+      PieceType.Pawn,
+      PieceType.Pawn,
+      PieceType.Pawn,
+      PieceType.Knight,
+      PieceType.Bishop,
+      PieceType.Rook,
+      PieceType.Queen,
+    ].filter((t) => PIECE_COST[t] <= this.resourceBlack);
+
+    if (options.length === 0) return false;
+
+    const pieceType = options[Math.floor(Math.random() * options.length)];
+
+    // Find empty squares on Black's half (ranks 4-7)
+    const candidates: SquareIndex[] = [];
+    for (let rank = 4; rank < 8; rank++) {
+      for (let file = 0; file < 8; file++) {
+        const sq = ((rank << 4) | file) as SquareIndex;
+        if (!ctx.board.get(sq)) {
+          candidates.push(sq);
+        }
+      }
+    }
+
+    if (candidates.length === 0) return false;
+
+    const target = candidates[Math.floor(Math.random() * candidates.length)];
+    ctx.board.put(target, { type: pieceType, color: Color.Black });
+    this.resourceBlack -= PIECE_COST[pieceType];
+
+    // Set cooldown for newly deployed piece
+    const speed = PIECE_SPEED[pieceType] ?? 2000;
+    this.cooldowns.set(target, speed);
+
+    return true;
   }
 }

@@ -164,3 +164,56 @@
     transform: scale(1.04);
   }
 }
+
+/* --- Hint variant (tip/warning text) --- */
+
+.announcement-overlay.hint {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.announcement-banner.hint {
+  background: rgba(20, 10, 40, 0.85);
+  border: none;
+  border-image: none;
+  padding: 20px 48px;
+  border-radius: 8px;
+  max-width: 600px;
+  animation: hint-fade-in 0.5s ease-out forwards;
+}
+
+.announcement-banner.hint.closing {
+  animation: hint-fade-out 0.35s ease-in forwards;
+}
+
+.announcement-text.hint {
+  font-size: 32px;
+  letter-spacing: 3px;
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: #eeddff;
+  background-clip: unset;
+  filter: drop-shadow(0 0 12px rgba(187, 102, 255, 0.4));
+  animation: none;
+}
+
+@keyframes hint-fade-in {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes hint-fade-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+}

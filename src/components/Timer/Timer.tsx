@@ -13,7 +13,10 @@ export function Timer() {
     tickModeTimer,
     tickAutonomous,
     pluginManager,
+    currentModeIndex,
   } = useGameStore();
+
+  const isNormalChess = currentModeIndex < 0;
 
   // Game-over is now transient — handleGameEnd resets the board
   const isGameOver =
@@ -47,7 +50,7 @@ export function Timer() {
 
   const whiteUrgent = !isAutonomous && turn === Color.White && timeWhite <= 3;
 
-  if (isAutonomous) {
+  if (isAutonomous || isNormalChess) {
     return <div className="timer-container" />;
   }
 
