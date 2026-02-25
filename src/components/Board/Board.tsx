@@ -672,6 +672,7 @@ export function Board() {
       const isLastMoveSquare =
         lastMove && (sq === lastMove.from || sq === lastMove.to);
       const isCheck =
+        gravityFalls.size === 0 &&
         piece?.type === PieceType.King &&
         piece.color === game.turn &&
         (status === "check" || status === "checkmate");

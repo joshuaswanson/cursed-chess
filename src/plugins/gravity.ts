@@ -63,6 +63,7 @@ export class GravityPlugin implements ModePlugin {
   private direction: GravityDirection = "south";
   private angle = 0;
   private turnCount = 0;
+  private shiftCount = 0;
   private shiftInterval = 4;
   lastGravityMoves: { from: SquareIndex; to: SquareIndex }[] = [];
 
@@ -75,6 +76,7 @@ export class GravityPlugin implements ModePlugin {
     this.direction = "south";
     this.angle = 0;
     this.turnCount = 0;
+    this.shiftCount = 0;
   }
 
   onTurnEnd(ctx: PluginContext, color: Color): void {
@@ -82,9 +84,17 @@ export class GravityPlugin implements ModePlugin {
     if (color === Color.Black) {
       this.turnCount++;
       if (this.turnCount % this.shiftInterval === 0) {
-        // Rotate 45 or 90 degrees, clockwise or counter-clockwise
-        const step = Math.random() < 0.5 ? 45 : 90;
+        // First 2 shifts: 90°, then a 45°, then random 45/90
+        let step: number;
+        if (this.shiftCount < 2) {
+          step = 90;
+        } else if (this.shiftCount === 2) {
+          step = 45;
+        } else {
+          step = Math.random() < 0.5 ? 45 : 90;
+        }
         const sign = Math.random() < 0.5 ? 1 : -1;
+        this.shiftCount++;
         this.angle += step * sign;
         this.direction = this.angleToDirection(this.angle);
         this.applyGravity(ctx);
