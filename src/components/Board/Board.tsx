@@ -114,7 +114,7 @@ export function Board() {
   const prevFog = useRef(false);
   const [explosions, setExplosions] = useState<Set<number>>(new Set());
   const prevExploded = useRef<Set<number>>(new Set());
-  const [gravityAnims, setGravityAnims] = useState<
+  const [gravityFalls, setGravityFalls] = useState<
     Map<number, { offsetX: number; offsetY: number }>
   >(new Map());
   const prevGravityKey = useRef("");
@@ -513,6 +513,7 @@ export function Board() {
   let shrinkRing = 0;
   let dangerProgress = 0;
   let gravityDirection: string | null = null;
+  let gravityAngle: number | null = null;
   let gravityMovesFromOverlay: { from: number; to: number }[] = [];
   for (const overlay of overlays) {
     if (overlay.type === "portal" && overlay.squares.length === 2) {
@@ -531,9 +532,11 @@ export function Board() {
     if (overlay.type === "gravity") {
       const gData = overlay.data as {
         direction: string;
+        angle?: number;
         moves?: { from: number; to: number }[];
       };
       gravityDirection = gData?.direction ?? null;
+      gravityAngle = gData?.angle ?? null;
       gravityMovesFromOverlay = gData?.moves ?? [];
     }
     if (overlay.type === "battle-royale") {
@@ -621,10 +624,14 @@ export function Board() {
   }, [pendingKey]);
 
   // Gravity piece slide animation
+  // Uses CSS `translate` (separate from `transform`) so it doesn't conflict with
+  // the counter-rotation or normal move animations.
+  // CSS animation with delay: pieces hold at old positions during board rotation,
+  // then slide to new positions after rotation completes.
   const gravityMoveKey = gravityMovesFromOverlay
     .map((m) => `${m.from}-${m.to}`)
     .join(",");
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (gravityMoveKey === prevGravityKey.current || gravityMoveKey === "")
       return;
     prevGravityKey.current = gravityMoveKey;
@@ -633,7 +640,6 @@ export function Board() {
       ? boardRef.current.getBoundingClientRect().width / 8
       : 72;
 
-    // Set initial offsets (pieces start visually at old positions)
     const offsets = new Map<number, { offsetX: number; offsetY: number }>();
     for (const { from, to } of gravityMovesFromOverlay) {
       const fromCol = flipped ? 7 - fileOf(from) : fileOf(from);
@@ -645,14 +651,12 @@ export function Board() {
         offsetY: (fromRow - toRow) * sqSize,
       });
     }
-    setGravityAnims(offsets);
 
-    // Next frame: clear offsets so CSS transition animates pieces to final positions
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setGravityAnims(new Map());
-      });
-    });
+    setGravityFalls(offsets);
+
+    // Clean up after rotation (1s) + slide (0.6s) + buffer
+    const timer = setTimeout(() => setGravityFalls(new Map()), 1800);
+    return () => clearTimeout(timer);
   }, [gravityMoveKey, flipped]);
 
   // Fog always covers the enemy half (human plays White, enemy = top)
@@ -709,7 +713,7 @@ export function Board() {
       if (isDeployTarget) className += " deploy-target";
 
       // Inline style for slide + rock animation
-      const gravityOffset = gravityAnims.get(sq);
+      const gravFall = gravityFalls.get(sq);
       const pieceStyle: React.CSSProperties | undefined = isAnimating
         ? ({
             "--slide-from-x": `${anim.offsetX}px`,
@@ -718,11 +722,12 @@ export function Board() {
             animation:
               "slide-in 0.2s ease-out forwards, rock-settle 0.35s ease-in-out 0.2s",
           } as React.CSSProperties)
-        : gravityOffset
-          ? {
-              transform: `translate(${gravityOffset.offsetX}px, ${gravityOffset.offsetY}px)`,
-              transition: "transform 0.5s ease-in-out",
-            }
+        : gravFall
+          ? ({
+              "--grav-x": `${gravFall.offsetX}px`,
+              "--grav-y": `${gravFall.offsetY}px`,
+              animation: "gravity-fall 0.6s ease-in-out 1.05s both",
+            } as React.CSSProperties)
           : undefined;
 
       const isClosingPortal = closingPortals.has(sq);
@@ -971,20 +976,7 @@ export function Board() {
       ? Math.ceil(timeWhite)
       : null;
 
-  const GRAVITY_ANGLES: Record<string, number> = {
-    south: 0,
-    sw: 45,
-    west: 90,
-    nw: 135,
-    north: 180,
-    ne: -135,
-    east: -90,
-    se: -45,
-  };
-  const gravityRotation =
-    gravityDirection !== null
-      ? (GRAVITY_ANGLES[gravityDirection] ?? null)
-      : null;
+  const gravityRotation = gravityAngle;
 
   return (
     <div
@@ -999,7 +991,10 @@ export function Board() {
               }
             : {}),
           ...(gravityRotation !== null
-            ? { "--gravity-rotation": `${gravityRotation}deg` }
+            ? {
+                "--gravity-rotation": `${gravityRotation}deg`,
+                transform: `rotate(${gravityRotation}deg)`,
+              }
             : {}),
         } as React.CSSProperties
       }

@@ -1,15 +1,28 @@
-import { useEffect } from "react";
-import { useGameStore } from "../../stores/gameStore";
+import { useEffect, useState } from "react";
+import { useGameStore, GAME_MODES } from "../../stores/gameStore";
 import "./GameControls.css";
 
 export function GameControls() {
   const { newGame, togglePause, paused, currentModeIndex, switchMode } =
     useGameStore();
+  const [devMode, setDevMode] = useState(false);
 
   // Start with normal chess on mount
   useEffect(() => {
     newGame();
   }, [newGame]);
+
+  // Toggle dev mode with Ctrl+Shift+D
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === "D") {
+        e.preventDefault();
+        setDevMode((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
     <div className="game-controls">
@@ -24,9 +37,9 @@ export function GameControls() {
             newGame();
           }}
           className="control-btn"
-          title="New Game"
+          title="Quit & Restart"
         >
-          &#8635;
+          QUIT
         </button>
         <button
           onClick={togglePause}
@@ -45,6 +58,25 @@ export function GameControls() {
           </button>
         )}
       </div>
+      {devMode && (
+        <div className="dev-panel">
+          <div className="dev-label">DEV MODE</div>
+          <div className="dev-modes">
+            {GAME_MODES.map((mode, i) => (
+              <button
+                key={mode.name}
+                onClick={() => {
+                  useGameStore.setState({ currentModeIndex: i - 1 });
+                  useGameStore.getState().switchMode();
+                }}
+                className={`dev-mode-btn${i === currentModeIndex ? " active" : ""}`}
+              >
+                {mode.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

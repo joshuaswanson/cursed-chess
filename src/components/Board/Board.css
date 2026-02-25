@@ -197,21 +197,31 @@
 
 /* --- Gravity --- */
 .board.gravity-active {
-  transform: rotate(var(--gravity-rotation, 0deg));
   transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Counter-rotate pieces so they stay upright */
+/* Counter-rotate pieces so they stay upright (uses `rotate` property, not `transform`,
+   so it doesn't conflict with move animations that use `transform`) */
 .board.gravity-active .piece-img {
-  transform: rotate(calc(-1 * var(--gravity-rotation, 0deg)));
-  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+  rotate: calc(-1 * var(--gravity-rotation, 0deg));
+  transition: rotate 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Counter-rotate coordinates */
 .board.gravity-active .coord-rank,
 .board.gravity-active .coord-file {
-  transform: rotate(calc(-1 * var(--gravity-rotation, 0deg)));
-  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+  rotate: calc(-1 * var(--gravity-rotation, 0deg));
+  transition: rotate 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Gravity fall: slides pieces from old position to new after board rotation */
+@keyframes gravity-fall {
+  from {
+    translate: var(--grav-x, 0) var(--grav-y, 0);
+  }
+  to {
+    translate: 0 0;
+  }
 }
 
 /* --- Minefield explosion --- */
@@ -620,13 +630,15 @@
 }
 
 /* --- Slide-in animation (click-to-move) --- */
+/* Uses `translate` (not `transform`) so it isn't affected by the
+   counter-rotation `rotate` property during gravity mode. */
 
 @keyframes slide-in {
   from {
-    transform: translate(var(--slide-from-x), var(--slide-from-y));
+    translate: var(--slide-from-x) var(--slide-from-y);
   }
   to {
-    transform: translate(0, 0);
+    translate: 0 0;
   }
 }
 
