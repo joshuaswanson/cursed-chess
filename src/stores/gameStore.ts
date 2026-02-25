@@ -1,9 +1,25 @@
 import { create } from "zustand";
 import { Game, Color, PieceType, GameStatus, MoveFlag } from "../engine";
-import type { SquareIndex, Piece, MoveRecord, Move } from "../engine";
+import type { SquareIndex, Piece, MoveRecord } from "../engine";
 import { PluginManager } from "../plugins/manager";
 import type { ModePlugin } from "../plugins/types";
-import { fileOf, rankOf } from "../utils/squareUtils";
+import { fileOf, rankOf, isValidSquare } from "../utils/squareUtils";
+import { PortalChessPlugin } from "../plugins/portalChess";
+import { FogOfWarPlugin } from "../plugins/fogOfWar";
+import { BattleRoyalePlugin } from "../plugins/battleRoyale";
+import { RallyPlugin } from "../plugins/rallyTheTroops";
+
+export interface GameMode {
+  name: string;
+  create: () => ModePlugin[];
+}
+
+export const GAME_MODES: GameMode[] = [
+  { name: "PORTAL CHESS", create: () => [new PortalChessPlugin()] },
+  { name: "FOG OF WAR", create: () => [new FogOfWarPlugin()] },
+  { name: "BATTLE ROYALE", create: () => [new BattleRoyalePlugin()] },
+  { name: "RALLY THE TROOPS", create: () => [new RallyPlugin()] },
+];
 
 /** Get normalized sliding direction from origin to target, or null if not a straight line */
 function slidingDirection(
@@ -20,8 +36,7 @@ function slidingDirection(
 export interface PortalMoveInfo {
   piece: Piece;
   from: SquareIndex;
-  entrance: SquareIndex;
-  exit: SquareIndex;
+  transits: { entrance: SquareIndex; exit: SquareIndex }[];
   landing: SquareIndex;
 }
 
@@ -45,12 +60,17 @@ export interface GameStore {
 
   // Announcement
   announcement: string | null;
+  announcementType: "mode" | "intro";
   paused: boolean;
 
   // Timer
   timeWhite: number;
   timeBlack: number;
   moveTimerActive: boolean;
+
+  // Mode cycling
+  currentModeIndex: number;
+  modeTimeRemaining: number;
 
   // Actions
   selectSquare: (square: SquareIndex) => void;
@@ -59,9 +79,17 @@ export interface GameStore {
   newGame: (fen?: string, plugins?: ModePlugin[]) => void;
   flipBoard: () => void;
   clearSelection: () => void;
-  showAnnouncement: (text: string, durationMs?: number) => void;
+  togglePause: () => void;
+  showAnnouncement: (
+    text: string,
+    durationMs?: number,
+    type?: "mode" | "intro",
+  ) => void;
   tickTimer: () => void;
   expireTimer: () => void;
+  tickModeTimer: () => void;
+  tickAutonomous: () => void;
+  switchMode: () => void;
 
   // Helpers
   getPiece: (square: SquareIndex) => Piece | null;
@@ -85,15 +113,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
   flipped: false,
 
   announcement: null,
+  announcementType: "mode" as const,
   paused: false,
 
   timeWhite: 15,
-  timeBlack: 15,
+  timeBlack: 1,
   moveTimerActive: false,
+
+  currentModeIndex: -1,
+  modeTimeRemaining: 60,
 
   selectSquare: (square: SquareIndex) => {
     const state = get();
     if (state.paused) return;
+    // Block all interaction during autonomous mode
+    if (state.pluginManager.isAutonomous()) return;
+    // Human plays White only — block interaction during Black's turn
+    if (state.game.turn === Color.Black) return;
     const { game, selectedSquare, legalMoveSquares } = state;
 
     // If clicking a legal move target, make the move
@@ -221,61 +257,89 @@ export const useGameStore = create<GameStore>((set, get) => ({
     let lastPortalMove: PortalMoveInfo | null = null;
     if (processedMove.flags & MoveFlag.Portal) {
       const overlays = pluginManager.getAllOverlays();
-      for (const portalOverlay of overlays) {
-        if (
-          portalOverlay.type !== "portal" ||
-          portalOverlay.squares.length !== 2
-        )
-          continue;
-        const [a, b] = portalOverlay.squares;
-        let entrance: SquareIndex | null = null;
-        let exit: SquareIndex | null = null;
+      const landing = processedMove.to;
 
-        const landing = processedMove.to;
+      // Build a lookup for portal squares
+      const portalExitMap = new Map<number, SquareIndex>();
+      for (const po of overlays) {
+        if (po.type !== "portal" || po.squares.length !== 2) continue;
+        const [a, b] = po.squares;
+        portalExitMap.set(a, b);
+        portalExitMap.set(b, a);
+      }
 
-        // 1. User clicked a portal square directly
-        if (to === a) {
-          entrance = a;
-          exit = b;
-        } else if (to === b) {
-          entrance = b;
-          exit = a;
-          // 2. Piece landed on a portal square (capture at exit)
-        } else if (landing === a) {
-          entrance = b;
-          exit = a;
-        } else if (landing === b) {
-          entrance = a;
-          exit = b;
-        } else {
-          // 3. Continuation move — verify direction is consistent:
-          //    from→entrance and exit→landing must be the same direction
-          const dirFromA = slidingDirection(from, a);
-          const dirBToLand = slidingDirection(b, landing);
-          if (dirFromA !== null && dirFromA === dirBToLand) {
-            entrance = a;
-            exit = b;
-          } else {
-            const dirFromB = slidingDirection(from, b);
-            const dirAToLand = slidingDirection(a, landing);
-            if (dirFromB !== null && dirFromB === dirAToLand) {
-              entrance = b;
-              exit = a;
-            }
+      // Try to find the path by walking from `from` in a sliding direction
+      // through portals until we reach `landing`.
+      // For non-chained moves, the direction from→entrance is enough.
+      // For chained moves, try all 8 directions.
+      const ALL_DIRS = [16, -16, 1, -1, 17, 15, -15, -17];
+
+      // Helper: walk from `from` in direction `dir`, recording portal transits
+      const tryWalk = (
+        dir: number,
+      ): { entrance: SquareIndex; exit: SquareIndex }[] | null => {
+        const transits: { entrance: SquareIndex; exit: SquareIndex }[] = [];
+        const visitedExits = new Set<number>();
+        let sq = (from + dir) as SquareIndex;
+
+        // Walk to first portal entrance or to landing
+        while (isValidSquare(sq)) {
+          if (sq === landing && transits.length > 0) return transits;
+          const exitSq = portalExitMap.get(sq);
+          if (exitSq !== undefined) {
+            transits.push({ entrance: sq, exit: exitSq });
+            if (visitedExits.has(exitSq)) return null; // infinite loop
+            visitedExits.add(exitSq);
+            // Continue walking from exit in same direction
+            sq = (exitSq + dir) as SquareIndex;
+            continue;
           }
+          // Not a portal; if we've passed through at least one portal and
+          // haven't reached landing, keep walking
+          if (transits.length === 0) {
+            // Haven't hit any portal yet, keep going
+            sq = (sq + dir) as SquareIndex;
+            continue;
+          }
+          if (sq === landing) return transits;
+          sq = (sq + dir) as SquareIndex;
         }
-        if (entrance !== null && exit !== null) {
-          lastPortalMove = {
-            piece,
-            from,
-            entrance,
-            exit,
-            landing: processedMove.to,
-          };
-          break;
+        return null;
+      };
+
+      // First, try the natural direction from→to (the user-clicked target)
+      const naturalDir = slidingDirection(from, to);
+      if (naturalDir !== null) {
+        const result = tryWalk(naturalDir);
+        if (result && result.length > 0) {
+          lastPortalMove = { piece, from, transits: result, landing };
         }
       }
+
+      // If natural direction didn't work, try all 8 directions
+      if (!lastPortalMove) {
+        for (const dir of ALL_DIRS) {
+          const result = tryWalk(dir);
+          if (result && result.length > 0) {
+            lastPortalMove = { piece, from, transits: result, landing };
+            break;
+          }
+        }
+      }
+
+      // Fallback for non-sliding portal moves (knight/king/pawn):
+      // single transit, entrance = to (clicked portal), exit from map
+      if (!lastPortalMove && portalExitMap.has(to)) {
+        lastPortalMove = {
+          piece,
+          from,
+          transits: [{ entrance: to, exit: portalExitMap.get(to)! }],
+          landing,
+        };
+      }
     }
+
+    const isNormalChess = get().currentModeIndex < 0;
 
     set({
       selectedSquare: null,
@@ -288,10 +352,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
       turn: game.turn,
       status,
       moveHistory: [...game.history],
-      timeWhite: game.turn === Color.White ? 15 : get().timeWhite,
-      timeBlack: game.turn === Color.Black ? 15 : get().timeBlack,
+      timeWhite: isNormalChess
+        ? 999
+        : game.turn === Color.White
+          ? 15
+          : get().timeWhite,
+      timeBlack: 1,
       moveTimerActive: true,
     });
+
+    // Normal chess: switch to chaos after 3 full rounds (6 half-moves)
+    if (isNormalChess && game.history.length >= 6) {
+      get().showAnnouncement("GET READY!", 1500, "intro");
+      setTimeout(() => {
+        get().showAnnouncement("CHAOS CHESS", 2000, "intro");
+        setTimeout(() => {
+          get().switchMode();
+        }, 2000);
+      }, 1800);
+    }
   },
 
   undoMove: () => {
@@ -339,9 +418,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       lastMove: null,
       lastPortalMove: null,
       promotionPending: null,
-      timeWhite: 15,
-      timeBlack: 15,
+      timeWhite: 999,
+      timeBlack: 1,
       moveTimerActive: true,
+      modeTimeRemaining: 999,
     });
   },
 
@@ -356,8 +436,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       promotionPending: null,
     }),
 
-  showAnnouncement: (text: string, durationMs = 2000) => {
-    set({ announcement: text, paused: true });
+  togglePause: () => set((state) => ({ paused: !state.paused })),
+
+  showAnnouncement: (
+    text: string,
+    durationMs = 2000,
+    type: "mode" | "intro" = "mode",
+  ) => {
+    set({ announcement: text, announcementType: type, paused: true });
     setTimeout(() => {
       set({ announcement: null, paused: false });
     }, durationMs);
@@ -399,6 +485,70 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const pick = allMoves[Math.floor(Math.random() * allMoves.length)];
       get().makeMove(pick.from, pick.to);
     }
+  },
+
+  tickAutonomous: () => {
+    const { pluginManager, paused, game } = get();
+    if (paused) return;
+    if (!pluginManager.isAutonomous()) return;
+
+    const move = pluginManager.invokeTickAutonomous(200);
+    if (!move) return;
+
+    // Auto-promote pawns to queen
+    const piece = game.board.get(move.from);
+    let promotion: PieceType | undefined;
+    if (piece && piece.type === PieceType.Pawn) {
+      if (
+        (piece.color === Color.White && rankOf(move.to) === 7) ||
+        (piece.color === Color.Black && rankOf(move.to) === 0)
+      ) {
+        promotion = PieceType.Queen;
+      }
+    }
+
+    get().makeMove(move.from, move.to, promotion);
+  },
+
+  tickModeTimer: () => {
+    const { paused, modeTimeRemaining } = get();
+    if (paused) return;
+    const next = Math.max(0, modeTimeRemaining - 1);
+    set({ modeTimeRemaining: next });
+    if (next <= 0) {
+      get().switchMode();
+    }
+  },
+
+  switchMode: () => {
+    const { currentModeIndex, game } = get();
+    // -1 = Normal Chess (initial only), transition to first chaos mode
+    const nextIndex =
+      currentModeIndex < 0 ? 0 : (currentModeIndex + 1) % GAME_MODES.length;
+    const mode = GAME_MODES[nextIndex];
+
+    // Swap plugins on the current game (preserve board state)
+    const pluginManager = new PluginManager();
+    pluginManager.setContext(game);
+    for (const plugin of mode.create()) {
+      pluginManager.register(plugin);
+    }
+    pluginManager.invokeOnGameStart();
+
+    set({
+      currentModeIndex: nextIndex,
+      modeTimeRemaining: 60,
+      pluginManager,
+      selectedSquare: null,
+      legalMoveSquares: [],
+      hasPortalMoves: false,
+      portalEntrance: null,
+      moveTimerActive: true,
+      timeWhite: 15,
+      timeBlack: 1,
+    });
+
+    get().showAnnouncement(mode.name);
   },
 
   getPiece: (square: SquareIndex) => get().game.board.get(square),

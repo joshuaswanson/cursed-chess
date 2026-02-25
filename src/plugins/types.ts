@@ -24,12 +24,21 @@ export interface ModePlugin {
   name: string;
   description: string;
 
+  /** When true, pieces move autonomously (no player turns) */
+  isAutonomous?: boolean;
+
   onGameStart?(ctx: PluginContext): void;
   onTurnStart?(ctx: PluginContext, color: Color): void;
   onBeforeMove?(ctx: PluginContext, move: Move): Move | null;
   onAfterMove?(ctx: PluginContext, move: Move): void;
   onTurnEnd?(ctx: PluginContext, color: Color): void;
   onGameEnd?(ctx: PluginContext, status: GameStatus): void;
+
+  /** Called periodically in autonomous mode to get the next move */
+  tickAutonomous?(
+    ctx: PluginContext,
+    tickMs: number,
+  ): { from: SquareIndex; to: SquareIndex } | null;
 
   modifyLegalMoves?(ctx: PluginContext, moves: Move[], color: Color): Move[];
   modifyBoard?(ctx: PluginContext): void;

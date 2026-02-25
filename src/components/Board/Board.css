@@ -1,11 +1,30 @@
 .board {
   display: inline-flex;
   flex-direction: column;
-  border: 3px solid #6b4e2e;
+  border: none;
   border-radius: 4px;
   user-select: none;
   -webkit-user-select: none;
   position: relative;
+  --shrink-ring: 0;
+}
+
+/* Board glow — shrinks with battle royale */
+.board::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--shrink-ring) * 12.5%);
+  left: calc(var(--shrink-ring) * 12.5%);
+  right: calc(var(--shrink-ring) * 12.5%);
+  bottom: calc(var(--shrink-ring) * 12.5%);
+  box-shadow:
+    0 0 50px rgba(187, 102, 255, 0.3),
+    0 0 100px rgba(255, 51, 119, 0.15),
+    0 4px 20px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: -1;
+  transition: all 0.8s ease-in-out;
 }
 
 .board-row {
@@ -31,7 +50,131 @@
   background-color: #b58863;
 }
 .square.portal-square {
-  background-color: #1a0e30;
+  background-color: transparent;
+}
+
+/* --- Battle Royale --- */
+.square.dead-square {
+  background-color: transparent !important;
+  background-image: none !important;
+  cursor: default;
+}
+
+.square.danger-square {
+  box-shadow:
+    inset 0 0 12px rgba(255, 40, 40, 0.5),
+    0 0 8px rgba(255, 40, 40, 0.3);
+  animation: danger-pulse var(--danger-speed, 1s) ease-in-out infinite;
+}
+
+@keyframes danger-pulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 12px rgba(255, 40, 40, 0.4),
+      0 0 6px rgba(255, 40, 40, 0.2);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 20px rgba(255, 40, 40, 0.7),
+      0 0 16px rgba(255, 40, 40, 0.5);
+  }
+}
+
+/* --- Fog of War overlay (covers enemy half) --- */
+.board.fog-active {
+  overflow: visible;
+}
+
+.fog-overlay {
+  position: absolute;
+  left: -120px;
+  right: -120px;
+  z-index: 6;
+  pointer-events: none;
+  overflow: visible;
+  animation: fog-enter 1.5s ease-out forwards;
+}
+
+.fog-overlay.fog-top {
+  top: -100px;
+  height: calc(50% + 120px);
+}
+
+.fog-overlay.fog-bottom {
+  bottom: -100px;
+  height: calc(50% + 120px);
+}
+
+/* Scrolling fog layers using PNG images */
+.fog-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300%;
+  height: 100%;
+  background-repeat: repeat;
+  background-size: 33.33% 100%;
+}
+
+.fog-layer-1 {
+  background-image: url("/fog/fog3.png");
+  animation: fog-scroll-right 18s linear infinite;
+  opacity: 0.95;
+}
+
+.fog-layer-2 {
+  background-image: url("/fog/fog4.png");
+  animation: fog-scroll-left 25s linear infinite;
+  opacity: 0.7;
+  top: -15%;
+  height: 130%;
+}
+
+.fog-layer-3 {
+  background-image: url("/fog/fog5.png");
+  animation: fog-scroll-right 32s linear infinite;
+  opacity: 0.5;
+  top: -10%;
+  height: 120%;
+}
+
+@keyframes fog-scroll-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-33.33%);
+  }
+}
+
+@keyframes fog-scroll-left {
+  from {
+    transform: translateX(-33.33%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fog-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Move hints show above fog */
+.board.fog-active .move-hint,
+.board.fog-active .capture-hint {
+  z-index: 8;
+}
+
+/* Selected square shows above fog */
+.board.fog-active .square.selected {
+  z-index: 7;
 }
 
 .square.selected {
@@ -387,7 +530,7 @@
 .countdown-number {
   font-family: "Bangers", cursive;
   font-size: 180px;
-  color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 1);
   text-shadow: 0 0 40px rgba(255, 51, 119, 0.4);
   animation: countdown-pop 1s ease-out forwards;
 }

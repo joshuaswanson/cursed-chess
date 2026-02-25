@@ -4,8 +4,16 @@ import { Color, GameStatus } from "../../engine";
 import "./Timer.css";
 
 export function Timer() {
-  const { timeWhite, timeBlack, turn, moveTimerActive, status, tickTimer } =
-    useGameStore();
+  const {
+    timeWhite,
+    turn,
+    moveTimerActive,
+    status,
+    tickTimer,
+    tickModeTimer,
+    tickAutonomous,
+    pluginManager,
+  } = useGameStore();
 
   const isGameOver =
     status === GameStatus.Checkmate ||
@@ -13,33 +21,38 @@ export function Timer() {
     status === GameStatus.DrawFiftyMove ||
     status === GameStatus.DrawInsufficientMaterial;
 
+  const isAutonomous = pluginManager.isAutonomous();
+
+  // Move timer (100ms ticks) — disabled during autonomous mode
   useEffect(() => {
-    if (!moveTimerActive || isGameOver) return;
+    if (!moveTimerActive || isGameOver || isAutonomous) return;
     const interval = setInterval(tickTimer, 100);
     return () => clearInterval(interval);
-  }, [moveTimerActive, isGameOver, tickTimer]);
+  }, [moveTimerActive, isGameOver, isAutonomous, tickTimer]);
 
-  const formatTime = (t: number) => {
-    const seconds = Math.ceil(t);
-    return `${seconds}`;
-  };
+  // Autonomous movement tick (200ms)
+  useEffect(() => {
+    if (!isAutonomous || isGameOver) return;
+    const interval = setInterval(tickAutonomous, 200);
+    return () => clearInterval(interval);
+  }, [isAutonomous, isGameOver, tickAutonomous]);
+
+  // Mode timer (1s ticks)
+  useEffect(() => {
+    if (isGameOver) return;
+    const interval = setInterval(tickModeTimer, 1000);
+    return () => clearInterval(interval);
+  }, [isGameOver, tickModeTimer]);
 
   const whiteUrgent = turn === Color.White && timeWhite <= 3;
-  const blackUrgent = turn === Color.Black && timeBlack <= 3;
 
   return (
     <div className="timer-container">
       <div
-        className={`timer-clock ${turn === Color.Black ? "active" : ""} ${blackUrgent ? "urgent" : ""}`}
-      >
-        <span className="timer-label">B</span>
-        <span className="timer-value">{formatTime(timeBlack)}</span>
-      </div>
-      <div
         className={`timer-clock ${turn === Color.White ? "active" : ""} ${whiteUrgent ? "urgent" : ""}`}
       >
-        <span className="timer-label">W</span>
-        <span className="timer-value">{formatTime(timeWhite)}</span>
+        <span className="timer-label">YOUR MOVE</span>
+        <span className="timer-value">{Math.ceil(timeWhite)}</span>
       </div>
     </div>
   );

@@ -106,4 +106,20 @@ export class PluginManager {
     }
     return mods;
   }
+
+  isAutonomous(): boolean {
+    return this.plugins.some((p) => p.isAutonomous);
+  }
+
+  invokeTickAutonomous(
+    tickMs: number,
+  ): { from: SquareIndex; to: SquareIndex } | null {
+    for (const p of this.plugins) {
+      if (p.tickAutonomous) {
+        const result = p.tickAutonomous(this.ctx, tickMs);
+        if (result) return result;
+      }
+    }
+    return null;
+  }
 }

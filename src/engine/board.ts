@@ -1,12 +1,6 @@
 import { Color, PieceType } from "./types";
 import type { Piece, SquareIndex, CastlingRights, GameState } from "./types";
-import {
-  toIndex,
-  fileOf,
-  rankOf,
-  isValidSquare,
-  indexToAlgebraic,
-} from "../utils/squareUtils";
+import { toIndex, isValidSquare, indexToAlgebraic } from "../utils/squareUtils";
 
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 

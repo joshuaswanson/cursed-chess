@@ -6,7 +6,11 @@
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.6);
-  animation: announcement-fade-in 0.3s ease-out;
+  animation: announcement-fade-in 0.3s ease-out forwards;
+}
+
+.announcement-overlay.closing {
+  animation: announcement-fade-out 0.4s ease-in forwards;
 }
 
 @keyframes announcement-fade-in {
@@ -15,6 +19,15 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes announcement-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 
@@ -34,10 +47,14 @@
       transparent
     )
     1;
-  animation: announcement-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: announcement-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   text-align: center;
   width: 100%;
   max-width: 700px;
+}
+
+.announcement-banner.closing {
+  animation: announcement-slide-out 0.35s ease-in forwards;
 }
 
 @keyframes announcement-slide-in {
@@ -48,6 +65,17 @@
   to {
     transform: scaleY(1);
     opacity: 1;
+  }
+}
+
+@keyframes announcement-slide-out {
+  from {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  to {
+    transform: scaleY(0);
+    opacity: 0;
   }
 }
 
@@ -71,4 +99,68 @@
   background-clip: text;
   animation: chaos-gradient 2s ease-in-out infinite;
   filter: drop-shadow(0 0 20px rgba(187, 102, 255, 0.5));
+}
+
+/* --- Intro variant (GET READY! / CHAOS CHESS) --- */
+
+.announcement-overlay.intro {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.announcement-banner.intro {
+  background: transparent;
+  border: none;
+  border-image: none;
+  padding: 0;
+  animation: intro-slam 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.announcement-banner.intro.closing {
+  animation: intro-out 0.35s ease-in forwards;
+}
+
+.announcement-text.intro {
+  font-size: 96px;
+  letter-spacing: 10px;
+  filter: drop-shadow(0 0 40px rgba(255, 51, 119, 0.7))
+    drop-shadow(0 0 80px rgba(187, 102, 255, 0.4));
+  animation:
+    chaos-gradient 1.5s ease-in-out infinite,
+    intro-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes intro-slam {
+  0% {
+    transform: scale(3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes intro-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+}
+
+@keyframes intro-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
 }

@@ -1,7 +1,7 @@
 import { Color, PieceType, MoveFlag } from "./types";
 import type { Piece, SquareIndex, Move } from "./types";
 import type { Board } from "./board";
-import { toIndex, fileOf, rankOf, isValidSquare } from "../utils/squareUtils";
+import { toIndex, rankOf, isValidSquare } from "../utils/squareUtils";
 
 // Direction offsets in 0x88
 const NORTH = 16;

@@ -1,6 +1,5 @@
 import { Color, PieceType, MoveFlag, GameStatus } from "./types";
 import type {
-  Piece,
   SquareIndex,
   Move,
   CastlingRights,

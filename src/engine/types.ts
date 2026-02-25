@@ -1,16 +1,18 @@
-export enum Color {
-  White = "w",
-  Black = "b",
-}
+export const Color = {
+  White: "w",
+  Black: "b",
+} as const;
+export type Color = (typeof Color)[keyof typeof Color];
 
-export enum PieceType {
-  Pawn = "p",
-  Knight = "n",
-  Bishop = "b",
-  Rook = "r",
-  Queen = "q",
-  King = "k",
-}
+export const PieceType = {
+  Pawn: "p",
+  Knight: "n",
+  Bishop: "b",
+  Rook: "r",
+  Queen: "q",
+  King: "k",
+} as const;
+export type PieceType = (typeof PieceType)[keyof typeof PieceType];
 
 export interface Piece {
   type: PieceType;
@@ -20,16 +22,17 @@ export interface Piece {
 /** 0x88 square index (0-127, valid when (index & 0x88) === 0) */
 export type SquareIndex = number;
 
-export enum MoveFlag {
-  Normal = 0,
-  Capture = 1 << 0,
-  EnPassant = 1 << 1,
-  Promotion = 1 << 2,
-  KingsideCastle = 1 << 3,
-  QueensideCastle = 1 << 4,
-  DoublePawnPush = 1 << 5,
-  Portal = 1 << 6,
-}
+export const MoveFlag = {
+  Normal: 0,
+  Capture: 1,
+  EnPassant: 2,
+  Promotion: 4,
+  KingsideCastle: 8,
+  QueensideCastle: 16,
+  DoublePawnPush: 32,
+  Portal: 64,
+} as const;
+export type MoveFlag = (typeof MoveFlag)[keyof typeof MoveFlag];
 
 export interface Move {
   from: SquareIndex;
@@ -54,14 +57,15 @@ export interface GameState {
   fullMoveNumber: number;
 }
 
-export enum GameStatus {
-  Active = "active",
-  Check = "check",
-  Checkmate = "checkmate",
-  Stalemate = "stalemate",
-  DrawFiftyMove = "draw_fifty_move",
-  DrawInsufficientMaterial = "draw_insufficient_material",
-}
+export const GameStatus = {
+  Active: "active",
+  Check: "check",
+  Checkmate: "checkmate",
+  Stalemate: "stalemate",
+  DrawFiftyMove: "draw_fifty_move",
+  DrawInsufficientMaterial: "draw_insufficient_material",
+} as const;
+export type GameStatus = (typeof GameStatus)[keyof typeof GameStatus];
 
 export interface MoveRecord {
   move: Move;
