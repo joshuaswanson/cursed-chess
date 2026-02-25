@@ -121,6 +121,111 @@ body::before {
   }
 }
 
+/* Bottom fog — mirrors top */
+.page-fog-bottom {
+  position: fixed;
+  bottom: -30px;
+  left: -50px;
+  right: -50px;
+  height: 160px;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  -webkit-mask: linear-gradient(0deg, white 0%, white 20%, transparent 100%);
+  mask: linear-gradient(0deg, white 0%, white 20%, transparent 100%);
+}
+
+.page-fog-bottom .page-fog-layer-1 {
+  background-image: url("/fog/fog4.png");
+  animation: page-fog-scroll 40s linear infinite;
+  opacity: 0.18;
+}
+
+.page-fog-bottom .page-fog-layer-2 {
+  background-image: url("/fog/fog5.png");
+  animation: page-fog-scroll 55s linear infinite reverse;
+  opacity: 0.12;
+}
+
+/* Left side wisps */
+.page-fog-left {
+  position: fixed;
+  top: -50px;
+  bottom: -50px;
+  left: -30px;
+  width: 200px;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  -webkit-mask: linear-gradient(90deg, white 0%, transparent 100%);
+  mask: linear-gradient(90deg, white 0%, transparent 100%);
+}
+
+.page-fog-side-layer {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 300%;
+  background-repeat: repeat-y;
+  background-size: 100% 33.33%;
+}
+
+.page-fog-left .page-fog-side-layer-1 {
+  background-image: url("/fog/fog3.png");
+  animation: page-fog-drift-down 50s linear infinite;
+  opacity: 0.12;
+}
+
+.page-fog-left .page-fog-side-layer-2 {
+  background-image: url("/fog/fog5.png");
+  animation: page-fog-drift-up 65s linear infinite;
+  opacity: 0.08;
+}
+
+/* Right side wisps */
+.page-fog-right {
+  position: fixed;
+  top: -50px;
+  bottom: -50px;
+  right: -30px;
+  width: 200px;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  -webkit-mask: linear-gradient(270deg, white 0%, transparent 100%);
+  mask: linear-gradient(270deg, white 0%, transparent 100%);
+}
+
+.page-fog-right .page-fog-side-layer-1 {
+  background-image: url("/fog/fog4.png");
+  animation: page-fog-drift-up 45s linear infinite;
+  opacity: 0.1;
+}
+
+.page-fog-right .page-fog-side-layer-2 {
+  background-image: url("/fog/fog3.png");
+  animation: page-fog-drift-down 60s linear infinite;
+  opacity: 0.07;
+}
+
+@keyframes page-fog-drift-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-33.33%);
+  }
+}
+
+@keyframes page-fog-drift-up {
+  from {
+    transform: translateY(-33.33%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 .app {
   display: flex;
   flex-direction: column;

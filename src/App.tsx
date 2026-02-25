@@ -14,6 +14,18 @@ function App() {
         <div className="page-fog-layer page-fog-layer-1" />
         <div className="page-fog-layer page-fog-layer-2" />
       </div>
+      <div className="page-fog-bottom">
+        <div className="page-fog-layer page-fog-layer-1" />
+        <div className="page-fog-layer page-fog-layer-2" />
+      </div>
+      <div className="page-fog-left">
+        <div className="page-fog-side-layer page-fog-side-layer-1" />
+        <div className="page-fog-side-layer page-fog-side-layer-2" />
+      </div>
+      <div className="page-fog-right">
+        <div className="page-fog-side-layer page-fog-side-layer-1" />
+        <div className="page-fog-side-layer page-fog-side-layer-2" />
+      </div>
       <div className="app">
         <header className="app-header">
           <h1 className="app-title">

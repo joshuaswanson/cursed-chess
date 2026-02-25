@@ -4,6 +4,45 @@
   gap: 4px;
 }
 
+.scoreboard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #1a1040, #2a1860);
+  border: 1px solid #5533aa;
+  border-radius: 6px;
+}
+
+.score-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #bb66ff;
+}
+
+.score-value {
+  font-family: "Bangers", cursive;
+  font-size: 28px;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(187, 102, 255, 0.4);
+  min-width: 24px;
+  text-align: center;
+}
+
+.score-divider {
+  font-family: "Bangers", cursive;
+  font-size: 24px;
+  color: #6644bb;
+}
+
 .mode-current {
   display: flex;
   flex-direction: column;

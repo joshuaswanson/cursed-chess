@@ -15,7 +15,7 @@ export interface GameMode {
 }
 
 export const GAME_MODES: GameMode[] = [
-  { name: "PORTAL CHESS", create: () => [new PortalChessPlugin()] },
+  { name: "PORTAL MODE", create: () => [new PortalChessPlugin()] },
   { name: "FOG OF WAR", create: () => [new FogOfWarPlugin()] },
   { name: "BATTLE ROYALE", create: () => [new BattleRoyalePlugin()] },
   { name: "RALLY THE TROOPS", create: () => [new RallyPlugin()] },
@@ -58,6 +58,10 @@ export interface GameStore {
   promotionPending: { from: SquareIndex; to: SquareIndex } | null;
   flipped: boolean;
 
+  // Scores
+  scoreWhite: number;
+  scoreBlack: number;
+
   // Announcement
   announcement: string | null;
   announcementType: "mode" | "intro";
@@ -83,6 +87,7 @@ export interface GameStore {
   flipBoard: () => void;
   clearSelection: () => void;
   togglePause: () => void;
+  handleGameEnd: (status: GameStatus) => void;
   setDeployPieceType: (type: PieceType | null) => void;
   deployPiece: (square: SquareIndex) => boolean;
   showAnnouncement: (
@@ -117,6 +122,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   promotionPending: null,
   flipped: false,
 
+  scoreWhite: 0,
+  scoreBlack: 0,
+
   announcement: null,
   announcementType: "mode" as const,
   paused: false,
@@ -126,7 +134,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   moveTimerActive: false,
 
   currentModeIndex: -1,
-  modeTimeRemaining: 60,
+  modeTimeRemaining: 45,
 
   deployPieceType: null,
 
@@ -373,6 +381,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
       moveTimerActive: true,
     });
 
+    // Check for game-ending status — award point and move on
+    if (
+      status === GameStatus.Checkmate ||
+      status === GameStatus.Stalemate ||
+      status === GameStatus.DrawFiftyMove ||
+      status === GameStatus.DrawInsufficientMaterial
+    ) {
+      setTimeout(() => {
+        get().handleGameEnd(status);
+      }, 600);
+      return;
+    }
+
     // Normal chess: switch to chaos after 3 moves (white, black, white)
     if (isNormalChess && game.history.length >= 3) {
       // Wait for the piece movement animation to finish before announcing
@@ -436,7 +457,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       timeWhite: 999,
       timeBlack: 1,
       moveTimerActive: true,
-      modeTimeRemaining: 999,
+      modeTimeRemaining: 999, // Normal chess phase — no mode timer
     });
   },
 
@@ -452,6 +473,53 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }),
 
   togglePause: () => set((state) => ({ paused: !state.paused })),
+
+  handleGameEnd: (endStatus: GameStatus) => {
+    const { turn, scoreWhite, scoreBlack } = get();
+
+    let newWhite = scoreWhite;
+    let newBlack = scoreBlack;
+    let label: string;
+
+    if (endStatus === GameStatus.Checkmate) {
+      // The side whose turn it is has been checkmated (no legal moves)
+      if (turn === Color.Black) {
+        newWhite += 1;
+        label = "YOU WIN!";
+      } else {
+        newBlack += 1;
+        label = "YOU LOSE!";
+      }
+    } else {
+      // Stalemate or draw — no points
+      label = "DRAW!";
+    }
+
+    set({ scoreWhite: newWhite, scoreBlack: newBlack, paused: true });
+
+    // Announce result, then reset board and switch to next mode
+    get().showAnnouncement(label, 2500, "intro");
+    setTimeout(() => {
+      // Fresh board, keep current mode index so switchMode advances properly
+      const game = new Game();
+      set({
+        game,
+        status: GameStatus.Active,
+        turn: Color.White,
+        moveHistory: [],
+        selectedSquare: null,
+        legalMoveSquares: [],
+        hasPortalMoves: false,
+        portalEntrance: null,
+        lastMove: null,
+        lastPortalMove: null,
+        promotionPending: null,
+        deployPieceType: null,
+        paused: false,
+      });
+      get().switchMode();
+    }, 2800);
+  },
 
   setDeployPieceType: (type: PieceType | null) => {
     set({ deployPieceType: type });
@@ -586,7 +654,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       currentModeIndex: nextIndex,
-      modeTimeRemaining: 60,
+      modeTimeRemaining: 45,
       pluginManager,
       selectedSquare: null,
       legalMoveSquares: [],

@@ -13,8 +13,26 @@ export function GameControls() {
   return (
     <div className="game-controls">
       <div className="controls-row">
-        <button onClick={togglePause} className="control-btn">
-          {paused ? "Resume" : "Pause"}
+        <button
+          onClick={() => {
+            useGameStore.setState({
+              currentModeIndex: -1,
+              scoreWhite: 0,
+              scoreBlack: 0,
+            });
+            newGame();
+          }}
+          className="control-btn"
+          title="New Game"
+        >
+          &#8635;
+        </button>
+        <button
+          onClick={togglePause}
+          className="control-btn"
+          title={paused ? "Resume" : "Pause"}
+        >
+          {paused ? "\u25B6" : "\u23F8"}
         </button>
       </div>
     </div>

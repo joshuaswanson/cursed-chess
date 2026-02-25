@@ -15,6 +15,7 @@ export function Timer() {
     pluginManager,
   } = useGameStore();
 
+  // Game-over is now transient — handleGameEnd resets the board
   const isGameOver =
     status === GameStatus.Checkmate ||
     status === GameStatus.Stalemate ||
