@@ -1,73 +1,42 @@
-# React + TypeScript + Vite
+# Chaos Chess
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Chess, but nothing is sacred.
 
-Currently, two official plugins are available:
+A web-based chess game where the rules change every 45 seconds. Play through rotating game modes that twist the classic game into something unpredictable.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Game Modes
 
-## React Compiler
+- **Normal Chess** -- Standard chess for the first few moves, then the chaos begins
+- **Portal Mode** -- Portals spawn on the board. Pieces that enter one exit the other, continuing their trajectory
+- **Fog of War** -- Dense fog rolls over the enemy half. You can't see their pieces until you're adjacent
+- **Battle Royale** -- The board shrinks inward over time. Pieces on the edge are eliminated
+- **Rally the Troops** -- Pieces move on their own. Spend resources to deploy reinforcements via drag and drop
+- **Minefield** -- Hidden mines are scattered across the board. Step on one and your piece explodes
+- **King of the Hill** -- Control 3+ of the 4 center squares for 3 consecutive rounds to win
+- **Gravity** -- Gravity pulls all pieces in one direction, shifting 45 degrees every few turns. The board rotates to match
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the ESLint configuration
+- Automatic mode rotation with announcements and hint banners
+- Score tracking across modes (points for checkmate wins)
+- 10-second move timer with countdown overlay
+- AI opponent that plays automatically
+- Piece slide, rock-settle, and explosion animations
+- Drag-and-drop piece movement with pendulum swing physics
+- Portal teleportation animations with particle trails
+- Skip mode and pause/resume controls
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tech Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- React 19 + TypeScript
+- Zustand for state management
+- Custom 0x88 chess engine
+- Plugin architecture for game modes
+- Vite
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Getting Started
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
