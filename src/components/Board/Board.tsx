@@ -44,12 +44,6 @@ interface DragState {
   pointerId: number;
 }
 
-interface AnimState {
-  sq: SquareIndex;
-  offsetX: number;
-  offsetY: number;
-}
-
 interface ReturnAnim {
   sq: SquareIndex;
   piece: Piece;
@@ -74,6 +68,7 @@ export function Board() {
     hasPortalMoves,
     portalEntrance,
     lastMove,
+    lastAutonomousMoves,
     lastPortalMove,
     flipped,
     status,
@@ -91,7 +86,9 @@ export function Board() {
   const boardRef = useRef<HTMLDivElement>(null);
   const dragImgRef = useRef<HTMLImageElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
-  const [anim, setAnim] = useState<AnimState | null>(null);
+  const [animMap, setAnimMap] = useState<
+    Map<number, { offsetX: number; offsetY: number }>
+  >(new Map());
   const [returnAnim, setReturnAnim] = useState<ReturnAnim | null>(null);
   const [portalAnim, setPortalAnim] = useState<{
     phases: PortalAnimPhase[];
@@ -112,7 +109,6 @@ export function Board() {
   const [fogExiting, setFogExiting] = useState(false);
   const prevFog = useRef(false);
   const [explosions, setExplosions] = useState<Set<number>>(new Set());
-  const prevExploded = useRef<Set<number>>(new Set());
   const [gravityFalls, setGravityFalls] = useState<
     Map<number, { offsetX: number; offsetY: number }>
   >(new Map());
@@ -209,7 +205,7 @@ export function Board() {
     el.getBoundingClientRect();
   });
 
-  // Slide animation on click-to-move (skip for portal moves)
+  // Slide animation on click-to-move or autonomous moves
   useEffect(() => {
     const prev = prevLastMove.current;
     prevLastMove.current = lastMove;
@@ -222,20 +218,27 @@ export function Board() {
     // Skip normal slide for portal moves — portal anim handles it
     if (lastPortalMove) return;
 
-    const dFile = fileOf(lastMove.from) - fileOf(lastMove.to);
-    const dRank = rankOf(lastMove.from) - rankOf(lastMove.to);
-
     const squareSize = boardRef.current
       ? boardRef.current.getBoundingClientRect().width / 8
       : 72;
 
-    const offsetX = (flipped ? -dFile : dFile) * squareSize;
-    const offsetY = (flipped ? dRank : -dRank) * squareSize;
+    // Autonomous batch: animate all moves
+    const movesToAnimate =
+      lastAutonomousMoves.length > 0 ? lastAutonomousMoves : [lastMove];
 
-    setAnim({ sq: lastMove.to, offsetX, offsetY });
-    const timer = setTimeout(() => setAnim(null), 600);
+    const newMap = new Map<number, { offsetX: number; offsetY: number }>();
+    for (const m of movesToAnimate) {
+      const dFile = fileOf(m.from) - fileOf(m.to);
+      const dRank = rankOf(m.from) - rankOf(m.to);
+      const offsetX = (flipped ? -dFile : dFile) * squareSize;
+      const offsetY = (flipped ? dRank : -dRank) * squareSize;
+      newMap.set(m.to, { offsetX, offsetY });
+    }
+
+    setAnimMap(newMap);
+    const timer = setTimeout(() => setAnimMap(new Map()), 600);
     return () => clearTimeout(timer);
-  }, [lastMove, lastPortalMove, flipped]);
+  }, [lastMove, lastAutonomousMoves, lastPortalMove, flipped]);
 
   // Portal move animation: build phase array from transits
   useEffect(() => {
@@ -510,6 +513,7 @@ export function Board() {
   let gravityDirection: string | null = null;
   let gravityAngle: number | null = null;
   let gravityMovesFromOverlay: { from: number; to: number }[] = [];
+  let rallyCooldowns: Record<number, { total: number; gen: number }> = {};
   for (const overlay of overlays) {
     if (overlay.type === "portal" && overlay.squares.length === 2) {
       const color = (overlay.data as { color: string })?.color ?? "blue";
@@ -523,6 +527,12 @@ export function Board() {
     }
     if (overlay.type === "rally-resources") {
       hasRallyOverlay = true;
+    }
+    if (overlay.type === "rally-cooldowns") {
+      rallyCooldowns = overlay.data as Record<
+        number,
+        { total: number; gen: number }
+      >;
     }
     if (overlay.type === "gravity") {
       const gData = overlay.data as {
@@ -684,7 +694,8 @@ export function Board() {
         (drag?.isDragging && drag.sq === sq) ||
         (returnAnim !== null && returnAnim.sq === sq) ||
         (portalAnim !== null && portalAnim.info.landing === sq);
-      const isAnimating = anim && anim.sq === sq;
+      const animEntry = animMap.get(sq);
+      const isAnimating = !!animEntry;
 
       let className = "square";
       if (portalColor) {
@@ -701,19 +712,17 @@ export function Board() {
       if (isCheck) className += " in-check";
       if (drag?.isDragging && isLegalTarget) className += " drag-target";
 
-      // Deploy zone indicator: player's half during rally mode
-      if (hasRallyOverlay && !isDead && rank <= 3) className += " deploy-zone";
-
       // Deploy target highlight: empty square on player's half (ranks 0-3)
-      const isDeployTarget = deployPieceType && !piece && !isDead && rank <= 3;
+      const isDeployTarget =
+        hasRallyOverlay && deployPieceType && !piece && !isDead && rank <= 3;
       if (isDeployTarget) className += " deploy-target";
 
       // Inline style for slide + rock animation
       const gravFall = gravityFalls.get(sq);
       const pieceStyle: React.CSSProperties | undefined = isAnimating
         ? ({
-            "--slide-from-x": `${anim.offsetX}px`,
-            "--slide-from-y": `${anim.offsetY}px`,
+            "--slide-from-x": `${animEntry!.offsetX}px`,
+            "--slide-from-y": `${animEntry!.offsetY}px`,
             animation: "slide-in 0.2s ease-out forwards",
           } as React.CSSProperties)
         : gravFall
@@ -753,14 +762,39 @@ export function Board() {
           )}
 
           {piece && !isDragSource && !isDead && (
-            <img
-              src={getPieceImage(piece)}
-              alt={`${piece.color}${piece.type}`}
-              className="piece-img"
-              style={pieceStyle}
-              draggable={false}
-              onPointerDown={(e) => handlePointerDown(e, sq, piece)}
-            />
+            <>
+              <img
+                src={getPieceImage(piece)}
+                alt={`${piece.color}${piece.type}`}
+                className="piece-img"
+                style={pieceStyle}
+                draggable={false}
+                onPointerDown={(e) => handlePointerDown(e, sq, piece)}
+              />
+              {rallyCooldowns[sq] != null && (
+                <svg
+                  key={`cd-${sq}-${rallyCooldowns[sq].gen}`}
+                  className="cooldown-pie"
+                  viewBox="0 0 36 36"
+                >
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="16"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.4)"
+                    strokeWidth="3"
+                    strokeDasharray="100.53"
+                    style={{
+                      animationName: "cooldown-fill",
+                      animationDuration: `${rallyCooldowns[sq].total}ms`,
+                      animationTimingFunction: "linear",
+                      animationFillMode: "forwards",
+                    }}
+                  />
+                </svg>
+              )}
+            </>
           )}
 
           {explosions.has(sq) && <div className="mine-explosion" />}
@@ -996,6 +1030,11 @@ export function Board() {
       onPointerUp={handlePointerUp}
     >
       {rows}
+      {hasRallyOverlay && (
+        <div
+          className={`deploy-zone-border${deployPieceType ? " dragging" : ""}`}
+        />
+      )}
       {portalArrows}
       {portalAnimElement}
       {showFog && (

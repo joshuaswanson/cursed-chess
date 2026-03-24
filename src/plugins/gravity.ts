@@ -1,4 +1,4 @@
-import { Color, PieceType } from "../engine/types";
+import { Color } from "../engine/types";
 import type { SquareIndex } from "../engine/types";
 import type {
   ModePlugin,

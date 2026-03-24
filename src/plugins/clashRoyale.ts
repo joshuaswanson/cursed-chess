@@ -141,7 +141,7 @@ export class RallyPlugin implements ModePlugin {
     return results;
   }
 
-  getBoardOverlays(ctx: PluginContext): BoardOverlay[] {
+  getBoardOverlays(_ctx: PluginContext): BoardOverlay[] {
     // Build cooldown map: square -> { ms, gen }
     const cooldownData: Record<number, { total: number; gen: number }> = {};
     for (const [sq, cd] of this.cooldowns) {

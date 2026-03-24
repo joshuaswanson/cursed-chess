@@ -1,4 +1,4 @@
-import { Color, PieceType } from "../engine/types";
+import { PieceType } from "../engine/types";
 import type { Move, SquareIndex } from "../engine/types";
 import type {
   ModePlugin,
@@ -6,7 +6,7 @@ import type {
   BoardOverlay,
   SquareModifier,
 } from "./types";
-import { fileOf, rankOf, isValidSquare } from "../utils/squareUtils";
+import { isValidSquare } from "../utils/squareUtils";
 
 const MINE_COUNT = 10;
 const ADJACENT_DIRS = [16, -16, 1, -1, 17, 15, -15, -17];
