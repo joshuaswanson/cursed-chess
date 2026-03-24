@@ -1,4 +1,5 @@
 import { Board } from "./components/Board/Board";
+import { HexBoard } from "./components/HexBoard/HexBoard";
 import { GameControls } from "./components/GameControls/GameControls";
 import { PromotionDialog } from "./components/PromotionDialog/PromotionDialog";
 import { Announcement } from "./components/Announcement/Announcement";
@@ -10,6 +11,7 @@ import "./styles/global.css";
 
 function App() {
   const currentModeIndex = useGameStore((s) => s.currentModeIndex);
+  const isHexMode = useGameStore((s) => s.isHexMode);
   const isPortalMode =
     currentModeIndex >= 0 && GAME_MODES[currentModeIndex].name === "PORTALS";
 
@@ -34,7 +36,7 @@ function App() {
       <div className="app">
         <header className="app-header">
           <h1 className="app-title">
-            <span className="title-unhinged">CHAOS</span>
+            <span className="title-unhinged">CURSED</span>
             <span className="title-chess">CHESS</span>
           </h1>
           <p className="app-subtitle">
@@ -44,7 +46,7 @@ function App() {
 
         <main className="game-layout">
           <div className="board-container">
-            <Board />
+            {isHexMode ? <HexBoard /> : <Board />}
           </div>
           <div className="sidebar">
             <ModePanel />

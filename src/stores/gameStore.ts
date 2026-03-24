@@ -7,14 +7,17 @@ import { fileOf, rankOf, isValidSquare } from "../utils/squareUtils";
 import { PortalChessPlugin } from "../plugins/portalChess";
 import { FogOfWarPlugin } from "../plugins/fogOfWar";
 import { BattleRoyalePlugin } from "../plugins/battleRoyale";
-import { RallyPlugin, PIECE_COST } from "../plugins/rallyTheTroops";
+import { RallyPlugin, PIECE_COST } from "../plugins/clashRoyale";
 import { MinefieldPlugin } from "../plugins/minefield";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GravityPlugin } from "../plugins/gravity";
+import { HexGame } from "../engine/hex/game";
+import type { HexCoord, HexMove } from "../engine/hex";
 
 export interface GameMode {
   name: string;
   create: () => ModePlugin[];
+  isHex?: boolean;
 }
 
 export const GAME_MODES: GameMode[] = [
@@ -25,6 +28,7 @@ export const GAME_MODES: GameMode[] = [
   { name: "MINEFIELD", create: () => [new MinefieldPlugin()] },
   { name: "KING OF THE HILL", create: () => [new KingOfTheHillPlugin()] },
   { name: "GRAVITY", create: () => [new GravityPlugin()] },
+  { name: "HEX CHESS", create: () => [], isHex: true },
 ];
 
 /** Get normalized sliding direction from origin to target, or null if not a straight line */
@@ -60,6 +64,7 @@ export interface GameStore {
   hasPortalMoves: boolean;
   portalEntrance: SquareIndex | null;
   lastMove: { from: SquareIndex; to: SquareIndex } | null;
+  lastAutonomousMoves: { from: SquareIndex; to: SquareIndex }[];
   lastPortalMove: PortalMoveInfo | null;
   promotionPending: { from: SquareIndex; to: SquareIndex } | null;
   flipped: boolean;
@@ -87,6 +92,18 @@ export interface GameStore {
 
   // Rally deployment
   deployPieceType: PieceType | null;
+
+  // Hex chess mode
+  hexGame: HexGame | null;
+  isHexMode: boolean;
+  selectedHex: HexCoord | null;
+  legalHexMoves: HexMove[];
+  lastHexMove: { from: HexCoord; to: HexCoord } | null;
+  hexPromotionPending: { from: HexCoord; to: HexCoord } | null;
+
+  // Hex actions
+  selectHex: (coord: HexCoord) => void;
+  makeHexMove: (from: HexCoord, to: HexCoord, promotion?: PieceType) => void;
 
   // Actions
   selectSquare: (square: SquareIndex) => void;
@@ -128,6 +145,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   hasPortalMoves: false,
   portalEntrance: null,
   lastMove: null,
+  lastAutonomousMoves: [],
   lastPortalMove: null,
   promotionPending: null,
   flipped: false,
@@ -149,6 +167,106 @@ export const useGameStore = create<GameStore>((set, get) => ({
   devMode: false,
 
   deployPieceType: null,
+
+  // Hex chess state
+  hexGame: null,
+  isHexMode: false,
+  selectedHex: null,
+  legalHexMoves: [],
+  lastHexMove: null,
+  hexPromotionPending: null,
+
+  selectHex: (coord: HexCoord) => {
+    const state = get();
+    if (state.paused || !state.hexGame) return;
+    if (state.hexGame.turn === Color.Black) return;
+
+    const { hexGame, selectedHex, legalHexMoves } = state;
+
+    // If clicking a legal move target, make the move
+    if (selectedHex) {
+      const move = legalHexMoves.find(
+        (m) => m.to.q === coord.q && m.to.r === coord.r && !m.promotion,
+      );
+      if (move) {
+        state.makeHexMove(selectedHex, coord);
+        return;
+      }
+    }
+
+    // Select own piece
+    const piece = hexGame.board.getCoord(coord);
+    if (piece && piece.color === hexGame.turn) {
+      const moves = hexGame.getLegalMoves(coord);
+      set({
+        selectedHex: coord,
+        legalHexMoves: moves,
+      });
+      return;
+    }
+
+    // Clear selection
+    set({ selectedHex: null, legalHexMoves: [] });
+  },
+
+  makeHexMove: (from: HexCoord, to: HexCoord, promotion?: PieceType) => {
+    const state = get();
+    if (state.paused || !state.hexGame) return;
+    const { hexGame } = state;
+
+    const legalMoves = hexGame.getLegalMoves(from);
+    const move = legalMoves.find((m) => {
+      if (m.to.q !== to.q || m.to.r !== to.r) return false;
+      if (promotion && m.promotion !== promotion) return false;
+      if (!promotion && m.promotion) return false;
+      return true;
+    });
+    if (!move) return;
+
+    // King captured check
+    if (move.captured?.type === PieceType.King) {
+      hexGame.makeMove(move);
+      set({
+        selectedHex: null,
+        legalHexMoves: [],
+        lastHexMove: { from, to },
+        hexPromotionPending: null,
+        turn: hexGame.turn,
+        status: GameStatus.Checkmate,
+      });
+      setTimeout(() => {
+        get().handleGameEnd(GameStatus.Checkmate);
+      }, 600);
+      return;
+    }
+
+    hexGame.makeMove(move);
+    const hexStatus = hexGame.getStatus();
+
+    set({
+      selectedHex: null,
+      legalHexMoves: [],
+      lastHexMove: { from, to },
+      hexPromotionPending: null,
+      turn: hexGame.turn,
+      status: hexStatus,
+      timeWhite: hexGame.turn === Color.White ? 10 : get().timeWhite,
+      timeBlack: 1,
+      moveTimerActive: true,
+    });
+
+    // Check game-ending status
+    if (
+      hexStatus === GameStatus.Checkmate ||
+      hexStatus === GameStatus.Stalemate ||
+      hexStatus === GameStatus.DrawFiftyMove
+    ) {
+      setTimeout(() => {
+        get().handleGameEnd(hexStatus);
+      }, 600);
+      return;
+    }
+  },
 
   selectSquare: (square: SquareIndex) => {
     const state = get();
@@ -279,6 +397,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
       success = game.makeMove(processedMove);
     }
     if (!success) return;
+
+    // King captured — instant win
+    if (processedMove.captured?.type === PieceType.King) {
+      set({
+        selectedSquare: null,
+        legalMoveSquares: [],
+        hasPortalMoves: false,
+        portalEntrance: null,
+        lastMove: { from, to: processedMove.to },
+        lastPortalMove: null,
+        promotionPending: null,
+        turn: game.turn,
+        status: GameStatus.Checkmate,
+        moveHistory: [...game.history],
+      });
+      setTimeout(() => {
+        get().handleGameEnd(GameStatus.Checkmate);
+      }, 600);
+      return;
+    }
 
     pluginManager.invokeOnAfterMove(processedMove);
     pluginManager.invokeOnTurnEnd(previousTurn);
@@ -418,13 +556,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    // Normal chess: switch to chaos after 3 moves (white, black, white)
+    // Normal chess: switch to cursed mode after 3 moves (white, black, white)
     if (isNormalChess && game.history.length >= 3) {
       // Wait for the piece movement animation to finish before announcing
       setTimeout(() => {
         get().showAnnouncement("GET READY!", 1500, "intro");
         setTimeout(() => {
-          get().showAnnouncement("CHAOS CHESS", 2000, "intro");
+          get().showAnnouncement("CURSED CHESS", 2000, "intro");
           setTimeout(() => {
             get().switchMode();
           }, 2000);
@@ -478,6 +616,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       lastMove: null,
       lastPortalMove: null,
       promotionPending: null,
+      // Reset hex state
+      hexGame: null,
+      isHexMode: false,
+      selectedHex: null,
+      legalHexMoves: [],
+      lastHexMove: null,
+      hexPromotionPending: null,
       timeWhite: 999,
       timeBlack: 1,
       moveTimerActive: true,
@@ -526,6 +671,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     setTimeout(() => {
       // Fresh board, keep current mode index so switchMode advances properly
       const game = new Game();
+      const { devMode, pluginManager, isHexMode } = get();
       set({
         game,
         status: GameStatus.Active,
@@ -540,8 +686,34 @@ export const useGameStore = create<GameStore>((set, get) => ({
         promotionPending: null,
         deployPieceType: null,
         paused: false,
+        // Reset hex state
+        hexGame: null,
+        isHexMode: false,
+        selectedHex: null,
+        legalHexMoves: [],
+        lastHexMove: null,
+        hexPromotionPending: null,
       });
-      get().switchMode();
+      if (devMode) {
+        if (isHexMode) {
+          // Stay on hex mode — create fresh hex game
+          const newHexGame = new HexGame();
+          set({
+            hexGame: newHexGame,
+            isHexMode: true,
+            moveTimerActive: true,
+            timeWhite: 10,
+            timeBlack: 1,
+          });
+        } else {
+          // Stay on same mode — just re-initialize plugins with fresh board
+          pluginManager.setContext(game);
+          pluginManager.invokeOnGameStart();
+          set({ moveTimerActive: true, timeWhite: 10, timeBlack: 1 });
+        }
+      } else {
+        get().switchMode();
+      }
     }, 2800);
   },
 
@@ -571,6 +743,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Deploy the piece
     game.board.put(square, { type: deployPieceType, color: Color.White });
     rallyPlugin.resourceWhite -= cost;
+
+    // Set cooldown so the piece can't attack immediately
+    rallyPlugin.setCooldown(square, deployPieceType);
 
     set({ deployPieceType: null });
     return true;
@@ -602,6 +777,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   expireTimer: () => {
+    // Hex mode: use hex game for random moves
+    if (get().isHexMode) {
+      const { hexGame } = get();
+      if (!hexGame) return;
+      const move = hexGame.getRandomMove();
+      if (move) {
+        get().makeHexMove(move.from, move.to, move.promotion);
+      }
+      return;
+    }
+
     const { game, pluginManager } = get();
     // Random move when time expires
     const allMoves: {
@@ -643,22 +829,78 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (paused) return;
     if (!pluginManager.isAutonomous()) return;
 
-    const move = pluginManager.invokeTickAutonomous(200);
-    if (!move) return;
+    const moves = pluginManager.invokeTickAutonomous(200);
+    if (moves.length === 0) return;
 
-    // Auto-promote pawns to queen
-    const piece = game.board.get(move.from);
-    let promotion: PieceType | undefined;
-    if (piece && piece.type === PieceType.Pawn) {
-      if (
-        (piece.color === Color.White && rankOf(move.to) === 7) ||
-        (piece.color === Color.Black && rankOf(move.to) === 0)
-      ) {
-        promotion = PieceType.Queen;
+    // Execute moves directly on the engine, bypassing the store's makeMove
+    // to avoid turn-switching and status-check interference
+    let kingCaptured: Color | null = null;
+    const executedMoves: { from: SquareIndex; to: SquareIndex }[] = [];
+
+    for (const move of moves) {
+      if (kingCaptured !== null) break;
+
+      const piece = game.board.get(move.from);
+      if (!piece) continue;
+
+      // Set game.turn so getLegalMoves works for this piece's color
+      game.turn = piece.color;
+
+      const legalMoves = game.getLegalMoves(move.from);
+
+      // Handle promotion
+      let promotion: PieceType | undefined;
+      if (piece.type === PieceType.Pawn) {
+        if (
+          (piece.color === Color.White && rankOf(move.to) === 7) ||
+          (piece.color === Color.Black && rankOf(move.to) === 0)
+        ) {
+          promotion = PieceType.Queen;
+        }
       }
+
+      const legalMove = legalMoves.find((m) => {
+        if (m.to !== move.to) return false;
+        if (promotion && m.promotion !== promotion) return false;
+        if (!promotion && m.promotion) return false;
+        return true;
+      });
+      if (!legalMove) continue;
+
+      // Check for king capture
+      if (legalMove.captured?.type === PieceType.King) {
+        kingCaptured = piece.color;
+      }
+
+      game.executeTrustedMove(legalMove);
+      executedMoves.push({ from: move.from, to: legalMove.to });
     }
 
-    get().makeMove(move.from, move.to, promotion);
+    // Single state update after all moves
+    if (executedMoves.length > 0) {
+      const last = executedMoves[executedMoves.length - 1];
+      if (kingCaptured !== null) {
+        set({
+          lastMove: last,
+          lastAutonomousMoves: executedMoves,
+          lastPortalMove: null,
+          turn: game.turn,
+          status: GameStatus.Checkmate,
+          moveHistory: [...game.history],
+        });
+        setTimeout(() => {
+          get().handleGameEnd(GameStatus.Checkmate);
+        }, 600);
+      } else {
+        set({
+          lastMove: last,
+          lastAutonomousMoves: executedMoves,
+          lastPortalMove: null,
+          turn: game.turn,
+          moveHistory: [...game.history],
+        });
+      }
+    }
   },
 
   tickModeTimer: () => {
@@ -685,10 +927,50 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   switchMode: () => {
     const { currentModeIndex, game } = get();
-    // -1 = Normal Chess (initial only), transition to first chaos mode
+    // -1 = Normal Chess (initial only), transition to first cursed mode
     const nextIndex =
       currentModeIndex < 0 ? 0 : (currentModeIndex + 1) % GAME_MODES.length;
     const mode = GAME_MODES[nextIndex];
+
+    // Hex chess mode: completely separate game engine
+    if (mode.isHex) {
+      const hexGame = new HexGame();
+      set({
+        currentModeIndex: nextIndex,
+        modeTimeRemaining: 60,
+        status: GameStatus.Active,
+        isHexMode: true,
+        hexGame,
+        selectedHex: null,
+        legalHexMoves: [],
+        lastHexMove: null,
+        hexPromotionPending: null,
+        turn: Color.White,
+        selectedSquare: null,
+        legalMoveSquares: [],
+        hasPortalMoves: false,
+        portalEntrance: null,
+        moveTimerActive: true,
+        timeWhite: 10,
+        timeBlack: 1,
+      });
+
+      get().showAnnouncement(mode.name);
+      setTimeout(() => {
+        get().showAnnouncement("CHESS ON HEXAGONS!", 2500, "hint");
+      }, 2200);
+      return;
+    }
+
+    // Standard mode: clear hex state
+    set({
+      isHexMode: false,
+      hexGame: null,
+      selectedHex: null,
+      legalHexMoves: [],
+      lastHexMove: null,
+      hexPromotionPending: null,
+    });
 
     // Swap plugins on the current game (preserve board state)
     const pluginManager = new PluginManager();
@@ -711,6 +993,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       currentModeIndex: nextIndex,
       modeTimeRemaining: isRally ? 75 : 45,
+      status: GameStatus.Active,
       pluginManager,
       selectedSquare: null,
       legalMoveSquares: [],
