@@ -11,6 +11,7 @@ import { RallyPlugin, PIECE_COST } from "../plugins/clashRoyale";
 import { MinefieldPlugin } from "../plugins/minefield";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GravityPlugin } from "../plugins/gravity";
+import { StrategoPlugin } from "../plugins/stratego";
 import { HexGame } from "../engine/hex/game";
 import type { HexCoord, HexMove } from "../engine/hex";
 
@@ -29,6 +30,7 @@ export const GAME_MODES: GameMode[] = [
   { name: "KING OF THE HILL", create: () => [new KingOfTheHillPlugin()] },
   { name: "GRAVITY", create: () => [new GravityPlugin()] },
   { name: "HEX CHESS", create: () => [], isHex: true },
+  { name: "STRATEGO", create: () => [new StrategoPlugin()] },
 ];
 
 /** Get normalized sliding direction from origin to target, or null if not a straight line */
@@ -1053,6 +1055,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (isGravity) {
       setTimeout(() => {
         get().showAnnouncement("GRAVITY SHIFTS EVERY FEW TURNS!", 2500, "hint");
+      }, 2200);
+    }
+
+    const isStratego = pluginManager
+      .getPlugins()
+      .some((p) => p.id === "stratego");
+    if (isStratego) {
+      setTimeout(() => {
+        get().showAnnouncement("ENEMY PIECES ARE HIDDEN!", 2500, "hint");
       }, 2200);
     }
 

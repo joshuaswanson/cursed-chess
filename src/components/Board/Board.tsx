@@ -513,6 +513,8 @@ export function Board() {
   let gravityDirection: string | null = null;
   let gravityAngle: number | null = null;
   let gravityMovesFromOverlay: { from: number; to: number }[] = [];
+  let strategoHidden = new Set<number>();
+  let strategoLakes = new Set<number>();
   let rallyCooldowns: Record<number, { total: number; gen: number }> = {};
   for (const overlay of overlays) {
     if (overlay.type === "portal" && overlay.squares.length === 2) {
@@ -551,6 +553,12 @@ export function Board() {
       };
       shrinkRing = brData?.shrinkRing ?? 0;
       dangerProgress = brData?.dangerProgress ?? 0;
+    }
+    if (overlay.type === "stratego-hidden") {
+      strategoHidden = new Set(overlay.squares);
+    }
+    if (overlay.type === "stratego-lake") {
+      strategoLakes = new Set(overlay.squares);
     }
   }
 
@@ -761,16 +769,23 @@ export function Board() {
             <div className={piece ? "capture-hint" : "move-hint"} />
           )}
 
+          {strategoLakes.has(sq) && <div className="stratego-lake-tile" />}
+
           {piece && !isDragSource && !isDead && (
             <>
               <img
                 src={getPieceImage(piece)}
                 alt={`${piece.color}${piece.type}`}
-                className="piece-img"
+                className={`piece-img${strategoHidden.has(sq) ? " stratego-piece-hidden" : ""}`}
                 style={pieceStyle}
                 draggable={false}
                 onPointerDown={(e) => handlePointerDown(e, sq, piece)}
               />
+              {strategoHidden.has(sq) && (
+                <div className="stratego-mask" style={pieceStyle}>
+                  ?
+                </div>
+              )}
               {rallyCooldowns[sq] != null && (
                 <svg
                   key={`cd-${sq}-${rallyCooldowns[sq].gen}`}
