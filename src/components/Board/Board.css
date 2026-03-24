@@ -58,17 +58,23 @@
   background-color: transparent;
 }
 
-/* --- Rally deploy zone (player's half) --- */
-.square.deploy-zone {
-  box-shadow: inset 0 0 8px rgba(102, 255, 51, 0.12);
+/* --- Rally deploy zone border (bottom half = player's ranks 0-3) --- */
+.deploy-zone-border {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
+  height: calc(50% - 8px);
+  border: 3px solid rgba(102, 255, 51, 0.5);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 5;
+  transition: background-color 0.15s ease;
 }
 
-.square.deploy-zone.light {
-  background-color: #e8ddb0;
-}
-
-.square.deploy-zone.dark {
-  background-color: #a8855e;
+.deploy-zone-border.dragging {
+  background-color: rgba(102, 255, 51, 0.08);
+  border-color: rgba(102, 255, 51, 0.7);
 }
 
 /* --- Rally deploy target (active drag) --- */
@@ -79,6 +85,27 @@
 
 .square.deploy-target:hover {
   box-shadow: inset 0 0 20px rgba(102, 255, 51, 0.5);
+}
+
+/* --- Cooldown pie chart overlay on pieces --- */
+.cooldown-pie {
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  width: 90%;
+  height: 90%;
+  pointer-events: none;
+  z-index: 3;
+  transform: rotate(-90deg);
+}
+
+@keyframes cooldown-fill {
+  from {
+    stroke-dashoffset: 100.53;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 /* --- Minefield --- */

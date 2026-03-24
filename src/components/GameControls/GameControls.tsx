@@ -62,6 +62,15 @@ export function GameControls() {
             &#9197;
           </button>
         )}
+        <button
+          onClick={() =>
+            useGameStore.setState((s) => ({ devMode: !s.devMode }))
+          }
+          className={`control-btn${devMode ? " active" : ""}`}
+          title="Toggle Dev Mode"
+        >
+          DEV
+        </button>
       </div>
       {devMode && (
         <div className="dev-panel">

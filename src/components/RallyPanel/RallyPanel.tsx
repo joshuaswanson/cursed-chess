@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { PieceType } from "../../engine";
 import type { SquareIndex } from "../../engine";
-import { PIECE_COST } from "../../plugins/rallyTheTroops";
-import type { RallyPlugin } from "../../plugins/rallyTheTroops";
+import { PIECE_COST } from "../../plugins/clashRoyale";
+import type { RallyPlugin } from "../../plugins/clashRoyale";
 import "./RallyPanel.css";
 
 const DEPLOYABLE: { type: PieceType; label: string; img: string }[] = [

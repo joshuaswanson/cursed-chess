@@ -117,13 +117,13 @@ export class PluginManager {
 
   invokeTickAutonomous(
     tickMs: number,
-  ): { from: SquareIndex; to: SquareIndex } | null {
+  ): { from: SquareIndex; to: SquareIndex }[] {
+    const moves: { from: SquareIndex; to: SquareIndex }[] = [];
     for (const p of this.plugins) {
       if (p.tickAutonomous) {
-        const result = p.tickAutonomous(this.ctx, tickMs);
-        if (result) return result;
+        moves.push(...p.tickAutonomous(this.ctx, tickMs));
       }
     }
-    return null;
+    return moves;
   }
 }
