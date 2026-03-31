@@ -103,6 +103,8 @@ export interface GameStore {
   lastHexMove: { from: HexCoord; to: HexCoord } | null;
   hexPromotionPending: { from: HexCoord; to: HexCoord } | null;
 
+  hexTransition: "morph-out" | "morph-in" | null;
+
   // Hex actions
   selectHex: (coord: HexCoord) => void;
   makeHexMove: (from: HexCoord, to: HexCoord, promotion?: PieceType) => void;
@@ -177,6 +179,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   legalHexMoves: [],
   lastHexMove: null,
   hexPromotionPending: null,
+  hexTransition: null,
 
   selectHex: (coord: HexCoord) => {
     const state = get();
@@ -540,7 +543,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       .find((o) => o.type === "battle-royale");
     if (brOverlay) {
       const brData = brOverlay.data as { shrinkRing: number } | undefined;
-      if (brData && brData.shrinkRing >= 2 && get().modeTimeRemaining > 5) {
+      if (brData && brData.shrinkRing >= 1 && get().modeTimeRemaining > 5) {
         set({ modeTimeRemaining: 5 });
       }
     }
@@ -625,6 +628,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       legalHexMoves: [],
       lastHexMove: null,
       hexPromotionPending: null,
+      hexTransition: null,
       timeWhite: 999,
       timeBlack: 1,
       moveTimerActive: true,
@@ -695,6 +699,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         legalHexMoves: [],
         lastHexMove: null,
         hexPromotionPending: null,
+        hexTransition: null,
       });
       if (devMode) {
         if (isHexMode) {
@@ -934,33 +939,66 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentModeIndex < 0 ? 0 : (currentModeIndex + 1) % GAME_MODES.length;
     const mode = GAME_MODES[nextIndex];
 
-    // Hex chess mode: completely separate game engine
+    // Hex chess mode: carry surviving pieces onto the hex board
     if (mode.isHex) {
-      const hexGame = new HexGame();
+      // Collect surviving pieces from the standard board
+      const whitePieces: import("../engine").Piece[] = [];
+      const blackPieces: import("../engine").Piece[] = [];
+      for (let rank = 0; rank < 8; rank++) {
+        for (let file = 0; file < 8; file++) {
+          const sq = ((rank << 4) | file) as SquareIndex;
+          const piece = game.board.get(sq);
+          if (piece) {
+            if (piece.color === Color.White) whitePieces.push({ ...piece });
+            else blackPieces.push({ ...piece });
+          }
+        }
+      }
+
       set({
         currentModeIndex: nextIndex,
-        modeTimeRemaining: 60,
-        status: GameStatus.Active,
-        isHexMode: true,
-        hexGame,
-        selectedHex: null,
-        legalHexMoves: [],
-        lastHexMove: null,
-        hexPromotionPending: null,
-        turn: Color.White,
         selectedSquare: null,
         legalMoveSquares: [],
         hasPortalMoves: false,
         portalEntrance: null,
-        moveTimerActive: true,
-        timeWhite: 10,
-        timeBlack: 1,
       });
 
+      // Phase 1: Show announcements over the standard board
       get().showAnnouncement(mode.name);
       setTimeout(() => {
         get().showAnnouncement("CHESS ON HEXAGONS!", 2500, "hint");
       }, 2200);
+
+      // Phase 2: After announcements, morph the standard board out
+      setTimeout(() => {
+        set({ hexTransition: "morph-out", paused: true });
+      }, 4800);
+
+      // Phase 3: Swap to hex board and morph in
+      setTimeout(() => {
+        const hexGame = new HexGame(whitePieces, blackPieces);
+        set({
+          modeTimeRemaining: 60,
+          status: GameStatus.Active,
+          isHexMode: true,
+          hexGame,
+          hexTransition: "morph-in",
+          selectedHex: null,
+          legalHexMoves: [],
+          lastHexMove: null,
+          hexPromotionPending: null,
+          turn: Color.White,
+          moveTimerActive: true,
+          timeWhite: 10,
+          timeBlack: 1,
+        });
+      }, 5600);
+
+      // Phase 4: Clear transition, unpause
+      setTimeout(() => {
+        set({ hexTransition: null, paused: false });
+      }, 6400);
+
       return;
     }
 

@@ -28,7 +28,7 @@ export class BattleRoyalePlugin implements ModePlugin {
   onTurnEnd(ctx: PluginContext, color: Color): void {
     if (color === Color.Black) {
       this.turnCount++;
-      if (this.turnCount % this.shrinkInterval === 0 && this.shrinkRing < 2) {
+      if (this.turnCount % this.shrinkInterval === 0 && this.shrinkRing < 1) {
         this.shrinkRing++;
         this.applyRing(ctx);
       }
@@ -50,7 +50,7 @@ export class BattleRoyalePlugin implements ModePlugin {
     if (this.deadSquares.has(square)) {
       return [{ className: "dead-square" }];
     }
-    if (this.shrinkRing < 3 && this.isInRing(square, this.shrinkRing + 1)) {
+    if (this.shrinkRing < 2 && this.isInRing(square, this.shrinkRing + 1)) {
       return [{ className: "danger-square" }];
     }
     return [];
@@ -59,7 +59,7 @@ export class BattleRoyalePlugin implements ModePlugin {
   getBoardOverlays(_ctx: PluginContext): BoardOverlay[] {
     // Progress toward next shrink (0 = just shrunk, 1 = about to shrink)
     const progress =
-      this.shrinkRing < 2
+      this.shrinkRing < 1
         ? (this.turnCount % this.shrinkInterval) / this.shrinkInterval
         : 0;
     return [
