@@ -1,6 +1,7 @@
 import {
   isValidHex,
   hexKey,
+  opponent,
   Color,
   PieceType,
   ORTHO,
@@ -12,10 +13,6 @@ import {
 } from "./types";
 import type { HexCoord, HexMove, Piece } from "./types";
 import type { HexBoard } from "./board";
-
-function opponent(c: Color): Color {
-  return c === Color.White ? Color.Black : Color.White;
-}
 
 function minR(q: number): number {
   return Math.max(-5, -5 - q);

@@ -16,39 +16,29 @@ function placeGroup(
   front: HexCoord[],
   back: HexCoord[],
 ): void {
+  const kings: Piece[] = [];
+  const pawns: Piece[] = [];
+  const others: Piece[] = [];
+  for (const p of pieces) {
+    if (p.type === PieceType.King) kings.push(p);
+    else if (p.type === PieceType.Pawn) pawns.push(p);
+    else others.push(p);
+  }
+
   let fi = 0;
   let bi = 0;
-  // King first (must be placed in back)
-  for (const p of pieces) {
-    if (p.type === PieceType.King && bi < back.length) {
-      board.set(back[bi].q, back[bi].r, p);
-      bi++;
-    }
-  }
-  // Pawns in front
-  for (const p of pieces) {
-    if (p.type === PieceType.Pawn) {
-      if (fi < front.length) {
-        board.set(front[fi].q, front[fi].r, p);
-        fi++;
-      } else if (bi < back.length) {
-        board.set(back[bi].q, back[bi].r, p);
-        bi++;
-      }
-    }
-  }
-  // Other pieces in back
-  for (const p of pieces) {
-    if (p.type !== PieceType.King && p.type !== PieceType.Pawn) {
-      if (bi < back.length) {
-        board.set(back[bi].q, back[bi].r, p);
-        bi++;
-      } else if (fi < front.length) {
-        board.set(front[fi].q, front[fi].r, p);
-        fi++;
-      }
-    }
-  }
+  const placeBack = (p: Piece) => {
+    if (bi < back.length) (board.set(back[bi].q, back[bi].r, p), bi++);
+    else if (fi < front.length) (board.set(front[fi].q, front[fi].r, p), fi++);
+  };
+  const placeFront = (p: Piece) => {
+    if (fi < front.length) (board.set(front[fi].q, front[fi].r, p), fi++);
+    else if (bi < back.length) (board.set(back[bi].q, back[bi].r, p), bi++);
+  };
+
+  for (const p of kings) placeBack(p);
+  for (const p of others) placeBack(p);
+  for (const p of pawns) placeFront(p);
 }
 
 export class HexBoard {

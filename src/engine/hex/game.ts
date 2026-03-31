@@ -1,11 +1,7 @@
 import { HexBoard } from "./board";
 import { generatePseudoLegalMoves, isHexAttacked } from "./moves";
-import { Color, PieceType, GameStatus, PAWN_FORWARD } from "./types";
+import { opponent, Color, PieceType, GameStatus, PAWN_FORWARD } from "./types";
 import type { HexCoord, HexMove, Piece } from "./types";
-
-function opponent(c: Color): Color {
-  return c === Color.White ? Color.Black : Color.White;
-}
 
 export class HexGame {
   board: HexBoard;
@@ -66,16 +62,8 @@ export class HexGame {
     });
   }
 
+  /** Execute a move. Caller is responsible for legality validation. */
   makeMove(move: HexMove): boolean {
-    const legal = this.getLegalMoves(move.from);
-    const found = legal.find(
-      (m) =>
-        m.to.q === move.to.q &&
-        m.to.r === move.to.r &&
-        m.promotion === move.promotion,
-    );
-    if (!found) return false;
-
     this.board.remove(move.from.q, move.from.r);
     const placed: Piece = move.promotion
       ? { type: move.promotion, color: move.piece.color }

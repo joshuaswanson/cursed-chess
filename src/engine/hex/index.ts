@@ -7,6 +7,7 @@ export {
   parseHexKey,
   isValidHex,
   hexColor,
+  opponent,
   ORTHO,
   DIAG,
   KNIGHT_OFFSETS,

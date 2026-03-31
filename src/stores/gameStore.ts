@@ -137,6 +137,14 @@ export interface GameStore {
   isLegalMoveTarget: (square: SquareIndex) => boolean;
 }
 
+// Hex transition timeout IDs — stored outside Zustand to avoid re-renders.
+// Cancelled on re-entry to prevent stale state updates.
+let hexTransitionTimers: ReturnType<typeof setTimeout>[] = [];
+function clearHexTransitionTimers() {
+  for (const t of hexTransitionTimers) clearTimeout(t);
+  hexTransitionTimers = [];
+}
+
 export const useGameStore = create<GameStore>((set, get) => ({
   game: new Game(),
   pluginManager: new PluginManager(),
@@ -607,6 +615,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     pluginManager.invokeOnGameStart();
+    clearHexTransitionTimers();
 
     set({
       game,
@@ -963,46 +972,51 @@ export const useGameStore = create<GameStore>((set, get) => ({
         portalEntrance: null,
       });
 
+      clearHexTransitionTimers();
+
       // Phase 1: Show announcements over the standard board
       get().showAnnouncement(mode.name);
-      setTimeout(() => {
-        get().showAnnouncement("CHESS ON HEXAGONS!", 2500, "hint");
-      }, 2200);
+      hexTransitionTimers.push(
+        setTimeout(() => {
+          get().showAnnouncement("CHESS ON HEXAGONS!", 2500, "hint");
+        }, 2200),
 
-      // Phase 2: After announcements, morph the standard board out
-      setTimeout(() => {
-        set({ hexTransition: "morph-out", paused: true });
-      }, 4800);
+        // Phase 2: After announcements, morph the standard board out
+        setTimeout(() => {
+          set({ hexTransition: "morph-out", paused: true });
+        }, 4800),
 
-      // Phase 3: Swap to hex board and morph in
-      setTimeout(() => {
-        const hexGame = new HexGame(whitePieces, blackPieces);
-        set({
-          modeTimeRemaining: 60,
-          status: GameStatus.Active,
-          isHexMode: true,
-          hexGame,
-          hexTransition: "morph-in",
-          selectedHex: null,
-          legalHexMoves: [],
-          lastHexMove: null,
-          hexPromotionPending: null,
-          turn: Color.White,
-          moveTimerActive: true,
-          timeWhite: 10,
-          timeBlack: 1,
-        });
-      }, 5600);
+        // Phase 3: Swap to hex board and morph in
+        setTimeout(() => {
+          const hexGame = new HexGame(whitePieces, blackPieces);
+          set({
+            modeTimeRemaining: 60,
+            status: GameStatus.Active,
+            isHexMode: true,
+            hexGame,
+            hexTransition: "morph-in",
+            selectedHex: null,
+            legalHexMoves: [],
+            lastHexMove: null,
+            hexPromotionPending: null,
+            turn: Color.White,
+            moveTimerActive: true,
+            timeWhite: 10,
+            timeBlack: 1,
+          });
+        }, 5600),
 
-      // Phase 4: Clear transition, unpause
-      setTimeout(() => {
-        set({ hexTransition: null, paused: false });
-      }, 6400);
+        // Phase 4: Clear transition, unpause
+        setTimeout(() => {
+          set({ hexTransition: null, paused: false });
+        }, 6400),
+      );
 
       return;
     }
 
-    // Standard mode: clear hex state
+    // Standard mode: clear hex state and cancel any pending hex transitions
+    clearHexTransitionTimers();
     set({
       isHexMode: false,
       hexGame: null,

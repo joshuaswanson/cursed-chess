@@ -4,6 +4,10 @@ export { Color, PieceType };
 export type { Piece };
 export { GameStatus } from "../types";
 
+export function opponent(c: Color): Color {
+  return c === Color.White ? Color.Black : Color.White;
+}
+
 export interface HexCoord {
   readonly q: number;
   readonly r: number;
