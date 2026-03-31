@@ -14,9 +14,13 @@ export class HexGame {
   halfMoveClock = 0;
   fullMoveNumber = 1;
 
-  constructor() {
+  constructor(whitePieces?: Piece[], blackPieces?: Piece[]) {
     this.board = new HexBoard();
-    this.board.setupInitial();
+    if (whitePieces && blackPieces) {
+      this.board.setupFromPieces(whitePieces, blackPieces);
+    } else {
+      this.board.setupInitial();
+    }
   }
 
   isInCheck(color?: Color): boolean {

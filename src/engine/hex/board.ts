@@ -1,6 +1,55 @@
-import { hexKey, parseHexKey } from "./types";
+import { hexKey, isValidHex, parseHexKey } from "./types";
 import { Color, PieceType } from "./types";
 import type { HexCoord, Piece } from "./types";
+
+function shuffle<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+/** Place pieces: pawns in front cells, king + others in back cells */
+function placeGroup(
+  board: HexBoard,
+  pieces: Piece[],
+  front: HexCoord[],
+  back: HexCoord[],
+): void {
+  let fi = 0;
+  let bi = 0;
+  // King first (must be placed in back)
+  for (const p of pieces) {
+    if (p.type === PieceType.King && bi < back.length) {
+      board.set(back[bi].q, back[bi].r, p);
+      bi++;
+    }
+  }
+  // Pawns in front
+  for (const p of pieces) {
+    if (p.type === PieceType.Pawn) {
+      if (fi < front.length) {
+        board.set(front[fi].q, front[fi].r, p);
+        fi++;
+      } else if (bi < back.length) {
+        board.set(back[bi].q, back[bi].r, p);
+        bi++;
+      }
+    }
+  }
+  // Other pieces in back
+  for (const p of pieces) {
+    if (p.type !== PieceType.King && p.type !== PieceType.Pawn) {
+      if (bi < back.length) {
+        board.set(back[bi].q, back[bi].r, p);
+        bi++;
+      } else if (fi < front.length) {
+        board.set(front[fi].q, front[fi].r, p);
+        fi++;
+      }
+    }
+  }
+}
 
 export class HexBoard {
   private cells = new Map<string, Piece>();
@@ -97,5 +146,39 @@ export class HexBoard {
     this.set(-2, -2, { type: PieceType.Pawn, color: Color.Black });
     this.set(-3, -1, { type: PieceType.Pawn, color: Color.Black });
     this.set(-4, -1, { type: PieceType.Pawn, color: Color.Black });
+  }
+
+  /**
+   * Place surviving pieces from a standard game onto the hex board.
+   * Uses visual y-position (q + 2r) to determine top/bottom halves,
+   * since the axial r-axis runs diagonally, not vertically.
+   */
+  setupFromPieces(whitePieces: Piece[], blackPieces: Piece[]): void {
+    this.cells.clear();
+
+    const whiteBack: HexCoord[] = [];
+    const whiteFront: HexCoord[] = [];
+    const blackBack: HexCoord[] = [];
+    const blackFront: HexCoord[] = [];
+
+    for (let q = -5; q <= 5; q++) {
+      for (let r = -5; r <= 5; r++) {
+        if (!isValidHex(q, r)) continue;
+        // q + 2r is proportional to visual y (positive = bottom/White)
+        const yMetric = q + 2 * r;
+        if (yMetric >= 5) whiteBack.push({ q, r });
+        else if (yMetric >= 1) whiteFront.push({ q, r });
+        else if (yMetric <= -5) blackBack.push({ q, r });
+        else if (yMetric <= -1) blackFront.push({ q, r });
+      }
+    }
+
+    shuffle(whiteBack);
+    shuffle(whiteFront);
+    shuffle(blackBack);
+    shuffle(blackFront);
+
+    placeGroup(this, whitePieces, whiteFront, whiteBack);
+    placeGroup(this, blackPieces, blackFront, blackBack);
   }
 }

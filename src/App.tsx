@@ -12,6 +12,7 @@ import "./styles/global.css";
 function App() {
   const currentModeIndex = useGameStore((s) => s.currentModeIndex);
   const isHexMode = useGameStore((s) => s.isHexMode);
+  const hexTransition = useGameStore((s) => s.hexTransition);
   const isPortalMode =
     currentModeIndex >= 0 && GAME_MODES[currentModeIndex].name === "PORTALS";
 
@@ -46,7 +47,19 @@ function App() {
 
         <main className="game-layout">
           <div className="board-container">
-            {isHexMode ? <HexBoard /> : <Board />}
+            {isHexMode ? (
+              <div
+                className={hexTransition === "morph-in" ? "hex-morph-in" : ""}
+              >
+                <HexBoard />
+              </div>
+            ) : (
+              <div
+                className={hexTransition === "morph-out" ? "hex-morph-out" : ""}
+              >
+                <Board />
+              </div>
+            )}
           </div>
           <div className="sidebar">
             <ModePanel />
