@@ -9,7 +9,7 @@ A web-based chess game where the rules change every 45 seconds. Play through rot
 - **Normal Chess**: standard chess for the first three moves, then the chaos begins.
 - **Portals**: portals spawn on the board. Pieces that enter one exit the other and continue their trajectory.
 - **Fog of War**: dense fog rolls over the enemy half. You can't see their pieces.
-- **Battle Royale**: the outer ring of the board collapses. Pieces on the edge are eliminated.
+- **Battle Royale**: the edge of the board cracks, glows, and collapses into an abyss, taking every piece on it. Kings leap to safety.
 - **Clash Royale**: pieces move on their own. Spend resources to deploy reinforcements via drag and drop.
 - **Minefield**: hidden mines are scattered across the board. Step on one and your piece explodes.
 - **King of the Hill**: hold 3 of the 4 center squares for 3 consecutive rounds to win.
