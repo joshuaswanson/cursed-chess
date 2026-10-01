@@ -202,6 +202,43 @@ export class Board {
     const state = board.loadFen(STARTING_FEN);
     return { board, state };
   }
+
+  /** Fill each side's half from its home rank outward: king and pieces first, then pawns. */
+  placeArmy(color: Color, pieces: Piece[]): void {
+    const homeRanks = color === Color.White ? [0, 1, 2, 3] : [7, 6, 5, 4];
+    const cells = homeRanks.flatMap((rank) =>
+      CENTER_OUT_FILES.map((file) => toIndex(file, rank)),
+    );
+    const pawnStart = CENTER_OUT_FILES.length;
+    const placed = new Set<SquareIndex>();
+    const take = (preferred: number) => {
+      const sq =
+        cells.slice(preferred).find((c) => !placed.has(c)) ??
+        cells.find((c) => !placed.has(c));
+      if (sq !== undefined) placed.add(sq);
+      return sq;
+    };
+
+    const ordered = [...pieces].sort(
+      (a, b) => PLACEMENT_ORDER[a.type] - PLACEMENT_ORDER[b.type],
+    );
+    for (const piece of ordered) {
+      const sq = take(piece.type === PieceType.Pawn ? pawnStart : 0);
+      if (sq === undefined) return;
+      this.put(sq, { ...piece });
+    }
+  }
 }
+
+const CENTER_OUT_FILES = [4, 3, 5, 2, 6, 1, 7, 0];
+
+const PLACEMENT_ORDER: Record<PieceType, number> = {
+  [PieceType.King]: 0,
+  [PieceType.Queen]: 1,
+  [PieceType.Rook]: 2,
+  [PieceType.Bishop]: 3,
+  [PieceType.Knight]: 4,
+  [PieceType.Pawn]: 5,
+};
 
 export { STARTING_FEN };

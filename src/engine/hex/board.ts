@@ -25,16 +25,17 @@ function placeGroup(
     else others.push(p);
   }
 
-  let fi = 0;
-  let bi = 0;
-  const placeBack = (p: Piece) => {
-    if (bi < back.length) (board.set(back[bi].q, back[bi].r, p), bi++);
-    else if (fi < front.length) (board.set(front[fi].q, front[fi].r, p), fi++);
+  const frontFirst = [...front, ...back];
+  const backFirst = [...back, ...front];
+  const used = new Set<HexCoord>();
+  const place = (p: Piece, order: HexCoord[]) => {
+    const cell = order.find((c) => !used.has(c));
+    if (!cell) return;
+    used.add(cell);
+    board.set(cell.q, cell.r, p);
   };
-  const placeFront = (p: Piece) => {
-    if (fi < front.length) (board.set(front[fi].q, front[fi].r, p), fi++);
-    else if (bi < back.length) (board.set(back[bi].q, back[bi].r, p), bi++);
-  };
+  const placeBack = (p: Piece) => place(p, backFirst);
+  const placeFront = (p: Piece) => place(p, frontFirst);
 
   for (const p of kings) placeBack(p);
   for (const p of others) placeBack(p);

@@ -112,6 +112,18 @@ export class HexGame {
     return GameStatus.Active;
   }
 
+  /** Every piece on the board, split by color. */
+  armies(): Record<Color, Piece[]> {
+    const result: Record<Color, Piece[]> = {
+      [Color.White]: [],
+      [Color.Black]: [],
+    };
+    for (const [, piece] of this.board.entries()) {
+      result[piece.color].push({ ...piece });
+    }
+    return result;
+  }
+
   /** Pick a random legal move (for AI) */
   getRandomMove(): HexMove | null {
     const moves = this.getLegalMoves();

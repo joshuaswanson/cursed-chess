@@ -13,9 +13,9 @@ const NW = 15;
 const SE = -15;
 const SW = -17;
 
-const ROOK_DIRECTIONS = [NORTH, SOUTH, EAST, WEST];
-const BISHOP_DIRECTIONS = [NE, NW, SE, SW];
-const QUEEN_DIRECTIONS = [...ROOK_DIRECTIONS, ...BISHOP_DIRECTIONS];
+export const ROOK_DIRECTIONS = [NORTH, SOUTH, EAST, WEST];
+export const BISHOP_DIRECTIONS = [NE, NW, SE, SW];
+export const QUEEN_DIRECTIONS = [...ROOK_DIRECTIONS, ...BISHOP_DIRECTIONS];
 const KNIGHT_OFFSETS = [
   NORTH + NE, // +2 rank, +1 file = 33
   NORTH + NW, // +2 rank, -1 file = 31
@@ -28,7 +28,7 @@ const KNIGHT_OFFSETS = [
 ];
 const KING_OFFSETS = QUEEN_DIRECTIONS;
 
-function opponent(color: Color): Color {
+export function opponent(color: Color): Color {
   return color === Color.White ? Color.Black : Color.White;
 }
 
@@ -335,5 +335,3 @@ export function isSquareAttacked(
 
   return false;
 }
-
-export { opponent };

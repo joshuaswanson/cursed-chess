@@ -67,6 +67,15 @@ export const GameStatus = {
 } as const;
 export type GameStatus = (typeof GameStatus)[keyof typeof GameStatus];
 
+export function isGameOver(status: GameStatus): boolean {
+  return (
+    status === GameStatus.Checkmate ||
+    status === GameStatus.Stalemate ||
+    status === GameStatus.DrawFiftyMove ||
+    status === GameStatus.DrawInsufficientMaterial
+  );
+}
+
 export interface MoveRecord {
   move: Move;
   san: string;

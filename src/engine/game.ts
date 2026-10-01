@@ -1,5 +1,6 @@
 import { Color, PieceType, MoveFlag, GameStatus } from "./types";
 import type {
+  Piece,
   SquareIndex,
   Move,
   CastlingRights,
@@ -10,6 +11,8 @@ import { Board, STARTING_FEN } from "./board";
 import { generatePseudoLegalMoves, isSquareAttacked, opponent } from "./moves";
 import { toIndex, fileOf, rankOf } from "../utils/squareUtils";
 import { moveToSan } from "./notation";
+
+const EMPTY_FEN = "8/8/8/8/8/8/8/8 w - - 0 1";
 
 function cloneCastling(c: CastlingRights): CastlingRights {
   return {
@@ -36,6 +39,25 @@ export class Game {
     this.halfMoveClock = state.halfMoveClock;
     this.fullMoveNumber = state.fullMoveNumber;
     this.history = [];
+  }
+
+  static fromArmies(white: Piece[], black: Piece[]): Game {
+    const game = new Game(EMPTY_FEN);
+    game.board.placeArmy(Color.White, white);
+    game.board.placeArmy(Color.Black, black);
+    return game;
+  }
+
+  /** Every piece on the board, split by color. */
+  armies(): Record<Color, Piece[]> {
+    return {
+      [Color.White]: this.board
+        .findPieces(Color.White)
+        .map(({ piece }) => ({ ...piece })),
+      [Color.Black]: this.board
+        .findPieces(Color.Black)
+        .map(({ piece }) => ({ ...piece })),
+    };
   }
 
   /** Get all legal moves, optionally filtered to a specific square */
@@ -84,11 +106,11 @@ export class Game {
       boardClone.put(move.to, move.piece);
     }
 
-    // Check if our king is in check after the move
     const kingSq =
       move.piece.type === PieceType.King
         ? move.to
-        : boardClone.findKing(this.turn)!;
+        : boardClone.findKing(this.turn);
+    if (kingSq === null) return true;
 
     return !isSquareAttacked(boardClone, kingSq, opponent(this.turn));
   }
@@ -373,7 +395,7 @@ export class Game {
   /** Check if the current side's king is in check */
   isInCheck(): boolean {
     const kingSq = this.board.findKing(this.turn);
-    if (!kingSq) return false;
+    if (kingSq === null) return false;
     return isSquareAttacked(this.board, kingSq, opponent(this.turn));
   }
 

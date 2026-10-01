@@ -1,3 +1,4 @@
+import { Color } from "../engine/types";
 import type { SquareIndex } from "../engine/types";
 
 const FILES = "abcdefgh";
@@ -42,4 +43,15 @@ export function indexToRowCol(sq: SquareIndex): { row: number; col: number } {
 /** Convert row/col (rendering coordinates) to 0x88 index */
 export function rowColToIndex(row: number, col: number): SquareIndex {
   return toIndex(col, 7 - row);
+}
+
+/** All 64 board squares, rank 1 first */
+export const ALL_SQUARES: readonly SquareIndex[] = Array.from(
+  { length: 64 },
+  (_, i) => toIndex(i % 8, Math.floor(i / 8)),
+);
+
+/** Promotion rank for a pawn of the given color */
+export function promotionRank(color: Color): number {
+  return color === Color.White ? 7 : 0;
 }
