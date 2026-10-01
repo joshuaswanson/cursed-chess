@@ -22,6 +22,8 @@ import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GravityPlugin } from "../plugins/gravity";
 import { StrategoPlugin } from "../plugins/stratego";
 import { HexGame } from "../engine/hex/game";
+import { chooseMove, PIECE_VALUE } from "../ai/chooseMove";
+import type { SquareBonus } from "../ai/chooseMove";
 import type { HexCoord, HexMove } from "../engine/hex";
 
 export type { PortalMoveInfo };
@@ -279,6 +281,24 @@ function startCursedIntro(): void {
   schedule(() => showAnnouncement("GET READY!", 1500, "intro"), 600);
   schedule(() => showAnnouncement("CURSED CHESS", 2000, "intro"), 2400);
   schedule(() => switchMode(), 4400);
+}
+
+/** How the current mode's square markings make a square better or worse to stand on */
+function modeSquareBonus(pluginManager: PluginManager): SquareBonus {
+  return (square, piece) => {
+    const classes = pluginManager
+      .getSquareModifiers(square)
+      .map((m) => m.className ?? "")
+      .join(" ");
+    const value = PIECE_VALUE[piece.type];
+    let bonus = 0;
+    if (classes.includes("danger-square")) bonus -= Math.min(value, 9) * 0.8;
+    if (classes.includes("mine-warning") && piece.type !== PieceType.King) {
+      bonus -= value;
+    }
+    if (classes.includes("hill-square")) bonus += 0.5;
+    return bonus;
+  };
 }
 
 function freshPluginManager(game: Game, plugins: ModePlugin[] = []) {
@@ -618,11 +638,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (next <= 0) get().expireTimer();
   },
 
-  // A random move is played for whoever runs out of time. This is also the AI.
+  // Black's move comes from the AI. A human who runs out of time gets a random move.
   expireTimer: () => {
     const { isHexMode, hexGame, game } = get();
     if (isHexMode) {
-      const move = hexGame?.getRandomMove();
+      const move = hexGame?.getBestMove(PIECE_VALUE);
       if (move) get().makeHexMove(move.from, move.to, move.promotion);
       return;
     }
@@ -643,10 +663,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    // Portal moves are favored to show off the mechanic
-    const portalMoves = moves.filter((m) => m.flags & MoveFlag.Portal);
-    const pool = portalMoves.length > 0 ? portalMoves : moves;
-    const pick = pool[Math.floor(Math.random() * pool.length)];
+    const pick =
+      game.turn === Color.Black
+        ? chooseMove(game, moves, modeSquareBonus(get().pluginManager))
+        : moves[Math.floor(Math.random() * moves.length)];
     get().makeMove(pick.from, pick.to, pick.promotion);
   },
 

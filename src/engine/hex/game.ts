@@ -124,16 +124,48 @@ export class HexGame {
     return result;
   }
 
-  /** Pick a random legal move (for AI) */
-  getRandomMove(): HexMove | null {
+  /**
+   * Greedy AI move: material won, minus the moved piece's value if it lands
+   * on an attacked square (less a recapture if it is defended)
+   */
+  getBestMove(pieceValue: Record<PieceType, number>): HexMove | null {
     const moves = this.getLegalMoves();
-    if (moves.length === 0) return null;
-
-    // Simple heuristic: prefer captures, then forward moves
-    const captures = moves.filter((m) => m.captured);
-    if (captures.length > 0 && Math.random() < 0.6) {
-      return captures[Math.floor(Math.random() * captures.length)];
+    let best: HexMove | null = null;
+    let bestScore = -Infinity;
+    for (const move of moves) {
+      const score = this.scoreMove(move, pieceValue) + Math.random() * 0.35;
+      if (score > bestScore) {
+        bestScore = score;
+        best = move;
+      }
     }
-    return moves[Math.floor(Math.random() * moves.length)];
+    return best;
+  }
+
+  private scoreMove(
+    move: HexMove,
+    pieceValue: Record<PieceType, number>,
+  ): number {
+    const me = this.turn;
+    const landed = move.promotion ?? move.piece.type;
+    let score = move.captured ? pieceValue[move.captured.type] : 0;
+    if (move.promotion) score += pieceValue[move.promotion] - 1;
+
+    const saved = this.board;
+    this.board = saved.clone();
+    this.board.remove(move.from.q, move.from.r);
+    this.board.set(move.to.q, move.to.r, { type: landed, color: me });
+    if (move.isEnPassant) {
+      const fwd = PAWN_FORWARD[opponent(me)];
+      this.board.remove(move.to.q + fwd.q, move.to.r + fwd.r);
+    }
+    if (isHexAttacked(this.board, move.to, opponent(me))) {
+      const defended = isHexAttacked(this.board, move.to, me);
+      score -= defended ? pieceValue[landed] * 0.4 : pieceValue[landed];
+    }
+    const theirKing = this.board.findKing(opponent(me));
+    if (theirKing && isHexAttacked(this.board, theirKing, me)) score += 0.4;
+    this.board = saved;
+    return score;
   }
 }
