@@ -31,7 +31,33 @@ interface DragState {
   /** Where the piece was grabbed, as a fraction of its width and height */
   grabX: number;
   grabY: number;
+  /** How strongly each nearby portal is stirred by the dragged piece, 0 to 1 */
+  portalCharges?: Record<number, number>;
+  /** The portal pulling the piece in, if the piece can legally enter one */
+  pull?: { color: PortalColor; strength: number };
 }
+
+function freshSwing() {
+  return {
+    scale: 1,
+    theta: 0,
+    omega: 0,
+    smoothVx: 0,
+    smoothVy: 0,
+    prevVx: 0,
+    prevVy: 0,
+    /** Vector from the cursor to the pulling portal's center, in px */
+    pullTargetX: 0,
+    pullTargetY: 0,
+    pullTargetStrength: 0,
+    pullX: 0,
+    pullY: 0,
+    pullStrength: 0,
+  };
+}
+
+/** Distance in squares at which a portal starts reacting to a dragged piece */
+const PORTAL_PULL_RANGE = 2.2;
 
 interface ReturnAnim {
   sq: SquareIndex;
@@ -45,8 +71,13 @@ interface ReturnAnim {
   started: boolean;
 }
 
+/**
+ * approach: slide into the first portal. shrink: get swallowed by an entrance.
+ * pop: emerge in place when the exit is the destination. fly: launch out of
+ * the exit (`slideFrom`) and fly to `sq`.
+ */
 interface PortalAnimPhase {
-  type: "approach" | "shrink" | "pop" | "slide";
+  type: "approach" | "shrink" | "pop" | "fly";
   sq: SquareIndex;
   color: PortalColor;
   slideFrom?: SquareIndex;
@@ -54,6 +85,27 @@ interface PortalAnimPhase {
 
 const PORTAL_ENTER_MS = 400;
 const PORTAL_EXIT_MS = 450;
+
+function phaseDistance(phase: PortalAnimPhase): number {
+  if (phase.slideFrom === undefined) return 0;
+  return Math.max(
+    Math.abs(fileOf(phase.slideFrom) - fileOf(phase.sq)),
+    Math.abs(rankOf(phase.slideFrom) - rankOf(phase.sq)),
+  );
+}
+
+function phaseDurationMs(phase: PortalAnimPhase): number {
+  switch (phase.type) {
+    case "approach":
+      return Math.max(100, phaseDistance(phase) * 60);
+    case "shrink":
+      return PORTAL_ENTER_MS;
+    case "pop":
+      return PORTAL_EXIT_MS;
+    case "fly":
+      return 340 + phaseDistance(phase) * 70;
+  }
+}
 
 export function Board() {
   const {
@@ -91,9 +143,7 @@ export function Board() {
   } | null>(null);
   const [closingPortals, setClosingPortals] = useState<
     Map<number, PortalColor>
-  >(
-    new Map(),
-  );
+  >(new Map());
   const [openingPortals, setOpeningPortals] = useState<Set<number>>(new Set());
   const wasDrag = useRef(false);
   const prevLastMove = useRef(lastMove);
@@ -118,29 +168,16 @@ export function Board() {
     return () => observer.disconnect();
   }, []);
 
-  // Pendulum physics for drag swing
-  const swingRef = useRef({
-    scale: 1,
-    theta: 0,
-    omega: 0,
-    smoothVx: 0,
-    smoothVy: 0,
-    prevVx: 0,
-    prevVy: 0,
-  });
+  // Pendulum physics for drag swing, plus the black-hole pull of a nearby portal
+  const swingRef = useRef(freshSwing());
+  const droppedOnRef = useRef<{ from: SquareIndex; to: SquareIndex } | null>(
+    null,
+  );
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
     if (!drag?.isDragging) {
-      swingRef.current = {
-        scale: 1,
-        theta: 0,
-        omega: 0,
-        smoothVx: 0,
-        smoothVy: 0,
-        prevVx: 0,
-        prevVy: 0,
-      };
+      swingRef.current = freshSwing();
       cancelAnimationFrame(rafRef.current);
       return;
     }
@@ -157,17 +194,37 @@ export function Board() {
       s.prevVx = s.smoothVx;
       s.prevVy = s.smoothVy;
 
+      s.pullX += (s.pullTargetX - s.pullX) * 0.2;
+      s.pullY += (s.pullTargetY - s.pullY) * 0.2;
+      s.pullStrength += (s.pullTargetStrength - s.pullStrength) * 0.15;
+      const p = s.pullStrength;
+      const pullDist = Math.hypot(s.pullX, s.pullY);
+
+      // The base swings to point at the portal: the pendulum hangs along the
+      // sum of gravity and the portal's pull, which dominates as it nears
+      const toward = Math.max(pullDist, 30);
+      const forceX = (s.pullX / toward) * 4 * p;
+      const forceY = (s.pullY / toward) * 4 * p + 1;
+      const restAngle = Math.atan2(-forceX, forceY);
       const torque =
         (Math.cos(s.theta) / R) * ax + (Math.sin(s.theta) / R) * ay;
-
-      s.omega += torque - GRAVITY * Math.sin(s.theta);
+      s.omega += torque - GRAVITY * (1 + 4 * p) * Math.sin(s.theta - restAngle);
       s.omega *= DAMPING;
       s.theta += s.omega;
-      s.scale += (PICKUP_SCALE - s.scale) * 0.35;
+      s.scale += (PICKUP_SCALE * (1 - 0.15 * p) - s.scale) * 0.35;
 
       if (dragImgRef.current) {
         const deg = s.theta * (180 / Math.PI);
-        dragImgRef.current.style.transform = `scale(${s.scale}) rotate(${deg}deg)`;
+        const drift = 0.35 * p * p;
+        const tremble = 1.5 * p * p;
+        const shakeX = (Math.random() - 0.5) * tremble;
+        const shakeY = (Math.random() - 0.5) * tremble;
+        // Stretched lengthwise in the piece's own frame, so the base reaches for the hole
+        const stretch = p ** 1.5;
+        dragImgRef.current.style.transform =
+          `translate(${s.pullX * drift + shakeX}px, ${s.pullY * drift + shakeY}px) ` +
+          `scale(${s.scale}) rotate(${deg}deg) ` +
+          `scale(${1 - 0.18 * stretch}, ${1 + 0.45 * stretch})`;
       }
 
       rafRef.current = requestAnimationFrame(tick);
@@ -227,8 +284,12 @@ export function Board() {
     const { from, transits, landing } = lastPortalMove;
     const phases: PortalAnimPhase[] = [];
 
-    // Approach: slide from `from` to first entrance (skip if same square)
-    if (from !== transits[0].entrance) {
+    // A piece dropped onto the entrance is already there, so it skips the approach
+    const dropped = droppedOnRef.current;
+    droppedOnRef.current = null;
+    const droppedOnEntrance =
+      dropped?.from === from && dropped.to === transits[0].entrance;
+    if (from !== transits[0].entrance && !droppedOnEntrance) {
       phases.push({
         type: "approach",
         sq: transits[0].entrance,
@@ -239,26 +300,14 @@ export function Board() {
 
     for (let i = 0; i < transits.length; i++) {
       const { entrance, exit, color } = transits[i];
+      const target =
+        i < transits.length - 1 ? transits[i + 1].entrance : landing;
       phases.push({ type: "shrink", sq: entrance, color });
-      phases.push({ type: "pop", sq: exit, color });
-      if (i < transits.length - 1) {
-        phases.push({
-          type: "slide",
-          sq: transits[i + 1].entrance,
-          color,
-          slideFrom: exit,
-        });
-      }
-    }
-
-    const last = transits[transits.length - 1];
-    if (last.exit !== landing) {
-      phases.push({
-        type: "slide",
-        sq: landing,
-        color: last.color,
-        slideFrom: last.exit,
-      });
+      phases.push(
+        target === exit
+          ? { type: "pop", sq: exit, color }
+          : { type: "fly", sq: target, color, slideFrom: exit },
+      );
     }
 
     if (phases.length > 0) {
@@ -274,26 +323,7 @@ export function Board() {
       return;
     }
 
-    // Compute duration for current phase
-    let duration: number;
-    if (currentPhase.type === "approach" || currentPhase.type === "slide") {
-      if (currentPhase.slideFrom !== undefined) {
-        const dFile = Math.abs(
-          fileOf(currentPhase.slideFrom) - fileOf(currentPhase.sq),
-        );
-        const dRank = Math.abs(
-          rankOf(currentPhase.slideFrom) - rankOf(currentPhase.sq),
-        );
-        const dist = Math.max(dFile, dRank);
-        duration = Math.max(100, dist * 60);
-      } else {
-        duration = 200;
-      }
-    } else if (currentPhase.type === "shrink") {
-      duration = PORTAL_ENTER_MS;
-    } else {
-      duration = PORTAL_EXIT_MS;
-    }
+    const duration = phaseDurationMs(currentPhase);
 
     const timer = setTimeout(() => {
       const nextIndex = portalAnim.phaseIndex + 1;
@@ -357,6 +387,48 @@ export function Board() {
     [game.turn],
   );
 
+  // Portals the dragged piece can legally enter pull it in like a black hole
+  const measurePortalPull = useCallback((clientX: number, clientY: number) => {
+    const legalTargets = useGameStore.getState().legalMoveSquares;
+    const portalCharges: Record<number, number> = {};
+    let pull: DragState["pull"];
+    let pullVector = { x: 0, y: 0 };
+    const portals = boardRef.current?.querySelectorAll<HTMLElement>(
+      ".portal-overlay:not(.portal-despawn)",
+    );
+    for (const portal of portals ?? []) {
+      const squareEl = portal.closest<HTMLElement>("[data-sq]");
+      if (!squareEl) continue;
+      const sq = Number(squareEl.dataset.sq);
+      const rect = squareEl.getBoundingClientRect();
+      const dx = rect.left + rect.width / 2 - clientX;
+      const dy = rect.top + rect.height / 2 - clientY;
+      const distance = Math.hypot(dx, dy) / rect.width;
+      const closeness = Math.max(
+        0,
+        Math.min(1, (PORTAL_PULL_RANGE - distance) / (PORTAL_PULL_RANGE - 0.3)),
+      );
+      if (closeness === 0) continue;
+
+      const canEnter = legalTargets.includes(sq);
+      portalCharges[sq] = canEnter ? closeness : closeness * 0.3;
+      const strength = closeness ** 1.3;
+      if (canEnter && strength > (pull?.strength ?? 0)) {
+        const color = portal.classList.contains("portal-orange")
+          ? "orange"
+          : "blue";
+        pull = { color, strength };
+        pullVector = { x: dx, y: dy };
+      }
+    }
+
+    const swing = swingRef.current;
+    swing.pullTargetX = pullVector.x;
+    swing.pullTargetY = pullVector.y;
+    swing.pullTargetStrength = pull?.strength ?? 0;
+    return { portalCharges, pull };
+  }, []);
+
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!drag) return;
@@ -373,6 +445,8 @@ export function Board() {
         selectSquare(drag.sq);
       }
 
+      const { portalCharges, pull } = measurePortalPull(e.clientX, e.clientY);
+
       // Feed smoothed mouse velocity into pendulum physics (acceleration computed in rAF tick)
       const rawVx = e.clientX - drag.x;
       const rawVy = e.clientY - drag.y;
@@ -386,11 +460,13 @@ export function Board() {
               x: e.clientX,
               y: e.clientY,
               isDragging: prev.isDragging || pastThreshold,
+              portalCharges,
+              pull,
             }
           : null,
       );
     },
-    [drag, selectSquare],
+    [drag, selectSquare, measurePortalPull],
   );
 
   const handlePointerUp = useCallback(
@@ -404,6 +480,7 @@ export function Board() {
         if (targetSq !== null && targetSq !== drag.sq) {
           // A dropped piece is already at its target, so skip the slide animation
           wasDrag.current = true;
+          droppedOnRef.current = { from: drag.sq, to: targetSq };
           const result = requestMove(drag.sq, targetSq);
           if (result !== "moved") wasDrag.current = false;
           moveMade = result !== null;
@@ -624,7 +701,35 @@ export function Board() {
   const surgingPortal =
     currentPortalPhase?.type === "shrink" || currentPortalPhase?.type === "pop"
       ? currentPortalPhase.sq
-      : null;
+      : currentPortalPhase?.type === "fly"
+        ? (currentPortalPhase.slideFrom ?? null)
+        : null;
+
+  // A portal swells as a piece nears it: a dragged piece, a selected piece
+  // that can enter it, or a piece traveling toward it
+  const portalCharge = (
+    sq: SquareIndex,
+  ): { charge: number; chargeMs: number } => {
+    const phase = currentPortalPhase;
+    if (phase) {
+      const isTarget = phase.sq === sq;
+      if ((phase.type === "approach" || phase.type === "fly") && isTarget) {
+        return { charge: 1, chargeMs: phaseDurationMs(phase) };
+      }
+      if (phase.type === "shrink" && isTarget)
+        return { charge: 1, chargeMs: 150 };
+      if (
+        (phase.type === "pop" && isTarget) ||
+        (phase.type === "fly" && phase.slideFrom === sq)
+      ) {
+        return { charge: 0.8, chargeMs: 120 };
+      }
+    }
+    const dragCharge = drag?.isDragging ? (drag.portalCharges?.[sq] ?? 0) : 0;
+    const selectCharge =
+      selectedSquare !== null && portalEntrance === sq ? 0.3 : 0;
+    return { charge: Math.max(dragCharge, selectCharge), chargeMs: 180 };
+  };
 
   const rows = [];
   for (let visualRow = 0; visualRow < 8; visualRow++) {
@@ -708,6 +813,7 @@ export function Board() {
                     ? "surge"
                     : "idle"
               }
+              {...portalCharge(sq)}
             />
           )}
 
@@ -777,12 +883,19 @@ export function Board() {
   let dragElement = null;
   if (drag?.isDragging) {
     const size = squareSize * PIECE_SIZE;
+    const pull = drag.pull;
     dragElement = (
       <img
         ref={dragImgRef}
         src={pieceImage(drag.piece)}
-        className="piece-dragging"
+        className={`piece-dragging${pull ? ` portal-${pull.color}` : ""}`}
         style={{
+          ...(pull && {
+            filter:
+              `brightness(${1 + pull.strength * 0.5}) ` +
+              `drop-shadow(0 0 ${4 + pull.strength * 12}px rgba(var(--p-glow), ${pull.strength})) ` +
+              "drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.6))",
+          }),
           left: drag.x - drag.grabX * size,
           top: drag.y - drag.grabY * size,
           width: size,
@@ -905,27 +1018,31 @@ export function Board() {
   let portalBurstElement = null;
   if (portalAnim && currentPortalPhase) {
     const phase = currentPortalPhase;
-    const col = flipped ? 7 - fileOf(phase.sq) : fileOf(phase.sq);
-    const row = flipped ? rankOf(phase.sq) : 7 - rankOf(phase.sq);
+    const visualCol = (sq: SquareIndex) =>
+      flipped ? 7 - fileOf(sq) : fileOf(sq);
+    const visualRow = (sq: SquareIndex) =>
+      flipped ? rankOf(sq) : 7 - rankOf(sq);
+    const durationMs = phaseDurationMs(phase);
+
     let animClass = `portal-anim-piece portal-${phase.color}`;
     let animStyle: React.CSSProperties = {};
-
-    if (phase.type === "approach" || phase.type === "slide") {
-      const fromSq = phase.slideFrom ?? phase.sq;
-      const dFile = fileOf(fromSq) - fileOf(phase.sq);
-      const dRank = rankOf(fromSq) - rankOf(phase.sq);
-      const dist = Math.max(Math.abs(dFile), Math.abs(dRank));
-      const dur = Math.max(0.1, dist * 0.06);
-      // Only pieces that have already been through a portal glow
-      if (phase.type === "slide") animClass += " portal-anim-trail";
+    if (phase.slideFrom !== undefined) {
+      const dx =
+        (visualCol(phase.slideFrom) - visualCol(phase.sq)) * squareSize;
+      const dy =
+        (visualRow(phase.slideFrom) - visualRow(phase.sq)) * squareSize;
       animStyle = {
-        "--slide-from-x": `${(flipped ? -dFile : dFile) * squareSize}px`,
-        "--slide-from-y": `${(flipped ? dRank : -dRank) * squareSize}px`,
-        animation: `slide-in ${dur}s ${phase.type === "approach" ? "ease-in" : "ease-out"} forwards`,
+        "--slide-from-x": `${dx}px`,
+        "--slide-from-y": `${dy}px`,
       } as React.CSSProperties;
+    }
+    if (phase.type === "approach") {
+      animStyle.animation = `slide-in ${durationMs}ms ease-in forwards`;
     } else {
-      animClass +=
-        phase.type === "shrink" ? " portal-anim-enter" : " portal-anim-exit";
+      animClass += ` portal-anim-${phase.type === "shrink" ? "enter" : phase.type === "pop" ? "exit" : "fly"}`;
+      if (phase.type === "fly") animStyle.animationDuration = `${durationMs}ms`;
+
+      const burstSq = phase.type === "fly" ? phase.slideFrom! : phase.sq;
       portalBurstElement = (
         <PortalBurst
           key={`burst-${portalAnim.phaseIndex}`}
@@ -933,8 +1050,8 @@ export function Board() {
           direction={phase.type === "shrink" ? "in" : "out"}
           style={
             {
-              left: `${col * 12.5}%`,
-              top: `${row * 12.5}%`,
+              left: `${visualCol(burstSq) * 12.5}%`,
+              top: `${visualRow(burstSq) * 12.5}%`,
               width: "12.5%",
               height: "12.5%",
               "--reach": `${squareSize * 0.8}px`,
@@ -950,8 +1067,8 @@ export function Board() {
         src={pieceImage(portalAnim.info.piece)}
         className={animClass}
         style={{
-          left: `${col * 12.5 + 0.625}%`,
-          top: `${row * 12.5 + 0.625}%`,
+          left: `${visualCol(phase.sq) * 12.5 + 0.625}%`,
+          top: `${visualRow(phase.sq) * 12.5 + 0.625}%`,
           width: "11.25%",
           height: "11.25%",
           ...animStyle,

@@ -738,6 +738,11 @@
   width: 100%;
   height: 100%;
   overflow: visible;
+  scale: calc(1 + var(--charge, 0) * 0.7);
+  filter: brightness(calc(1 + var(--charge, 0) * 0.45));
+  transition:
+    scale var(--charge-ms, 250ms) cubic-bezier(0.3, 1.4, 0.5, 1),
+    filter var(--charge-ms, 250ms) ease-out;
 }
 
 .portal-stop-hi {
@@ -793,6 +798,175 @@
   fill: none;
   stroke: var(--p-hi);
   stroke-width: 2.2;
+  animation: portal-rim-flicker 0.16s steps(1) infinite;
+}
+
+@keyframes portal-rim-flicker {
+  0% {
+    stroke-width: 2.2;
+  }
+  50% {
+    stroke-width: 3.2;
+  }
+}
+
+/* Ring of plasma licking around the rim */
+.portal-corona {
+  opacity: calc(0.75 + var(--charge, 0) * 0.25);
+}
+
+.portal-flame {
+  fill: none;
+  stroke: var(--p-mid);
+  stroke-width: 5;
+  stroke-dasharray: 9 5 3 7 14 4;
+  opacity: 0.8;
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: portal-spin 3s linear infinite reverse;
+}
+
+.portal-flame-outer {
+  stroke: var(--p-hi);
+  stroke-width: 2;
+  stroke-dasharray: 4 9 12 6;
+  opacity: 0.55;
+  animation-duration: 1.9s;
+  animation-direction: normal;
+}
+
+/* Lightning arcs that flash at random spots around the portal */
+.portal-bolts {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  scale: calc(1 + var(--charge, 0) * 0.3);
+}
+
+.portal-bolts-jump {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: portal-bolt-jump 2.3s steps(1) infinite;
+}
+
+.portal-bolt {
+  opacity: 0;
+  animation: portal-bolt-flicker 1s steps(1) infinite;
+}
+
+.portal-charged .portal-bolt {
+  animation-name: portal-bolt-flicker-charged;
+}
+
+.portal-bolt-core,
+.portal-bolt-glow {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.portal-bolt-core {
+  stroke: #fff;
+  stroke-width: 0.9;
+}
+
+.portal-bolt-glow {
+  stroke: var(--p-mid);
+  stroke-width: 3.5;
+}
+
+@keyframes portal-bolt-flicker {
+  0% {
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  10% {
+    opacity: 0.25;
+  }
+  14% {
+    opacity: 1;
+  }
+  20% {
+    opacity: 0;
+  }
+}
+
+@keyframes portal-bolt-flicker-charged {
+  0% {
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  12% {
+    opacity: 0.4;
+  }
+  18% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.6;
+  }
+  38% {
+    opacity: 1;
+  }
+  48% {
+    opacity: 0;
+  }
+}
+
+@keyframes portal-bolt-jump {
+  0% {
+    rotate: 0deg;
+  }
+  23% {
+    rotate: 137deg;
+  }
+  41% {
+    rotate: 251deg;
+  }
+  60% {
+    rotate: 64deg;
+  }
+  79% {
+    rotate: 199deg;
+  }
+}
+
+/* Sparks thrown off the rim */
+.portal-ember {
+  fill: #fff;
+  filter: drop-shadow(0 0 2px var(--p-mid));
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: portal-ember 1.5s ease-out infinite;
+}
+
+@keyframes portal-ember {
+  0% {
+    transform: rotate(var(--a)) translateX(30px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(calc(var(--a) - 50deg)) translateX(60px) scale(0.3);
+    opacity: 0;
+  }
+}
+
+.portal-charged .portal-arms {
+  animation-duration: 1s;
+}
+
+.portal-charged .portal-arms-inner {
+  animation-duration: 0.6s;
+}
+
+.portal-charged .portal-particle {
+  animation-duration: 0.9s;
 }
 
 .portal-rim-glow {
@@ -997,10 +1171,56 @@
   }
 }
 
-/* Light trail behind a piece sliding between portals */
-.portal-anim-trail {
-  filter: drop-shadow(0 0 6px rgba(var(--p-glow), 0.85))
-    drop-shadow(1px 2px 3px rgba(0, 0, 0, 0.5));
+/* The piece launches out of the exit portal and flies to its square:
+   it unfolds and spins up as it leaves, rises toward the viewer mid-flight
+   (larger, with a dropped shadow), and squashes slightly on landing */
+.portal-anim-fly {
+  animation-name: portal-fly-move, portal-fly-launch;
+  animation-timing-function: cubic-bezier(0.2, 0.65, 0.3, 1), linear;
+  animation-fill-mode: both;
+}
+
+@keyframes portal-fly-move {
+  from {
+    translate: var(--slide-from-x) var(--slide-from-y);
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
+@keyframes portal-fly-launch {
+  0% {
+    scale: 0.05 0.3;
+    rotate: -300deg;
+    opacity: 0.3;
+    filter: brightness(3) drop-shadow(0 0 14px rgba(var(--p-glow), 1))
+      drop-shadow(0 0 0 rgba(0, 0, 0, 0));
+  }
+  20% {
+    scale: 1.12 0.95;
+    rotate: 0deg;
+    opacity: 1;
+    filter: brightness(1.8) drop-shadow(0 0 10px rgba(var(--p-glow), 0.9))
+      drop-shadow(0 4px 4px rgba(0, 0, 0, 0.3));
+  }
+  55% {
+    scale: 1.3;
+    filter: brightness(1.2) drop-shadow(0 0 6px rgba(var(--p-glow), 0.6))
+      drop-shadow(0 16px 10px rgba(0, 0, 0, 0.35));
+  }
+  88% {
+    scale: 1.1 0.9;
+    filter: brightness(1) drop-shadow(0 0 2px rgba(var(--p-glow), 0.2))
+      drop-shadow(1px 2px 3px rgba(0, 0, 0, 0.5));
+  }
+  100% {
+    scale: 1;
+    rotate: 0deg;
+    opacity: 1;
+    filter: brightness(1) drop-shadow(0 0 0 rgba(var(--p-glow), 0))
+      drop-shadow(1px 2px 3px rgba(0, 0, 0, 0.5));
+  }
 }
 
 .portal-burst {
