@@ -9,29 +9,15 @@ import { useGameStore } from "../../stores/gameStore";
 import type { PortalMoveInfo } from "../../stores/gameStore";
 import { toIndex, fileOf, rankOf } from "../../utils/squareUtils";
 import { Color, PieceType } from "../../engine";
+import { pieceImage } from "../../utils/pieceImages";
 import type { Piece, SquareIndex } from "../../engine";
+import type { PortalColor } from "../../plugins/portalChess";
+import { Portal, PortalBurst } from "./Portal";
 import "./Board.css";
 
-const PIECE_IMAGES: Record<string, string> = {
-  wk: "/pieces/wK.svg",
-  wq: "/pieces/wQ.svg",
-  wr: "/pieces/wR.svg",
-  wb: "/pieces/wB.svg",
-  wn: "/pieces/wN.svg",
-  wp: "/pieces/wP.svg",
-  bk: "/pieces/bK.svg",
-  bq: "/pieces/bQ.svg",
-  br: "/pieces/bR.svg",
-  bb: "/pieces/bB.svg",
-  bn: "/pieces/bN.svg",
-  bp: "/pieces/bP.svg",
-};
-
-function getPieceImage(piece: Piece): string {
-  return PIECE_IMAGES[piece.color + piece.type];
-}
-
 const DRAG_THRESHOLD = 6;
+const PIECE_SIZE = 0.9;
+const PICKUP_SCALE = 1.35;
 
 interface DragState {
   sq: SquareIndex;
@@ -42,6 +28,9 @@ interface DragState {
   startY: number;
   isDragging: boolean;
   pointerId: number;
+  /** Where the piece was grabbed, as a fraction of its width and height */
+  grabX: number;
+  grabY: number;
 }
 
 interface ReturnAnim {
@@ -49,6 +38,7 @@ interface ReturnAnim {
   piece: Piece;
   fromX: number;
   fromY: number;
+  fromSize: number;
   toX: number;
   toY: number;
   startAngle: number;
@@ -58,8 +48,12 @@ interface ReturnAnim {
 interface PortalAnimPhase {
   type: "approach" | "shrink" | "pop" | "slide";
   sq: SquareIndex;
+  color: PortalColor;
   slideFrom?: SquareIndex;
 }
+
+const PORTAL_ENTER_MS = 400;
+const PORTAL_EXIT_MS = 450;
 
 export function Board() {
   const {
@@ -73,8 +67,7 @@ export function Board() {
     flipped,
     status,
     selectSquare,
-    makeMove,
-    getPiece,
+    requestMove,
     game,
     pluginManager,
     timeWhite,
@@ -84,6 +77,7 @@ export function Board() {
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
+  const [squareSize, setSquareSize] = useState(72);
   const dragImgRef = useRef<HTMLImageElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [animMap, setAnimMap] = useState<
@@ -95,17 +89,17 @@ export function Board() {
     phaseIndex: number;
     info: PortalMoveInfo;
   } | null>(null);
-  const [pickupTransition, setPickupTransition] = useState(false);
-  const [closingPortals, setClosingPortals] = useState<Map<number, string>>(
+  const [closingPortals, setClosingPortals] = useState<
+    Map<number, PortalColor>
+  >(
     new Map(),
   );
   const [openingPortals, setOpeningPortals] = useState<Set<number>>(new Set());
-  const dragJustStarted = useRef(false);
   const wasDrag = useRef(false);
   const prevLastMove = useRef(lastMove);
   const prevPortalMove = useRef(lastPortalMove);
   const prevPortalKeys = useRef<string>("");
-  const prevPortalColors = useRef<Map<number, string>>(new Map());
+  const prevPortalColors = useRef<Map<number, PortalColor>>(new Map());
   const [fogExiting, setFogExiting] = useState(false);
   const prevFog = useRef(false);
   const [explosions, setExplosions] = useState<Set<number>>(new Set());
@@ -114,8 +108,19 @@ export function Board() {
   >(new Map());
   const prevGravityKey = useRef("");
 
+  useLayoutEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+    const observer = new ResizeObserver(() =>
+      setSquareSize(board.offsetWidth / 8),
+    );
+    observer.observe(board);
+    return () => observer.disconnect();
+  }, []);
+
   // Pendulum physics for drag swing
   const swingRef = useRef({
+    scale: 1,
     theta: 0,
     omega: 0,
     smoothVx: 0,
@@ -128,6 +133,7 @@ export function Board() {
   useEffect(() => {
     if (!drag?.isDragging) {
       swingRef.current = {
+        scale: 1,
         theta: 0,
         omega: 0,
         smoothVx: 0,
@@ -135,16 +141,9 @@ export function Board() {
         prevVx: 0,
         prevVy: 0,
       };
-      setPickupTransition(false);
-      dragJustStarted.current = false;
       cancelAnimationFrame(rafRef.current);
       return;
     }
-
-    // Mark that drag just started so layoutEffect can set initial position
-    dragJustStarted.current = true;
-    setPickupTransition(true);
-    const pickupTimer = setTimeout(() => setPickupTransition(false), 200);
 
     const R = 50;
     const DAMPING = 0.95;
@@ -164,46 +163,29 @@ export function Board() {
       s.omega += torque - GRAVITY * Math.sin(s.theta);
       s.omega *= DAMPING;
       s.theta += s.omega;
+      s.scale += (PICKUP_SCALE - s.scale) * 0.35;
 
       if (dragImgRef.current) {
         const deg = s.theta * (180 / Math.PI);
-        dragImgRef.current.style.transform = `scale(1.1) rotate(${deg}deg)`;
+        dragImgRef.current.style.transform = `scale(${s.scale}) rotate(${deg}deg)`;
       }
 
       rafRef.current = requestAnimationFrame(tick);
     };
 
     rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      clearTimeout(pickupTimer);
-    };
+    return () => cancelAnimationFrame(rafRef.current);
   }, [drag?.isDragging]);
 
-  // Position drag element at board square before first paint, then let React move it to cursor
-  useLayoutEffect(() => {
-    if (!dragJustStarted.current || !dragImgRef.current || !drag?.isDragging)
-      return;
-    dragJustStarted.current = false;
-
-    const center = getSquareScreenCenter(drag.sq);
-    if (!center) return;
-
-    const el = dragImgRef.current;
-    const sqSize = boardRef.current
-      ? boardRef.current.getBoundingClientRect().width / 8
-      : 72;
-    const boardPieceSize = sqSize * 0.9;
-
-    // Position at board square before browser paints
-    el.style.left = `${center.x - boardPieceSize / 2}px`;
-    el.style.top = `${center.y - boardPieceSize / 2}px`;
-    el.style.width = `${boardPieceSize}px`;
-    el.style.height = `${boardPieceSize}px`;
-
-    // Force reflow so the browser registers the starting position
-    el.getBoundingClientRect();
-  });
+  const getSquareScreenCenter = useCallback(
+    (sq: SquareIndex): { x: number; y: number } | null => {
+      const el = boardRef.current?.querySelector(`[data-sq="${sq}"]`);
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    },
+    [],
+  );
 
   // Slide animation on click-to-move or autonomous moves
   useEffect(() => {
@@ -217,10 +199,6 @@ export function Board() {
     }
     // Skip normal slide for portal moves — portal anim handles it
     if (lastPortalMove) return;
-
-    const squareSize = boardRef.current
-      ? boardRef.current.getBoundingClientRect().width / 8
-      : 72;
 
     // Autonomous batch: animate all moves
     const movesToAnimate =
@@ -238,7 +216,7 @@ export function Board() {
     setAnimMap(newMap);
     const timer = setTimeout(() => setAnimMap(new Map()), 600);
     return () => clearTimeout(timer);
-  }, [lastMove, lastAutonomousMoves, lastPortalMove, flipped]);
+  }, [lastMove, lastAutonomousMoves, lastPortalMove, flipped, squareSize]);
 
   // Portal move animation: build phase array from transits
   useEffect(() => {
@@ -254,29 +232,33 @@ export function Board() {
       phases.push({
         type: "approach",
         sq: transits[0].entrance,
+        color: transits[0].color,
         slideFrom: from,
       });
     }
 
     for (let i = 0; i < transits.length; i++) {
-      // Shrink at entrance
-      phases.push({ type: "shrink", sq: transits[i].entrance });
-      // Pop at exit
-      phases.push({ type: "pop", sq: transits[i].exit });
-      // Slide from exit to next entrance (if there's a next transit)
+      const { entrance, exit, color } = transits[i];
+      phases.push({ type: "shrink", sq: entrance, color });
+      phases.push({ type: "pop", sq: exit, color });
       if (i < transits.length - 1) {
         phases.push({
           type: "slide",
           sq: transits[i + 1].entrance,
-          slideFrom: transits[i].exit,
+          color,
+          slideFrom: exit,
         });
       }
     }
 
-    // Final slide: from last exit to landing (skip if same square)
-    const lastExit = transits[transits.length - 1].exit;
-    if (lastExit !== landing) {
-      phases.push({ type: "slide", sq: landing, slideFrom: lastExit });
+    const last = transits[transits.length - 1];
+    if (last.exit !== landing) {
+      phases.push({
+        type: "slide",
+        sq: landing,
+        color: last.color,
+        slideFrom: last.exit,
+      });
     }
 
     if (phases.length > 0) {
@@ -308,10 +290,9 @@ export function Board() {
         duration = 200;
       }
     } else if (currentPhase.type === "shrink") {
-      duration = 300;
+      duration = PORTAL_ENTER_MS;
     } else {
-      // pop
-      duration = 300;
+      duration = PORTAL_EXIT_MS;
     }
 
     const timer = setTimeout(() => {
@@ -324,23 +305,6 @@ export function Board() {
     }, duration);
     return () => clearTimeout(timer);
   }, [portalAnim]);
-
-  const getSquareScreenCenter = useCallback(
-    (sq: SquareIndex): { x: number; y: number } | null => {
-      if (!boardRef.current) return null;
-      const rect = boardRef.current.getBoundingClientRect();
-      const squareSize = rect.width / 8;
-      const file = fileOf(sq);
-      const rank = rankOf(sq);
-      const visualCol = flipped ? 7 - file : file;
-      const visualRow = flipped ? rank : 7 - rank;
-      return {
-        x: rect.left + (visualCol + 0.5) * squareSize,
-        y: rect.top + (visualRow + 0.5) * squareSize,
-      };
-    },
-    [flipped],
-  );
 
   // Kick off return animation after mount (need the element to exist first for transition)
   useEffect(() => {
@@ -359,19 +323,16 @@ export function Board() {
     }
   }, [returnAnim?.started]);
 
+  // Hit-testing the square elements stays correct while gravity rotates the board
   const getSquareFromPoint = useCallback(
     (clientX: number, clientY: number): SquareIndex | null => {
-      if (!boardRef.current) return null;
-      const rect = boardRef.current.getBoundingClientRect();
-      const squareSize = rect.width / 8;
-      const col = Math.floor((clientX - rect.left) / squareSize);
-      const row = Math.floor((clientY - rect.top) / squareSize);
-      if (col < 0 || col > 7 || row < 0 || row > 7) return null;
-      const file = flipped ? 7 - col : col;
-      const rank = flipped ? row : 7 - row;
-      return toIndex(file, rank);
+      const el = document
+        .elementFromPoint(clientX, clientY)
+        ?.closest<HTMLElement>("[data-sq]");
+      if (!el || !boardRef.current?.contains(el)) return null;
+      return Number(el.dataset.sq);
     },
-    [flipped],
+    [],
   );
 
   const handlePointerDown = useCallback(
@@ -379,7 +340,10 @@ export function Board() {
       if (piece.color !== game.turn) return;
       e.preventDefault();
 
+      const rect = e.currentTarget.getBoundingClientRect();
       setDrag({
+        grabX: (e.clientX - rect.left) / rect.width,
+        grabY: (e.clientY - rect.top) / rect.height,
         sq,
         piece,
         x: e.clientX,
@@ -438,39 +402,24 @@ export function Board() {
         // Complete drag-and-drop
         const targetSq = getSquareFromPoint(e.clientX, e.clientY);
         if (targetSq !== null && targetSq !== drag.sq) {
-          const rawMoves = game.getLegalMoves(drag.sq);
-          const legalMoves = pluginManager.invokeModifyLegalMoves(
-            rawMoves,
-            game.turn,
-          );
-          const isLegal = legalMoves.some((m) => m.to === targetSq);
-          if (isLegal) {
-            moveMade = true;
-            const piece = drag.piece;
-            if (
-              piece.type === PieceType.Pawn &&
-              ((piece.color === Color.White && rankOf(targetSq) === 7) ||
-                (piece.color === Color.Black && rankOf(targetSq) === 0))
-            ) {
-              useGameStore.setState({
-                promotionPending: { from: drag.sq, to: targetSq },
-              });
-            } else {
-              wasDrag.current = true;
-              makeMove(drag.sq, targetSq);
-            }
-          }
+          // A dropped piece is already at its target, so skip the slide animation
+          wasDrag.current = true;
+          const result = requestMove(drag.sq, targetSq);
+          if (result !== "moved") wasDrag.current = false;
+          moveMade = result !== null;
         }
 
         // Animate piece back to its square if move wasn't made
         if (!moveMade) {
           const center = getSquareScreenCenter(drag.sq);
-          if (center) {
+          const floating = dragImgRef.current?.getBoundingClientRect();
+          if (center && floating) {
             setReturnAnim({
               sq: drag.sq,
               piece: drag.piece,
-              fromX: e.clientX,
-              fromY: e.clientY,
+              fromX: floating.left + floating.width / 2,
+              fromY: floating.top + floating.height / 2,
+              fromSize: squareSize * PIECE_SIZE * swingRef.current.scale,
               toX: center.x,
               toY: center.y,
               startAngle:
@@ -482,9 +431,10 @@ export function Board() {
           }
         }
 
-        try {
-          (boardRef.current as HTMLElement)?.releasePointerCapture(e.pointerId);
-        } catch {}
+        const board = boardRef.current;
+        if (board?.hasPointerCapture(e.pointerId)) {
+          board.releasePointerCapture(e.pointerId);
+        }
       } else {
         // Was a click, not a drag — use click-to-select/move logic
         selectSquare(drag.sq);
@@ -496,16 +446,17 @@ export function Board() {
       drag,
       getSquareFromPoint,
       getSquareScreenCenter,
-      game,
-      makeMove,
+      squareSize,
+      requestMove,
       selectSquare,
     ],
   );
 
   // Collect overlay data for rendering
   const overlays = pluginManager.getAllOverlays();
-  const portalSquares = new Map<number, string>();
-  const portalPairs: { a: SquareIndex; b: SquareIndex; color: string }[] = [];
+  const portalSquares = new Map<number, PortalColor>();
+  const portalPairs: { a: SquareIndex; b: SquareIndex; color: PortalColor }[] =
+    [];
   let hasFogOverlay = false;
   let hasRallyOverlay = false;
   let shrinkRing = 0;
@@ -518,7 +469,7 @@ export function Board() {
   let rallyCooldowns: Record<number, { total: number; gen: number }> = {};
   for (const overlay of overlays) {
     if (overlay.type === "portal" && overlay.squares.length === 2) {
-      const color = (overlay.data as { color: string })?.color ?? "blue";
+      const color = (overlay.data as { color: PortalColor })?.color ?? "blue";
       portalPairs.push({ a: overlay.squares[0], b: overlay.squares[1], color });
       for (const sq of overlay.squares) {
         portalSquares.set(sq, color);
@@ -562,43 +513,41 @@ export function Board() {
     }
   }
 
-  // Detect portal repositioning
+  // Animate portals that open, close, or move
   const portalKey = [...portalSquares.keys()].sort().join(",");
   useEffect(() => {
     const prev = prevPortalKeys.current;
     const prevColors = prevPortalColors.current;
     prevPortalKeys.current = portalKey;
     prevPortalColors.current = new Map(portalSquares);
-    if (!prev || prev === portalKey || portalKey === "") return;
+    if (prev === portalKey) return;
 
-    const oldSquares = new Set(prev.split(",").map(Number));
-    const newSquares = new Set(portalKey.split(",").map(Number));
+    const parse = (key: string) =>
+      new Set(key === "" ? [] : key.split(",").map(Number));
+    const oldSquares = parse(prev);
+    const newSquares = parse(portalKey);
 
-    // Old squares that are no longer portals = closing (with their old color)
-    const closing = new Map<number, string>();
+    const closing = new Map<number, PortalColor>();
     for (const sq of oldSquares) {
-      if (!newSquares.has(sq)) {
-        closing.set(sq, prevColors.get(sq) ?? "blue");
-      }
+      if (!newSquares.has(sq)) closing.set(sq, prevColors.get(sq) ?? "blue");
     }
-
-    // New squares that weren't portals before = opening
     const opening = new Set<number>();
     for (const sq of newSquares) {
-      if (!oldSquares.has(sq)) {
-        opening.add(sq);
-      }
+      if (!oldSquares.has(sq)) opening.add(sq);
     }
 
-    if (closing.size > 0) setClosingPortals(closing);
-    if (opening.size > 0) setOpeningPortals(opening);
+    setClosingPortals(closing);
+    setOpeningPortals(opening);
+  }, [portalKey]);
 
+  useEffect(() => {
+    if (closingPortals.size === 0 && openingPortals.size === 0) return;
     const timer = setTimeout(() => {
       setClosingPortals(new Map());
       setOpeningPortals(new Set());
     }, 600);
     return () => clearTimeout(timer);
-  }, [portalKey]);
+  }, [closingPortals, openingPortals]);
 
   // Detect fog mode ending — keep fog visible while fading out
   useEffect(() => {
@@ -612,29 +561,27 @@ export function Board() {
 
   // Detect mine pending explosions from overlay data
   const minefieldOverlay = overlays.find((o) => o.type === "minefield");
-  const pendingExplosionSquares = minefieldOverlay?.squares ?? [];
-  const pendingKey = pendingExplosionSquares.join(",");
+  const pendingKey = (minefieldOverlay?.squares ?? []).join(",");
 
   useEffect(() => {
-    if (pendingExplosionSquares.length === 0) return;
+    if (pendingKey === "") return;
+    const squares = pendingKey.split(",").map(Number);
 
-    // Wait for slide animation to finish, then show explosion
+    // Explode after the slide animation, then remove the pieces
+    let resolveTimer: ReturnType<typeof setTimeout> | undefined;
     const slideTimer = setTimeout(() => {
-      setExplosions(new Set(pendingExplosionSquares));
-
-      // After explosion animation, remove the pieces
-      const resolveTimer = setTimeout(() => {
-        for (const sq of pendingExplosionSquares) {
-          resolveExplosion(sq);
-        }
+      setExplosions(new Set(squares));
+      resolveTimer = setTimeout(() => {
+        for (const sq of squares) resolveExplosion(sq);
         setExplosions(new Set());
       }, 600);
-
-      return () => clearTimeout(resolveTimer);
     }, 350);
 
-    return () => clearTimeout(slideTimer);
-  }, [pendingKey]);
+    return () => {
+      clearTimeout(slideTimer);
+      clearTimeout(resolveTimer);
+    };
+  }, [pendingKey, resolveExplosion]);
 
   // Gravity piece slide animation
   // Uses CSS `translate` (separate from `transform`) so it doesn't conflict with
@@ -649,19 +596,16 @@ export function Board() {
       return;
     prevGravityKey.current = gravityMoveKey;
 
-    const sqSize = boardRef.current
-      ? boardRef.current.getBoundingClientRect().width / 8
-      : 72;
-
     const offsets = new Map<number, { offsetX: number; offsetY: number }>();
-    for (const { from, to } of gravityMovesFromOverlay) {
+    for (const pair of gravityMoveKey.split(",")) {
+      const [from, to] = pair.split("-").map(Number);
       const fromCol = flipped ? 7 - fileOf(from) : fileOf(from);
       const fromRow = flipped ? rankOf(from) : 7 - rankOf(from);
       const toCol = flipped ? 7 - fileOf(to) : fileOf(to);
       const toRow = flipped ? rankOf(to) : 7 - rankOf(to);
       offsets.set(to, {
-        offsetX: (fromCol - toCol) * sqSize,
-        offsetY: (fromRow - toRow) * sqSize,
+        offsetX: (fromCol - toCol) * squareSize,
+        offsetY: (fromRow - toRow) * squareSize,
       });
     }
 
@@ -670,11 +614,17 @@ export function Board() {
     // Clean up after rotation (1s) + slide (0.6s) + buffer
     const timer = setTimeout(() => setGravityFalls(new Map()), 1800);
     return () => clearTimeout(timer);
-  }, [gravityMoveKey, flipped]);
+  }, [gravityMoveKey, flipped, squareSize]);
 
   // Fog always covers the enemy half (human plays White, enemy = top)
   const showFog = hasFogOverlay || fogExiting;
   const fogOnTop = showFog && !flipped;
+
+  const currentPortalPhase = portalAnim?.phases[portalAnim.phaseIndex];
+  const surgingPortal =
+    currentPortalPhase?.type === "shrink" || currentPortalPhase?.type === "pop"
+      ? currentPortalPhase.sq
+      : null;
 
   const rows = [];
   for (let visualRow = 0; visualRow < 8; visualRow++) {
@@ -683,7 +633,7 @@ export function Board() {
     for (let visualCol = 0; visualCol < 8; visualCol++) {
       const file = flipped ? 7 - visualCol : visualCol;
       const sq = toIndex(file, rank);
-      const piece = getPiece(sq);
+      const piece = game.board.get(sq);
       const isLight = (rank + file) % 2 !== 0;
       const isSelected = sq === selectedSquare;
       const isLegalTarget = legalMoveSquares.includes(sq);
@@ -705,12 +655,7 @@ export function Board() {
       const animEntry = animMap.get(sq);
       const isAnimating = !!animEntry;
 
-      let className = "square";
-      if (portalColor) {
-        className += " portal-square";
-      } else {
-        className += isLight ? " light" : " dark";
-      }
+      let className = `square ${isLight ? "light" : "dark"}`;
       // Apply plugin square modifier classes (dead-square, danger-square, etc.)
       for (const mod of squareMods) {
         if (mod.className) className += ` ${mod.className}`;
@@ -754,15 +699,20 @@ export function Board() {
           }}
         >
           {portalColor && (
-            <div
-              className={`portal-overlay portal-${portalColor}${isOpeningPortal ? " portal-spawn" : ""}`}
+            <Portal
+              color={portalColor}
+              state={
+                isOpeningPortal
+                  ? "spawn"
+                  : surgingPortal === sq
+                    ? "surge"
+                    : "idle"
+              }
             />
           )}
 
           {isClosingPortal && (
-            <div
-              className={`portal-overlay portal-${closingPortals.get(sq) ?? "blue"} portal-despawn`}
-            />
+            <Portal color={closingPortals.get(sq) ?? "blue"} state="despawn" />
           )}
 
           {isLegalTarget && !drag?.isDragging && (
@@ -774,7 +724,7 @@ export function Board() {
           {piece && !isDragSource && !isDead && (
             <>
               <img
-                src={getPieceImage(piece)}
+                src={pieceImage(piece)}
                 alt={`${piece.color}${piece.type}`}
                 className={`piece-img${strategoHidden.has(sq) ? " stratego-piece-hidden" : ""}`}
                 style={pieceStyle}
@@ -823,27 +773,21 @@ export function Board() {
     );
   }
 
-  // Floating drag piece
-  const squareSize = boardRef.current
-    ? boardRef.current.getBoundingClientRect().width / 8
-    : 72;
-
+  // Floating drag piece, held at the point where it was grabbed
   let dragElement = null;
   if (drag?.isDragging) {
-    const dragClass = pickupTransition
-      ? "piece-dragging piece-pickup"
-      : "piece-dragging";
-
+    const size = squareSize * PIECE_SIZE;
     dragElement = (
       <img
         ref={dragImgRef}
-        src={getPieceImage(drag.piece)}
-        className={dragClass}
+        src={pieceImage(drag.piece)}
+        className="piece-dragging"
         style={{
-          left: drag.x - squareSize * 0.55,
-          top: drag.y - squareSize * 0.2,
-          width: squareSize * 1.1,
-          height: squareSize * 1.1,
+          left: drag.x - drag.grabX * size,
+          top: drag.y - drag.grabY * size,
+          width: size,
+          height: size,
+          transformOrigin: `${drag.grabX * 100}% ${drag.grabY * 100}%`,
         }}
         draggable={false}
       />
@@ -858,11 +802,11 @@ export function Board() {
       ? { x: returnAnim.toX, y: returnAnim.toY }
       : { x: returnAnim.fromX, y: returnAnim.fromY };
     const angle = isBack ? 0 : returnAnim.startAngle;
-    const size = isBack ? squareSize * 0.9 : squareSize * 1.1;
+    const size = isBack ? squareSize * PIECE_SIZE : returnAnim.fromSize;
     const offset = size / 2;
     returnElement = (
       <img
-        src={getPieceImage(returnAnim.piece)}
+        src={pieceImage(returnAnim.piece)}
         className="piece-returning"
         style={{
           left: pos.x - offset,
@@ -956,61 +900,65 @@ export function Board() {
     }
   }
 
-  // Portal animation element (phase-based: approach/shrink/pop/slide)
+  // Piece traveling through portals, plus the burst at each portal it touches
   let portalAnimElement = null;
-  if (portalAnim) {
-    const currentPhase = portalAnim.phases[portalAnim.phaseIndex];
-    const { info } = portalAnim;
+  let portalBurstElement = null;
+  if (portalAnim && currentPortalPhase) {
+    const phase = currentPortalPhase;
+    const col = flipped ? 7 - fileOf(phase.sq) : fileOf(phase.sq);
+    const row = flipped ? rankOf(phase.sq) : 7 - rankOf(phase.sq);
+    let animClass = `portal-anim-piece portal-${phase.color}`;
+    let animStyle: React.CSSProperties = {};
 
-    if (currentPhase) {
-      let animSq: SquareIndex = currentPhase.sq;
-      let animClass: string;
-      let animStyle: React.CSSProperties = {};
-
-      if (currentPhase.type === "approach" || currentPhase.type === "slide") {
-        animClass = "portal-anim-piece portal-anim-slide";
-        const fromSq = currentPhase.slideFrom ?? animSq;
-        const dFile = fileOf(fromSq) - fileOf(animSq);
-        const dRank = rankOf(fromSq) - rankOf(animSq);
-        const dist = Math.max(Math.abs(dFile), Math.abs(dRank));
-        const dur = Math.max(0.1, dist * 0.06);
-        const sqSz = boardRef.current
-          ? boardRef.current.getBoundingClientRect().width / 8
-          : 72;
-        const ox = (flipped ? -dFile : dFile) * sqSz;
-        const oy = (flipped ? dRank : -dRank) * sqSz;
-        animStyle = {
-          "--slide-from-x": `${ox}px`,
-          "--slide-from-y": `${oy}px`,
-          animation: `slide-in ${dur}s ${currentPhase.type === "approach" ? "ease-in" : "ease-out"} forwards`,
-        } as React.CSSProperties;
-      } else if (currentPhase.type === "shrink") {
-        animClass = "portal-anim-piece portal-anim-shrink";
-      } else {
-        // pop
-        animClass = "portal-anim-piece portal-anim-pop";
-      }
-
-      const af = fileOf(animSq);
-      const ar = rankOf(animSq);
-      const ac = flipped ? 7 - af : af;
-      const arw = flipped ? ar : 7 - ar;
-
-      portalAnimElement = (
-        <img
-          src={getPieceImage(info.piece)}
-          className={animClass}
-          style={{
-            left: `${ac * 12.5 + 0.625}%`,
-            top: `${arw * 12.5 + 0.625}%`,
-            width: "11.25%",
-            height: "11.25%",
-            ...animStyle,
-          }}
-          draggable={false}
+    if (phase.type === "approach" || phase.type === "slide") {
+      const fromSq = phase.slideFrom ?? phase.sq;
+      const dFile = fileOf(fromSq) - fileOf(phase.sq);
+      const dRank = rankOf(fromSq) - rankOf(phase.sq);
+      const dist = Math.max(Math.abs(dFile), Math.abs(dRank));
+      const dur = Math.max(0.1, dist * 0.06);
+      // Only pieces that have already been through a portal glow
+      if (phase.type === "slide") animClass += " portal-anim-trail";
+      animStyle = {
+        "--slide-from-x": `${(flipped ? -dFile : dFile) * squareSize}px`,
+        "--slide-from-y": `${(flipped ? dRank : -dRank) * squareSize}px`,
+        animation: `slide-in ${dur}s ${phase.type === "approach" ? "ease-in" : "ease-out"} forwards`,
+      } as React.CSSProperties;
+    } else {
+      animClass +=
+        phase.type === "shrink" ? " portal-anim-enter" : " portal-anim-exit";
+      portalBurstElement = (
+        <PortalBurst
+          key={`burst-${portalAnim.phaseIndex}`}
+          color={phase.color}
+          direction={phase.type === "shrink" ? "in" : "out"}
+          style={
+            {
+              left: `${col * 12.5}%`,
+              top: `${row * 12.5}%`,
+              width: "12.5%",
+              height: "12.5%",
+              "--reach": `${squareSize * 0.8}px`,
+            } as React.CSSProperties
+          }
         />
       );
     }
+
+    portalAnimElement = (
+      <img
+        key={`piece-${portalAnim.phaseIndex}`}
+        src={pieceImage(portalAnim.info.piece)}
+        className={animClass}
+        style={{
+          left: `${col * 12.5 + 0.625}%`,
+          top: `${row * 12.5 + 0.625}%`,
+          width: "11.25%",
+          height: "11.25%",
+          ...animStyle,
+        }}
+        draggable={false}
+      />
+    );
   }
 
   // Countdown overlay for player (White) only
@@ -1051,6 +999,7 @@ export function Board() {
         />
       )}
       {portalArrows}
+      {portalBurstElement}
       {portalAnimElement}
       {showFog && (
         <>

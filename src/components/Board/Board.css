@@ -54,9 +54,6 @@
 .square.dark {
   background-color: #b58863;
 }
-.square.portal-square {
-  background-color: transparent;
-}
 
 /* --- Rally deploy zone border (bottom half = player's ranks 0-3) --- */
 .deploy-zone-border {
@@ -632,15 +629,6 @@
   pointer-events: none;
   z-index: 1000;
   filter: drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.6));
-  transform-origin: center 18%;
-}
-
-.piece-dragging.piece-pickup {
-  transition:
-    left 0.15s ease-out,
-    top 0.15s ease-out,
-    width 0.15s ease-out,
-    height 0.15s ease-out;
 }
 
 .piece-returning {
@@ -723,35 +711,109 @@
 
 /* --- Portal overlays --- */
 
+.portal-blue {
+  --p-hi: #d6f1ff;
+  --p-mid: #2f9bff;
+  --p-deep: #0a2a8a;
+  --p-glow: 47, 155, 255;
+}
+
+.portal-orange {
+  --p-hi: #fff1c2;
+  --p-mid: #ff8a1a;
+  --p-deep: #8a2a00;
+  --p-glow: 255, 138, 26;
+}
+
 .portal-overlay {
   position: absolute;
-  inset: 0;
+  inset: -25%;
   z-index: 1;
   pointer-events: none;
 }
 
-.portal-overlay.portal-blue {
-  --portal-color: 30, 144, 255;
-  --portal-highlight: rgba(100, 180, 255, 0.35);
+/* The SVG draws each portal centered on user-space (0, 0), which is where
+   transform-origin 0 0 lands when transform-box is view-box */
+.portal-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-.portal-overlay.portal-orange {
-  --portal-color: 255, 140, 0;
-  --portal-highlight: rgba(255, 200, 100, 0.35);
+.portal-stop-hi {
+  stop-color: var(--p-hi);
+}
+.portal-stop-mid {
+  stop-color: var(--p-mid);
+}
+.portal-stop-deep {
+  stop-color: var(--p-deep);
 }
 
-/* Dark void center + colored ring, all gradient — no hard edges */
-.portal-overlay.portal-blue,
-.portal-overlay.portal-orange {
-  background: radial-gradient(
-    circle,
-    #000 0%,
-    #000 14%,
-    rgba(var(--portal-color), 0.85) 23%,
-    rgba(var(--portal-color), 0.3) 32%,
-    transparent 44%
-  );
-  animation: portal-breathe 2.5s ease-in-out infinite;
+.portal-light {
+  mix-blend-mode: screen;
+  animation: portal-light-pulse 2.4s ease-in-out infinite;
+}
+
+.portal-body {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: portal-breathe 2.4s ease-in-out infinite;
+}
+
+.portal-arms {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: portal-spin 2.2s linear infinite;
+}
+
+.portal-arms-inner {
+  opacity: 0.55;
+  scale: 0.62;
+  rotate: 30deg;
+  animation-duration: 1.3s;
+}
+
+.portal-arm,
+.portal-arm-haze {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.portal-arm {
+  stroke-width: 1.4;
+}
+
+.portal-arm-haze {
+  stroke-width: 5;
+  opacity: 0.35;
+}
+
+.portal-rim {
+  fill: none;
+  stroke: var(--p-hi);
+  stroke-width: 2.2;
+}
+
+.portal-rim-glow {
+  fill: none;
+  stroke: var(--p-mid);
+  stroke-width: 6;
+  opacity: 0.9;
+}
+
+.portal-particle {
+  fill: var(--p-hi);
+  filter: drop-shadow(0 0 1.5px var(--p-mid));
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: portal-particle 1.8s linear infinite;
+}
+
+@keyframes portal-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes portal-breathe {
@@ -760,27 +822,56 @@
     transform: scale(1);
   }
   50% {
-    transform: scale(1.08);
+    transform: scale(1.05);
   }
 }
 
-/* Portal spawn / despawn transitions */
-.portal-overlay.portal-spawn {
-  animation: portal-spawn-in 0.5s ease-out forwards;
+@keyframes portal-light-pulse {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
-.portal-overlay.portal-despawn {
+/* Particles spiral inward from outside the rim and vanish into the core */
+@keyframes portal-particle {
+  0% {
+    transform: rotate(var(--a)) translateX(48px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(calc(var(--a) + 260deg)) translateX(6px);
+    opacity: 0;
+  }
+}
+
+/* Portal lifecycle */
+.portal-spawn {
+  animation: portal-spawn-in 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3) forwards;
+}
+
+.portal-despawn {
   animation: portal-despawn-out 0.5s ease-in forwards;
+}
+
+.portal-surge .portal-body {
+  animation: portal-surge 0.45s ease-out;
+}
+
+.portal-surge .portal-light {
+  animation: portal-surge-light 0.45s ease-out;
 }
 
 @keyframes portal-spawn-in {
   0% {
-    transform: scale(0) rotate(-360deg);
+    transform: scale(0) rotate(-270deg);
     opacity: 0;
-  }
-  60% {
-    transform: scale(1.2) rotate(0deg);
-    opacity: 1;
   }
   100% {
     transform: scale(1) rotate(0deg);
@@ -793,80 +884,35 @@
     transform: scale(1) rotate(0deg);
     opacity: 1;
   }
+  30% {
+    transform: scale(1.12) rotate(40deg);
+    opacity: 1;
+  }
   100% {
-    transform: scale(0) rotate(360deg);
+    transform: scale(0) rotate(300deg);
     opacity: 0;
   }
 }
 
-/* Spinning light streaks in the ring */
-.portal-overlay::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0%,
-    var(--portal-highlight) 12%,
-    transparent 25%,
-    var(--portal-highlight) 37%,
-    transparent 50%,
-    var(--portal-highlight) 62%,
-    transparent 75%,
-    var(--portal-highlight) 87%,
-    transparent 100%
-  );
-  -webkit-mask: radial-gradient(
-    circle,
-    transparent 10%,
-    #000 16%,
-    #000 38%,
-    transparent 46%
-  );
-  mask: radial-gradient(
-    circle,
-    transparent 10%,
-    #000 16%,
-    #000 38%,
-    transparent 46%
-  );
-  animation: portal-spin 4s linear infinite;
-}
-
-/* Pulsing outer glow */
-.portal-overlay::after {
-  content: "";
-  position: absolute;
-  inset: 20%;
-  border-radius: 50%;
-  animation: portal-glow 2.5s ease-in-out infinite;
-}
-
-.portal-blue::after {
-  box-shadow: 0 0 12px 6px rgba(30, 144, 255, 0.3);
-}
-
-.portal-orange::after {
-  box-shadow: 0 0 12px 6px rgba(255, 140, 0, 0.3);
-}
-
-@keyframes portal-spin {
-  from {
-    transform: rotate(0deg);
+@keyframes portal-surge {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
   }
-  to {
-    transform: rotate(360deg);
+  35% {
+    transform: scale(1.28);
+    filter: brightness(1.8);
   }
-}
-
-@keyframes portal-glow {
-  0%,
   100% {
-    opacity: 0.6;
+    transform: scale(1);
+    filter: brightness(1);
   }
-  50% {
+}
+
+@keyframes portal-surge-light {
+  35% {
     opacity: 1;
-    transform: scale(1.1);
+    transform: scale(1.3);
   }
 }
 
@@ -906,25 +952,182 @@
   filter: drop-shadow(1px 2px 3px rgba(0, 0, 0, 0.5));
 }
 
-.portal-anim-shrink {
-  animation: portal-shrink 0.3s ease-in forwards;
+.portal-anim-enter {
+  animation: portal-enter 0.4s cubic-bezier(0.55, 0, 0.9, 0.4) forwards;
 }
 
-.portal-anim-pop {
-  animation: portal-pop 0.3s ease-out forwards;
+.portal-anim-exit {
+  animation: portal-exit 0.45s cubic-bezier(0.15, 0.8, 0.3, 1.25) forwards;
 }
 
-.portal-anim-slide {
-  /* slide-in animation is applied inline */
-}
-
-@keyframes portal-shrink {
+/* The piece is stretched, spun, and swallowed by the vortex */
+@keyframes portal-enter {
   0% {
     transform: scale(1) rotate(0deg);
+    filter: brightness(1) drop-shadow(0 0 0 rgba(var(--p-glow), 0));
+    opacity: 1;
+  }
+  35% {
+    transform: scale(0.85, 1.12) rotate(70deg);
+    filter: brightness(1.5) drop-shadow(0 0 6px rgba(var(--p-glow), 0.9));
+  }
+  100% {
+    transform: scale(0.05, 0.25) rotate(540deg);
+    filter: brightness(3) drop-shadow(0 0 14px rgba(var(--p-glow), 1));
+    opacity: 0.3;
+  }
+}
+
+/* The piece is flung out of the exit, overshoots, then settles */
+@keyframes portal-exit {
+  0% {
+    transform: scale(0.05, 0.3) rotate(-360deg);
+    filter: brightness(3) drop-shadow(0 0 14px rgba(var(--p-glow), 1));
+    opacity: 0.3;
+  }
+  55% {
+    transform: scale(1.22, 0.9) rotate(0deg);
+    filter: brightness(1.6) drop-shadow(0 0 8px rgba(var(--p-glow), 0.9));
     opacity: 1;
   }
   100% {
-    transform: scale(0) rotate(360deg);
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1) drop-shadow(1px 2px 3px rgba(0, 0, 0, 0.5));
+    opacity: 1;
+  }
+}
+
+/* Light trail behind a piece sliding between portals */
+.portal-anim-trail {
+  filter: drop-shadow(0 0 6px rgba(var(--p-glow), 0.85))
+    drop-shadow(1px 2px 3px rgba(0, 0, 0, 0.5));
+}
+
+.portal-burst {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9;
+}
+
+.portal-burst > span,
+.portal-burst > i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+}
+
+.portal-burst-flash {
+  width: 120%;
+  height: 120%;
+  margin: -60% 0 0 -60%;
+  background: radial-gradient(
+    circle,
+    #fff 0%,
+    var(--p-hi) 20%,
+    rgba(var(--p-glow), 0.6) 45%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+  animation: burst-flash 0.4s ease-out forwards;
+}
+
+.portal-burst-ring {
+  width: 100%;
+  height: 100%;
+  margin: -50% 0 0 -50%;
+  border: 3px solid var(--p-hi);
+  box-shadow:
+    0 0 12px rgba(var(--p-glow), 0.9),
+    inset 0 0 12px rgba(var(--p-glow), 0.9);
+}
+
+.portal-burst-out .portal-burst-ring {
+  animation: burst-ring-out 0.45s ease-out forwards;
+}
+
+.portal-burst-in .portal-burst-ring {
+  animation: burst-ring-in 0.4s ease-in forwards;
+}
+
+.portal-burst > i {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  background: var(--p-hi);
+  box-shadow: 0 0 6px 2px rgba(var(--p-glow), 0.9);
+}
+
+.portal-burst-out > i {
+  animation: spark-out 0.5s cubic-bezier(0.1, 0.7, 0.3, 1) both;
+}
+
+.portal-burst-in > i {
+  animation: spark-in 0.4s cubic-bezier(0.6, 0, 0.9, 0.5) both;
+}
+
+@keyframes burst-flash {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+@keyframes burst-ring-out {
+  0% {
+    transform: scale(0.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes burst-ring-in {
+  0% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.1);
+    opacity: 0.4;
+  }
+}
+
+@keyframes spark-out {
+  0% {
+    transform: rotate(var(--a)) translateX(0) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(calc(var(--a) + 40deg)) translateX(var(--reach))
+      scale(0.2);
+    opacity: 0;
+  }
+}
+
+@keyframes spark-in {
+  0% {
+    transform: rotate(var(--a)) translateX(var(--reach)) scale(0.4);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(calc(var(--a) + 160deg)) translateX(0) scale(1);
     opacity: 0;
   }
 }
@@ -961,21 +1164,6 @@
   100% {
     transform: scale(0.8);
     opacity: 0;
-  }
-}
-
-@keyframes portal-pop {
-  0% {
-    transform: scale(0) rotate(-180deg);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.15) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-    opacity: 1;
   }
 }
 
