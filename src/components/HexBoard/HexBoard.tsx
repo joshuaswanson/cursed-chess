@@ -1,29 +1,10 @@
 import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
-import type { Piece } from "../../engine";
+import { pieceImage } from "../../utils/pieceImages";
 import { isValidHex, hexColor, coordKey } from "../../engine/hex";
 import type { HexCoord } from "../../engine/hex";
 import "./HexBoard.css";
-
-const PIECE_IMAGES: Record<string, string> = {
-  wk: "/pieces/wK.svg",
-  wq: "/pieces/wQ.svg",
-  wr: "/pieces/wR.svg",
-  wb: "/pieces/wB.svg",
-  wn: "/pieces/wN.svg",
-  wp: "/pieces/wP.svg",
-  bk: "/pieces/bK.svg",
-  bq: "/pieces/bQ.svg",
-  br: "/pieces/bR.svg",
-  bb: "/pieces/bB.svg",
-  bn: "/pieces/bN.svg",
-  bp: "/pieces/bP.svg",
-};
-
-function getPieceImage(piece: Piece): string {
-  return PIECE_IMAGES[piece.color + piece.type];
-}
 
 /** Generate all 91 valid hex coordinates */
 function allHexCoords(): HexCoord[] {
@@ -238,7 +219,7 @@ export function HexBoard() {
               {piece && (
                 <img
                   className="hex-piece"
-                  src={getPieceImage(piece)}
+                  src={pieceImage(piece)}
                   alt={piece.color + piece.type}
                   draggable={false}
                 />
@@ -267,7 +248,7 @@ export function HexBoard() {
                 onClick={() => handlePromotion(pt)}
               >
                 <img
-                  src={getPieceImage({ type: pt, color: Color.White })}
+                  src={pieceImage({ type: pt, color: Color.White })}
                   alt={pt}
                 />
               </button>

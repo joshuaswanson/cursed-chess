@@ -1,5 +1,6 @@
 import { useGameStore } from "../../stores/gameStore";
-import { PieceType, Color } from "../../engine";
+import { PieceType } from "../../engine";
+import { pieceImage } from "../../utils/pieceImages";
 import "./PromotionDialog.css";
 
 const PROMOTION_PIECES = [
@@ -10,12 +11,11 @@ const PROMOTION_PIECES = [
 ];
 
 export function PromotionDialog() {
-  const { promotionPending, turn, makeMove, clearSelection } = useGameStore();
+  const promotionPending = useGameStore((s) => s.promotionPending);
+  const turn = useGameStore((s) => s.turn);
+  const { makeMove, clearSelection } = useGameStore.getState();
 
   if (!promotionPending) return null;
-
-  const color = turn;
-  const prefix = color === Color.White ? "w" : "b";
 
   return (
     <div className="promotion-overlay" onClick={clearSelection}>
@@ -29,7 +29,7 @@ export function PromotionDialog() {
             }
           >
             <img
-              src={`/pieces/${prefix}${type.toUpperCase()}.svg`}
+              src={pieceImage({ type, color: turn })}
               alt={type}
               className="promotion-piece-img"
             />

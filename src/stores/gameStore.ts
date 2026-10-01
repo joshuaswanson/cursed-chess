@@ -1,10 +1,19 @@
 import { create } from "zustand";
-import { Game, Color, PieceType, GameStatus, MoveFlag } from "../engine";
-import type { SquareIndex, Piece, MoveRecord } from "../engine";
+import {
+  Game,
+  Color,
+  PieceType,
+  GameStatus,
+  MoveFlag,
+  isGameOver,
+  opponent,
+} from "../engine";
+import type { SquareIndex, Move, MoveRecord } from "../engine";
 import { PluginManager } from "../plugins/manager";
 import type { ModePlugin } from "../plugins/types";
-import { fileOf, rankOf, isValidSquare } from "../utils/squareUtils";
+import { rankOf, ALL_SQUARES } from "../utils/squareUtils";
 import { PortalChessPlugin } from "../plugins/portalChess";
+import type { PortalMoveInfo } from "../plugins/portalChess";
 import { FogOfWarPlugin } from "../plugins/fogOfWar";
 import { BattleRoyalePlugin } from "../plugins/battleRoyale";
 import { RallyPlugin, PIECE_COST } from "../plugins/clashRoyale";
@@ -15,52 +24,104 @@ import { StrategoPlugin } from "../plugins/stratego";
 import { HexGame } from "../engine/hex/game";
 import type { HexCoord, HexMove } from "../engine/hex";
 
+export type { PortalMoveInfo };
+
+const MODE_SECONDS = 45;
+const PLAYER_MOVE_SECONDS = 10;
+const AI_MOVE_SECONDS = 1;
+/** Clock value for the opening normal-chess phase, which has no time limit */
+const UNLIMITED_SECONDS = 999;
+/** Battle Royale ends this many seconds after the board stops shrinking */
+const BATTLE_ROYALE_FINAL_SECONDS = 5;
+/** Plies of normal chess before the cursed modes begin (white, black, white) */
+const NORMAL_CHESS_PLIES = 3;
+
+const MODE_ANNOUNCE_MS = 2000;
+const HINT_DELAY_MS = 2200;
+const HINT_MS = 2500;
+const INTRO_HOLD_MS = HINT_DELAY_MS + HINT_MS;
+/** Lets the final move animate before the result banner covers the board */
+const GAME_END_DELAY_MS = 600;
+const RESULT_MS = 2500;
+const RESULT_HOLD_MS = 2800;
+
+const HEX_MORPH_OUT_MS = 4800;
+const HEX_MORPH_IN_MS = 5600;
+const HEX_MORPH_DONE_MS = 6400;
+
 export interface GameMode {
   name: string;
+  hint: string;
   create: () => ModePlugin[];
+  durationSeconds?: number;
+  /** How long play stays paused after the mode starts */
+  introHoldMs?: number;
   isHex?: boolean;
 }
 
 export const GAME_MODES: GameMode[] = [
-  { name: "PORTALS", create: () => [new PortalChessPlugin()] },
-  { name: "FOG OF WAR", create: () => [new FogOfWarPlugin()] },
-  { name: "BATTLE ROYALE", create: () => [new BattleRoyalePlugin()] },
-  { name: "CLASH ROYALE", create: () => [new RallyPlugin()] },
-  { name: "MINEFIELD", create: () => [new MinefieldPlugin()] },
-  { name: "KING OF THE HILL", create: () => [new KingOfTheHillPlugin()] },
-  { name: "GRAVITY", create: () => [new GravityPlugin()] },
-  { name: "HEX CHESS", create: () => [], isHex: true },
-  { name: "STRATEGO", create: () => [new StrategoPlugin()] },
+  {
+    name: "PORTALS",
+    hint: "PIECES TELEPORT THROUGH PORTALS!",
+    create: () => [new PortalChessPlugin()],
+  },
+  {
+    name: "FOG OF WAR",
+    hint: "THE ENEMY HIDES IN THE FOG!",
+    create: () => [new FogOfWarPlugin()],
+    // The fog takes 6s to roll in after the title banner
+    introHoldMs: MODE_ANNOUNCE_MS + 6000,
+  },
+  {
+    name: "BATTLE ROYALE",
+    hint: "MOVE AWAY FROM EDGES!",
+    create: () => [new BattleRoyalePlugin()],
+  },
+  {
+    name: "CLASH ROYALE",
+    hint: "DRAG AND DROP TO DEPLOY!",
+    create: () => [new RallyPlugin()],
+    durationSeconds: 75,
+  },
+  {
+    name: "MINEFIELD",
+    hint: "WATCH YOUR STEP!",
+    create: () => [new MinefieldPlugin()],
+  },
+  {
+    name: "KING OF THE HILL",
+    hint: "CONTROL THE CENTER!",
+    create: () => [new KingOfTheHillPlugin()],
+  },
+  {
+    name: "GRAVITY",
+    hint: "GRAVITY SHIFTS EVERY FEW TURNS!",
+    create: () => [new GravityPlugin()],
+  },
+  {
+    name: "HEX CHESS",
+    hint: "CHESS ON HEXAGONS!",
+    create: () => [],
+    durationSeconds: 60,
+    introHoldMs: HEX_MORPH_DONE_MS,
+    isHex: true,
+  },
+  {
+    name: "STRATEGO",
+    hint: "ENEMY PIECES ARE HIDDEN!",
+    create: () => [new StrategoPlugin()],
+  },
 ];
 
-/** Get normalized sliding direction from origin to target, or null if not a straight line */
-function slidingDirection(
-  origin: SquareIndex,
-  target: SquareIndex,
-): number | null {
-  const df = fileOf(target) - fileOf(origin);
-  const dr = rankOf(target) - rankOf(origin);
-  if (df === 0 && dr === 0) return null;
-  if (df !== 0 && dr !== 0 && Math.abs(df) !== Math.abs(dr)) return null;
-  return Math.sign(dr) * 16 + Math.sign(df);
-}
-
-export interface PortalMoveInfo {
-  piece: Piece;
-  from: SquareIndex;
-  transits: { entrance: SquareIndex; exit: SquareIndex }[];
-  landing: SquareIndex;
-}
+type AnnouncementType = "mode" | "intro" | "hint";
 
 export interface GameStore {
-  // Game state
   game: Game;
   pluginManager: PluginManager;
   status: GameStatus;
   turn: Color;
   moveHistory: MoveRecord[];
 
-  // UI state
   selectedSquare: SquareIndex | null;
   legalMoveSquares: SquareIndex[];
   hasPortalMoves: boolean;
@@ -71,116 +132,77 @@ export interface GameStore {
   promotionPending: { from: SquareIndex; to: SquareIndex } | null;
   flipped: boolean;
 
-  // Scores
   scoreWhite: number;
   scoreBlack: number;
 
-  // Announcement
   announcement: string | null;
-  announcementType: "mode" | "intro" | "hint";
+  announcementType: AnnouncementType;
+  /** True while play is frozen, by the user or by an announcement */
   paused: boolean;
+  userPaused: boolean;
 
-  // Timer
   timeWhite: number;
   timeBlack: number;
   moveTimerActive: boolean;
 
-  // Mode cycling
+  /** -1 is the opening normal-chess phase, otherwise an index into GAME_MODES */
   currentModeIndex: number;
   modeTimeRemaining: number;
 
-  // Dev mode
   devMode: boolean;
 
-  // Rally deployment
   deployPieceType: PieceType | null;
+  /** Bumped every autonomous tick, since plugins change resources and the board in place */
+  autonomousTick: number;
 
-  // Hex chess mode
   hexGame: HexGame | null;
   isHexMode: boolean;
   selectedHex: HexCoord | null;
   legalHexMoves: HexMove[];
   lastHexMove: { from: HexCoord; to: HexCoord } | null;
   hexPromotionPending: { from: HexCoord; to: HexCoord } | null;
-
   hexTransition: "morph-out" | "morph-in" | null;
 
-  // Hex actions
   selectHex: (coord: HexCoord) => void;
   makeHexMove: (from: HexCoord, to: HexCoord, promotion?: PieceType) => void;
 
-  // Actions
+  legalMovesFrom: (square: SquareIndex) => Move[];
   selectSquare: (square: SquareIndex) => void;
+  /** Make the move, or open the promotion picker. Returns null if the target is illegal. */
+  requestMove: (
+    from: SquareIndex,
+    to: SquareIndex,
+  ) => "moved" | "promotion" | null;
   makeMove: (from: SquareIndex, to: SquareIndex, promotion?: PieceType) => void;
-  undoMove: () => void;
-  newGame: (fen?: string, plugins?: ModePlugin[]) => void;
+  newGame: () => void;
   flipBoard: () => void;
   clearSelection: () => void;
   togglePause: () => void;
-  handleGameEnd: (status: GameStatus) => void;
+  toggleDevMode: () => void;
+  handleGameEnd: (winner: Color | null) => void;
   setDeployPieceType: (type: PieceType | null) => void;
   deployPiece: (square: SquareIndex) => boolean;
   showAnnouncement: (
     text: string,
     durationMs?: number,
-    type?: "mode" | "intro" | "hint",
+    type?: AnnouncementType,
   ) => void;
   tickTimer: () => void;
   expireTimer: () => void;
   tickModeTimer: () => void;
   tickAutonomous: () => void;
   resolveExplosion: (square: SquareIndex) => void;
-  switchMode: () => void;
-
-  // Helpers
-  getPiece: (square: SquareIndex) => Piece | null;
-  isLegalMoveTarget: (square: SquareIndex) => boolean;
+  switchMode: (index?: number) => void;
 }
 
-// Hex transition timeout IDs — stored outside Zustand to avoid re-renders.
-// Cancelled on re-entry to prevent stale state updates.
-let hexTransitionTimers: ReturnType<typeof setTimeout>[] = [];
-function clearHexTransitionTimers() {
-  for (const t of hexTransitionTimers) clearTimeout(t);
-  hexTransitionTimers = [];
-}
-
-export const useGameStore = create<GameStore>((set, get) => ({
-  game: new Game(),
-  pluginManager: new PluginManager(),
-  status: GameStatus.Active,
-  turn: Color.White,
-  moveHistory: [],
-
+const CLEARED_SELECTION = {
   selectedSquare: null,
   legalMoveSquares: [],
   hasPortalMoves: false,
   portalEntrance: null,
-  lastMove: null,
-  lastAutonomousMoves: [],
-  lastPortalMove: null,
-  promotionPending: null,
-  flipped: false,
+} satisfies Partial<GameStore>;
 
-  scoreWhite: 0,
-  scoreBlack: 0,
-
-  announcement: null,
-  announcementType: "mode" as "mode" | "intro" | "hint",
-  paused: false,
-
-  timeWhite: 10,
-  timeBlack: 1,
-  moveTimerActive: false,
-
-  currentModeIndex: -1,
-  modeTimeRemaining: 45,
-
-  devMode: false,
-
-  deployPieceType: null,
-
-  // Hex chess state
+const CLEARED_HEX = {
   hexGame: null,
   isHexMode: false,
   selectedHex: null,
@@ -188,73 +210,148 @@ export const useGameStore = create<GameStore>((set, get) => ({
   lastHexMove: null,
   hexPromotionPending: null,
   hexTransition: null,
+} satisfies Partial<GameStore>;
 
-  selectHex: (coord: HexCoord) => {
-    const state = get();
-    if (state.paused || !state.hexGame) return;
-    if (state.hexGame.turn === Color.Black) return;
+const FRESH_BOARD = {
+  ...CLEARED_SELECTION,
+  ...CLEARED_HEX,
+  status: GameStatus.Active,
+  turn: Color.White,
+  moveHistory: [],
+  lastMove: null,
+  lastAutonomousMoves: [],
+  lastPortalMove: null,
+  promotionPending: null,
+  deployPieceType: null,
+} satisfies Partial<GameStore>;
 
-    const { hexGame, selectedHex, legalHexMoves } = state;
+const FRESH_CLOCKS = {
+  moveTimerActive: true,
+  timeWhite: PLAYER_MOVE_SECONDS,
+  timeBlack: AI_MOVE_SECONDS,
+} satisfies Partial<GameStore>;
 
-    // If clicking a legal move target, make the move
+// Every delayed action goes through schedule() so that quitting or switching
+// modes can cancel all of them at once.
+const pendingTimers = new Set<ReturnType<typeof setTimeout>>();
+let pauseHolds = 0;
+let announcementSeq = 0;
+
+function schedule(fn: () => void, ms: number): void {
+  const id = setTimeout(() => {
+    pendingTimers.delete(id);
+    fn();
+  }, ms);
+  pendingTimers.add(id);
+}
+
+function syncPaused(): void {
+  useGameStore.setState((s) => ({ paused: s.userPaused || pauseHolds > 0 }));
+}
+
+function cancelScheduled(): void {
+  for (const id of pendingTimers) clearTimeout(id);
+  pendingTimers.clear();
+  pauseHolds = 0;
+  syncPaused();
+}
+
+/** Freeze play for `ms`. Overlapping holds stack, so the longest one wins. */
+function holdPause(ms: number): void {
+  pauseHolds++;
+  syncPaused();
+  schedule(() => {
+    pauseHolds--;
+    syncPaused();
+  }, ms);
+}
+
+function endGameSoon(winner: Color | null): void {
+  schedule(
+    () => useGameStore.getState().handleGameEnd(winner),
+    GAME_END_DELAY_MS,
+  );
+}
+
+function startCursedIntro(): void {
+  const { showAnnouncement, switchMode } = useGameStore.getState();
+  holdPause(4400);
+  schedule(() => showAnnouncement("GET READY!", 1500, "intro"), 600);
+  schedule(() => showAnnouncement("CURSED CHESS", 2000, "intro"), 2400);
+  schedule(() => switchMode(), 4400);
+}
+
+function freshPluginManager(game: Game, plugins: ModePlugin[] = []) {
+  const pluginManager = new PluginManager();
+  pluginManager.setContext(game);
+  for (const plugin of plugins) pluginManager.register(plugin);
+  pluginManager.invokeOnGameStart();
+  return pluginManager;
+}
+
+const initialGame = new Game();
+
+export const useGameStore = create<GameStore>((set, get) => ({
+  game: initialGame,
+  pluginManager: freshPluginManager(initialGame),
+  ...FRESH_BOARD,
+  flipped: false,
+
+  scoreWhite: 0,
+  scoreBlack: 0,
+
+  announcement: null,
+  announcementType: "mode",
+  paused: false,
+  userPaused: false,
+
+  ...FRESH_CLOCKS,
+  timeWhite: UNLIMITED_SECONDS,
+
+  currentModeIndex: -1,
+  modeTimeRemaining: UNLIMITED_SECONDS,
+
+  devMode: false,
+  autonomousTick: 0,
+
+  selectHex: (coord) => {
+    const { paused, hexGame, selectedHex, legalHexMoves, makeHexMove } = get();
+    if (paused || !hexGame || hexGame.turn !== Color.White) return;
+
     if (selectedHex) {
       const move = legalHexMoves.find(
         (m) => m.to.q === coord.q && m.to.r === coord.r && !m.promotion,
       );
       if (move) {
-        state.makeHexMove(selectedHex, coord);
+        makeHexMove(selectedHex, coord);
         return;
       }
     }
 
-    // Select own piece
     const piece = hexGame.board.getCoord(coord);
     if (piece && piece.color === hexGame.turn) {
-      const moves = hexGame.getLegalMoves(coord);
-      set({
-        selectedHex: coord,
-        legalHexMoves: moves,
-      });
+      set({ selectedHex: coord, legalHexMoves: hexGame.getLegalMoves(coord) });
       return;
     }
 
-    // Clear selection
     set({ selectedHex: null, legalHexMoves: [] });
   },
 
-  makeHexMove: (from: HexCoord, to: HexCoord, promotion?: PieceType) => {
-    const state = get();
-    if (state.paused || !state.hexGame) return;
-    const { hexGame } = state;
+  makeHexMove: (from, to, promotion) => {
+    const { paused, hexGame } = get();
+    if (paused || !hexGame) return;
 
-    const legalMoves = hexGame.getLegalMoves(from);
-    const move = legalMoves.find((m) => {
-      if (m.to.q !== to.q || m.to.r !== to.r) return false;
-      if (promotion && m.promotion !== promotion) return false;
-      if (!promotion && m.promotion) return false;
-      return true;
-    });
+    const move = hexGame
+      .getLegalMoves(from)
+      .find(
+        (m) => m.to.q === to.q && m.to.r === to.r && m.promotion === promotion,
+      );
     if (!move) return;
 
-    // King captured check
-    if (move.captured?.type === PieceType.King) {
-      hexGame.makeMove(move);
-      set({
-        selectedHex: null,
-        legalHexMoves: [],
-        lastHexMove: { from, to },
-        hexPromotionPending: null,
-        turn: hexGame.turn,
-        status: GameStatus.Checkmate,
-      });
-      setTimeout(() => {
-        get().handleGameEnd(GameStatus.Checkmate);
-      }, 600);
-      return;
-    }
-
+    const mover = hexGame.turn;
     hexGame.makeMove(move);
-    const hexStatus = hexGame.getStatus();
+    const kingCaptured = move.captured?.type === PieceType.King;
+    const status = kingCaptured ? GameStatus.Checkmate : hexGame.getStatus();
 
     set({
       selectedHex: null,
@@ -262,660 +359,341 @@ export const useGameStore = create<GameStore>((set, get) => ({
       lastHexMove: { from, to },
       hexPromotionPending: null,
       turn: hexGame.turn,
-      status: hexStatus,
-      timeWhite: hexGame.turn === Color.White ? 10 : get().timeWhite,
-      timeBlack: 1,
+      status,
+      timeWhite:
+        hexGame.turn === Color.White ? PLAYER_MOVE_SECONDS : get().timeWhite,
+      timeBlack: AI_MOVE_SECONDS,
       moveTimerActive: true,
     });
 
-    // Check game-ending status
-    if (
-      hexStatus === GameStatus.Checkmate ||
-      hexStatus === GameStatus.Stalemate ||
-      hexStatus === GameStatus.DrawFiftyMove
-    ) {
-      setTimeout(() => {
-        get().handleGameEnd(hexStatus);
-      }, 600);
-      return;
+    if (isGameOver(status)) {
+      endGameSoon(status === GameStatus.Checkmate ? mover : null);
     }
   },
 
-  selectSquare: (square: SquareIndex) => {
+  legalMovesFrom: (square) => {
+    const { game, pluginManager } = get();
+    return pluginManager.invokeModifyLegalMoves(
+      game.getLegalMoves(square),
+      game.turn,
+    );
+  },
+
+  selectSquare: (square) => {
     const state = get();
     if (state.paused) return;
-    // During autonomous mode, only allow deployment clicks
     if (state.pluginManager.isAutonomous()) {
-      if (state.deployPieceType) {
-        state.deployPiece(square);
-      }
+      if (state.deployPieceType) state.deployPiece(square);
       return;
     }
-    // Human plays White only — block interaction during Black's turn
-    if (state.game.turn === Color.Black) return;
+    // The human always plays White
+    if (state.game.turn !== Color.White) return;
+
     const { game, selectedSquare, legalMoveSquares } = state;
-
-    // If clicking a legal move target, make the move
     if (selectedSquare !== null && legalMoveSquares.includes(square)) {
-      const piece = game.board.get(selectedSquare);
-      // Check if this is a pawn promotion
-      if (
-        piece &&
-        piece.type === PieceType.Pawn &&
-        ((piece.color === Color.White && square >> 4 === 7) ||
-          (piece.color === Color.Black && square >> 4 === 0))
-      ) {
-        set({ promotionPending: { from: selectedSquare, to: square } });
-        return;
-      }
-      state.makeMove(selectedSquare, square);
+      state.requestMove(selectedSquare, square);
       return;
     }
 
-    // If clicking own piece, select it
     const piece = game.board.get(square);
     if (piece && piece.color === game.turn) {
-      const rawMoves = game.getLegalMoves(square);
-      const moves = state.pluginManager.invokeModifyLegalMoves(
-        rawMoves,
-        game.turn,
-      );
-      const hasPortal = moves.some((m) => m.flags & MoveFlag.Portal);
-      // Find which portal is the entrance by checking portal moves' to squares
-      let portalEntrance: SquareIndex | null = null;
-      if (hasPortal) {
-        const overlays = state.pluginManager.getAllOverlays();
-        let bestDist = Infinity;
-        for (const po of overlays) {
-          if (po.type !== "portal" || po.squares.length !== 2) continue;
-          const [a, b] = po.squares;
-          const targetsA = moves.some(
-            (m) => m.to === a && m.flags & MoveFlag.Portal,
-          );
-          const targetsB = moves.some(
-            (m) => m.to === b && m.flags & MoveFlag.Portal,
-          );
-          let candidate: SquareIndex | null = null;
-          if (targetsA && !targetsB) candidate = a;
-          else if (targetsB && !targetsA) candidate = b;
-          else if (targetsA && targetsB) {
-            const dA =
-              Math.abs(fileOf(square) - fileOf(a)) +
-              Math.abs(rankOf(square) - rankOf(a));
-            const dB =
-              Math.abs(fileOf(square) - fileOf(b)) +
-              Math.abs(rankOf(square) - rankOf(b));
-            candidate = dA <= dB ? a : b;
-          }
-          if (candidate !== null) {
-            const dist =
-              Math.abs(fileOf(square) - fileOf(candidate)) +
-              Math.abs(rankOf(square) - rankOf(candidate));
-            if (dist < bestDist) {
-              bestDist = dist;
-              portalEntrance = candidate;
-            }
-          }
-        }
-      }
+      const moves = state.legalMovesFrom(square);
+      const hasPortalMoves = moves.some((m) => m.flags & MoveFlag.Portal);
+      const portal =
+        state.pluginManager.find<PortalChessPlugin>("portal-chess");
       set({
         selectedSquare: square,
         legalMoveSquares: moves.map((m) => m.to),
-        hasPortalMoves: hasPortal,
-        portalEntrance,
+        hasPortalMoves,
+        portalEntrance:
+          hasPortalMoves && portal ? portal.findEntrance(square, moves) : null,
       });
       return;
     }
 
-    // Clicking empty square or opponent piece without selection - clear
-    set({
-      selectedSquare: null,
-      legalMoveSquares: [],
-      hasPortalMoves: false,
-      portalEntrance: null,
-    });
+    set(CLEARED_SELECTION);
   },
 
-  makeMove: (from: SquareIndex, to: SquareIndex, promotion?: PieceType) => {
-    if (get().paused) return;
-    const { game, pluginManager } = get();
+  requestMove: (from, to) => {
+    const moves = get()
+      .legalMovesFrom(from)
+      .filter((m) => m.to === to);
+    if (moves.length === 0) return null;
+    if (moves.some((m) => m.promotion)) {
+      set({ promotionPending: { from, to } });
+      return "promotion";
+    }
+    get().makeMove(from, to);
+    return "moved";
+  },
+
+  makeMove: (from, to, promotion) => {
+    const state = get();
+    if (state.paused) return;
+    const { game, pluginManager } = state;
     const piece = game.board.get(from);
     if (!piece) return;
 
-    // Find the matching legal move (with plugin modifications)
-    const rawMoves = game.getLegalMoves(from);
-    const legalMoves = pluginManager.invokeModifyLegalMoves(
-      rawMoves,
-      game.turn,
-    );
-    const move = legalMoves.find((m) => {
-      if (m.to !== to) return false;
-      if (promotion && m.promotion !== promotion) return false;
-      if (!promotion && m.promotion) return false;
-      return true;
-    });
-
+    const move = state
+      .legalMovesFrom(from)
+      .find((m) => m.to === to && m.promotion === promotion);
     if (!move) return;
 
     const processedMove = pluginManager.invokeOnBeforeMove(move);
     if (!processedMove) return;
 
-    const previousTurn = game.turn;
-
-    // Portal or plugin-modified moves bypass engine validation
-    let success: boolean;
-    if (processedMove.flags & MoveFlag.Portal) {
-      success = game.executeTrustedMove(processedMove);
-    } else {
-      success = game.makeMove(processedMove);
-    }
+    const mover = game.turn;
+    const isPortalMove = !!(processedMove.flags & MoveFlag.Portal);
+    const success = isPortalMove
+      ? game.executeTrustedMove(processedMove)
+      : game.makeMove(processedMove);
     if (!success) return;
 
-    // King captured — instant win
+    const moveState = {
+      ...CLEARED_SELECTION,
+      lastMove: { from, to: processedMove.to },
+      lastAutonomousMoves: [],
+      promotionPending: null,
+      turn: game.turn,
+      moveHistory: [...game.history],
+    };
+
     if (processedMove.captured?.type === PieceType.King) {
-      set({
-        selectedSquare: null,
-        legalMoveSquares: [],
-        hasPortalMoves: false,
-        portalEntrance: null,
-        lastMove: { from, to: processedMove.to },
-        lastPortalMove: null,
-        promotionPending: null,
-        turn: game.turn,
-        status: GameStatus.Checkmate,
-        moveHistory: [...game.history],
-      });
-      setTimeout(() => {
-        get().handleGameEnd(GameStatus.Checkmate);
-      }, 600);
+      set({ ...moveState, lastPortalMove: null, status: GameStatus.Checkmate });
+      endGameSoon(mover);
       return;
     }
+
+    // Trace before turn end, which may move the portals
+    const lastPortalMove = isPortalMove
+      ? (pluginManager
+          .find<PortalChessPlugin>("portal-chess")
+          ?.traceMove(piece, from, to, processedMove.to) ?? null)
+      : null;
 
     pluginManager.invokeOnAfterMove(processedMove);
-    pluginManager.invokeOnTurnEnd(previousTurn);
+    pluginManager.invokeOnTurnEnd(mover);
 
-    const rawStatus = game.getStatus();
-    const status = pluginManager.invokeModifyGameStatus(rawStatus);
-
-    // Compute portal animation info if this was a portal move
-    let lastPortalMove: PortalMoveInfo | null = null;
-    if (processedMove.flags & MoveFlag.Portal) {
-      const overlays = pluginManager.getAllOverlays();
-      const landing = processedMove.to;
-
-      // Build a lookup for portal squares
-      const portalExitMap = new Map<number, SquareIndex>();
-      for (const po of overlays) {
-        if (po.type !== "portal" || po.squares.length !== 2) continue;
-        const [a, b] = po.squares;
-        portalExitMap.set(a, b);
-        portalExitMap.set(b, a);
-      }
-
-      // Try to find the path by walking from `from` in a sliding direction
-      // through portals until we reach `landing`.
-      // For non-chained moves, the direction from→entrance is enough.
-      // For chained moves, try all 8 directions.
-      const ALL_DIRS = [16, -16, 1, -1, 17, 15, -15, -17];
-
-      // Helper: walk from `from` in direction `dir`, recording portal transits
-      const tryWalk = (
-        dir: number,
-      ): { entrance: SquareIndex; exit: SquareIndex }[] | null => {
-        const transits: { entrance: SquareIndex; exit: SquareIndex }[] = [];
-        const visitedExits = new Set<number>();
-        let sq = (from + dir) as SquareIndex;
-
-        // Walk to first portal entrance or to landing
-        while (isValidSquare(sq)) {
-          if (sq === landing && transits.length > 0) return transits;
-          const exitSq = portalExitMap.get(sq);
-          if (exitSq !== undefined) {
-            transits.push({ entrance: sq, exit: exitSq });
-            if (visitedExits.has(exitSq)) return null; // infinite loop
-            visitedExits.add(exitSq);
-            // Continue walking from exit in same direction
-            sq = (exitSq + dir) as SquareIndex;
-            continue;
-          }
-          // Not a portal; if we've passed through at least one portal and
-          // haven't reached landing, keep walking
-          if (transits.length === 0) {
-            // Haven't hit any portal yet, keep going
-            sq = (sq + dir) as SquareIndex;
-            continue;
-          }
-          if (sq === landing) return transits;
-          sq = (sq + dir) as SquareIndex;
-        }
-        return null;
-      };
-
-      // First, try the natural direction from→to (the user-clicked target)
-      const naturalDir = slidingDirection(from, to);
-      if (naturalDir !== null) {
-        const result = tryWalk(naturalDir);
-        if (result && result.length > 0) {
-          lastPortalMove = { piece, from, transits: result, landing };
-        }
-      }
-
-      // If natural direction didn't work, try all 8 directions
-      if (!lastPortalMove) {
-        for (const dir of ALL_DIRS) {
-          const result = tryWalk(dir);
-          if (result && result.length > 0) {
-            lastPortalMove = { piece, from, transits: result, landing };
-            break;
-          }
-        }
-      }
-
-      // Fallback for non-sliding portal moves (knight/king/pawn):
-      // single transit, entrance = to (clicked portal), exit from map
-      if (!lastPortalMove && portalExitMap.has(to)) {
-        lastPortalMove = {
-          piece,
-          from,
-          transits: [{ entrance: to, exit: portalExitMap.get(to)! }],
-          landing,
-        };
-      }
-    }
-
-    const isNormalChess = get().currentModeIndex < 0;
+    const status = pluginManager.invokeModifyGameStatus(game.getStatus());
+    const isNormalChess = state.currentModeIndex < 0;
 
     set({
-      selectedSquare: null,
-      legalMoveSquares: [],
-      hasPortalMoves: false,
-      portalEntrance: null,
-      lastMove: { from, to: processedMove.to },
+      ...moveState,
       lastPortalMove,
-      promotionPending: null,
-      turn: game.turn,
       status,
-      moveHistory: [...game.history],
       timeWhite: isNormalChess
-        ? 999
+        ? UNLIMITED_SECONDS
         : game.turn === Color.White
-          ? 10
-          : get().timeWhite,
-      timeBlack: 1,
+          ? PLAYER_MOVE_SECONDS
+          : state.timeWhite,
+      timeBlack: AI_MOVE_SECONDS,
       moveTimerActive: true,
     });
 
-    // Battle royale 4x4: cap mode time to 5 seconds
-    const brOverlay = pluginManager
-      .getAllOverlays()
-      .find((o) => o.type === "battle-royale");
-    if (brOverlay) {
-      const brData = brOverlay.data as { shrinkRing: number } | undefined;
-      if (brData && brData.shrinkRing >= 1 && get().modeTimeRemaining > 5) {
-        set({ modeTimeRemaining: 5 });
-      }
+    const battleRoyale =
+      pluginManager.find<BattleRoyalePlugin>("battle-royale");
+    if (
+      battleRoyale?.fullyShrunk &&
+      get().modeTimeRemaining > BATTLE_ROYALE_FINAL_SECONDS
+    ) {
+      set({ modeTimeRemaining: BATTLE_ROYALE_FINAL_SECONDS });
     }
 
-    // Check for game-ending status — award point and move on
-    if (
-      status === GameStatus.Checkmate ||
-      status === GameStatus.Stalemate ||
-      status === GameStatus.DrawFiftyMove ||
-      status === GameStatus.DrawInsufficientMaterial
-    ) {
-      setTimeout(() => {
-        get().handleGameEnd(status);
-      }, 600);
+    if (isGameOver(status)) {
+      const winner =
+        pluginManager.getWinner() ??
+        (status === GameStatus.Checkmate ? opponent(game.turn) : null);
+      endGameSoon(winner);
       return;
     }
 
-    // Normal chess: switch to cursed mode after 3 moves (white, black, white)
-    if (isNormalChess && game.history.length >= 3) {
-      // Wait for the piece movement animation to finish before announcing
-      setTimeout(() => {
-        get().showAnnouncement("GET READY!", 1500, "intro");
-        setTimeout(() => {
-          get().showAnnouncement("CURSED CHESS", 2000, "intro");
-          setTimeout(() => {
-            get().switchMode();
-          }, 2000);
-        }, 1800);
-      }, 600);
+    if (isNormalChess && game.history.length === NORMAL_CHESS_PLIES) {
+      startCursedIntro();
     }
   },
 
-  undoMove: () => {
-    const { game } = get();
-    const record = game.undoMove();
-    if (!record) return;
-
-    set({
-      selectedSquare: null,
-      legalMoveSquares: [],
-      hasPortalMoves: false,
-      portalEntrance: null,
-      lastMove: { from: record.move.to, to: record.move.from },
-      lastPortalMove: null,
-      promotionPending: null,
-      turn: game.turn,
-      status: game.getStatus(),
-      moveHistory: [...game.history],
-    });
-  },
-
-  newGame: (fen?: string, plugins?: ModePlugin[]) => {
-    const game = new Game(fen);
-    const pluginManager = new PluginManager();
-    pluginManager.setContext(game);
-
-    if (plugins) {
-      for (const plugin of plugins) {
-        pluginManager.register(plugin);
-      }
-    }
-
-    pluginManager.invokeOnGameStart();
-    clearHexTransitionTimers();
-
+  newGame: () => {
+    cancelScheduled();
+    const game = new Game();
     set({
       game,
-      pluginManager,
-      status: GameStatus.Active,
-      turn: Color.White,
-      moveHistory: [],
-      selectedSquare: null,
-      legalMoveSquares: [],
-      hasPortalMoves: false,
-      portalEntrance: null,
-      lastMove: null,
-      lastPortalMove: null,
-      promotionPending: null,
-      // Reset hex state
-      hexGame: null,
-      isHexMode: false,
-      selectedHex: null,
-      legalHexMoves: [],
-      lastHexMove: null,
-      hexPromotionPending: null,
-      hexTransition: null,
-      timeWhite: 999,
-      timeBlack: 1,
-      moveTimerActive: true,
-      modeTimeRemaining: 999, // Normal chess phase — no mode timer
+      pluginManager: freshPluginManager(game),
+      ...FRESH_BOARD,
+      ...FRESH_CLOCKS,
+      timeWhite: UNLIMITED_SECONDS,
+      currentModeIndex: -1,
+      modeTimeRemaining: UNLIMITED_SECONDS,
+      scoreWhite: 0,
+      scoreBlack: 0,
+      announcement: null,
+      userPaused: false,
+      paused: false,
     });
   },
 
   flipBoard: () => set((state) => ({ flipped: !state.flipped })),
 
-  clearSelection: () =>
+  clearSelection: () => set({ ...CLEARED_SELECTION, promotionPending: null }),
+
+  togglePause: () => {
+    set((s) => ({ userPaused: !s.userPaused }));
+    syncPaused();
+  },
+
+  toggleDevMode: () => set((s) => ({ devMode: !s.devMode })),
+
+  handleGameEnd: (winner) => {
+    const { scoreWhite, scoreBlack } = get();
     set({
-      selectedSquare: null,
-      legalMoveSquares: [],
-      hasPortalMoves: false,
-      portalEntrance: null,
-      promotionPending: null,
-    }),
+      scoreWhite: scoreWhite + (winner === Color.White ? 1 : 0),
+      scoreBlack: scoreBlack + (winner === Color.Black ? 1 : 0),
+    });
 
-  togglePause: () => set((state) => ({ paused: !state.paused })),
+    const label =
+      winner === Color.White
+        ? "YOU WIN!"
+        : winner === Color.Black
+          ? "YOU LOSE!"
+          : "DRAW!";
+    holdPause(RESULT_HOLD_MS);
+    get().showAnnouncement(label, RESULT_MS, "intro");
 
-  handleGameEnd: (endStatus: GameStatus) => {
-    const { turn, scoreWhite, scoreBlack } = get();
-
-    let newWhite = scoreWhite;
-    let newBlack = scoreBlack;
-    let label: string;
-
-    if (endStatus === GameStatus.Checkmate) {
-      // The side whose turn it is has been checkmated (no legal moves)
-      if (turn === Color.Black) {
-        newWhite += 1;
-        label = "YOU WIN!";
-      } else {
-        newBlack += 1;
-        label = "YOU LOSE!";
-      }
-    } else {
-      // Stalemate or draw — no points
-      label = "DRAW!";
-    }
-
-    set({ scoreWhite: newWhite, scoreBlack: newBlack, paused: true });
-
-    // Announce result, then reset board and switch to next mode
-    get().showAnnouncement(label, 2500, "intro");
-    setTimeout(() => {
-      // Fresh board, keep current mode index so switchMode advances properly
-      const game = new Game();
+    schedule(() => {
       const { devMode, pluginManager, isHexMode } = get();
-      set({
-        game,
-        status: GameStatus.Active,
-        turn: Color.White,
-        moveHistory: [],
-        selectedSquare: null,
-        legalMoveSquares: [],
-        hasPortalMoves: false,
-        portalEntrance: null,
-        lastMove: null,
-        lastPortalMove: null,
-        promotionPending: null,
-        deployPieceType: null,
-        paused: false,
-        // Reset hex state
-        hexGame: null,
-        isHexMode: false,
-        selectedHex: null,
-        legalHexMoves: [],
-        lastHexMove: null,
-        hexPromotionPending: null,
-        hexTransition: null,
-      });
-      if (devMode) {
-        if (isHexMode) {
-          // Stay on hex mode — create fresh hex game
-          const newHexGame = new HexGame();
-          set({
-            hexGame: newHexGame,
-            isHexMode: true,
-            moveTimerActive: true,
-            timeWhite: 10,
-            timeBlack: 1,
-          });
-        } else {
-          // Stay on same mode — just re-initialize plugins with fresh board
-          pluginManager.setContext(game);
-          pluginManager.invokeOnGameStart();
-          set({ moveTimerActive: true, timeWhite: 10, timeBlack: 1 });
-        }
-      } else {
+      const game = new Game();
+      set({ game, ...FRESH_BOARD });
+
+      if (!devMode) {
         get().switchMode();
+      } else if (isHexMode) {
+        set({ hexGame: new HexGame(), isHexMode: true, ...FRESH_CLOCKS });
+      } else {
+        pluginManager.setContext(game);
+        pluginManager.invokeOnGameStart();
+        set(FRESH_CLOCKS);
       }
-    }, 2800);
+    }, RESULT_HOLD_MS);
   },
 
-  setDeployPieceType: (type: PieceType | null) => {
-    set({ deployPieceType: type });
-  },
+  setDeployPieceType: (type) => set({ deployPieceType: type }),
 
-  deployPiece: (square: SquareIndex) => {
-    const { game, pluginManager, deployPieceType } = get();
-    if (!deployPieceType) return false;
+  deployPiece: (square) => {
+    const { game, pluginManager, deployPieceType, paused } = get();
+    if (!deployPieceType || paused) return false;
 
-    // Find the rally plugin
-    const rallyPlugin = pluginManager
-      .getPlugins()
-      .find((p) => p.id === "rally") as RallyPlugin | undefined;
-    if (!rallyPlugin) return false;
+    const rally = pluginManager.find<RallyPlugin>("rally");
+    if (!rally) return false;
 
-    // Check cost
     const cost = PIECE_COST[deployPieceType];
-    if (cost === undefined || rallyPlugin.resourceWhite < cost) return false;
+    if (cost === undefined || rally.resourceWhite < cost) return false;
 
-    // Only deploy on White's half (ranks 0-3), must be empty
-    const rank = rankOf(square);
-    if (rank > 3) return false;
-    if (game.board.get(square)) return false;
+    // White deploys on its own half only
+    if (rankOf(square) > 3 || game.board.get(square)) return false;
 
-    // Deploy the piece
     game.board.put(square, { type: deployPieceType, color: Color.White });
-    rallyPlugin.resourceWhite -= cost;
-
-    // Set cooldown so the piece can't attack immediately
-    rallyPlugin.setCooldown(square, deployPieceType);
+    rally.resourceWhite -= cost;
+    rally.setCooldown(square, deployPieceType);
 
     set({ deployPieceType: null });
     return true;
   },
 
-  showAnnouncement: (
-    text: string,
-    durationMs = 2000,
-    type: "mode" | "intro" | "hint" = "mode",
-  ) => {
-    set({ announcement: text, announcementType: type, paused: true });
-    setTimeout(() => {
-      set({ announcement: null, paused: false });
+  showAnnouncement: (text, durationMs = MODE_ANNOUNCE_MS, type = "mode") => {
+    const seq = ++announcementSeq;
+    set({ announcement: text, announcementType: type });
+    holdPause(durationMs);
+    schedule(() => {
+      if (seq === announcementSeq) set({ announcement: null });
     }, durationMs);
   },
 
   tickTimer: () => {
     const { turn, moveTimerActive, paused, devMode } = get();
     if (!moveTimerActive || paused) return;
-    // In dev mode, only tick Black's timer (AI) — no move timer for White
+    // Dev mode gives the human unlimited time
     if (devMode && turn === Color.White) return;
     const key = turn === Color.White ? "timeWhite" : "timeBlack";
-    const current = get()[key];
-    const next = Math.max(0, current - 0.1);
+    const next = Math.max(0, get()[key] - 0.1);
     set({ [key]: next });
-    if (next <= 0) {
-      get().expireTimer();
-    }
+    if (next <= 0) get().expireTimer();
   },
 
+  // A random move is played for whoever runs out of time. This is also the AI.
   expireTimer: () => {
-    // Hex mode: use hex game for random moves
-    if (get().isHexMode) {
-      const { hexGame } = get();
-      if (!hexGame) return;
-      const move = hexGame.getRandomMove();
-      if (move) {
-        get().makeHexMove(move.from, move.to, move.promotion);
-      }
+    const { isHexMode, hexGame, game } = get();
+    if (isHexMode) {
+      const move = hexGame?.getRandomMove();
+      if (move) get().makeHexMove(move.from, move.to, move.promotion);
       return;
     }
 
-    const { game, pluginManager } = get();
-    // Random move when time expires
-    const allMoves: {
-      from: SquareIndex;
-      to: SquareIndex;
-      isPortal: boolean;
-    }[] = [];
-    for (let rank = 0; rank < 8; rank++) {
-      for (let file = 0; file < 8; file++) {
-        const sq = ((rank << 4) | file) as SquareIndex;
-        const piece = game.board.get(sq);
-        if (piece && piece.color === game.turn) {
-          const moves = game.getLegalMoves(sq);
-          const modified = pluginManager.invokeModifyLegalMoves(
-            moves,
-            game.turn,
-          );
-          for (const m of modified) {
-            allMoves.push({
-              from: sq,
-              to: m.to,
-              isPortal: !!(m.flags & MoveFlag.Portal),
-            });
-          }
-        }
-      }
+    const moves = ALL_SQUARES.filter(
+      (sq) => game.board.get(sq)?.color === game.turn,
+    )
+      .flatMap((sq) => get().legalMovesFrom(sq))
+      .filter((m) => !m.promotion || m.promotion === PieceType.Queen);
+
+    // Mode rules can remove every move the engine allows
+    if (moves.length === 0) {
+      const status = game.isInCheck()
+        ? GameStatus.Checkmate
+        : GameStatus.Stalemate;
+      set({ status });
+      endGameSoon(status === GameStatus.Checkmate ? opponent(game.turn) : null);
+      return;
     }
-    if (allMoves.length > 0) {
-      // In portal mode, strongly prefer portal moves to showcase the mechanic
-      const portalMoves = allMoves.filter((m) => m.isPortal);
-      const pool = portalMoves.length > 0 ? portalMoves : allMoves;
-      const pick = pool[Math.floor(Math.random() * pool.length)];
-      get().makeMove(pick.from, pick.to);
-    }
+
+    // Portal moves are favored to show off the mechanic
+    const portalMoves = moves.filter((m) => m.flags & MoveFlag.Portal);
+    const pool = portalMoves.length > 0 ? portalMoves : moves;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    get().makeMove(pick.from, pick.to, pick.promotion);
   },
 
   tickAutonomous: () => {
     const { pluginManager, paused, game } = get();
-    if (paused) return;
-    if (!pluginManager.isAutonomous()) return;
+    if (paused || !pluginManager.isAutonomous()) return;
 
     const moves = pluginManager.invokeTickAutonomous(200);
+    set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
     if (moves.length === 0) return;
 
-    // Execute moves directly on the engine, bypassing the store's makeMove
-    // to avoid turn-switching and status-check interference
-    let kingCaptured: Color | null = null;
+    // Both colors move at once, so moves bypass makeMove's turn handling
+    let kingCapturedBy: Color | null = null;
     const executedMoves: { from: SquareIndex; to: SquareIndex }[] = [];
 
-    for (const move of moves) {
-      if (kingCaptured !== null) break;
-
-      const piece = game.board.get(move.from);
+    for (const { from, to } of moves) {
+      if (kingCapturedBy !== null) break;
+      const piece = game.board.get(from);
       if (!piece) continue;
 
-      // Set game.turn so getLegalMoves works for this piece's color
       game.turn = piece.color;
-
-      const legalMoves = game.getLegalMoves(move.from);
-
-      // Handle promotion
-      let promotion: PieceType | undefined;
-      if (piece.type === PieceType.Pawn) {
-        if (
-          (piece.color === Color.White && rankOf(move.to) === 7) ||
-          (piece.color === Color.Black && rankOf(move.to) === 0)
-        ) {
-          promotion = PieceType.Queen;
-        }
-      }
-
-      const legalMove = legalMoves.find((m) => {
-        if (m.to !== move.to) return false;
-        if (promotion && m.promotion !== promotion) return false;
-        if (!promotion && m.promotion) return false;
-        return true;
-      });
+      const legalMove = game
+        .getLegalMoves(from)
+        .find(
+          (m) =>
+            m.to === to && (!m.promotion || m.promotion === PieceType.Queen),
+        );
       if (!legalMove) continue;
 
-      // Check for king capture
       if (legalMove.captured?.type === PieceType.King) {
-        kingCaptured = piece.color;
+        kingCapturedBy = piece.color;
       }
-
       game.executeTrustedMove(legalMove);
-      executedMoves.push({ from: move.from, to: legalMove.to });
+      executedMoves.push({ from, to: legalMove.to });
     }
 
-    // Single state update after all moves
-    if (executedMoves.length > 0) {
-      const last = executedMoves[executedMoves.length - 1];
-      if (kingCaptured !== null) {
-        set({
-          lastMove: last,
-          lastAutonomousMoves: executedMoves,
-          lastPortalMove: null,
-          turn: game.turn,
-          status: GameStatus.Checkmate,
-          moveHistory: [...game.history],
-        });
-        setTimeout(() => {
-          get().handleGameEnd(GameStatus.Checkmate);
-        }, 600);
-      } else {
-        set({
-          lastMove: last,
-          lastAutonomousMoves: executedMoves,
-          lastPortalMove: null,
-          turn: game.turn,
-          moveHistory: [...game.history],
-        });
-      }
+    if (executedMoves.length === 0) return;
+    set({
+      lastMove: executedMoves[executedMoves.length - 1],
+      lastAutonomousMoves: executedMoves,
+      lastPortalMove: null,
+      turn: game.turn,
+      moveHistory: [...game.history],
+      ...(kingCapturedBy !== null ? { status: GameStatus.Checkmate } : {}),
+    });
+    if (kingCapturedBy !== null) {
+      endGameSoon(kingCapturedBy);
     }
   },
 
@@ -924,217 +702,76 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (paused || devMode) return;
     const next = Math.max(0, modeTimeRemaining - 1);
     set({ modeTimeRemaining: next });
-    if (next <= 0) {
-      get().switchMode();
-    }
+    if (next <= 0) get().switchMode();
   },
 
-  resolveExplosion: (square: SquareIndex) => {
+  resolveExplosion: (square) => {
     const { pluginManager, game } = get();
-    const minePlugin = pluginManager
-      .getPlugins()
-      .find((p) => p.id === "minefield") as MinefieldPlugin | undefined;
-    if (minePlugin) {
-      minePlugin.resolveExplosion({ game, board: game.board }, square);
-      // Force re-render
-      set({ turn: game.turn });
-    }
+    const minefield = pluginManager.find<MinefieldPlugin>("minefield");
+    if (!minefield) return;
+    minefield.resolveExplosion({ game, board: game.board }, square);
+    set({ turn: game.turn });
   },
 
-  switchMode: () => {
-    const { currentModeIndex, game } = get();
-    // -1 = Normal Chess (initial only), transition to first cursed mode
+  switchMode: (index) => {
+    const { currentModeIndex, game, isHexMode, hexGame } = get();
     const nextIndex =
-      currentModeIndex < 0 ? 0 : (currentModeIndex + 1) % GAME_MODES.length;
+      index ??
+      (currentModeIndex < 0 ? 0 : (currentModeIndex + 1) % GAME_MODES.length);
     const mode = GAME_MODES[nextIndex];
 
-    // Hex chess mode: carry surviving pieces onto the hex board
-    if (mode.isHex) {
-      // Collect surviving pieces from the standard board
-      const whitePieces: import("../engine").Piece[] = [];
-      const blackPieces: import("../engine").Piece[] = [];
-      for (let rank = 0; rank < 8; rank++) {
-        for (let file = 0; file < 8; file++) {
-          const sq = ((rank << 4) | file) as SquareIndex;
-          const piece = game.board.get(sq);
-          if (piece) {
-            if (piece.color === Color.White) whitePieces.push({ ...piece });
-            else blackPieces.push({ ...piece });
-          }
-        }
-      }
+    cancelScheduled();
 
-      set({
-        currentModeIndex: nextIndex,
-        selectedSquare: null,
-        legalMoveSquares: [],
-        hasPortalMoves: false,
-        portalEntrance: null,
-      });
-
-      clearHexTransitionTimers();
-
-      // Phase 1: Show announcements over the standard board
-      get().showAnnouncement(mode.name);
-      hexTransitionTimers.push(
-        setTimeout(() => {
-          get().showAnnouncement("CHESS ON HEXAGONS!", 2500, "hint");
-        }, 2200),
-
-        // Phase 2: After announcements, morph the standard board out
-        setTimeout(() => {
-          set({ hexTransition: "morph-out", paused: true });
-        }, 4800),
-
-        // Phase 3: Swap to hex board and morph in
-        setTimeout(() => {
-          const hexGame = new HexGame(whitePieces, blackPieces);
-          set({
-            modeTimeRemaining: 60,
-            status: GameStatus.Active,
-            isHexMode: true,
-            hexGame,
-            hexTransition: "morph-in",
-            selectedHex: null,
-            legalHexMoves: [],
-            lastHexMove: null,
-            hexPromotionPending: null,
-            turn: Color.White,
-            moveTimerActive: true,
-            timeWhite: 10,
-            timeBlack: 1,
-          });
-        }, 5600),
-
-        // Phase 4: Clear transition, unpause
-        setTimeout(() => {
-          set({ hexTransition: null, paused: false });
-        }, 6400),
-      );
-
-      return;
-    }
-
-    // Standard mode: clear hex state and cancel any pending hex transitions
-    clearHexTransitionTimers();
-    set({
-      isHexMode: false,
-      hexGame: null,
-      selectedHex: null,
-      legalHexMoves: [],
-      lastHexMove: null,
-      hexPromotionPending: null,
-    });
-
-    // Swap plugins on the current game (preserve board state)
-    const pluginManager = new PluginManager();
-    pluginManager.setContext(game);
-    for (const plugin of mode.create()) {
-      pluginManager.register(plugin);
-    }
-    pluginManager.invokeOnGameStart();
-
-    // Fog of war: show announcement briefly, then pause while fog rolls in
-    const isFog = pluginManager.getPlugins().some((p) => p.id === "fog-of-war");
-    const isPortal = pluginManager
-      .getPlugins()
-      .some((p) => p.id === "portal-chess");
-    const isBattleRoyale = pluginManager
-      .getPlugins()
-      .some((p) => p.id === "battle-royale");
-    const isRally = pluginManager.getPlugins().some((p) => p.id === "rally");
+    // Surviving pieces carry over between the square and hex boards
+    const armies = isHexMode && hexGame ? hexGame.armies() : game.armies();
 
     set({
       currentModeIndex: nextIndex,
-      modeTimeRemaining: isRally ? 75 : 45,
+      modeTimeRemaining: mode.durationSeconds ?? MODE_SECONDS,
       status: GameStatus.Active,
-      pluginManager,
-      selectedSquare: null,
-      legalMoveSquares: [],
-      hasPortalMoves: false,
-      portalEntrance: null,
-      moveTimerActive: true,
-      timeWhite: 10,
-      timeBlack: 1,
+      ...CLEARED_SELECTION,
+      lastAutonomousMoves: [],
+      lastPortalMove: null,
+      promotionPending: null,
+      deployPieceType: null,
+      ...FRESH_CLOCKS,
     });
 
-    get().showAnnouncement(mode.name);
+    holdPause(mode.introHoldMs ?? INTRO_HOLD_MS);
+    get().showAnnouncement(mode.name, MODE_ANNOUNCE_MS);
+    schedule(
+      () => get().showAnnouncement(mode.hint, HINT_MS, "hint"),
+      HINT_DELAY_MS,
+    );
 
-    if (isPortal) {
-      setTimeout(() => {
-        get().showAnnouncement(
-          "PIECES TELEPORT THROUGH PORTALS!",
-          2500,
-          "hint",
-        );
-      }, 2200);
+    if (mode.isHex) {
+      schedule(() => set({ hexTransition: "morph-out" }), HEX_MORPH_OUT_MS);
+      schedule(
+        () =>
+          set({
+            ...CLEARED_HEX,
+            pluginManager: freshPluginManager(game),
+            hexGame: new HexGame(armies[Color.White], armies[Color.Black]),
+            isHexMode: true,
+            hexTransition: "morph-in",
+            turn: Color.White,
+          }),
+        HEX_MORPH_IN_MS,
+      );
+      schedule(() => set({ hexTransition: null }), HEX_MORPH_DONE_MS);
+      return;
     }
 
-    if (isBattleRoyale) {
-      setTimeout(() => {
-        get().showAnnouncement("MOVE AWAY FROM EDGES!", 2500, "hint");
-      }, 2200);
-    }
-
-    if (isRally) {
-      setTimeout(() => {
-        get().showAnnouncement("DRAG AND DROP TO DEPLOY!", 2500, "hint");
-      }, 2200);
-    }
-
-    const isMinefield = pluginManager
-      .getPlugins()
-      .some((p) => p.id === "minefield");
-    const isKingOfHill = pluginManager
-      .getPlugins()
-      .some((p) => p.id === "king-of-hill");
-    const isGravity = pluginManager
-      .getPlugins()
-      .some((p) => p.id === "gravity");
-
-    if (isMinefield) {
-      setTimeout(() => {
-        get().showAnnouncement("WATCH YOUR STEP!", 2500, "hint");
-      }, 2200);
-    }
-
-    if (isKingOfHill) {
-      setTimeout(() => {
-        get().showAnnouncement("CONTROL THE CENTER!", 2500, "hint");
-      }, 2200);
-    }
-
-    if (isGravity) {
-      setTimeout(() => {
-        get().showAnnouncement("GRAVITY SHIFTS EVERY FEW TURNS!", 2500, "hint");
-      }, 2200);
-    }
-
-    const isStratego = pluginManager
-      .getPlugins()
-      .some((p) => p.id === "stratego");
-    if (isStratego) {
-      setTimeout(() => {
-        get().showAnnouncement("ENEMY PIECES ARE HIDDEN!", 2500, "hint");
-      }, 2200);
-    }
-
-    if (isFog) {
-      setTimeout(() => {
-        get().showAnnouncement("THE ENEMY HIDES IN THE FOG!", 2500, "hint");
-      }, 2200);
-      // Keep the game paused after the announcement ends while fog rolls in
-      setTimeout(() => {
-        set({ paused: true });
-        setTimeout(() => {
-          set({ paused: false });
-        }, 6000);
-      }, 2000);
-    }
+    const nextGame = isHexMode
+      ? Game.fromArmies(armies[Color.White], armies[Color.Black])
+      : game;
+    set({
+      ...CLEARED_HEX,
+      game: nextGame,
+      pluginManager: freshPluginManager(nextGame, mode.create()),
+      turn: nextGame.turn,
+      moveHistory: [...nextGame.history],
+      ...(isHexMode ? { lastMove: null } : {}),
+    });
   },
-
-  getPiece: (square: SquareIndex) => get().game.board.get(square),
-
-  isLegalMoveTarget: (square: SquareIndex) =>
-    get().legalMoveSquares.includes(square),
 }));

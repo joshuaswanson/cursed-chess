@@ -3,59 +3,39 @@ import { useGameStore, GAME_MODES } from "../../stores/gameStore";
 import "./GameControls.css";
 
 export function GameControls() {
-  const {
-    newGame,
-    togglePause,
-    paused,
-    currentModeIndex,
-    switchMode,
-    devMode,
-  } = useGameStore();
+  const userPaused = useGameStore((s) => s.userPaused);
+  const currentModeIndex = useGameStore((s) => s.currentModeIndex);
+  const devMode = useGameStore((s) => s.devMode);
+  const { newGame, togglePause, switchMode, toggleDevMode } =
+    useGameStore.getState();
 
-  // Start with normal chess on mount
-  useEffect(() => {
-    newGame();
-  }, [newGame]);
-
-  // Toggle dev mode with Ctrl+Shift+D
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === "D") {
         e.preventDefault();
-        useGameStore.setState((s) => ({ devMode: !s.devMode }));
+        toggleDevMode();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [toggleDevMode]);
 
   return (
     <div className="game-controls">
       <div className="controls-row">
-        <button
-          onClick={() => {
-            useGameStore.setState({
-              currentModeIndex: -1,
-              scoreWhite: 0,
-              scoreBlack: 0,
-            });
-            newGame();
-          }}
-          className="control-btn"
-          title="Quit & Restart"
-        >
+        <button onClick={newGame} className="control-btn" title="Quit & Restart">
           QUIT
         </button>
         <button
           onClick={togglePause}
           className="control-btn"
-          title={paused ? "Resume" : "Pause"}
+          title={userPaused ? "Resume" : "Pause"}
         >
-          {paused ? "\u25B6" : "\u23F8"}
+          {userPaused ? "▶" : "⏸"}
         </button>
         {currentModeIndex >= 0 && (
           <button
-            onClick={switchMode}
+            onClick={() => switchMode()}
             className="control-btn"
             title="Skip Mode"
           >
@@ -63,11 +43,9 @@ export function GameControls() {
           </button>
         )}
         <button
-          onClick={() =>
-            useGameStore.setState((s) => ({ devMode: !s.devMode }))
-          }
+          onClick={toggleDevMode}
           className={`control-btn${devMode ? " active" : ""}`}
-          title="Toggle Dev Mode"
+          title="Toggle Dev Mode (Ctrl+Shift+D)"
         >
           DEV
         </button>
@@ -79,10 +57,7 @@ export function GameControls() {
             {GAME_MODES.map((mode, i) => (
               <button
                 key={mode.name}
-                onClick={() => {
-                  useGameStore.setState({ currentModeIndex: i - 1 });
-                  useGameStore.getState().switchMode();
-                }}
+                onClick={() => switchMode(i)}
                 className={`dev-mode-btn${i === currentModeIndex ? " active" : ""}`}
               >
                 {mode.name}

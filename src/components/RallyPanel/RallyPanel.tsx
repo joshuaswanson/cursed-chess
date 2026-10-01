@@ -22,12 +22,12 @@ interface DeployDrag {
 }
 
 export function RallyPanel() {
-  const { pluginManager, deployPiece, setDeployPieceType } = useGameStore();
+  const pluginManager = useGameStore((s) => s.pluginManager);
+  useGameStore((s) => s.autonomousTick);
+  const { deployPiece, setDeployPieceType } = useGameStore.getState();
   const [drag, setDrag] = useState<DeployDrag | null>(null);
 
-  const rallyPlugin = pluginManager
-    .getPlugins()
-    .find((p) => p.id === "rally") as RallyPlugin | undefined;
+  const rallyPlugin = pluginManager.find<RallyPlugin>("rally");
 
   const handlePointerMove = useCallback(
     (e: PointerEvent) => {

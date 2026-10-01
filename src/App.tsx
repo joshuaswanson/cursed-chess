@@ -7,9 +7,11 @@ import { Timer } from "./components/Timer/Timer";
 import { ModePanel } from "./components/ModePanel/ModePanel";
 import { RallyPanel } from "./components/RallyPanel/RallyPanel";
 import { useGameStore, GAME_MODES } from "./stores/gameStore";
+import { useGameLoop } from "./hooks/useGameLoop";
 import "./styles/global.css";
 
 function App() {
+  useGameLoop();
   const currentModeIndex = useGameStore((s) => s.currentModeIndex);
   const isHexMode = useGameStore((s) => s.isHexMode);
   const hexTransition = useGameStore((s) => s.hexTransition);
