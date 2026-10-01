@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { sfx } from "../../audio/sfx";
 import { useGameStore, GAME_MODES } from "../../stores/gameStore";
 import "./GameControls.css";
 
@@ -6,6 +7,7 @@ export function GameControls() {
   const userPaused = useGameStore((s) => s.userPaused);
   const currentModeIndex = useGameStore((s) => s.currentModeIndex);
   const devMode = useGameStore((s) => s.devMode);
+  const soundOn = useSyncExternalStore(sfx.subscribe, sfx.isEnabled);
   const { newGame, togglePause, switchMode, toggleDevMode } =
     useGameStore.getState();
 
@@ -23,7 +25,11 @@ export function GameControls() {
   return (
     <div className="game-controls">
       <div className="controls-row">
-        <button onClick={newGame} className="control-btn" title="Quit & Restart">
+        <button
+          onClick={newGame}
+          className="control-btn"
+          title="Quit & Restart"
+        >
           QUIT
         </button>
         <button
@@ -42,6 +48,13 @@ export function GameControls() {
             &#9197;
           </button>
         )}
+        <button
+          onClick={() => sfx.setEnabled(!soundOn)}
+          className={`control-btn${soundOn ? "" : " off"}`}
+          title={soundOn ? "Mute sound effects" : "Turn on sound effects"}
+        >
+          SFX
+        </button>
         <button
           onClick={toggleDevMode}
           className={`control-btn${devMode ? " active" : ""}`}

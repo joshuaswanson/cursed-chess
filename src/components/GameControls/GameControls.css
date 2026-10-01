@@ -65,6 +65,16 @@
   box-shadow: 0 0 16px rgba(187, 102, 255, 0.4);
 }
 
+.control-btn.active {
+  border-color: #ff6600;
+  color: #ffb37a;
+}
+
+.control-btn.off {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
 .control-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;

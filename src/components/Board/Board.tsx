@@ -10,7 +10,9 @@ import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
 import { FogOverlay } from "./FogOverlay";
 import { readOverlays } from "./readOverlays";
 import { usePieceDrag } from "./usePieceDrag";
-import { usePortalTravel } from "./usePortalTravel";
+import { phaseDurationMs, usePortalTravel } from "./usePortalTravel";
+import type { PortalPhase } from "./usePortalTravel";
+import { sfx } from "../../audio/sfx";
 import {
   useFogExit,
   useGravityFalls,
@@ -18,6 +20,13 @@ import {
   useSlideAnimation,
 } from "./useBoardEffects";
 import "./Board.css";
+
+function playPortalPhase(phase: PortalPhase): void {
+  if (phase.type === "shrink") sfx.portalEnter();
+  if (phase.type === "pop" || phase.type === "fly") {
+    sfx.portalExit(phaseDurationMs(phase));
+  }
+}
 
 function CooldownPie({ total, gen }: { total: number; gen: number }) {
   return (
@@ -84,7 +93,12 @@ export function Board() {
     onPiecePointerDown,
     onPointerMove,
     onPointerUp,
-  } = usePieceDrag({ boardRef, squareSize, turn: game.turn });
+  } = usePieceDrag({
+    boardRef,
+    squareSize,
+    turn: game.turn,
+    onFrame: sfx.portalProximity,
+  });
 
   const {
     travel,
@@ -98,6 +112,7 @@ export function Board() {
     portalSquares: overlays.portalSquares,
     drag,
     primedPortal: selectedSquare !== null ? portalEntrance : null,
+    onPhase: playPortalPhase,
   });
 
   const slides = useSlideAnimation({
