@@ -1,110 +1,44 @@
-import {
-  useCallback,
-  useRef,
-  useState,
-  useEffect,
-  useLayoutEffect,
-} from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
-import type { PortalMoveInfo } from "../../stores/gameStore";
-import { toIndex, fileOf, rankOf } from "../../utils/squareUtils";
-import { Color, PieceType } from "../../engine";
+import { toIndex } from "../../utils/squareUtils";
+import { Color, GameStatus, PieceType } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
-import type { Piece, SquareIndex } from "../../engine";
-import type { PortalColor } from "../../plugins/portalChess";
-import { Portal, PortalBurst } from "./Portal";
+import { Portal } from "./Portal";
+import { PortalArrows } from "./PortalArrows";
+import { PortalTravelPiece } from "./PortalTravelPiece";
+import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
+import { FogOverlay } from "./FogOverlay";
+import { readOverlays } from "./readOverlays";
+import { usePieceDrag } from "./usePieceDrag";
+import { usePortalTravel } from "./usePortalTravel";
+import {
+  useFogExit,
+  useGravityFalls,
+  useMineExplosions,
+  useSlideAnimation,
+} from "./useBoardEffects";
 import "./Board.css";
 
-const DRAG_THRESHOLD = 6;
-const PIECE_SIZE = 0.9;
-const PICKUP_SCALE = 1.35;
-
-interface DragState {
-  sq: SquareIndex;
-  piece: Piece;
-  x: number;
-  y: number;
-  startX: number;
-  startY: number;
-  isDragging: boolean;
-  pointerId: number;
-  /** Where the piece was grabbed, as a fraction of its width and height */
-  grabX: number;
-  grabY: number;
-  /** How strongly each nearby portal is stirred by the dragged piece, 0 to 1 */
-  portalCharges?: Record<number, number>;
-  /** The portal pulling the piece in, if the piece can legally enter one */
-  pull?: { color: PortalColor; strength: number };
-}
-
-function freshSwing() {
-  return {
-    scale: 1,
-    theta: 0,
-    omega: 0,
-    smoothVx: 0,
-    smoothVy: 0,
-    prevVx: 0,
-    prevVy: 0,
-    /** Vector from the cursor to the pulling portal's center, in px */
-    pullTargetX: 0,
-    pullTargetY: 0,
-    pullTargetStrength: 0,
-    pullX: 0,
-    pullY: 0,
-    pullStrength: 0,
-  };
-}
-
-/** Distance in squares at which a portal starts reacting to a dragged piece */
-const PORTAL_PULL_RANGE = 2.2;
-
-interface ReturnAnim {
-  sq: SquareIndex;
-  piece: Piece;
-  fromX: number;
-  fromY: number;
-  fromSize: number;
-  toX: number;
-  toY: number;
-  startAngle: number;
-  started: boolean;
-}
-
-/**
- * approach: slide into the first portal. shrink: get swallowed by an entrance.
- * pop: emerge in place when the exit is the destination. fly: launch out of
- * the exit (`slideFrom`) and fly to `sq`.
- */
-interface PortalAnimPhase {
-  type: "approach" | "shrink" | "pop" | "fly";
-  sq: SquareIndex;
-  color: PortalColor;
-  slideFrom?: SquareIndex;
-}
-
-const PORTAL_ENTER_MS = 400;
-const PORTAL_EXIT_MS = 450;
-
-function phaseDistance(phase: PortalAnimPhase): number {
-  if (phase.slideFrom === undefined) return 0;
-  return Math.max(
-    Math.abs(fileOf(phase.slideFrom) - fileOf(phase.sq)),
-    Math.abs(rankOf(phase.slideFrom) - rankOf(phase.sq)),
+function CooldownPie({ total, gen }: { total: number; gen: number }) {
+  return (
+    <svg key={gen} className="cooldown-pie" viewBox="0 0 36 36">
+      <circle
+        cx="18"
+        cy="18"
+        r="16"
+        fill="none"
+        stroke="rgba(255,255,255,0.4)"
+        strokeWidth="3"
+        strokeDasharray="100.53"
+        style={{
+          animationName: "cooldown-fill",
+          animationDuration: `${total}ms`,
+          animationTimingFunction: "linear",
+          animationFillMode: "forwards",
+        }}
+      />
+    </svg>
   );
-}
-
-function phaseDurationMs(phase: PortalAnimPhase): number {
-  switch (phase.type) {
-    case "approach":
-      return Math.max(100, phaseDistance(phase) * 60);
-    case "shrink":
-      return PORTAL_ENTER_MS;
-    case "pop":
-      return PORTAL_EXIT_MS;
-    case "fly":
-      return 340 + phaseDistance(phase) * 70;
-  }
 }
 
 export function Board() {
@@ -119,7 +53,6 @@ export function Board() {
     flipped,
     status,
     selectSquare,
-    requestMove,
     game,
     pluginManager,
     timeWhite,
@@ -130,34 +63,6 @@ export function Board() {
 
   const boardRef = useRef<HTMLDivElement>(null);
   const [squareSize, setSquareSize] = useState(72);
-  const dragImgRef = useRef<HTMLImageElement>(null);
-  const [drag, setDrag] = useState<DragState | null>(null);
-  const [animMap, setAnimMap] = useState<
-    Map<number, { offsetX: number; offsetY: number }>
-  >(new Map());
-  const [returnAnim, setReturnAnim] = useState<ReturnAnim | null>(null);
-  const [portalAnim, setPortalAnim] = useState<{
-    phases: PortalAnimPhase[];
-    phaseIndex: number;
-    info: PortalMoveInfo;
-  } | null>(null);
-  const [closingPortals, setClosingPortals] = useState<
-    Map<number, PortalColor>
-  >(new Map());
-  const [openingPortals, setOpeningPortals] = useState<Set<number>>(new Set());
-  const wasDrag = useRef(false);
-  const prevLastMove = useRef(lastMove);
-  const prevPortalMove = useRef(lastPortalMove);
-  const prevPortalKeys = useRef<string>("");
-  const prevPortalColors = useRef<Map<number, PortalColor>>(new Map());
-  const [fogExiting, setFogExiting] = useState(false);
-  const prevFog = useRef(false);
-  const [explosions, setExplosions] = useState<Set<number>>(new Set());
-  const [gravityFalls, setGravityFalls] = useState<
-    Map<number, { offsetX: number; offsetY: number }>
-  >(new Map());
-  const prevGravityKey = useRef("");
-
   useLayoutEffect(() => {
     const board = boardRef.current;
     if (!board) return;
@@ -168,568 +73,52 @@ export function Board() {
     return () => observer.disconnect();
   }, []);
 
-  // Pendulum physics for drag swing, plus the black-hole pull of a nearby portal
-  const swingRef = useRef(freshSwing());
-  const droppedOnRef = useRef<{ from: SquareIndex; to: SquareIndex } | null>(
-    null,
+  const overlays = readOverlays(pluginManager.getAllOverlays());
+
+  const {
+    drag,
+    returnAnim,
+    dragImgRef,
+    wasDropRef,
+    droppedMoveRef,
+    onPiecePointerDown,
+    onPointerMove,
+    onPointerUp,
+  } = usePieceDrag({ boardRef, squareSize, turn: game.turn });
+
+  const {
+    travel,
+    closingPortals,
+    openingPortals,
+    surgingPortal,
+    portalCharge,
+  } = usePortalTravel({
+    lastPortalMove,
+    droppedMoveRef,
+    portalSquares: overlays.portalSquares,
+    drag,
+    primedPortal: selectedSquare !== null ? portalEntrance : null,
+  });
+
+  const slides = useSlideAnimation({
+    lastMove,
+    lastAutonomousMoves,
+    isPortalMove: lastPortalMove !== null,
+    wasDropRef,
+    flipped,
+    squareSize,
+  });
+  const gravityFalls = useGravityFalls(
+    overlays.gravityMoves,
+    flipped,
+    squareSize,
   );
-  const rafRef = useRef<number>(0);
-
-  useEffect(() => {
-    if (!drag?.isDragging) {
-      swingRef.current = freshSwing();
-      cancelAnimationFrame(rafRef.current);
-      return;
-    }
-
-    const R = 50;
-    const DAMPING = 0.95;
-    const GRAVITY = 0.015;
-
-    const tick = () => {
-      const s = swingRef.current;
-
-      const ax = s.smoothVx - s.prevVx;
-      const ay = s.smoothVy - s.prevVy;
-      s.prevVx = s.smoothVx;
-      s.prevVy = s.smoothVy;
-
-      s.pullX += (s.pullTargetX - s.pullX) * 0.2;
-      s.pullY += (s.pullTargetY - s.pullY) * 0.2;
-      s.pullStrength += (s.pullTargetStrength - s.pullStrength) * 0.15;
-      const p = s.pullStrength;
-      const pullDist = Math.hypot(s.pullX, s.pullY);
-
-      // The base swings to point at the portal: the pendulum hangs along the
-      // sum of gravity and the portal's pull, which dominates as it nears
-      const toward = Math.max(pullDist, 30);
-      const forceX = (s.pullX / toward) * 4 * p;
-      const forceY = (s.pullY / toward) * 4 * p + 1;
-      const restAngle = Math.atan2(-forceX, forceY);
-      const torque =
-        (Math.cos(s.theta) / R) * ax + (Math.sin(s.theta) / R) * ay;
-      s.omega += torque - GRAVITY * (1 + 4 * p) * Math.sin(s.theta - restAngle);
-      s.omega *= DAMPING;
-      s.theta += s.omega;
-      s.scale += (PICKUP_SCALE * (1 - 0.15 * p) - s.scale) * 0.35;
-
-      if (dragImgRef.current) {
-        const deg = s.theta * (180 / Math.PI);
-        const drift = 0.35 * p * p;
-        const tremble = 1.5 * p * p;
-        const shakeX = (Math.random() - 0.5) * tremble;
-        const shakeY = (Math.random() - 0.5) * tremble;
-        // Stretched lengthwise in the piece's own frame, so the base reaches for the hole
-        const stretch = p ** 1.5;
-        dragImgRef.current.style.transform =
-          `translate(${s.pullX * drift + shakeX}px, ${s.pullY * drift + shakeY}px) ` +
-          `scale(${s.scale}) rotate(${deg}deg) ` +
-          `scale(${1 - 0.18 * stretch}, ${1 + 0.45 * stretch})`;
-      }
-
-      rafRef.current = requestAnimationFrame(tick);
-    };
-
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [drag?.isDragging]);
-
-  const getSquareScreenCenter = useCallback(
-    (sq: SquareIndex): { x: number; y: number } | null => {
-      const el = boardRef.current?.querySelector(`[data-sq="${sq}"]`);
-      if (!el) return null;
-      const rect = el.getBoundingClientRect();
-      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-    },
-    [],
+  const explosions = useMineExplosions(
+    overlays.pendingExplosions,
+    resolveExplosion,
   );
-
-  // Slide animation on click-to-move or autonomous moves
-  useEffect(() => {
-    const prev = prevLastMove.current;
-    prevLastMove.current = lastMove;
-
-    if (!lastMove || lastMove === prev) return;
-    if (wasDrag.current) {
-      wasDrag.current = false;
-      return;
-    }
-    // Skip normal slide for portal moves — portal anim handles it
-    if (lastPortalMove) return;
-
-    // Autonomous batch: animate all moves
-    const movesToAnimate =
-      lastAutonomousMoves.length > 0 ? lastAutonomousMoves : [lastMove];
-
-    const newMap = new Map<number, { offsetX: number; offsetY: number }>();
-    for (const m of movesToAnimate) {
-      const dFile = fileOf(m.from) - fileOf(m.to);
-      const dRank = rankOf(m.from) - rankOf(m.to);
-      const offsetX = (flipped ? -dFile : dFile) * squareSize;
-      const offsetY = (flipped ? dRank : -dRank) * squareSize;
-      newMap.set(m.to, { offsetX, offsetY });
-    }
-
-    setAnimMap(newMap);
-    const timer = setTimeout(() => setAnimMap(new Map()), 600);
-    return () => clearTimeout(timer);
-  }, [lastMove, lastAutonomousMoves, lastPortalMove, flipped, squareSize]);
-
-  // Portal move animation: build phase array from transits
-  useEffect(() => {
-    const prev = prevPortalMove.current;
-    prevPortalMove.current = lastPortalMove;
-    if (!lastPortalMove || lastPortalMove === prev) return;
-
-    const { from, transits, landing } = lastPortalMove;
-    const phases: PortalAnimPhase[] = [];
-
-    // A piece dropped onto the entrance is already there, so it skips the approach
-    const dropped = droppedOnRef.current;
-    droppedOnRef.current = null;
-    const droppedOnEntrance =
-      dropped?.from === from && dropped.to === transits[0].entrance;
-    if (from !== transits[0].entrance && !droppedOnEntrance) {
-      phases.push({
-        type: "approach",
-        sq: transits[0].entrance,
-        color: transits[0].color,
-        slideFrom: from,
-      });
-    }
-
-    for (let i = 0; i < transits.length; i++) {
-      const { entrance, exit, color } = transits[i];
-      const target =
-        i < transits.length - 1 ? transits[i + 1].entrance : landing;
-      phases.push({ type: "shrink", sq: entrance, color });
-      phases.push(
-        target === exit
-          ? { type: "pop", sq: exit, color }
-          : { type: "fly", sq: target, color, slideFrom: exit },
-      );
-    }
-
-    if (phases.length > 0) {
-      setPortalAnim({ phases, phaseIndex: 0, info: lastPortalMove });
-    }
-  }, [lastPortalMove]);
-
-  useEffect(() => {
-    if (!portalAnim) return;
-    const currentPhase = portalAnim.phases[portalAnim.phaseIndex];
-    if (!currentPhase) {
-      setPortalAnim(null);
-      return;
-    }
-
-    const duration = phaseDurationMs(currentPhase);
-
-    const timer = setTimeout(() => {
-      const nextIndex = portalAnim.phaseIndex + 1;
-      if (nextIndex >= portalAnim.phases.length) {
-        setPortalAnim(null);
-      } else {
-        setPortalAnim({ ...portalAnim, phaseIndex: nextIndex });
-      }
-    }, duration);
-    return () => clearTimeout(timer);
-  }, [portalAnim]);
-
-  // Kick off return animation after mount (need the element to exist first for transition)
-  useEffect(() => {
-    if (returnAnim && !returnAnim.started) {
-      requestAnimationFrame(() => {
-        setReturnAnim((prev) => (prev ? { ...prev, started: true } : null));
-      });
-    }
-  }, [returnAnim]);
-
-  // Clean up return animation after it finishes
-  useEffect(() => {
-    if (returnAnim?.started) {
-      const timer = setTimeout(() => setReturnAnim(null), 250);
-      return () => clearTimeout(timer);
-    }
-  }, [returnAnim?.started]);
-
-  // Hit-testing the square elements stays correct while gravity rotates the board
-  const getSquareFromPoint = useCallback(
-    (clientX: number, clientY: number): SquareIndex | null => {
-      const el = document
-        .elementFromPoint(clientX, clientY)
-        ?.closest<HTMLElement>("[data-sq]");
-      if (!el || !boardRef.current?.contains(el)) return null;
-      return Number(el.dataset.sq);
-    },
-    [],
-  );
-
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent, sq: SquareIndex, piece: Piece) => {
-      if (piece.color !== game.turn) return;
-      e.preventDefault();
-
-      const rect = e.currentTarget.getBoundingClientRect();
-      setDrag({
-        grabX: (e.clientX - rect.left) / rect.width,
-        grabY: (e.clientY - rect.top) / rect.height,
-        sq,
-        piece,
-        x: e.clientX,
-        y: e.clientY,
-        startX: e.clientX,
-        startY: e.clientY,
-        isDragging: false,
-        pointerId: e.pointerId,
-      });
-    },
-    [game.turn],
-  );
-
-  // Portals the dragged piece can legally enter pull it in like a black hole
-  const measurePortalPull = useCallback((clientX: number, clientY: number) => {
-    const legalTargets = useGameStore.getState().legalMoveSquares;
-    const portalCharges: Record<number, number> = {};
-    let pull: DragState["pull"];
-    let pullVector = { x: 0, y: 0 };
-    const portals = boardRef.current?.querySelectorAll<HTMLElement>(
-      ".portal-overlay:not(.portal-despawn)",
-    );
-    for (const portal of portals ?? []) {
-      const squareEl = portal.closest<HTMLElement>("[data-sq]");
-      if (!squareEl) continue;
-      const sq = Number(squareEl.dataset.sq);
-      const rect = squareEl.getBoundingClientRect();
-      const dx = rect.left + rect.width / 2 - clientX;
-      const dy = rect.top + rect.height / 2 - clientY;
-      const distance = Math.hypot(dx, dy) / rect.width;
-      const closeness = Math.max(
-        0,
-        Math.min(1, (PORTAL_PULL_RANGE - distance) / (PORTAL_PULL_RANGE - 0.3)),
-      );
-      if (closeness === 0) continue;
-
-      const canEnter = legalTargets.includes(sq);
-      portalCharges[sq] = canEnter ? closeness : closeness * 0.3;
-      const strength = closeness ** 1.3;
-      if (canEnter && strength > (pull?.strength ?? 0)) {
-        const color = portal.classList.contains("portal-orange")
-          ? "orange"
-          : "blue";
-        pull = { color, strength };
-        pullVector = { x: dx, y: dy };
-      }
-    }
-
-    const swing = swingRef.current;
-    swing.pullTargetX = pullVector.x;
-    swing.pullTargetY = pullVector.y;
-    swing.pullTargetStrength = pull?.strength ?? 0;
-    return { portalCharges, pull };
-  }, []);
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!drag) return;
-
-      const dx = e.clientX - drag.startX;
-      const dy = e.clientY - drag.startY;
-      const pastThreshold =
-        Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD;
-
-      if (!drag.isDragging && pastThreshold) {
-        // Transition from click intent to drag — capture pointer now
-        (boardRef.current as HTMLElement)?.setPointerCapture(e.pointerId);
-        // Select piece + show legal moves
-        selectSquare(drag.sq);
-      }
-
-      const { portalCharges, pull } = measurePortalPull(e.clientX, e.clientY);
-
-      // Feed smoothed mouse velocity into pendulum physics (acceleration computed in rAF tick)
-      const rawVx = e.clientX - drag.x;
-      const rawVy = e.clientY - drag.y;
-      swingRef.current.smoothVx = rawVx * 0.4 + swingRef.current.smoothVx * 0.6;
-      swingRef.current.smoothVy = rawVy * 0.4 + swingRef.current.smoothVy * 0.6;
-
-      setDrag((prev) =>
-        prev
-          ? {
-              ...prev,
-              x: e.clientX,
-              y: e.clientY,
-              isDragging: prev.isDragging || pastThreshold,
-              portalCharges,
-              pull,
-            }
-          : null,
-      );
-    },
-    [drag, selectSquare, measurePortalPull],
-  );
-
-  const handlePointerUp = useCallback(
-    (e: React.PointerEvent) => {
-      if (!drag) return;
-
-      if (drag.isDragging) {
-        let moveMade = false;
-        // Complete drag-and-drop
-        const targetSq = getSquareFromPoint(e.clientX, e.clientY);
-        if (targetSq !== null && targetSq !== drag.sq) {
-          // A dropped piece is already at its target, so skip the slide animation
-          wasDrag.current = true;
-          droppedOnRef.current = { from: drag.sq, to: targetSq };
-          const result = requestMove(drag.sq, targetSq);
-          if (result !== "moved") wasDrag.current = false;
-          moveMade = result !== null;
-        }
-
-        // Animate piece back to its square if move wasn't made
-        if (!moveMade) {
-          const center = getSquareScreenCenter(drag.sq);
-          const floating = dragImgRef.current?.getBoundingClientRect();
-          if (center && floating) {
-            setReturnAnim({
-              sq: drag.sq,
-              piece: drag.piece,
-              fromX: floating.left + floating.width / 2,
-              fromY: floating.top + floating.height / 2,
-              fromSize: squareSize * PIECE_SIZE * swingRef.current.scale,
-              toX: center.x,
-              toY: center.y,
-              startAngle:
-                ((((swingRef.current.theta * (180 / Math.PI)) % 360) + 540) %
-                  360) -
-                180,
-              started: false,
-            });
-          }
-        }
-
-        const board = boardRef.current;
-        if (board?.hasPointerCapture(e.pointerId)) {
-          board.releasePointerCapture(e.pointerId);
-        }
-      } else {
-        // Was a click, not a drag — use click-to-select/move logic
-        selectSquare(drag.sq);
-      }
-
-      setDrag(null);
-    },
-    [
-      drag,
-      getSquareFromPoint,
-      getSquareScreenCenter,
-      squareSize,
-      requestMove,
-      selectSquare,
-    ],
-  );
-
-  // Collect overlay data for rendering
-  const overlays = pluginManager.getAllOverlays();
-  const portalSquares = new Map<number, PortalColor>();
-  const portalPairs: { a: SquareIndex; b: SquareIndex; color: PortalColor }[] =
-    [];
-  let hasFogOverlay = false;
-  let hasRallyOverlay = false;
-  let shrinkRing = 0;
-  let dangerProgress = 0;
-  let gravityDirection: string | null = null;
-  let gravityAngle: number | null = null;
-  let gravityMovesFromOverlay: { from: number; to: number }[] = [];
-  let strategoHidden = new Set<number>();
-  let strategoLakes = new Set<number>();
-  let rallyCooldowns: Record<number, { total: number; gen: number }> = {};
-  for (const overlay of overlays) {
-    if (overlay.type === "portal" && overlay.squares.length === 2) {
-      const color = (overlay.data as { color: PortalColor })?.color ?? "blue";
-      portalPairs.push({ a: overlay.squares[0], b: overlay.squares[1], color });
-      for (const sq of overlay.squares) {
-        portalSquares.set(sq, color);
-      }
-    }
-    if (overlay.type === "fog-overlay") {
-      hasFogOverlay = true;
-    }
-    if (overlay.type === "rally-resources") {
-      hasRallyOverlay = true;
-    }
-    if (overlay.type === "rally-cooldowns") {
-      rallyCooldowns = overlay.data as Record<
-        number,
-        { total: number; gen: number }
-      >;
-    }
-    if (overlay.type === "gravity") {
-      const gData = overlay.data as {
-        direction: string;
-        angle?: number;
-        moves?: { from: number; to: number }[];
-      };
-      gravityDirection = gData?.direction ?? null;
-      gravityAngle = gData?.angle ?? null;
-      gravityMovesFromOverlay = gData?.moves ?? [];
-    }
-    if (overlay.type === "battle-royale") {
-      const brData = overlay.data as {
-        shrinkRing: number;
-        dangerProgress: number;
-      };
-      shrinkRing = brData?.shrinkRing ?? 0;
-      dangerProgress = brData?.dangerProgress ?? 0;
-    }
-    if (overlay.type === "stratego-hidden") {
-      strategoHidden = new Set(overlay.squares);
-    }
-    if (overlay.type === "stratego-lake") {
-      strategoLakes = new Set(overlay.squares);
-    }
-  }
-
-  // Animate portals that open, close, or move
-  const portalKey = [...portalSquares.keys()].sort().join(",");
-  useEffect(() => {
-    const prev = prevPortalKeys.current;
-    const prevColors = prevPortalColors.current;
-    prevPortalKeys.current = portalKey;
-    prevPortalColors.current = new Map(portalSquares);
-    if (prev === portalKey) return;
-
-    const parse = (key: string) =>
-      new Set(key === "" ? [] : key.split(",").map(Number));
-    const oldSquares = parse(prev);
-    const newSquares = parse(portalKey);
-
-    const closing = new Map<number, PortalColor>();
-    for (const sq of oldSquares) {
-      if (!newSquares.has(sq)) closing.set(sq, prevColors.get(sq) ?? "blue");
-    }
-    const opening = new Set<number>();
-    for (const sq of newSquares) {
-      if (!oldSquares.has(sq)) opening.add(sq);
-    }
-
-    setClosingPortals(closing);
-    setOpeningPortals(opening);
-  }, [portalKey]);
-
-  useEffect(() => {
-    if (closingPortals.size === 0 && openingPortals.size === 0) return;
-    const timer = setTimeout(() => {
-      setClosingPortals(new Map());
-      setOpeningPortals(new Set());
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [closingPortals, openingPortals]);
-
-  // Detect fog mode ending — keep fog visible while fading out
-  useEffect(() => {
-    if (prevFog.current && !hasFogOverlay) {
-      setFogExiting(true);
-      const timer = setTimeout(() => setFogExiting(false), 1500);
-      return () => clearTimeout(timer);
-    }
-    prevFog.current = hasFogOverlay;
-  }, [hasFogOverlay]);
-
-  // Detect mine pending explosions from overlay data
-  const minefieldOverlay = overlays.find((o) => o.type === "minefield");
-  const pendingKey = (minefieldOverlay?.squares ?? []).join(",");
-
-  useEffect(() => {
-    if (pendingKey === "") return;
-    const squares = pendingKey.split(",").map(Number);
-
-    // Explode after the slide animation, then remove the pieces
-    let resolveTimer: ReturnType<typeof setTimeout> | undefined;
-    const slideTimer = setTimeout(() => {
-      setExplosions(new Set(squares));
-      resolveTimer = setTimeout(() => {
-        for (const sq of squares) resolveExplosion(sq);
-        setExplosions(new Set());
-      }, 600);
-    }, 350);
-
-    return () => {
-      clearTimeout(slideTimer);
-      clearTimeout(resolveTimer);
-    };
-  }, [pendingKey, resolveExplosion]);
-
-  // Gravity piece slide animation
-  // Uses CSS `translate` (separate from `transform`) so it doesn't conflict with
-  // the counter-rotation or normal move animations.
-  // CSS animation with delay: pieces hold at old positions during board rotation,
-  // then slide to new positions after rotation completes.
-  const gravityMoveKey = gravityMovesFromOverlay
-    .map((m) => `${m.from}-${m.to}`)
-    .join(",");
-  useLayoutEffect(() => {
-    if (gravityMoveKey === prevGravityKey.current || gravityMoveKey === "")
-      return;
-    prevGravityKey.current = gravityMoveKey;
-
-    const offsets = new Map<number, { offsetX: number; offsetY: number }>();
-    for (const pair of gravityMoveKey.split(",")) {
-      const [from, to] = pair.split("-").map(Number);
-      const fromCol = flipped ? 7 - fileOf(from) : fileOf(from);
-      const fromRow = flipped ? rankOf(from) : 7 - rankOf(from);
-      const toCol = flipped ? 7 - fileOf(to) : fileOf(to);
-      const toRow = flipped ? rankOf(to) : 7 - rankOf(to);
-      offsets.set(to, {
-        offsetX: (fromCol - toCol) * squareSize,
-        offsetY: (fromRow - toRow) * squareSize,
-      });
-    }
-
-    setGravityFalls(offsets);
-
-    // Clean up after rotation (1s) + slide (0.6s) + buffer
-    const timer = setTimeout(() => setGravityFalls(new Map()), 1800);
-    return () => clearTimeout(timer);
-  }, [gravityMoveKey, flipped, squareSize]);
-
-  // Fog always covers the enemy half (human plays White, enemy = top)
-  const showFog = hasFogOverlay || fogExiting;
-  const fogOnTop = showFog && !flipped;
-
-  const currentPortalPhase = portalAnim?.phases[portalAnim.phaseIndex];
-  const surgingPortal =
-    currentPortalPhase?.type === "shrink" || currentPortalPhase?.type === "pop"
-      ? currentPortalPhase.sq
-      : currentPortalPhase?.type === "fly"
-        ? (currentPortalPhase.slideFrom ?? null)
-        : null;
-
-  // A portal swells as a piece nears it: a dragged piece, a selected piece
-  // that can enter it, or a piece traveling toward it
-  const portalCharge = (
-    sq: SquareIndex,
-  ): { charge: number; chargeMs: number } => {
-    const phase = currentPortalPhase;
-    if (phase) {
-      const isTarget = phase.sq === sq;
-      if ((phase.type === "approach" || phase.type === "fly") && isTarget) {
-        return { charge: 1, chargeMs: phaseDurationMs(phase) };
-      }
-      if (phase.type === "shrink" && isTarget)
-        return { charge: 1, chargeMs: 150 };
-      if (
-        (phase.type === "pop" && isTarget) ||
-        (phase.type === "fly" && phase.slideFrom === sq)
-      ) {
-        return { charge: 0.8, chargeMs: 120 };
-      }
-    }
-    const dragCharge = drag?.isDragging ? (drag.portalCharges?.[sq] ?? 0) : 0;
-    const selectCharge =
-      selectedSquare !== null && portalEntrance === sq ? 0.3 : 0;
-    return { charge: Math.max(dragCharge, selectCharge), chargeMs: 180 };
-  };
+  const fogExiting = useFogExit(overlays.hasFog);
+  const showFog = overlays.hasFog || fogExiting;
 
   const rows = [];
   for (let visualRow = 0; visualRow < 8; visualRow++) {
@@ -739,60 +128,54 @@ export function Board() {
       const file = flipped ? 7 - visualCol : visualCol;
       const sq = toIndex(file, rank);
       const piece = game.board.get(sq);
-      const isLight = (rank + file) % 2 !== 0;
-      const isSelected = sq === selectedSquare;
+      const squareMods = pluginManager.getSquareModifiers(sq);
+      const isDead = squareMods.some((m) => m.className === "dead-square");
       const isLegalTarget = legalMoveSquares.includes(sq);
-      const isLastMoveSquare =
+      const isLastMove =
         lastMove && (sq === lastMove.from || sq === lastMove.to);
       const isCheck =
         gravityFalls.size === 0 &&
         piece?.type === PieceType.King &&
         piece.color === game.turn &&
-        (status === "check" || status === "checkmate");
-      const portalColor = portalSquares.get(sq);
-      const squareMods = pluginManager.getSquareModifiers(sq);
-      const isDead = squareMods.some((m) => m.className === "dead-square");
-
-      const isDragSource =
+        (status === GameStatus.Check || status === GameStatus.Checkmate);
+      const isDeployTarget =
+        overlays.hasRally && deployPieceType && !piece && !isDead && rank <= 3;
+      // Floating copies of the piece are drawn above the board instead
+      const isLifted =
         (drag?.isDragging && drag.sq === sq) ||
-        (returnAnim !== null && returnAnim.sq === sq) ||
-        (portalAnim !== null && portalAnim.info.landing === sq);
-      const animEntry = animMap.get(sq);
-      const isAnimating = !!animEntry;
+        returnAnim?.sq === sq ||
+        travel?.info.landing === sq;
 
-      let className = `square ${isLight ? "light" : "dark"}`;
-      // Apply plugin square modifier classes (dead-square, danger-square, etc.)
+      let className = `square ${(rank + file) % 2 !== 0 ? "light" : "dark"}`;
       for (const mod of squareMods) {
         if (mod.className) className += ` ${mod.className}`;
       }
-      if (isSelected) className += " selected";
-      if (isLastMoveSquare && !isDead) className += " last-move";
+      if (sq === selectedSquare) className += " selected";
+      if (isLastMove && !isDead) className += " last-move";
       if (isCheck) className += " in-check";
       if (drag?.isDragging && isLegalTarget) className += " drag-target";
-
-      // Deploy target highlight: empty square on player's half (ranks 0-3)
-      const isDeployTarget =
-        hasRallyOverlay && deployPieceType && !piece && !isDead && rank <= 3;
       if (isDeployTarget) className += " deploy-target";
 
-      // Inline style for slide + rock animation
-      const gravFall = gravityFalls.get(sq);
-      const pieceStyle: React.CSSProperties | undefined = isAnimating
+      const slide = slides.get(sq);
+      const fall = gravityFalls.get(sq);
+      const pieceStyle = slide
         ? ({
-            "--slide-from-x": `${animEntry!.offsetX}px`,
-            "--slide-from-y": `${animEntry!.offsetY}px`,
+            "--slide-from-x": `${slide.x}px`,
+            "--slide-from-y": `${slide.y}px`,
             animation: "slide-in 0.2s ease-out forwards",
           } as React.CSSProperties)
-        : gravFall
+        : fall
           ? ({
-              "--grav-x": `${gravFall.offsetX}px`,
-              "--grav-y": `${gravFall.offsetY}px`,
+              "--grav-x": `${fall.x}px`,
+              "--grav-y": `${fall.y}px`,
               animation: "gravity-fall 0.6s ease-in-out 1.05s both",
             } as React.CSSProperties)
           : undefined;
 
-      const isClosingPortal = closingPortals.has(sq);
-      const isOpeningPortal = openingPortals.has(sq);
+      const portalColor = overlays.portalSquares.get(sq);
+      const closingColor = closingPortals.get(sq);
+      const isHidden = overlays.strategoHidden.has(sq);
+      const cooldown = overlays.rallyCooldowns[sq];
 
       cols.push(
         <div
@@ -807,7 +190,7 @@ export function Board() {
             <Portal
               color={portalColor}
               state={
-                isOpeningPortal
+                openingPortals.has(sq)
                   ? "spawn"
                   : surgingPortal === sq
                     ? "surge"
@@ -816,54 +199,33 @@ export function Board() {
               {...portalCharge(sq)}
             />
           )}
-
-          {isClosingPortal && (
-            <Portal color={closingPortals.get(sq) ?? "blue"} state="despawn" />
-          )}
+          {closingColor && <Portal color={closingColor} state="despawn" />}
 
           {isLegalTarget && !drag?.isDragging && (
             <div className={piece ? "capture-hint" : "move-hint"} />
           )}
 
-          {strategoLakes.has(sq) && <div className="stratego-lake-tile" />}
+          {overlays.strategoLakes.has(sq) && (
+            <div className="stratego-lake-tile" />
+          )}
 
-          {piece && !isDragSource && !isDead && (
+          {piece && !isLifted && !isDead && (
             <>
               <img
                 src={pieceImage(piece)}
                 alt={`${piece.color}${piece.type}`}
-                className={`piece-img${strategoHidden.has(sq) ? " stratego-piece-hidden" : ""}`}
+                className={`piece-img${isHidden ? " stratego-piece-hidden" : ""}`}
                 style={pieceStyle}
                 draggable={false}
-                onPointerDown={(e) => handlePointerDown(e, sq, piece)}
+                onPointerDown={(e) => onPiecePointerDown(e, sq, piece)}
               />
-              {strategoHidden.has(sq) && (
+              {isHidden && (
                 <div className="stratego-mask" style={pieceStyle}>
                   ?
                 </div>
               )}
-              {rallyCooldowns[sq] != null && (
-                <svg
-                  key={`cd-${sq}-${rallyCooldowns[sq].gen}`}
-                  className="cooldown-pie"
-                  viewBox="0 0 36 36"
-                >
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="16"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.4)"
-                    strokeWidth="3"
-                    strokeDasharray="100.53"
-                    style={{
-                      animationName: "cooldown-fill",
-                      animationDuration: `${rallyCooldowns[sq].total}ms`,
-                      animationTimingFunction: "linear",
-                      animationFillMode: "forwards",
-                    }}
-                  />
-                </svg>
+              {cooldown && (
+                <CooldownPie total={cooldown.total} gen={cooldown.gen} />
               )}
             </>
           )}
@@ -879,283 +241,67 @@ export function Board() {
     );
   }
 
-  // Floating drag piece, held at the point where it was grabbed
-  let dragElement = null;
-  if (drag?.isDragging) {
-    const size = squareSize * PIECE_SIZE;
-    const pull = drag.pull;
-    dragElement = (
-      <img
-        ref={dragImgRef}
-        src={pieceImage(drag.piece)}
-        className={`piece-dragging${pull ? ` portal-${pull.color}` : ""}`}
-        style={{
-          ...(pull && {
-            filter:
-              `brightness(${1 + pull.strength * 0.5}) ` +
-              `drop-shadow(0 0 ${4 + pull.strength * 12}px rgba(var(--p-glow), ${pull.strength})) ` +
-              "drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.6))",
-          }),
-          left: drag.x - drag.grabX * size,
-          top: drag.y - drag.grabY * size,
-          width: size,
-          height: size,
-          transformOrigin: `${drag.grabX * 100}% ${drag.grabY * 100}%`,
-        }}
-        draggable={false}
-      />
-    );
-  }
-
-  // Piece returning to its square after invalid drop
-  let returnElement = null;
-  if (returnAnim) {
-    const isBack = returnAnim.started;
-    const pos = isBack
-      ? { x: returnAnim.toX, y: returnAnim.toY }
-      : { x: returnAnim.fromX, y: returnAnim.fromY };
-    const angle = isBack ? 0 : returnAnim.startAngle;
-    const size = isBack ? squareSize * PIECE_SIZE : returnAnim.fromSize;
-    const offset = size / 2;
-    returnElement = (
-      <img
-        src={pieceImage(returnAnim.piece)}
-        className="piece-returning"
-        style={{
-          left: pos.x - offset,
-          top: pos.y - offset,
-          width: size,
-          height: size,
-          transform: `rotate(${angle}deg)`,
-        }}
-        draggable={false}
-      />
-    );
-  }
-
-  // Portal arrow: only when selected piece can use portals
-  // Portal arrows: one per pair, only when selected piece can use them
-  let portalArrows = null;
-  if (
-    portalPairs.length > 0 &&
-    hasPortalMoves &&
-    selectedSquare !== null &&
-    portalEntrance !== null
-  ) {
-    // Find which pair the entrance belongs to
-    const activePair = portalPairs.find(
-      (p) => p.a === portalEntrance || p.b === portalEntrance,
-    );
-    if (activePair) {
-      const entrance = portalEntrance;
-      const exit = entrance === activePair.a ? activePair.b : activePair.a;
-
-      const colFrom = flipped ? 7 - fileOf(entrance) : fileOf(entrance);
-      const rowFrom = flipped ? rankOf(entrance) : 7 - rankOf(entrance);
-      const colTo = flipped ? 7 - fileOf(exit) : fileOf(exit);
-      const rowTo = flipped ? rankOf(exit) : 7 - rankOf(exit);
-      const x1 = (colFrom + 0.5) * 12.5;
-      const y1 = (rowFrom + 0.5) * 12.5;
-      const x2 = (colTo + 0.5) * 12.5;
-      const y2 = (rowTo + 0.5) * 12.5;
-      const arrowColor =
-        activePair.color === "blue"
-          ? "rgba(30, 144, 255, 0.6)"
-          : "rgba(255, 140, 0, 0.6)";
-
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-      const motionPath = `M${x1},${y1} L${x2},${y2}`;
-      const spacing = 2.5;
-      const numChevrons = Math.max(4, Math.round(dist / spacing));
-      const duration = numChevrons * 0.2;
-      const chevrons = [];
-      for (let i = 0; i < numChevrons; i++) {
-        const delay = (i * duration) / numChevrons;
-        chevrons.push(
-          <g
-            key={i}
-            className="portal-chevron"
-            style={
-              {
-                "--chevron-dur": `${duration}s`,
-                animationDelay: `-${duration - delay}s`,
-              } as React.CSSProperties
-            }
-          >
-            <animateMotion
-              dur={`${duration}s`}
-              repeatCount="indefinite"
-              begin={`-${delay}s`}
-              path={motionPath}
-            />
-            <text
-              textAnchor="middle"
-              dy="0.35em"
-              fill={arrowColor}
-              fontSize="6"
-              fontWeight="bold"
-              transform={`rotate(${angle})`}
-            >
-              {"\u203A"}
-            </text>
-          </g>,
-        );
-      }
-
-      portalArrows = (
-        <svg className="portal-arrow-svg" viewBox="0 0 100 100">
-          {chevrons}
-        </svg>
-      );
-    }
-  }
-
-  // Piece traveling through portals, plus the burst at each portal it touches
-  let portalAnimElement = null;
-  let portalBurstElement = null;
-  if (portalAnim && currentPortalPhase) {
-    const phase = currentPortalPhase;
-    const visualCol = (sq: SquareIndex) =>
-      flipped ? 7 - fileOf(sq) : fileOf(sq);
-    const visualRow = (sq: SquareIndex) =>
-      flipped ? rankOf(sq) : 7 - rankOf(sq);
-    const durationMs = phaseDurationMs(phase);
-
-    let animClass = `portal-anim-piece portal-${phase.color}`;
-    let animStyle: React.CSSProperties = {};
-    if (phase.slideFrom !== undefined) {
-      const dx =
-        (visualCol(phase.slideFrom) - visualCol(phase.sq)) * squareSize;
-      const dy =
-        (visualRow(phase.slideFrom) - visualRow(phase.sq)) * squareSize;
-      animStyle = {
-        "--slide-from-x": `${dx}px`,
-        "--slide-from-y": `${dy}px`,
-      } as React.CSSProperties;
-    }
-    if (phase.type === "approach") {
-      animStyle.animation = `slide-in ${durationMs}ms ease-in forwards`;
-    } else {
-      animClass += ` portal-anim-${phase.type === "shrink" ? "enter" : phase.type === "pop" ? "exit" : "fly"}`;
-      if (phase.type === "fly") animStyle.animationDuration = `${durationMs}ms`;
-
-      const burstSq = phase.type === "fly" ? phase.slideFrom! : phase.sq;
-      portalBurstElement = (
-        <PortalBurst
-          key={`burst-${portalAnim.phaseIndex}`}
-          color={phase.color}
-          direction={phase.type === "shrink" ? "in" : "out"}
-          style={
-            {
-              left: `${visualCol(burstSq) * 12.5}%`,
-              top: `${visualRow(burstSq) * 12.5}%`,
-              width: "12.5%",
-              height: "12.5%",
-              "--reach": `${squareSize * 0.8}px`,
-            } as React.CSSProperties
-          }
-        />
-      );
-    }
-
-    portalAnimElement = (
-      <img
-        key={`piece-${portalAnim.phaseIndex}`}
-        src={pieceImage(portalAnim.info.piece)}
-        className={animClass}
-        style={{
-          left: `${visualCol(phase.sq) * 12.5 + 0.625}%`,
-          top: `${visualRow(phase.sq) * 12.5 + 0.625}%`,
-          width: "11.25%",
-          height: "11.25%",
-          ...animStyle,
-        }}
-        draggable={false}
-      />
-    );
-  }
-
-  // Countdown overlay for player (White) only
-  const countdownNumber =
+  const countdown =
     turn === Color.White && timeWhite <= 5 && timeWhite > 0
       ? Math.ceil(timeWhite)
       : null;
 
-  const gravityRotation = gravityAngle;
+  const boardClass =
+    "board" +
+    (showFog ? " fog-active" : "") +
+    (overlays.portalPairs.length > 0 ? " portal-active" : "") +
+    (overlays.gravityDirection ? " gravity-active" : "");
+
+  const { shrinkRing, dangerProgress, gravityAngle } = overlays;
+  const boardStyle = {
+    ...((shrinkRing > 0 || dangerProgress > 0) && {
+      "--shrink-ring": shrinkRing,
+      "--danger-speed": `${Math.max(0.2, 1 - dangerProgress * 0.8)}s`,
+    }),
+    ...(gravityAngle !== null && {
+      "--gravity-rotation": `${gravityAngle}deg`,
+      transform: `rotate(${gravityAngle}deg)`,
+    }),
+  } as React.CSSProperties;
 
   return (
     <div
-      className={`board${showFog ? " fog-active" : ""}${portalPairs.length > 0 ? " portal-active" : ""}${gravityDirection ? " gravity-active" : ""}`}
+      className={boardClass}
       ref={boardRef}
-      style={
-        {
-          ...(shrinkRing > 0 || dangerProgress > 0
-            ? {
-                "--shrink-ring": shrinkRing,
-                "--danger-speed": `${Math.max(0.2, 1 - dangerProgress * 0.8)}s`,
-              }
-            : {}),
-          ...(gravityRotation !== null
-            ? {
-                "--gravity-rotation": `${gravityRotation}deg`,
-                transform: `rotate(${gravityRotation}deg)`,
-              }
-            : {}),
-        } as React.CSSProperties
-      }
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
+      style={boardStyle}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
     >
       {rows}
-      {hasRallyOverlay && (
+      {overlays.hasRally && (
         <div
           className={`deploy-zone-border${deployPieceType ? " dragging" : ""}`}
         />
       )}
-      {portalArrows}
-      {portalBurstElement}
-      {portalAnimElement}
-      {showFog && (
-        <>
-          <div
-            className={`fog-overlay ${fogOnTop ? "fog-top" : "fog-bottom"}${fogExiting ? " fog-exit" : ""}`}
-          >
-            <div className="fog-layer fog-layer-1" />
-            <div className="fog-layer fog-layer-2" />
-            <div className="fog-layer fog-layer-3" />
-            <div className="fog-layer fog-layer-4" />
-            <div className="fog-layer fog-layer-5" />
-            <div className="fog-layer fog-layer-6" />
-            <div className="fog-layer fog-layer-7" />
-            <div className="fog-layer fog-layer-8" />
-            <div className="fog-layer fog-layer-9" />
-            <div className="fog-layer fog-layer-10" />
-            <div className="fog-layer fog-layer-11" />
-            <div className="fog-layer fog-layer-12" />
-            <div className="fog-layer-static fog-layer-13" />
-            <div className="fog-layer-static fog-layer-14" />
-            <div className="fog-layer-static fog-layer-15" />
-            <div className="fog-layer-static fog-layer-16" />
-            <div className="fog-layer-static fog-layer-17" />
-          </div>
-          <div
-            className={`fog-overlay fog-friendly ${fogOnTop ? "fog-bottom" : "fog-top"}${fogExiting ? " fog-exit" : ""}`}
-          >
-            <div className="fog-layer fog-layer-1" />
-            <div className="fog-layer fog-layer-3" />
-            <div className="fog-layer fog-layer-5" />
-            <div className="fog-layer fog-layer-8" />
-          </div>
-        </>
+      {hasPortalMoves && selectedSquare !== null && portalEntrance !== null && (
+        <PortalArrows
+          pairs={overlays.portalPairs}
+          entrance={portalEntrance}
+          flipped={flipped}
+        />
       )}
-      {dragElement}
-      {returnElement}
-      {countdownNumber !== null && (
-        <div className="countdown-overlay" key={countdownNumber}>
-          <span className="countdown-number">{countdownNumber}</span>
+      {travel && (
+        <PortalTravelPiece
+          travel={travel}
+          flipped={flipped}
+          squareSize={squareSize}
+        />
+      )}
+      {showFog && <FogOverlay enemyOnTop={!flipped} exiting={fogExiting} />}
+      {drag?.isDragging && (
+        <DraggedPiece drag={drag} imgRef={dragImgRef} squareSize={squareSize} />
+      )}
+      {returnAnim && (
+        <ReturningPiece anim={returnAnim} squareSize={squareSize} />
+      )}
+      {countdown !== null && (
+        <div className="countdown-overlay" key={countdown}>
+          <span className="countdown-number">{countdown}</span>
         </div>
       )}
     </div>
