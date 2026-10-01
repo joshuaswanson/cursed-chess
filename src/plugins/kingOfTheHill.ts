@@ -30,7 +30,7 @@ export class KingOfTheHillPlugin implements ModePlugin {
   private blackDomination = 0;
   private winner: Color | null = null;
 
-  onGameStart(_ctx: PluginContext): void {
+  onGameStart(): void {
     this.whiteControl = 0;
     this.blackControl = 0;
     this.whiteDomination = 0;
@@ -74,15 +74,12 @@ export class KingOfTheHillPlugin implements ModePlugin {
     }
   }
 
-  modifyGameStatus(
-    _ctx: PluginContext,
-    status: import("../engine/types").GameStatus,
-  ): import("../engine/types").GameStatus {
-    if (this.winner !== null) {
-      // Force checkmate status — the losing side "loses"
-      return GameStatus.Checkmate;
-    }
-    return status;
+  modifyGameStatus(_ctx: PluginContext, status: GameStatus): GameStatus {
+    return this.winner !== null ? GameStatus.Checkmate : status;
+  }
+
+  getWinner(): Color | null {
+    return this.winner;
   }
 
   getSquareModifiers(
@@ -101,7 +98,7 @@ export class KingOfTheHillPlugin implements ModePlugin {
     return [{ className: "hill-square" }];
   }
 
-  getBoardOverlays(_ctx: PluginContext): BoardOverlay[] {
+  getBoardOverlays(): BoardOverlay[] {
     return [
       {
         type: "king-of-hill",

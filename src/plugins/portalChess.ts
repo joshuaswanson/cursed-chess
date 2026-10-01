@@ -1,34 +1,63 @@
 import { Color, PieceType, MoveFlag } from "../engine/types";
-import type { Move, SquareIndex } from "../engine/types";
+import type { Move, Piece, SquareIndex } from "../engine/types";
 import type {
   ModePlugin,
   PluginContext,
   BoardOverlay,
   SquareModifier,
 } from "./types";
-import { fileOf, rankOf, isValidSquare } from "../utils/squareUtils";
-import { isSquareAttacked, opponent } from "../engine/moves";
+import {
+  fileOf,
+  rankOf,
+  isValidSquare,
+  promotionRank,
+  ALL_SQUARES,
+} from "../utils/squareUtils";
+import {
+  isSquareAttacked,
+  opponent,
+  BISHOP_DIRECTIONS,
+  ROOK_DIRECTIONS,
+  QUEEN_DIRECTIONS,
+} from "../engine/moves";
 
-// Direction offsets in 0x88
-const NORTH = 16;
-const SOUTH = -16;
-const EAST = 1;
-const WEST = -1;
-const NE = 17;
-const NW = 15;
-const SE = -15;
-const SW = -17;
-
-const SLIDING_DIRECTIONS: Record<string, number[]> = {
-  [PieceType.Bishop]: [NE, NW, SE, SW],
-  [PieceType.Rook]: [NORTH, SOUTH, EAST, WEST],
-  [PieceType.Queen]: [NE, NW, SE, SW, NORTH, SOUTH, EAST, WEST],
+const SLIDING_DIRECTIONS: Partial<Record<PieceType, number[]>> = {
+  [PieceType.Bishop]: BISHOP_DIRECTIONS,
+  [PieceType.Rook]: ROOK_DIRECTIONS,
+  [PieceType.Queen]: QUEEN_DIRECTIONS,
 };
+
+/** Unit 0x88 step from one square toward another, or null if they are not on a line */
+function slidingDirection(
+  from: SquareIndex,
+  to: SquareIndex,
+): number | null {
+  const df = fileOf(to) - fileOf(from);
+  const dr = rankOf(to) - rankOf(from);
+  if (df === 0 && dr === 0) return null;
+  if (df !== 0 && dr !== 0 && Math.abs(df) !== Math.abs(dr)) return null;
+  return Math.sign(dr) * 16 + Math.sign(df);
+}
+
+export type PortalColor = "blue" | "orange";
+
+export interface PortalTransit {
+  entrance: SquareIndex;
+  exit: SquareIndex;
+  color: PortalColor;
+}
+
+export interface PortalMoveInfo {
+  piece: Piece;
+  from: SquareIndex;
+  transits: PortalTransit[];
+  landing: SquareIndex;
+}
 
 export interface PortalPair {
   a: SquareIndex;
   b: SquareIndex;
-  color: "blue" | "orange";
+  color: PortalColor;
 }
 
 export class PortalChessPlugin implements ModePlugin {
@@ -94,7 +123,7 @@ export class PortalChessPlugin implements ModePlugin {
       // from the exit without stopping on it
       const directions = SLIDING_DIRECTIONS[move.piece.type];
       if (directions) {
-        const dir = this.getMoveDirection(move.from, move.to);
+        const dir = slidingDirection(move.from, move.to);
         if (dir !== null && directions.includes(dir)) {
           // Exit portal is blocked by any piece — can't pass through
           if (exitPiece) continue;
@@ -146,8 +175,7 @@ export class PortalChessPlugin implements ModePlugin {
       // Auto-promote pawn to queen if landing on last rank
       if (
         move.piece.type === PieceType.Pawn &&
-        ((color === Color.White && rankOf(landSq) === 7) ||
-          (color === Color.Black && rankOf(landSq) === 0))
+        rankOf(landSq) === promotionRank(color)
       ) {
         portalMove.promotion = PieceType.Queen;
         portalMove.flags = portalMove.flags | MoveFlag.Promotion;
@@ -155,31 +183,99 @@ export class PortalChessPlugin implements ModePlugin {
       this.addEntranceMove(result, move, portalMove);
     }
 
-    // Filter out portal moves that leave the king in check
+    // Entrance moves are judged by where the piece actually lands
     return result.filter((m) => {
       if (!(m.flags & MoveFlag.Portal)) return true;
-      // Simulate the move on a cloned board
-      const clone = ctx.board.clone();
-      clone.remove(m.from);
-      if (m.captured) clone.remove(m.to);
-      clone.put(m.to, m.piece);
-      // Find the king
-      let kingSq: SquareIndex | null = null;
-      for (let r = 0; r < 8; r++) {
-        for (let f = 0; f < 8; f++) {
-          const sq = ((r << 4) | f) as SquareIndex;
-          const p = clone.get(sq);
-          if (p && p.type === PieceType.King && p.color === color) {
-            kingSq = sq;
-          }
-        }
-      }
-      if (kingSq === null) return true;
-      return !isSquareAttacked(clone, kingSq, opponent(color));
+      const landing =
+        this.getPortalEntrance(m.to) !== null
+          ? this.portalRedirects.get(`${m.from}-${m.to}`)
+          : m;
+      return landing !== undefined && this.keepsKingSafe(ctx, landing, color);
     });
   }
 
-  getBoardOverlays(_ctx: PluginContext): BoardOverlay[] {
+  private keepsKingSafe(ctx: PluginContext, move: Move, color: Color): boolean {
+    const clone = ctx.board.clone();
+    clone.remove(move.from);
+    clone.put(move.to, move.piece);
+    const kingSq = clone.findKing(color);
+    if (kingSq === null) return true;
+    return !isSquareAttacked(clone, kingSq, opponent(color));
+  }
+
+  /** Portal the selected piece would enter, for drawing the entrance-to-exit arrow */
+  findEntrance(from: SquareIndex, moves: Move[]): SquareIndex | null {
+    const distance = (sq: SquareIndex) =>
+      Math.abs(fileOf(from) - fileOf(sq)) + Math.abs(rankOf(from) - rankOf(sq));
+    const targeted = (sq: SquareIndex) =>
+      moves.some((m) => m.to === sq && m.flags & MoveFlag.Portal);
+
+    let best: SquareIndex | null = null;
+    for (const { a, b } of this.portals) {
+      const usesA = targeted(a);
+      const usesB = targeted(b);
+      if (!usesA && !usesB) continue;
+      const candidate =
+        usesA && usesB ? (distance(a) <= distance(b) ? a : b) : usesA ? a : b;
+      if (best === null || distance(candidate) < distance(best)) {
+        best = candidate;
+      }
+    }
+    return best;
+  }
+
+  /** Reconstruct which portals a completed move passed through, for animation */
+  traceMove(
+    piece: Piece,
+    from: SquareIndex,
+    clickedTo: SquareIndex,
+    landing: SquareIndex,
+  ): PortalMoveInfo | null {
+    const natural = slidingDirection(from, clickedTo);
+    const directions = [
+      ...(natural !== null ? [natural] : []),
+      ...QUEEN_DIRECTIONS,
+    ];
+    for (const dir of directions) {
+      const transits = this.walk(from, dir, landing);
+      if (transits) return { piece, from, transits, landing };
+    }
+
+    // Knights, kings and pawns hop through the clicked portal directly
+    const exit = this.getPortalExit(clickedTo);
+    if (exit === null) return null;
+    const transit = {
+      entrance: clickedTo,
+      exit,
+      color: this.getPortalColor(clickedTo),
+    };
+    return { piece, from, transits: [transit], landing };
+  }
+
+  private walk(
+    from: SquareIndex,
+    dir: number,
+    landing: SquareIndex,
+  ): PortalTransit[] | null {
+    const transits: PortalTransit[] = [];
+    const visitedExits = new Set<SquareIndex>();
+    let sq = from + dir;
+    while (isValidSquare(sq)) {
+      if (sq === landing && transits.length > 0) return transits;
+      const exit = this.getPortalExit(sq);
+      if (exit !== null) {
+        if (visitedExits.has(exit)) return null;
+        visitedExits.add(exit);
+        transits.push({ entrance: sq, exit, color: this.getPortalColor(sq) });
+        sq = exit + dir;
+      } else {
+        sq += dir;
+      }
+    }
+    return null;
+  }
+
+  getBoardOverlays(): BoardOverlay[] {
     return this.portals.map((p) => ({
       type: "portal",
       squares: [p.a, p.b],
@@ -200,38 +296,16 @@ export class PortalChessPlugin implements ModePlugin {
   }
 
   private spawnPortals(ctx: PluginContext): void {
-    const emptySquares: SquareIndex[] = [];
-    for (let rank = 0; rank < 8; rank++) {
-      for (let file = 0; file < 8; file++) {
-        const sq = (rank << 4) | file;
-        if (!ctx.board.get(sq)) {
-          emptySquares.push(sq);
-        }
-      }
+    const empty = ALL_SQUARES.filter((sq) => !ctx.board.get(sq));
+    if (empty.length < 4) return;
+
+    for (let i = empty.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [empty[i], empty[j]] = [empty[j], empty[i]];
     }
-
-    if (emptySquares.length < 4) return;
-
-    // Pick 4 random empty squares for 2 portal pairs
-    const picked: number[] = [];
-    while (picked.length < 4) {
-      const idx = Math.floor(Math.random() * emptySquares.length);
-      if (!picked.includes(idx)) {
-        picked.push(idx);
-      }
-    }
-
     this.portals = [
-      {
-        a: emptySquares[picked[0]],
-        b: emptySquares[picked[1]],
-        color: "blue",
-      },
-      {
-        a: emptySquares[picked[2]],
-        b: emptySquares[picked[3]],
-        color: "orange",
-      },
+      { a: empty[0], b: empty[1], color: "blue" },
+      { a: empty[2], b: empty[3], color: "orange" },
     ];
   }
 
@@ -240,10 +314,9 @@ export class PortalChessPlugin implements ModePlugin {
     ctx: PluginContext,
     sq: SquareIndex,
   ): SquareIndex[] {
-    const dirs = [NORTH, SOUTH, EAST, WEST, NE, NW, SE, SW];
     const result: SquareIndex[] = [];
-    for (const dir of dirs) {
-      const target = (sq + dir) as SquareIndex;
+    for (const dir of QUEEN_DIRECTIONS) {
+      const target = sq + dir;
       if (!isValidSquare(target)) continue;
       if (ctx.board.get(target)) continue;
       if (this.getPortalEntrance(target) !== null) continue;
@@ -257,6 +330,10 @@ export class PortalChessPlugin implements ModePlugin {
       if (sq === p.a || sq === p.b) return sq;
     }
     return null;
+  }
+
+  private getPortalColor(sq: SquareIndex): PortalColor {
+    return this.portals.find((p) => p.a === sq || p.b === sq)?.color ?? "blue";
   }
 
   private getPortalExit(sq: SquareIndex): SquareIndex | null {
@@ -275,12 +352,12 @@ export class PortalChessPlugin implements ModePlugin {
     // Sliding pieces: check each intermediate square along the path
     const directions = SLIDING_DIRECTIONS[move.piece.type];
     if (directions) {
-      const dir = this.getMoveDirection(move.from, move.to);
+      const dir = slidingDirection(move.from, move.to);
       if (dir === null || !directions.includes(dir)) return false;
-      let sq = (move.from + dir) as SquareIndex;
+      let sq = move.from + dir;
       while (sq !== move.to) {
         if (this.getPortalEntrance(sq) !== null) return true;
-        sq = (sq + dir) as SquareIndex;
+        sq = sq + dir;
       }
       return false;
     }
@@ -289,22 +366,12 @@ export class PortalChessPlugin implements ModePlugin {
     if (move.piece.type === PieceType.Pawn) {
       const dRank = rankOf(move.to) - rankOf(move.from);
       if (Math.abs(dRank) === 2) {
-        const midSq = (move.from + (dRank > 0 ? NORTH : SOUTH)) as SquareIndex;
+        const midSq = move.from + (dRank > 0 ? 16 : -16);
         if (this.getPortalEntrance(midSq) !== null) return true;
       }
     }
 
     return false;
-  }
-
-  private getMoveDirection(from: SquareIndex, to: SquareIndex): number | null {
-    const df = fileOf(to) - fileOf(from);
-    const dr = rankOf(to) - rankOf(from);
-    const steps = Math.max(Math.abs(df), Math.abs(dr));
-    if (steps === 0) return null;
-    const dirFile = df / steps;
-    const dirRank = dr / steps;
-    return dirRank * 16 + dirFile;
   }
 
   private addContinuationMoves(
@@ -322,7 +389,7 @@ export class PortalChessPlugin implements ModePlugin {
     }
     visited.add(exitSq);
 
-    let sq = (exitSq + direction) as SquareIndex;
+    let sq = exitSq + direction;
     while (isValidSquare(sq)) {
       // Check if this square is a portal entrance
       const portalEntrance = this.getPortalEntrance(sq);
@@ -339,7 +406,7 @@ export class PortalChessPlugin implements ModePlugin {
           ctx,
           result,
           originalMove,
-          portalExit as SquareIndex,
+          portalExit,
           direction,
           color,
           visited,
@@ -367,7 +434,7 @@ export class PortalChessPlugin implements ModePlugin {
         piece: originalMove.piece,
         flags: MoveFlag.Portal,
       });
-      sq = (sq + direction) as SquareIndex;
+      sq = sq + direction;
     }
   }
 

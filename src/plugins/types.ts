@@ -43,6 +43,8 @@ export interface ModePlugin {
   modifyLegalMoves?(ctx: PluginContext, moves: Move[], color: Color): Move[];
   modifyBoard?(ctx: PluginContext): void;
   modifyGameStatus?(ctx: PluginContext, status: GameStatus): GameStatus;
+  /** Winner decided by mode rules, overriding the checkmate winner */
+  getWinner?(ctx: PluginContext): Color | null;
 
   getBoardOverlays?(ctx: PluginContext): BoardOverlay[];
   getSquareModifiers?(

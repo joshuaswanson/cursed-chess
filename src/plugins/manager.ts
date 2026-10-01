@@ -87,6 +87,14 @@ export class PluginManager {
     return current;
   }
 
+  getWinner(): Color | null {
+    for (const p of this.plugins) {
+      const winner = p.getWinner?.(this.ctx);
+      if (winner) return winner;
+    }
+    return null;
+  }
+
   getAllOverlays(): BoardOverlay[] {
     const overlays: BoardOverlay[] = [];
     for (const p of this.plugins) {
@@ -109,6 +117,10 @@ export class PluginManager {
 
   getPlugins(): ModePlugin[] {
     return this.plugins;
+  }
+
+  find<T extends ModePlugin>(id: string): T | undefined {
+    return this.plugins.find((p) => p.id === id) as T | undefined;
   }
 
   isAutonomous(): boolean {

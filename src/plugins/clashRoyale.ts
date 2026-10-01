@@ -1,11 +1,6 @@
 import { Color, PieceType } from "../engine/types";
 import type { Move, SquareIndex } from "../engine/types";
-import type {
-  ModePlugin,
-  PluginContext,
-  BoardOverlay,
-  SquareModifier,
-} from "./types";
+import type { ModePlugin, PluginContext, BoardOverlay } from "./types";
 import { rankOf } from "../utils/squareUtils";
 
 const PIECE_SPEED: Record<string, number> = {
@@ -141,7 +136,7 @@ export class RallyPlugin implements ModePlugin {
     return results;
   }
 
-  getBoardOverlays(_ctx: PluginContext): BoardOverlay[] {
+  getBoardOverlays(): BoardOverlay[] {
     // Build cooldown map: square -> { ms, gen }
     const cooldownData: Record<number, { total: number; gen: number }> = {};
     for (const [sq, cd] of this.cooldowns) {
@@ -168,13 +163,6 @@ export class RallyPlugin implements ModePlugin {
         data: cooldownData,
       },
     ];
-  }
-
-  getSquareModifiers(
-    _ctx: PluginContext,
-    _square: SquareIndex,
-  ): SquareModifier[] {
-    return [];
   }
 
   setCooldown(square: SquareIndex, pieceType: PieceType): void {

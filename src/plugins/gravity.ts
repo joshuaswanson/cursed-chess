@@ -1,12 +1,13 @@
-import { Color } from "../engine/types";
+import { Color, PieceType } from "../engine/types";
 import type { SquareIndex } from "../engine/types";
-import type {
-  ModePlugin,
-  PluginContext,
-  BoardOverlay,
-  SquareModifier,
-} from "./types";
-import { fileOf, rankOf, isValidSquare } from "../utils/squareUtils";
+import type { ModePlugin, PluginContext, BoardOverlay } from "./types";
+import {
+  fileOf,
+  rankOf,
+  toIndex,
+  promotionRank,
+  ALL_SQUARES,
+} from "../utils/squareUtils";
 
 type GravityDirection =
   | "south"
@@ -72,7 +73,7 @@ export class GravityPlugin implements ModePlugin {
     return ANGLE_TO_DIR[normalized] ?? "south";
   }
 
-  onGameStart(_ctx: PluginContext): void {
+  onGameStart(): void {
     this.direction = "south";
     this.angle = 0;
     this.turnCount = 0;
@@ -102,14 +103,7 @@ export class GravityPlugin implements ModePlugin {
     }
   }
 
-  getSquareModifiers(
-    _ctx: PluginContext,
-    _square: SquareIndex,
-  ): SquareModifier[] {
-    return [];
-  }
-
-  getBoardOverlays(_ctx: PluginContext): BoardOverlay[] {
+  getBoardOverlays(): BoardOverlay[] {
     const progress = (this.turnCount % this.shiftInterval) / this.shiftInterval;
     return [
       {
@@ -130,45 +124,31 @@ export class GravityPlugin implements ModePlugin {
     const { df, dr } = DIR_OFFSETS[this.direction];
     this.lastGravityMoves = [];
 
-    // Collect all pieces
-    const pieces: {
-      sq: SquareIndex;
-      piece: { type: string; color: string };
-    }[] = [];
-    for (let rank = 0; rank < 8; rank++) {
-      for (let file = 0; file < 8; file++) {
-        const sq = ((rank << 4) | file) as SquareIndex;
-        const piece = ctx.board.get(sq);
-        if (piece) {
-          pieces.push({ sq, piece });
-        }
-      }
-    }
+    // Pieces nearest the wall they fall toward move first
+    const projection = (sq: SquareIndex) => rankOf(sq) * dr + fileOf(sq) * df;
+    const occupied = ALL_SQUARES.filter((sq) => ctx.board.get(sq)).sort(
+      (a, b) => projection(b) - projection(a),
+    );
 
-    // Sort pieces so we process them in gravity direction order
-    // (pieces closest to the "wall" they're falling toward should move first)
-    pieces.sort((a, b) => {
-      // Project each piece onto the gravity axis and sort by distance to wall
-      const projA = rankOf(a.sq) * dr + fileOf(a.sq) * df;
-      const projB = rankOf(b.sq) * dr + fileOf(b.sq) * df;
-      return projB - projA;
-    });
-
-    // Slide each piece in the gravity direction until it hits something
-    for (const { sq, piece } of pieces) {
+    for (const sq of occupied) {
+      const piece = ctx.board.get(sq)!;
       let current = sq;
       let next = this.stepSquare(current, df, dr);
-
       while (next !== null && !ctx.board.get(next)) {
         current = next;
         next = this.stepSquare(current, df, dr);
       }
+      if (current === sq) continue;
 
-      if (current !== sq) {
-        ctx.board.remove(sq);
-        ctx.board.put(current, piece as any);
-        this.lastGravityMoves.push({ from: sq, to: current as SquareIndex });
-      }
+      const promotes =
+        piece.type === PieceType.Pawn &&
+        rankOf(current) === promotionRank(piece.color);
+      ctx.board.remove(sq);
+      ctx.board.put(
+        current,
+        promotes ? { type: PieceType.Queen, color: piece.color } : piece,
+      );
+      this.lastGravityMoves.push({ from: sq, to: current });
     }
   }
 
@@ -180,7 +160,6 @@ export class GravityPlugin implements ModePlugin {
     const newFile = fileOf(sq) + df;
     const newRank = rankOf(sq) + dr;
     if (newFile < 0 || newFile > 7 || newRank < 0 || newRank > 7) return null;
-    const newSq = ((newRank << 4) | newFile) as SquareIndex;
-    return isValidSquare(newSq) ? newSq : null;
+    return toIndex(newFile, newRank);
   }
 }
