@@ -8,6 +8,9 @@ import { PortalArrows } from "./PortalArrows";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
 import { FogOverlay } from "./FogOverlay";
+import { CollapsingRing, DoomedTile, Fissure } from "./BattleRoyale";
+import { useRingCollapse } from "./useRingCollapse";
+import { offsetBetween } from "./boardGeometry";
 import { readOverlays } from "./readOverlays";
 import { usePieceDrag } from "./usePieceDrag";
 import { phaseDurationMs, usePortalTravel } from "./usePortalTravel";
@@ -135,6 +138,20 @@ export function Board() {
   const fogExiting = useFogExit(overlays.hasFog);
   const showFog = overlays.hasFog || fogExiting;
 
+  const battleRoyale = overlays.battleRoyale;
+  const dangerProgress = battleRoyale?.dangerProgress ?? 0;
+  const collapse = useRingCollapse(
+    battleRoyale?.lastCollapse ?? null,
+    dangerProgress,
+  );
+  const doomed = new Set(battleRoyale?.doomed ?? []);
+  const kingLeaps = new Map(
+    (collapse?.kingLeaps ?? []).map((leap) => [
+      leap.to,
+      offsetBetween(leap.from, leap.to, flipped, squareSize),
+    ]),
+  );
+
   const rows = [];
   for (let visualRow = 0; visualRow < 8; visualRow++) {
     const rank = flipped ? visualRow : 7 - visualRow;
@@ -173,19 +190,26 @@ export function Board() {
 
       const slide = slides.get(sq);
       const fall = gravityFalls.get(sq);
-      const pieceStyle = slide
+      const leap = kingLeaps.get(sq);
+      const pieceStyle = leap
         ? ({
-            "--slide-from-x": `${slide.x}px`,
-            "--slide-from-y": `${slide.y}px`,
-            animation: "slide-in 0.2s ease-out forwards",
+            "--slide-from-x": `${leap.x}px`,
+            "--slide-from-y": `${leap.y}px`,
+            animation: "br-king-leap 0.75s cubic-bezier(0.3, 0, 0.3, 1) both",
           } as React.CSSProperties)
-        : fall
+        : slide
           ? ({
-              "--grav-x": `${fall.x}px`,
-              "--grav-y": `${fall.y}px`,
-              animation: "gravity-fall 0.6s ease-in-out 1.05s both",
+              "--slide-from-x": `${slide.x}px`,
+              "--slide-from-y": `${slide.y}px`,
+              animation: "slide-in 0.2s ease-out forwards",
             } as React.CSSProperties)
-          : undefined;
+          : fall
+            ? ({
+                "--grav-x": `${fall.x}px`,
+                "--grav-y": `${fall.y}px`,
+                animation: "gravity-fall 0.6s ease-in-out 1.05s both",
+              } as React.CSSProperties)
+            : undefined;
 
       const portalColor = overlays.portalSquares.get(sq);
       const closingColor = closingPortals.get(sq);
@@ -219,6 +243,8 @@ export function Board() {
           {isLegalTarget && !drag?.isDragging && (
             <div className={piece ? "capture-hint" : "move-hint"} />
           )}
+
+          {doomed.has(sq) && <DoomedTile sq={sq} progress={dangerProgress} />}
 
           {overlays.strategoLakes.has(sq) && (
             <div className="stratego-lake-tile" />
@@ -265,13 +291,15 @@ export function Board() {
     "board" +
     (showFog ? " fog-active" : "") +
     (overlays.portalPairs.length > 0 ? " portal-active" : "") +
-    (overlays.gravityDirection ? " gravity-active" : "");
+    (overlays.gravityDirection ? " gravity-active" : "") +
+    (battleRoyale ? " battle-royale" : "") +
+    (collapse ? " br-quake" : "") +
+    (dangerProgress >= 0.6 ? " br-trembling" : "");
 
-  const { shrinkRing, dangerProgress, gravityAngle } = overlays;
+  const { gravityAngle } = overlays;
   const boardStyle = {
-    ...((shrinkRing > 0 || dangerProgress > 0) && {
-      "--shrink-ring": shrinkRing,
-      "--danger-speed": `${Math.max(0.2, 1 - dangerProgress * 0.8)}s`,
+    ...(battleRoyale && {
+      "--shrink-ring": battleRoyale.shrinkRing,
     }),
     ...(gravityAngle !== null && {
       "--gravity-rotation": `${gravityAngle}deg`,
@@ -300,6 +328,14 @@ export function Board() {
           flipped={flipped}
         />
       )}
+      {battleRoyale && (
+        <Fissure
+          ring={Math.max(1, battleRoyale.shrinkRing)}
+          progress={dangerProgress}
+          collapsed={battleRoyale.shrinkRing > 0}
+        />
+      )}
+      {collapse && <CollapsingRing collapse={collapse} flipped={flipped} />}
       {travel && (
         <PortalTravelPiece
           travel={travel}

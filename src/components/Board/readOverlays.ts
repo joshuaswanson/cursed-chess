@@ -1,6 +1,7 @@
 import type { SquareIndex } from "../../engine";
 import type { BoardOverlay } from "../../plugins/types";
 import type { PortalColor } from "../../plugins/portalChess";
+import type { BattleRoyaleOverlay } from "../../plugins/battleRoyale";
 
 export interface PortalPair {
   a: SquareIndex;
@@ -14,8 +15,7 @@ export interface BoardOverlays {
   hasFog: boolean;
   hasRally: boolean;
   rallyCooldowns: Record<number, { total: number; gen: number }>;
-  shrinkRing: number;
-  dangerProgress: number;
+  battleRoyale: BattleRoyaleOverlay | null;
   gravityDirection: string | null;
   gravityAngle: number | null;
   gravityMoves: { from: SquareIndex; to: SquareIndex }[];
@@ -32,8 +32,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     hasFog: false,
     hasRally: false,
     rallyCooldowns: {},
-    shrinkRing: 0,
-    dangerProgress: 0,
+    battleRoyale: null,
     gravityDirection: null,
     gravityAngle: null,
     gravityMoves: [],
@@ -74,15 +73,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
         result.gravityMoves = data?.moves ?? [];
         break;
       }
-      case "battle-royale": {
-        const data = overlay.data as {
-          shrinkRing?: number;
-          dangerProgress?: number;
-        };
-        result.shrinkRing = data?.shrinkRing ?? 0;
-        result.dangerProgress = data?.dangerProgress ?? 0;
+      case "battle-royale":
+        result.battleRoyale = overlay.data as BattleRoyaleOverlay;
         break;
-      }
       case "stratego-hidden":
         result.strategoHidden = new Set(overlay.squares);
         break;

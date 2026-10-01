@@ -67,6 +67,28 @@ function crackle(c: AudioContext, out: AudioNode, loudness: number): void {
   src.stop(t + length + 0.02);
 }
 
+/** A stone grinding or chunk breaking off: low band-passed noise with a quick decay */
+function creak(
+  c: AudioContext,
+  out: AudioNode,
+  at: number,
+  loudness: number,
+): void {
+  const src = noiseSource(c);
+  const band = c.createBiquadFilter();
+  band.type = "bandpass";
+  band.frequency.value = 250 + Math.random() * 900;
+  band.Q.value = 5;
+  const gain = c.createGain();
+  const length = 0.05 + Math.random() * 0.15;
+  gain.gain.setValueAtTime(0.001, at);
+  gain.gain.exponentialRampToValueAtTime(0.5 * loudness, at + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, at + length);
+  src.connect(band).connect(gain).connect(out);
+  src.start(at, Math.random() * 0.9);
+  src.stop(at + length + 0.02);
+}
+
 function stopHum(): void {
   if (!hum || !ctx) return;
   const { oscillators, gain } = hum;
@@ -198,5 +220,65 @@ export const sfx = {
     pop.stop(t + 0.2);
 
     for (let i = 0; i < 4; i++) crackle(c, out, 1);
+  },
+
+  /** The ground groans: low rumble and creaks, heavier as the collapse nears */
+  rumble(intensity: number): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const duration = 1.4;
+
+    const src = noiseSource(c);
+    const low = c.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.value = 90 + 120 * intensity;
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.9 * intensity + 0.2, t + 0.25);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    src.connect(low).connect(gain).connect(out);
+    src.start(t);
+    src.stop(t + duration + 0.05);
+
+    for (let i = 0; i < 2 + intensity * 4; i++) {
+      creak(c, out, t + 0.1 + Math.random() * (duration - 0.3), intensity);
+    }
+  },
+
+  /** A ring of the board gives way: a deep boom, then rubble pouring down */
+  collapse(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+
+    const boom = c.createOscillator();
+    boom.type = "sine";
+    boom.frequency.setValueAtTime(70, t);
+    boom.frequency.exponentialRampToValueAtTime(28, t + 1.2);
+    const boomGain = c.createGain();
+    boomGain.gain.setValueAtTime(0.7, t);
+    boomGain.gain.exponentialRampToValueAtTime(0.001, t + 1.4);
+    boom.connect(boomGain).connect(out);
+    boom.start(t);
+    boom.stop(t + 1.5);
+
+    const src = noiseSource(c);
+    const low = c.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.setValueAtTime(900, t);
+    low.frequency.exponentialRampToValueAtTime(120, t + 1.8);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.9, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 1.9);
+    src.connect(low).connect(gain).connect(out);
+    src.start(t);
+    src.stop(t + 2);
+
+    for (let i = 0; i < 14; i++) {
+      creak(c, out, t + Math.random() * 1.1, 1);
+    }
   },
 };
