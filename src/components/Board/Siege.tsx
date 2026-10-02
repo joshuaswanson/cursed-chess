@@ -5,7 +5,7 @@ import { COURTYARD } from "../../plugins/siege";
 import type { SiegeView, Strike } from "../../plugins/siege";
 import { visualCol, visualRow } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
-import { Castle } from "./Castle";
+import { Castle, COURT_REACH } from "./Castle";
 import "./Siege.css";
 
 /** How long a catapult stone is in the air */
@@ -23,7 +23,16 @@ function seeded(seed: number) {
   };
 }
 
-/** Stone flags over the courtyard */
+/** Paving stones laid across a 50 by 50 tile: x, y, width, height, tone */
+const FLAGSTONES = [
+  [0, 0, 30, 22, "#a7a49c"],
+  [30, 0, 20, 30, "#99968e"],
+  [0, 22, 18, 28, "#9e9b93"],
+  [18, 22, 12, 28, "#aeaba2"],
+  [30, 30, 20, 20, "#a29f97"],
+] as const;
+
+/** The courtyard is paved in grey stone, set apart from the mud outside the walls */
 function Courtyard({
   squares,
   flipped,
@@ -33,16 +42,30 @@ function Courtyard({
 }) {
   const cols = squares.map((sq) => visualCol(sq, flipped));
   const rows = squares.map((sq) => visualRow(sq, flipped));
-  const x = Math.min(...cols) * 100;
-  const y = Math.min(...rows) * 100;
+  const x = Math.min(...cols) * 100 - COURT_REACH;
+  const y = Math.min(...rows) * 100 - COURT_REACH;
+  const size = 400 + COURT_REACH * 2;
   return (
     <g className="courtyard">
-      <rect x={x} y={y} width="400" height="400" fill="url(#siege-flags)" />
+      <rect x={x} y={y} width={size} height={size} className="court-grout" />
+      <rect x={x} y={y} width={size} height={size} fill="url(#siege-flags)" />
+      {squares
+        .filter((sq) => ((sq & 7) + (sq >> 4)) % 2 === 0)
+        .map((sq) => (
+          <rect
+            key={sq}
+            x={visualCol(sq, flipped) * 100}
+            y={visualRow(sq, flipped) * 100}
+            width="100"
+            height="100"
+            className="court-dark"
+          />
+        ))}
       <rect
         x={x}
         y={y}
-        width="400"
-        height="400"
+        width={size}
+        height={size}
         fill="url(#siege-court-shade)"
       />
     </g>
@@ -110,14 +133,27 @@ export function SiegeLayer({
             height="50"
             patternUnits="userSpaceOnUse"
           >
-            <rect width="50" height="50" fill="#9c8e78" opacity="0.45" />
-            <path
-              d="M0 0 H30 V22 H0 Z M30 0 H50 V30 H30 Z M0 22 H18 V50 H0 Z M18 22 H30 V50 H18 Z M30 30 H50 V50 H30 Z"
-              fill="none"
-              stroke="#3d3226"
-              strokeOpacity="0.35"
-              strokeWidth="1.5"
-            />
+            {FLAGSTONES.map(([sx, sy, w, h, tone]) => (
+              <g key={`${sx},${sy}`}>
+                <rect
+                  x={sx + 0.9}
+                  y={sy + 0.9}
+                  width={w - 1.8}
+                  height={h - 1.8}
+                  rx="2"
+                  fill={tone}
+                />
+                <rect
+                  x={sx + 1.5}
+                  y={sy + 1.2}
+                  width={w - 3}
+                  height="1.5"
+                  rx="0.75"
+                  fill="#fff"
+                  opacity="0.25"
+                />
+              </g>
+            ))}
           </pattern>
           <radialGradient id="siege-court-shade">
             <stop offset="0.6" stopColor="#000" stopOpacity="0" />

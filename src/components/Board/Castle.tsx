@@ -9,6 +9,8 @@ const OUTER = 16;
 const WALK_TOP = 31;
 const WALK_BOTTOM = 70;
 const INNER = 84;
+/** How far the courtyard floor runs into a wall square to meet the wall's inner face */
+export const COURT_REACH = 100 - INNER;
 /** Towers spill past their square so the walls on both sides run into them */
 const TOWER_R = 62;
 const TOWER_RIM = 13;
@@ -854,6 +856,28 @@ export function Castle({
               className="portcullis-bar"
             />
           ))}
+          <rect
+            x="18"
+            y={OUTER}
+            width="64"
+            height={INNER - OUTER}
+            className="gate-passage"
+          />
+          {/* The walls stand above the bridge and darken its edges */}
+          <g className="ruin-cast" filter="url(#castle-blur)">
+            {GATE_PIERS.map(([from, to], i) => {
+              const off = toLocal(SHADOW, facing(col, row));
+              return (
+                <rect
+                  key={from}
+                  x={from + (i === 0 ? 7 : -7) + off.x}
+                  y={OUTER + off.y}
+                  width={to - from}
+                  height={INNER - OUTER}
+                />
+              );
+            })}
+          </g>
           {GATE_PIERS.map(([from, to]) => (
             <SegmentBody key={from} start={from} end={to} />
           ))}

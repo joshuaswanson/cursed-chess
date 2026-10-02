@@ -15,6 +15,19 @@
   overflow: visible;
 }
 
+.courtyard {
+  opacity: 0.86;
+}
+
+.court-grout {
+  fill: #3a362f;
+}
+
+/* Keeps the chessboard pattern readable through the paving */
+.court-dark {
+  fill: rgba(20, 16, 10, 0.2);
+}
+
 .castle-shadows {
   fill: rgba(8, 5, 2, 0.6);
 }
@@ -204,6 +217,11 @@
 .plank-seam {
   stroke: #3e2914;
   stroke-width: 1.5;
+}
+
+/* Where the bridge passes under the gatehouse */
+.gate-passage {
+  fill: rgba(10, 6, 2, 0.3);
 }
 
 .iron-band {
