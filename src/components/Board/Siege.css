@@ -185,7 +185,10 @@
   z-index: 6;
 }
 
+/* Drawn on the page itself, above the logo and panels, so nothing covers it in flight */
 .boulder {
+  position: fixed;
+  z-index: 35;
   animation: boulder-path linear both;
 }
 

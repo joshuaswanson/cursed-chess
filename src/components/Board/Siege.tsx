@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Color } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import { COURTYARD, GATES, TOWERS } from "../../plugins/siege";
@@ -340,6 +341,7 @@ export function SiegeLayer({
   rising: boolean;
 }) {
   const boulder = useFreshStrike(view.lastBoulder, BOULDER_FLIGHT_MS);
+  const [layer, setLayer] = useState<HTMLDivElement | null>(null);
   const ram = useFreshStrike(view.lastRam, RAM_HIT_MS);
 
   // A stone in flight has not hit its wall yet, so show the wall as it was
@@ -369,6 +371,7 @@ export function SiegeLayer({
   const pct = (n: number) => `${n * 12.5}%`;
   return (
     <div
+      ref={setLayer}
       className={`siege-layer${rising ? " rising" : ""}`}
       style={{ "--sq": `${squareSize}px` } as Style}
     >
@@ -484,12 +487,13 @@ export function SiegeLayer({
         );
       })}
 
-      {boulder.strike && (
+      {boulder.strike && layer && (
         <Boulder
           key={boulder.strike.id}
           strike={boulder.strike}
           flipped={flipped}
           squareSize={squareSize}
+          board={layer.getBoundingClientRect()}
         />
       )}
       {ram.strike && (
@@ -531,16 +535,25 @@ function Boulder({
   strike,
   flipped,
   squareSize,
+  board,
 }: {
   strike: Strike;
   flipped: boolean;
   squareSize: number;
+  /** Where the board sits on screen, since the stone flies above the whole page */
+  board: DOMRect;
 }) {
   const col = visualCol(strike.target, flipped);
   const row = visualRow(strike.target, flipped);
   const fromLeft = col < 4;
   const startCol = fromLeft ? -3 : 11;
-  const startRow = row - 2;
+  const startRow = row - 1;
+  // The arc peaks as high as it can while staying on screen
+  const landY = board.top + row * squareSize;
+  const lift = Math.max(
+    0,
+    Math.min(squareSize * 2.2, landY - squareSize * 0.8),
+  );
 
   useEffect(() => {
     sfx.catapult();
@@ -561,24 +574,29 @@ function Boulder({
           animationDuration: `${BOULDER_FLIGHT_MS}ms`,
         }}
       />
-      <span
-        className="boulder"
-        style={
-          {
-            left: `${col * 12.5}%`,
-            top: `${row * 12.5}%`,
-            "--from-x": `${(startCol - col) * squareSize}px`,
-            "--from-y": `${(startRow - row) * squareSize}px`,
-            "--lift": `${-squareSize * 2.2}px`,
-            animationDuration: `${BOULDER_FLIGHT_MS}ms`,
-          } as Style
-        }
-      >
+      {createPortal(
         <span
-          className="boulder-rock"
-          style={{ animationDuration: `${BOULDER_FLIGHT_MS}ms` }}
-        />
-      </span>
+          className="boulder"
+          style={
+            {
+              left: board.left + col * squareSize,
+              top: board.top + row * squareSize,
+              width: squareSize,
+              height: squareSize,
+              "--from-x": `${(startCol - col) * squareSize}px`,
+              "--from-y": `${(startRow - row) * squareSize}px`,
+              "--lift": `${-lift}px`,
+              animationDuration: `${BOULDER_FLIGHT_MS}ms`,
+            } as Style
+          }
+        >
+          <span
+            className="boulder-rock"
+            style={{ animationDuration: `${BOULDER_FLIGHT_MS}ms` }}
+          />
+        </span>,
+        document.body,
+      )}
       <Impact strike={strike} flipped={flipped} delayMs={BOULDER_FLIGHT_MS} />
     </>
   );
