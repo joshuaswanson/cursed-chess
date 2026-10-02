@@ -202,10 +202,6 @@ function Scene({ theme }: { theme: ThemeId }) {
                 <ellipse cx="860" cy="110" rx="52" ry="28" />
               </g>
               <path
-                className="map-river"
-                d="M-10 330 C150 300 260 360 420 320 S700 280 1010 330"
-              />
-              <path
                 className="troop-arrow troop-red"
                 d="M880 60 C760 140 700 200 640 270"
               />

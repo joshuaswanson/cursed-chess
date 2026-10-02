@@ -6,7 +6,7 @@ import type {
   BoardOverlay,
   SquareModifier,
 } from "./types";
-import { toIndex, fileOf, rankOf } from "../utils/squareUtils";
+import { toIndex, fileOf, rankOf, ALL_SQUARES } from "../utils/squareUtils";
 
 // Lakes at c4, c5, f4, f5 — creates three 2-file bridges
 const LAKE_SQUARES = new Set<SquareIndex>([
@@ -24,8 +24,24 @@ export class StrategoPlugin implements ModePlugin {
   /** Squares with revealed Black pieces (persist until captured or game ends) */
   private revealed = new Set<SquareIndex>();
 
-  onGameStart(): void {
+  onGameStart(ctx: PluginContext): void {
     this.revealed.clear();
+    // Pieces carried over from the last mode can't start out in the river
+    for (const lake of LAKE_SQUARES) {
+      const piece = ctx.board.get(lake);
+      if (!piece) continue;
+      const dry = ALL_SQUARES.filter(
+        (sq) => !LAKE_SQUARES.has(sq) && !ctx.board.get(sq),
+      ).sort(
+        (a, b) =>
+          Math.abs(fileOf(a) - fileOf(lake)) +
+          Math.abs(rankOf(a) - rankOf(lake)) -
+          (Math.abs(fileOf(b) - fileOf(lake)) +
+            Math.abs(rankOf(b) - rankOf(lake))),
+      )[0];
+      ctx.board.remove(lake);
+      if (dry !== undefined) ctx.board.put(dry, piece);
+    }
   }
 
   modifyLegalMoves(_ctx: PluginContext, moves: Move[], _color: Color): Move[] {

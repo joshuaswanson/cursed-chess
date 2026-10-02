@@ -5,6 +5,7 @@ import { Color, GameStatus, PieceType } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import { Portal } from "./Portal";
+import { Battlefield, WorldRiver } from "./Battlefield";
 import { PortalArrows } from "./PortalArrows";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
@@ -273,10 +274,6 @@ export function Board() {
 
           {doomed.has(sq) && <DoomedTile sq={sq} progress={dangerProgress} />}
 
-          {overlays.strategoLakes.has(sq) && (
-            <div className="stratego-lake-tile" />
-          )}
-
           {piece && !isLifted && !isDead && (
             <>
               <img
@@ -356,6 +353,17 @@ export function Board() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
       >
+        {lakes.size > 0 && <WorldRiver rows={riverRanks.size} />}
+        {lakes.size > 0 && (
+          <Battlefield
+            riverRows={[...riverRanks].map((r) => (flipped ? r : 7 - r))}
+            lakeCols={[
+              ...new Set(
+                [...lakes].map((sq) => (flipped ? 7 - (sq & 7) : sq & 7)),
+              ),
+            ]}
+          />
+        )}
         {rows}
         {overlays.hasRally && (
           <div
