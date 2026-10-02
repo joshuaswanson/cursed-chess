@@ -338,8 +338,9 @@
   background: #f7f7f7;
 }
 
+/* The question row's bottom padding adds to the top here, so the gaps above and below the answer match */
 .faq-answer {
-  padding: 8px 16px 14px;
+  padding: 6px 16px 18px;
   font-size: 13px;
   color: #4a4744;
 }
