@@ -3,9 +3,33 @@
   display: inline-block;
 }
 
+/* A neon platform: every hex is outlined by a glowing seam */
+.hex-board-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: 4%;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  background: radial-gradient(
+    circle,
+    rgba(255, 46, 136, 0.55),
+    transparent 70%
+  );
+  filter: blur(30px);
+  animation: hex-pulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes hex-pulse {
+  to {
+    opacity: 0.6;
+    scale: 1.05;
+  }
+}
+
 .hex-board {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  filter: drop-shadow(0 0 10px rgba(255, 46, 136, 0.8))
+    drop-shadow(8px 10px 0 #0d0221);
 }
 
 .hex-cell {
@@ -24,17 +48,31 @@
   z-index: 2;
 }
 
-/* Three-color scheme */
+/* The cell itself is the glowing seam; ::before is the tile inside it */
+.hex-cell {
+  background: #ff2e88;
+}
+
+.hex-cell::before {
+  content: "";
+  position: absolute;
+  inset: 2.5px;
+  clip-path: polygon(75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%, 25% 0%);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.28), transparent 60%),
+    var(--hex-tile);
+}
+
 .hex-color-0 {
-  background: #f0d9b5;
+  --hex-tile: #ffd1f0;
 }
 
 .hex-color-1 {
-  background: #b58863;
+  --hex-tile: #c56be6;
 }
 
 .hex-color-2 {
-  background: #8b6b4a;
+  --hex-tile: #6a2aa8;
 }
 
 /* Selection */
@@ -48,7 +86,7 @@
   position: absolute;
   inset: 0;
   clip-path: polygon(75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%, 25% 0%);
-  background: rgba(255, 255, 100, 0.35);
+  background: rgba(33, 230, 255, 0.5);
   pointer-events: none;
 }
 
@@ -58,7 +96,7 @@
   position: absolute;
   inset: 0;
   clip-path: polygon(75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%, 25% 0%);
-  background: rgba(255, 255, 0, 0.2);
+  background: rgba(253, 245, 0, 0.35);
   pointer-events: none;
 }
 
@@ -67,7 +105,9 @@
   width: 28%;
   height: 28%;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.2);
+  background: #21e6ff;
+  border: 2px solid #0d0221;
+  box-shadow: 0 0 10px #21e6ff;
   pointer-events: none;
   z-index: 2;
 }
@@ -78,8 +118,11 @@
   position: absolute;
   inset: 4%;
   clip-path: polygon(75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%, 25% 0%);
-  border: 3px solid rgba(0, 0, 0, 0.3);
-  background: transparent;
+  background: radial-gradient(
+    circle,
+    transparent 55%,
+    rgba(33, 230, 255, 0.75) 56%
+  );
   pointer-events: none;
 }
 
@@ -102,7 +145,7 @@
   user-select: none;
   -webkit-user-drag: none;
   z-index: 2;
-  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(2px 3px 0 rgba(13, 2, 33, 0.5));
 }
 
 /* Move animation */
