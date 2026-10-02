@@ -100,7 +100,7 @@ export function PageFog({ active }: { active: boolean }) {
 }
 
 /** Margin around the hidden half where the bank's edges can billow */
-const BANK_MARGIN = 90;
+const BANK_MARGIN = 170;
 
 /** An opaque bank of fog rolling over the enemy half of the board */
 export function BoardFog({

@@ -16,6 +16,23 @@
   height: calc(50% + 2 * var(--bank-margin));
   z-index: 7;
   pointer-events: none;
+  /* Fades every edge, so puffs drifting off the canvas never end in a straight line */
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent,
+      #000 120px,
+      #000 calc(100% - 120px),
+      transparent
+    ),
+    linear-gradient(
+      to bottom,
+      transparent,
+      #000 80px,
+      #000 calc(100% - 80px),
+      transparent
+    );
+  mask-composite: intersect;
 }
 
 /* When the board is flipped the enemy is at the bottom, so the bank rolls up */

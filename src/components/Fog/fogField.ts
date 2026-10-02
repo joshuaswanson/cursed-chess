@@ -273,16 +273,18 @@ export class FogBank {
     }
 
     if (cover > 0) {
-      // Grown past the core so its blurred falloff lands outside the hidden squares
+      // Grown past the core, and past the middle of the board, so the wide
+      // blurred falloff lands outside the hidden squares as a soft edge
       const grow = 20;
+      const overhang = 26;
       ctx.save();
-      ctx.filter = `blur(${22 * scale}px)`;
+      ctx.filter = `blur(${38 * scale}px)`;
       ctx.fillStyle = `rgba(212,222,219,${Math.min(0.96, cover * 1.4)})`;
       ctx.fillRect(
         (core.x - grow) * scale,
         (core.y - grow) * scale,
         (core.w + grow * 2) * scale,
-        (core.h * cover + grow) * scale,
+        (core.h * cover + grow + overhang * cover) * scale,
       );
       ctx.restore();
 
