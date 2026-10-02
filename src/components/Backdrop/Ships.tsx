@@ -1,111 +1,203 @@
+/** A flying saucer: polished hull, glass dome, running lights, and a tractor beam */
 export function Ufo() {
   return (
     <svg viewBox="0 0 120 90" className="ship-art">
       <defs>
-        <linearGradient id="ufo-hull" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#e9f1ff" />
-          <stop offset="0.5" stopColor="#8a98b8" />
-          <stop offset="1" stopColor="#3b4466" />
+        <radialGradient id="ufo-hull" cx="0.42" cy="0.2" r="0.75">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.3" stopColor="#c7d0e4" />
+          <stop offset="0.7" stopColor="#5d6788" />
+          <stop offset="1" stopColor="#1d2240" />
+        </radialGradient>
+        <linearGradient id="ufo-belly" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#3a4266" />
+          <stop offset="1" stopColor="#0d1026" />
         </linearGradient>
+        <radialGradient id="ufo-dome" cx="0.38" cy="0.3" r="0.8">
+          <stop offset="0" stopColor="#f2fffe" />
+          <stop offset="0.35" stopColor="#7ef0ff" stopOpacity="0.9" />
+          <stop offset="1" stopColor="#0f5f86" stopOpacity="0.85" />
+        </radialGradient>
         <linearGradient id="ufo-beam" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#9dff6a" stopOpacity="0.7" />
-          <stop offset="1" stopColor="#9dff6a" stopOpacity="0" />
+          <stop offset="0" stopColor="#b6ff7a" stopOpacity="0.75" />
+          <stop offset="1" stopColor="#b6ff7a" stopOpacity="0" />
         </linearGradient>
+        <radialGradient id="ufo-glow">
+          <stop offset="0" stopColor="#fff6c2" />
+          <stop offset="0.4" stopColor="#ffd23f" stopOpacity="0.8" />
+          <stop offset="1" stopColor="#ffd23f" stopOpacity="0" />
+        </radialGradient>
+        <filter id="ufo-soft" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.5" />
+        </filter>
       </defs>
       <path
         className="ufo-beam"
-        d="M48 40 L72 40 L96 90 L24 90 Z"
+        d="M46 42 L74 42 L100 92 L20 92 Z"
         fill="url(#ufo-beam)"
+        filter="url(#ufo-soft)"
       />
-      <ellipse cx="60" cy="26" rx="22" ry="17" fill="#8ff3ff" opacity="0.8" />
-      <ellipse cx="54" cy="20" rx="7" ry="4" fill="#fff" opacity="0.8" />
+      <ellipse cx="60" cy="42" rx="34" ry="8" fill="url(#ufo-belly)" />
+      <ellipse cx="60" cy="36" rx="58" ry="12" fill="url(#ufo-hull)" />
+      <ellipse cx="60" cy="33" rx="50" ry="4" fill="#ffffff" opacity="0.35" />
+      <ellipse cx="60" cy="27" rx="23" ry="18" fill="url(#ufo-dome)" />
       <ellipse
-        cx="60"
-        cy="36"
-        rx="58"
-        ry="12"
-        fill="url(#ufo-hull)"
-        stroke="#1b1033"
-        strokeWidth="2"
+        cx="52"
+        cy="19"
+        rx="8"
+        ry="4.5"
+        fill="#ffffff"
+        opacity="0.85"
+        transform="rotate(-20 52 19)"
       />
-      <ellipse cx="60" cy="42" rx="30" ry="5" fill="#2a2f4a" />
-      {[16, 38, 60, 82, 104].map((x, i) => (
-        <circle
+      {[14, 37, 60, 83, 106].map((x, i) => (
+        <g
           key={x}
-          cx={x}
-          cy={37}
-          r="3.4"
           className="ufo-light"
           style={{ animationDelay: `${i * 0.15}s` }}
-        />
+        >
+          <circle cx={x} cy={38} r="7" fill="url(#ufo-glow)" />
+          <circle cx={x} cy={38} r="2.2" fill="#fffbe6" />
+        </g>
       ))}
     </svg>
   );
 }
 
+/** A retro rocket: rounded hull, red nose cone and fins, porthole, and a roaring flame */
 export function Rocket() {
   return (
     <svg viewBox="0 0 40 110" className="ship-art">
-      <path className="rocket-flame" d="M13 78 Q20 110 27 78 Z" />
+      <defs>
+        <linearGradient id="rocket-hull" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#6b7388" />
+          <stop offset="0.35" stopColor="#ffffff" />
+          <stop offset="0.6" stopColor="#dde2ec" />
+          <stop offset="1" stopColor="#4b5266" />
+        </linearGradient>
+        <linearGradient id="rocket-red" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#7a0f24" />
+          <stop offset="0.38" stopColor="#ff6b8a" />
+          <stop offset="0.65" stopColor="#e52457" />
+          <stop offset="1" stopColor="#5e0a1c" />
+        </linearGradient>
+        <radialGradient id="rocket-glass" cx="0.35" cy="0.3" r="0.8">
+          <stop offset="0" stopColor="#f0fdff" />
+          <stop offset="0.4" stopColor="#5fd6ff" />
+          <stop offset="1" stopColor="#0b3b66" />
+        </radialGradient>
+        <radialGradient id="rocket-rim" cx="0.4" cy="0.35" r="0.7">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#7c8498" />
+        </radialGradient>
+        <linearGradient id="rocket-fire" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.3" stopColor="#ffe066" />
+          <stop offset="0.7" stopColor="#ff7a1a" />
+          <stop offset="1" stopColor="#ff3d00" stopOpacity="0" />
+        </linearGradient>
+        <filter id="rocket-soft" x="-80%" y="-30%" width="260%" height="160%">
+          <feGaussianBlur stdDeviation="2.2" />
+        </filter>
+      </defs>
       <path
-        className="rocket-flame rocket-flame-core"
-        d="M16 78 Q20 98 24 78 Z"
+        className="rocket-flame"
+        d="M10 76 Q20 124 30 76 Z"
+        fill="url(#rocket-fire)"
+        filter="url(#rocket-soft)"
       />
       <path
-        d="M20 2 Q34 22 32 62 L32 78 L8 78 L8 62 Q6 22 20 2 Z"
-        fill="#f4f1ea"
-        stroke="#1b1033"
-        strokeWidth="2"
+        className="rocket-flame"
+        d="M14 76 Q20 104 26 76 Z"
+        fill="url(#rocket-fire)"
+      />
+      <path d="M8 56 L-1 82 L9 77 Z" fill="url(#rocket-red)" />
+      <path d="M32 56 L41 82 L31 77 Z" fill="url(#rocket-red)" />
+      <path
+        d="M20 2 Q34 22 32 62 L31 78 L9 78 L8 62 Q6 22 20 2 Z"
+        fill="url(#rocket-hull)"
       />
       <path
-        d="M20 2 Q28 12 30 24 L10 24 Q12 12 20 2 Z"
-        fill="#ff3d6e"
-        stroke="#1b1033"
-        strokeWidth="2"
+        d="M20 2 Q29 12 31 25 L9 25 Q11 12 20 2 Z"
+        fill="url(#rocket-red)"
       />
-      <circle
-        cx="20"
-        cy="40"
-        r="6"
-        fill="#18d4ff"
-        stroke="#1b1033"
-        strokeWidth="2"
-      />
-      <path
-        d="M8 58 L0 80 L8 76 Z M32 58 L40 80 L32 76 Z"
-        fill="#ff3d6e"
-        stroke="#1b1033"
-        strokeWidth="2"
-      />
+      <rect x="8.6" y="64" width="22.8" height="5" fill="url(#rocket-red)" />
+      <circle cx="20" cy="41" r="7.5" fill="url(#rocket-rim)" />
+      <circle cx="20" cy="41" r="5.5" fill="url(#rocket-glass)" />
+      <ellipse cx="18" cy="39" rx="2" ry="1.3" fill="#ffffff" opacity="0.9" />
     </svg>
   );
 }
 
+/** A sleek fighter facing left, with a glass canopy, glowing thrusters, and lasers */
 export function Fighter() {
   return (
     <svg viewBox="0 0 140 50" className="ship-art">
+      <defs>
+        <linearGradient id="fighter-hull" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f4f7ff" />
+          <stop offset="0.45" stopColor="#a9b4d0" />
+          <stop offset="1" stopColor="#353d5c" />
+        </linearGradient>
+        <linearGradient id="fighter-wing" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#98a5c6" />
+          <stop offset="1" stopColor="#2a3150" />
+        </linearGradient>
+        <linearGradient id="fighter-glass" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#e8fdff" />
+          <stop offset="0.5" stopColor="#3ccfff" />
+          <stop offset="1" stopColor="#0a3d6e" />
+        </linearGradient>
+        <radialGradient id="fighter-thrust">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.35" stopColor="#7df2ff" />
+          <stop offset="1" stopColor="#18d4ff" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="fighter-stripe" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffc06a" />
+          <stop offset="1" stopColor="#d9530f" />
+        </linearGradient>
+      </defs>
       <path className="fighter-laser" d="M-60 22 H-20" />
       <path className="fighter-laser fighter-laser-b" d="M-60 30 H-20" />
-      <path className="fighter-thrust" d="M112 18 L140 25 L112 32 Z" />
+      <ellipse
+        className="fighter-thrust"
+        cx="122"
+        cy="25"
+        rx="20"
+        ry="9"
+        fill="url(#fighter-thrust)"
+      />
+      <path d="M60 14 L92 0 L102 1 L86 17 Z" fill="url(#fighter-wing)" />
       <path
-        d="M2 25 L50 12 L104 14 L114 20 L114 30 L104 36 L50 38 Z"
-        fill="#c9d3e6"
-        stroke="#1b1033"
-        strokeWidth="2"
+        d="M2 25 L50 11 L104 14 L115 20 L115 30 L104 36 L50 39 Z"
+        fill="url(#fighter-hull)"
+      />
+      <path d="M60 36 L92 50 L102 49 L86 33 Z" fill="url(#fighter-wing)" />
+      <path
+        d="M8 25 L50 13 L104 16 L104 19 L50 17 Z"
+        fill="#ffffff"
+        opacity="0.45"
       />
       <path
-        d="M60 14 L90 0 L100 0 L84 16 Z M60 36 L90 50 L100 50 L84 34 Z"
-        fill="#7a86a8"
-        stroke="#1b1033"
-        strokeWidth="2"
+        d="M28 21 Q40 13 58 16 L58 25 L26 25 Z"
+        fill="url(#fighter-glass)"
       />
       <path
-        d="M30 20 L56 17 L56 25 L26 25 Z"
-        fill="#18d4ff"
-        stroke="#1b1033"
-        strokeWidth="1.5"
+        d="M34 19 Q42 15 52 16"
+        stroke="#ffffff"
+        strokeWidth="1.6"
+        opacity="0.8"
+        fill="none"
       />
-      <path d="M70 22 H100" stroke="#ff8a1a" strokeWidth="3" />
+      <rect
+        x="68"
+        y="23"
+        width="34"
+        height="3.5"
+        rx="1.5"
+        fill="url(#fighter-stripe)"
+      />
     </svg>
   );
 }
@@ -116,31 +208,52 @@ export function Mothership() {
     <svg viewBox="0 0 600 140" className="ship-art">
       <defs>
         <linearGradient id="mother-hull" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#5d6a8c" />
-          <stop offset="0.5" stopColor="#2b3150" />
-          <stop offset="1" stopColor="#11142a" />
+          <stop offset="0" stopColor="#c3cce4" />
+          <stop offset="0.25" stopColor="#6a7598" />
+          <stop offset="0.6" stopColor="#2b3150" />
+          <stop offset="1" stopColor="#0b0d1e" />
         </linearGradient>
+        <linearGradient id="mother-tower" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#d6dcef" />
+          <stop offset="1" stopColor="#424b70" />
+        </linearGradient>
+        <radialGradient id="mother-engine">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.3" stopColor="#8ff5ff" />
+          <stop offset="1" stopColor="#18d4ff" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="mother-window">
+          <stop offset="0" stopColor="#fffbe6" />
+          <stop offset="0.5" stopColor="#ffd56b" stopOpacity="0.8" />
+          <stop offset="1" stopColor="#ffd56b" stopOpacity="0" />
+        </radialGradient>
       </defs>
-      <path className="mother-engine" d="M560 40 L600 30 L600 110 L560 100 Z" />
+      <ellipse
+        className="mother-engine"
+        cx="586"
+        cy="70"
+        rx="44"
+        ry="40"
+        fill="url(#mother-engine)"
+      />
+      <path d="M200 24 L240 5 L330 5 L352 26 Z" fill="url(#mother-tower)" />
       <path
-        d="M0 70 L80 34 L260 22 L420 26 L560 36 L570 70 L560 104 L420 114 L260 118 L80 106 Z"
+        d="M0 70 L80 34 L260 22 L420 26 L560 36 L572 70 L560 104 L420 114 L260 118 L80 106 Z"
         fill="url(#mother-hull)"
-        stroke="#05060f"
-        strokeWidth="3"
       />
       <path
-        d="M200 22 L240 4 L330 4 L350 24 Z"
-        fill="#3b4466"
-        stroke="#05060f"
-        strokeWidth="3"
+        d="M20 66 L84 38 L260 27 L420 31 L556 40 L560 46 L420 37 L260 33 L86 44 Z"
+        fill="#ffffff"
+        opacity="0.18"
       />
-      <path d="M90 70 H540" stroke="#05060f" strokeWidth="2" opacity="0.6" />
+      <path d="M90 82 L540 80 L540 86 L90 90 Z" fill="#000000" opacity="0.25" />
       {Array.from({ length: 14 }, (_, i) => (
         <circle
           key={i}
           cx={120 + i * 30}
-          cy={i % 2 ? 52 : 88}
-          r="3"
+          cy={i % 2 ? 54 : 92}
+          r="7"
+          fill="url(#mother-window)"
           className="mother-window"
           style={{ animationDelay: `${(i % 5) * 0.3}s` }}
         />

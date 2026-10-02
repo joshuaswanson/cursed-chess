@@ -273,13 +273,12 @@
 }
 
 .ufo-light {
-  fill: #ffd23f;
-  animation: ufo-blink 0.75s steps(2) infinite;
+  animation: light-blink 0.75s steps(2) infinite;
 }
 
-@keyframes ufo-blink {
+@keyframes light-blink {
   50% {
-    fill: #ff3d6e;
+    opacity: 0.25;
   }
 }
 
@@ -322,13 +321,8 @@
 }
 
 .rocket-flame {
-  fill: #ff8a1a;
   transform-origin: 20px 78px;
   animation: rocket-flame 0.12s steps(2) infinite alternate;
-}
-
-.rocket-flame-core {
-  fill: #fff1c2;
 }
 
 @keyframes rocket-flame {
@@ -397,20 +391,15 @@
 }
 
 .mother-engine {
-  fill: #18d4ff;
-  filter: drop-shadow(0 0 12px #18d4ff);
   animation: rocket-flame 0.1s steps(2) infinite alternate;
   transform-origin: 560px 70px;
 }
 
 .mother-window {
-  fill: #ffe9a6;
-  animation: ufo-blink 1.6s steps(2) infinite;
+  animation: light-blink 1.6s steps(2) infinite;
 }
 
 .fighter-thrust {
-  fill: #18d4ff;
-  filter: drop-shadow(0 0 4px #18d4ff);
   animation: rocket-flame 0.08s steps(2) infinite alternate;
   transform-origin: 112px 25px;
 }
