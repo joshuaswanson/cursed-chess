@@ -104,15 +104,17 @@ function Bank({
     const clumps = rand() < 0.5 ? 2 : 1;
     for (let c = 0; c < clumps; c++) {
       const root = along(rand());
-      const baseY = root.y + side * (17 + rand() * 5);
+      // On the far bank the roots sit lower, so blades spring up from the dirt into the grass
+      const baseY = root.y + side * (17 + rand() * 5) + (side < 0 ? 10 : 0);
       const count = 5 + Math.floor(rand() * 5);
       for (let j = 0; j < count; j++) {
         const bx = root.x + (j - count / 2) * 1.8 + (rand() - 0.5) * 2;
         const length = 9 + rand() * 13;
         const lean = (rand() - 0.5) * 14;
-        const tipY = baseY - side * length;
+        // Blades always grow up the screen, the way the player looks at the board
+        const tipY = baseY - length;
         blades.push({
-          d: `M${bx.toFixed(1)} ${baseY.toFixed(1)} Q${(bx + lean * 0.25).toFixed(1)} ${(baseY - side * length * 0.65).toFixed(1)} ${(bx + lean).toFixed(1)} ${tipY.toFixed(1)}`,
+          d: `M${bx.toFixed(1)} ${baseY.toFixed(1)} Q${(bx + lean * 0.25).toFixed(1)} ${(baseY - length * 0.65).toFixed(1)} ${(bx + lean).toFixed(1)} ${tipY.toFixed(1)}`,
           tone: pick(GRASS_TONES),
           width: 1.3 + rand() * 1.1,
         });
