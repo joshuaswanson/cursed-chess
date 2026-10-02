@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Color } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import { GATES, TOWERS } from "../../plugins/siege";
@@ -20,6 +21,8 @@ const GATE_PIERS = [
   [0, 18],
   [82, 100],
 ] as const;
+/** How long a falling section takes to crumble into its heap */
+const COLLAPSE_MS = 1000;
 /** The wall's shadow falls this way on screen, away from the light */
 const SHADOW = { x: 6, y: 10 };
 
@@ -148,23 +151,31 @@ function Damage({
       4.5 + rand() * 2.5,
     );
   });
+  const spread = `crack-spread-${clip}-${seed}`;
   return (
     <g clipPath={`url(#${clip})`}>
+      <clipPath id={spread}>
+        <circle cx={at.x} cy={at.y} r="80" className="crack-spread" />
+      </clipPath>
       <ellipse cx={at.x} cy={at.y} rx="24" ry="18" className="scorch" />
-      {cracks.map((d, i) => (
-        <path
-          key={`l${i}`}
-          d={d}
-          className="crack-lip"
-          transform="translate(0.8 1)"
-        />
-      ))}
-      {cracks.map((d, i) => (
-        <path key={`c${i}`} d={d} className="crack-core" />
-      ))}
-      <path d={pit} className="pit-lip" transform="translate(1.2 1.5)" />
-      <path d={pit} className="pit" />
-      <path d={floor} className="pit-floor" />
+      <g clipPath={`url(#${spread})`}>
+        {cracks.map((d, i) => (
+          <path
+            key={`l${i}`}
+            d={d}
+            className="crack-lip"
+            transform="translate(0.8 1)"
+          />
+        ))}
+        {cracks.map((d, i) => (
+          <path key={`c${i}`} d={d} className="crack-core" />
+        ))}
+      </g>
+      <g className="pit-pop">
+        <path d={pit} className="pit-lip" transform="translate(1.2 1.5)" />
+        <path d={pit} className="pit" />
+        <path d={floor} className="pit-floor" />
+      </g>
     </g>
   );
 }
@@ -179,6 +190,7 @@ function Block({
   h,
   turn,
   tone,
+  delay = 0,
 }: {
   x: number;
   y: number;
@@ -186,47 +198,60 @@ function Block({
   h: number;
   turn: number;
   tone: number;
+  /** When it lands, for blocks tumbling down one after another */
+  delay?: number;
 }) {
   return (
     <g transform={`translate(${pt(x, y)}) rotate(${turn.toFixed(0)})`}>
-      <rect
-        x={-w / 2 + 2}
-        y={-h / 2 + 4}
-        width={w}
-        height={h}
-        rx="1.5"
-        className="block-shadow"
-      />
-      <rect
-        x={-w / 2}
-        y={-h / 2 + 2.5}
-        width={w}
-        height={h}
-        rx="1.5"
-        className="block-side"
-      />
-      <rect
-        x={-w / 2}
-        y={-h / 2}
-        width={w}
-        height={h}
-        rx="1.5"
-        fill={BLOCK_TOPS[tone % 4]}
-        className="block-top"
-      />
-      <rect
-        x={-w / 2 + 1}
-        y={-h / 2 + 0.8}
-        width={Math.max(0, w - 2)}
-        height="1.4"
-        className="block-lit"
-      />
+      <g className="block" style={{ animationDelay: `${delay}ms` }}>
+        <rect
+          x={-w / 2 + 2}
+          y={-h / 2 + 4}
+          width={w}
+          height={h}
+          rx="1.5"
+          className="block-shadow"
+        />
+        <rect
+          x={-w / 2}
+          y={-h / 2 + 2.5}
+          width={w}
+          height={h}
+          rx="1.5"
+          className="block-side"
+        />
+        <rect
+          x={-w / 2}
+          y={-h / 2}
+          width={w}
+          height={h}
+          rx="1.5"
+          fill={BLOCK_TOPS[tone % 4]}
+          className="block-top"
+        />
+        <rect
+          x={-w / 2 + 1}
+          y={-h / 2 + 0.8}
+          width={Math.max(0, w - 2)}
+          height="1.4"
+          className="block-lit"
+        />
+      </g>
     </g>
   );
 }
 
 /** A heap of fallen masonry spilling out across a square, big blocks in the middle */
-function RubbleHeap({ seed, round }: { seed: number; round: boolean }) {
+function RubbleHeap({
+  seed,
+  round,
+  arriving,
+}: {
+  seed: number;
+  round: boolean;
+  /** The wall has just come down, so its blocks tumble into place */
+  arriving: boolean;
+}) {
   const rand = seeded(seed + 7);
   const blocks = Array.from({ length: 30 }, (_, i) => {
     const big = i < 11;
@@ -245,7 +270,7 @@ function RubbleHeap({ seed, round }: { seed: number; round: boolean }) {
   // Small stones scatter around the edges, under the big blocks
   blocks.reverse();
   return (
-    <g className="rubble-heap">
+    <g className={`rubble-heap${arriving ? " arriving" : ""}`}>
       <ellipse
         cx="50"
         cy="54"
@@ -254,7 +279,7 @@ function RubbleHeap({ seed, round }: { seed: number; round: boolean }) {
         className="rubble-dust"
       />
       {blocks.map((b, i) => (
-        <Block key={i} {...b} />
+        <Block key={i} {...b} delay={(blocks.length - i) * 14} />
       ))}
     </g>
   );
@@ -264,12 +289,12 @@ function RubbleHeap({ seed, round }: { seed: number; round: boolean }) {
 function SegmentBody({
   start,
   end,
-  missing = -1,
+  brokenAt,
 }: {
   start: number;
   end: number;
-  /** Index of a battlement knocked away */
-  missing?: number;
+  /** Where along the wall a battlement has been knocked away */
+  brokenAt?: number;
 }) {
   const width = end - start;
   const merlons = [];
@@ -327,8 +352,8 @@ function SegmentBody({
         height={WALK_TOP - OUTER - 4}
         className="parapet-base"
       />
-      {merlons.map((x, i) =>
-        i === missing ? (
+      {merlons.map((x) =>
+        x === brokenAt ? (
           <path
             key={x}
             d={`M${pt(x, WALK_TOP)} L${pt(x, OUTER + 9)} L${pt(x + 4, OUTER + 6)} L${pt(x + 7, OUTER + 10)} L${pt(x + 11, OUTER + 5)} L${pt(x + 15, OUTER + 8)} L${pt(x + 15, WALK_TOP)} Z`}
@@ -364,6 +389,37 @@ function SegmentBody({
       <line x1={start} x2={end} y1={OUTER} y2={OUTER} className="wall-face" />
       <line x1={start} x2={end} y1={INNER} y2={INNER} className="wall-face" />
     </>
+  );
+}
+
+/** The battlement a cracked wall loses, always one inside its own square */
+const merlonAt = (sq: SquareIndex) => 29 + (sq % 2) * 25;
+
+/** The damage a wall section carries once it has been hit, in the same place every time */
+function StrikeDamage({ sq }: { sq: SquareIndex }) {
+  const rand = seeded(sq + 3);
+  if (TOWERS.includes(sq)) {
+    const hit = rand() * Math.PI * 2;
+    return (
+      <Damage
+        seed={sq}
+        at={{
+          x: 50 + Math.cos(hit) * (TOWER_R - 9),
+          y: 50 + Math.sin(hit) * (TOWER_R - 9),
+        }}
+        clip="castle-tower-clip"
+      />
+    );
+  }
+  return (
+    <Damage
+      seed={sq}
+      at={{
+        x: 30 + rand() * 40,
+        y: OUTER + 14 + rand() * (INNER - OUTER - 28),
+      }}
+      clip="castle-band"
+    />
   );
 }
 
@@ -416,6 +472,27 @@ function TowerBody({ missing, flag }: { missing: number; flag: string }) {
       <circle cx="50" cy="50" r="3.5" className="roof-finial" />
     </>
   );
+}
+
+/** Wall sections that came down a moment ago, while their collapse plays out */
+function useJustFallen(walls: SquareIndex[], rubble: SquareIndex[]) {
+  const key = walls.join(",");
+  const [seen, setSeen] = useState(key);
+  const [falling, setFalling] = useState<SquareIndex[]>([]);
+  if (key !== seen) {
+    const before = seen ? seen.split(",").map(Number) : [];
+    const fell = before.filter(
+      (sq) => !walls.includes(sq) && rubble.includes(sq),
+    );
+    setSeen(key);
+    if (fell.length > 0) setFalling((now) => [...now, ...fell]);
+  }
+  useEffect(() => {
+    if (falling.length === 0) return;
+    const done = setTimeout(() => setFalling([]), COLLAPSE_MS);
+    return () => clearTimeout(done);
+  }, [falling]);
+  return falling;
 }
 
 /** Positions a piece of the castle on its square, turned to face out, rising with the others */
@@ -509,6 +586,8 @@ export function Castle({
       brokenEnd: towerFallen.has(next(1)),
     };
   };
+
+  const falling = useJustFallen(walls, rubble);
 
   const straight = walls.filter((sq) => !TOWERS.includes(sq));
   const towers = walls.filter((sq) => TOWERS.includes(sq));
@@ -705,7 +784,11 @@ export function Castle({
             key={`r${sq}`}
             transform={`translate(${col * 100} ${row * 100}) rotate(${angle} 50 50)`}
           >
-            <RubbleHeap seed={sq} round={tower} />
+            <RubbleHeap
+              seed={sq}
+              round={tower}
+              arriving={falling.includes(sq)}
+            />
             {/* What still stands throws a shadow down onto the heap below it */}
             <g className="ruin-cast" filter="url(#castle-blur)">
               {tower ? (
@@ -738,6 +821,25 @@ export function Castle({
                 </g>
               ))
             )}
+            {falling.includes(sq) && (
+              <g className="wall-collapse">
+                {tower ? (
+                  <>
+                    <TowerBody missing={sq % 14} flag={flagColor(defender)} />
+                    <StrikeDamage sq={sq} />
+                  </>
+                ) : (
+                  <>
+                    <SegmentBody
+                      start={start}
+                      end={end}
+                      brokenAt={merlonAt(sq)}
+                    />
+                    <StrikeDamage sq={sq} />
+                  </>
+                )}
+              </g>
+            )}
           </g>
         );
       })}
@@ -747,7 +849,6 @@ export function Castle({
         const angle = facing(col, row);
         const { start, end, brokenStart, brokenEnd } = reach(col, row, angle);
         const cracked = hpOf(sq) === 1;
-        const rand = seeded(sq);
         const breakRand = seeded(sq + 11);
         const ragged = (x: number, dir: number) =>
           Array.from({ length: 7 }, (_, i) =>
@@ -768,7 +869,7 @@ export function Castle({
           <SegmentBody
             start={brokenStart ? -8 : start}
             end={brokenEnd ? 108 : end}
-            missing={cracked ? 1 + (sq % 2) : -1}
+            brokenAt={cracked ? merlonAt(sq) : undefined}
           />
         );
         return (
@@ -808,14 +909,7 @@ export function Castle({
             )}
             {cracked && (
               <>
-                <Damage
-                  seed={sq}
-                  at={{
-                    x: 30 + rand() * 40,
-                    y: OUTER + 14 + rand() * (INNER - OUTER - 28),
-                  }}
-                  clip="castle-band"
-                />
+                <StrikeDamage sq={sq} />
                 <Block
                   x={30 + (sq % 40)}
                   y={WALK_TOP + 10}
@@ -831,6 +925,14 @@ export function Castle({
                   h={3.5}
                   turn={sq * 53}
                   tone={sq + 1}
+                />
+                <rect
+                  x={merlonAt(sq)}
+                  y={OUTER}
+                  width="15"
+                  height={WALK_TOP - OUTER}
+                  rx="1.5"
+                  className="merlon merlon-fall"
                 />
               </>
             )}
@@ -911,8 +1013,6 @@ export function Castle({
       {towers.map((sq) => {
         const { col, row } = at(sq);
         const cracked = hpOf(sq) === 1;
-        const rand = seeded(sq + 3);
-        const hit = rand() * Math.PI * 2;
         return (
           <Placed
             key={sq}
@@ -926,16 +1026,7 @@ export function Castle({
               missing={cracked ? sq % 14 : -1}
               flag={flagColor(defender)}
             />
-            {cracked && (
-              <Damage
-                seed={sq}
-                at={{
-                  x: 50 + Math.cos(hit) * (TOWER_R - 9),
-                  y: 50 + Math.sin(hit) * (TOWER_R - 9),
-                }}
-                clip="castle-tower-clip"
-              />
-            )}
+            {cracked && <StrikeDamage sq={sq} />}
           </Placed>
         );
       })}

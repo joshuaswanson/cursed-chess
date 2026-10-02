@@ -94,18 +94,17 @@ export function SiegeLayer({
   const [layer, setLayer] = useState<HTMLDivElement | null>(null);
   const ram = useFreshStrike(view.lastRam, RAM_HIT_MS);
 
-  // A stone in flight has not hit its wall yet, so show the wall as it was
+  // A blow still on its way has not hit its wall yet, so show the wall as it was
+  const landing = [boulder, ram].flatMap((b) =>
+    b.flying && b.strike ? [b.strike] : [],
+  );
   const shownHp = (sq: SquareIndex) => {
-    const hp = view.walls[sq];
-    if (boulder.flying && boulder.strike?.target === sq) {
-      return boulder.strike.hpAfter + 1;
-    }
-    return hp;
+    const pending = landing.find((strike) => strike.target === sq);
+    return pending ? pending.hpAfter + 1 : view.walls[sq];
   };
-  const inFlight =
-    boulder.flying && boulder.strike?.hpAfter === 0
-      ? boulder.strike.target
-      : null;
+  const stillStanding = landing
+    .filter((strike) => strike.hpAfter === 0)
+    .map((strike) => strike.target);
 
   const placed = (sq: SquareIndex) => ({
     col: visualCol(sq, flipped),
@@ -163,10 +162,8 @@ export function SiegeLayer({
 
         <Courtyard squares={COURTYARD} flipped={flipped} />
         <Castle
-          walls={Object.keys(view.walls)
-            .map(Number)
-            .concat(inFlight !== null ? [inFlight] : [])}
-          rubble={view.rubble.filter((sq) => sq !== inFlight)}
+          walls={Object.keys(view.walls).map(Number).concat(stillStanding)}
+          rubble={view.rubble.filter((sq) => !stillStanding.includes(sq))}
           hpOf={(sq) => shownHp(sq) ?? 1}
           flipped={flipped}
           defender={view.defender}

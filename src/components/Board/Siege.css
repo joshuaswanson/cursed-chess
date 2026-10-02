@@ -475,3 +475,141 @@
     scale: 1.12;
   }
 }
+
+/* --- A wall taking damage --- */
+
+/* A struck wall jolts, then cracks spread out from where it was hit */
+.wall-rise.cracked {
+  animation: wall-jolt 0.4s ease-out;
+}
+
+@keyframes wall-jolt {
+  15% {
+    translate: 2px -1.5px;
+  }
+  35% {
+    translate: -2px 1px;
+  }
+  60% {
+    translate: 1px 0;
+  }
+}
+
+.crack-spread {
+  animation: crack-spread 0.7s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes crack-spread {
+  from {
+    r: 2px;
+  }
+}
+
+.pit-pop {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: pit-pop 0.3s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+@keyframes pit-pop {
+  from {
+    scale: 0.2;
+    opacity: 0;
+  }
+}
+
+.wall-rise.cracked .block {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: block-land 0.45s cubic-bezier(0.4, 0, 0.6, 1.4) 0.1s both;
+}
+
+/* A battlement breaks off and topples outward off the wall */
+.merlon-fall {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: merlon-fall 0.8s cubic-bezier(0.5, 0, 0.8, 0.6) both;
+}
+
+@keyframes merlon-fall {
+  from {
+    translate: 0 0;
+    rotate: 0deg;
+    opacity: 1;
+  }
+  to {
+    translate: 0 -30px;
+    rotate: -35deg;
+    scale: 0.75;
+    opacity: 0;
+  }
+}
+
+/* --- A wall coming down --- */
+
+/* What stood shudders, sinks, and crumbles away to reveal the heap */
+.wall-collapse {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  pointer-events: none;
+  animation: wall-collapse 0.75s cubic-bezier(0.5, 0, 0.9, 0.5) both;
+}
+
+@keyframes wall-collapse {
+  0% {
+    translate: 0 0;
+    scale: 1;
+    filter: brightness(1);
+  }
+  12% {
+    translate: 2px -1px;
+  }
+  24% {
+    translate: -2px 1px;
+    scale: 1;
+    opacity: 1;
+  }
+  100% {
+    translate: 0 2px;
+    scale: 0.82;
+    opacity: 0;
+    filter: brightness(0.45);
+  }
+}
+
+/* Its blocks drop onto the heap one after another, largest last */
+.rubble-heap.arriving .block {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: block-land 0.5s cubic-bezier(0.4, 0, 0.6, 1.4) both;
+}
+
+.rubble-heap.arriving .rubble-dust {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: dust-settle 1s ease-out both;
+}
+
+@keyframes block-land {
+  from {
+    scale: 1.7;
+    rotate: 40deg;
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+@keyframes dust-settle {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+/* The falling wall keeps the cracks it already had */
+.wall-collapse .crack-spread,
+.wall-collapse .pit-pop {
+  animation: none;
+}
