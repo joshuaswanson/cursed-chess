@@ -1,0 +1,26 @@
+.page-fog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Covers the enemy half plus a margin for the bank's billowing edges */
+.board-fog {
+  position: absolute;
+  left: calc(-1 * var(--bank-margin));
+  top: calc(-1 * var(--bank-margin));
+  width: calc(100% + 2 * var(--bank-margin));
+  height: calc(50% + 2 * var(--bank-margin));
+  z-index: 7;
+  pointer-events: none;
+}
+
+/* When the board is flipped the enemy is at the bottom, so the bank rolls up */
+.board-fog-bottom {
+  top: auto;
+  bottom: calc(-1 * var(--bank-margin));
+  transform: scaleY(-1);
+}

@@ -120,7 +120,7 @@ button {
 
 .topbar {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -128,9 +128,9 @@ button {
   padding: 18px clamp(16px, 3vw, 40px) 4px;
 }
 
+/* No z-index here, so the page fog can slide between the board and the panel */
 .stage {
   position: relative;
-  z-index: 1;
   display: grid;
   grid-template-columns: auto minmax(300px, 360px);
   align-items: start;
@@ -150,6 +150,7 @@ button {
    the containing block for floating pieces and offset them from the cursor. */
 .board-container {
   position: relative;
+  z-index: 1;
   flex-shrink: 0;
   overflow: visible;
 }

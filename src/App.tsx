@@ -5,6 +5,7 @@ import { PromotionDialog } from "./components/PromotionDialog/PromotionDialog";
 import { Announcement } from "./components/Announcement/Announcement";
 import { Hud } from "./components/Hud/Hud";
 import { Backdrop } from "./components/Backdrop/Backdrop";
+import { PageFog } from "./components/Fog/Fog";
 import { Logo, OnAir } from "./components/Logo/Logo";
 import {
   BoringFooter,
@@ -60,6 +61,7 @@ function App() {
         {cursed ? <Hud /> : <BoringSidebar />}
       </main>
       {!cursed && <BoringFooter />}
+      <PageFog active={theme.id === "fog"} />
       <PromotionDialog />
       <Announcement />
     </div>

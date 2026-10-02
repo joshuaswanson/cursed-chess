@@ -1,4 +1,6 @@
 .hud {
+  position: relative;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   gap: 16px;

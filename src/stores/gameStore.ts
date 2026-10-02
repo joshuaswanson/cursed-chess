@@ -44,9 +44,9 @@ const CURSE_BOOM_MS = 2600;
 const CURSE_REVEAL_MS = 3200;
 
 const MODE_ANNOUNCE_MS = 2000;
-const HINT_DELAY_MS = 2200;
-const HINT_MS = 2500;
-const INTRO_HOLD_MS = HINT_DELAY_MS + HINT_MS;
+/** How long the mode's title card owns the screen */
+const MODE_CARD_MS = 2600;
+const INTRO_HOLD_MS = 4700;
 /** Lets the final move animate before the result banner covers the board */
 const GAME_END_DELAY_MS = 600;
 const RESULT_MS = 2500;
@@ -59,7 +59,6 @@ const HEX_MORPH_DONE_MS = 6400;
 export interface GameMode {
   name: string;
   theme: ThemeId;
-  hint: string;
   create: () => ModePlugin[];
   durationSeconds?: number;
   /** How long play stays paused after the mode starts */
@@ -71,13 +70,11 @@ export const GAME_MODES: GameMode[] = [
   {
     name: "PORTALS",
     theme: "portals",
-    hint: "PIECES TELEPORT THROUGH PORTALS!",
     create: () => [new PortalChessPlugin()],
   },
   {
     name: "FOG OF WAR",
     theme: "fog",
-    hint: "THE ENEMY HIDES IN THE FOG!",
     create: () => [new FogOfWarPlugin()],
     // The fog takes 6s to roll in after the title banner
     introHoldMs: MODE_ANNOUNCE_MS + 6000,
@@ -85,38 +82,32 @@ export const GAME_MODES: GameMode[] = [
   {
     name: "BATTLE ROYALE",
     theme: "royale",
-    hint: "MOVE AWAY FROM EDGES!",
     create: () => [new BattleRoyalePlugin()],
   },
   {
     name: "CLASH ROYALE",
     theme: "clash",
-    hint: "DRAG AND DROP TO DEPLOY!",
     create: () => [new RallyPlugin()],
     durationSeconds: 75,
   },
   {
     name: "MINEFIELD",
     theme: "mines",
-    hint: "WATCH YOUR STEP!",
     create: () => [new MinefieldPlugin()],
   },
   {
     name: "KING OF THE HILL",
     theme: "hill",
-    hint: "CONTROL THE CENTER!",
     create: () => [new KingOfTheHillPlugin()],
   },
   {
     name: "GRAVITY",
     theme: "gravity",
-    hint: "GRAVITY SHIFTS EVERY FEW TURNS!",
     create: () => [new GravityPlugin()],
   },
   {
     name: "HEX CHESS",
     theme: "hex",
-    hint: "CHESS ON HEXAGONS!",
     create: () => [],
     durationSeconds: 60,
     introHoldMs: HEX_MORPH_DONE_MS,
@@ -125,12 +116,11 @@ export const GAME_MODES: GameMode[] = [
   {
     name: "STRATEGO",
     theme: "stratego",
-    hint: "ENEMY PIECES ARE HIDDEN!",
     create: () => [new StrategoPlugin()],
   },
 ];
 
-type AnnouncementType = "mode" | "intro" | "hint";
+export type AnnouncementType = "mode" | "win" | "lose" | "draw";
 
 export interface GameStore {
   game: Game;
@@ -607,7 +597,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
           ? "YOU LOSE!"
           : "DRAW!";
     holdPause(RESULT_HOLD_MS);
-    get().showAnnouncement(label, RESULT_MS, "intro");
+    get().showAnnouncement(
+      label,
+      RESULT_MS,
+      winner === Color.White ? "win" : winner === Color.Black ? "lose" : "draw",
+    );
 
     schedule(() => {
       const { devMode, pluginManager, isHexMode } = get();
@@ -791,11 +785,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
 
     holdPause(mode.introHoldMs ?? INTRO_HOLD_MS);
-    get().showAnnouncement(mode.name, MODE_ANNOUNCE_MS);
-    schedule(
-      () => get().showAnnouncement(mode.hint, HINT_MS, "hint"),
-      HINT_DELAY_MS,
-    );
+    get().showAnnouncement(mode.name, MODE_CARD_MS, "mode");
 
     if (mode.isHex) {
       schedule(() => set({ hexTransition: "morph-out" }), HEX_MORPH_OUT_MS);

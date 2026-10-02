@@ -9,7 +9,6 @@ type Offsets = Map<SquareIndex, { x: number; y: number }>;
 const SLIDE_CLEAR_MS = 600;
 const EXPLOSION_DELAY_MS = 350;
 const EXPLOSION_MS = 600;
-const FOG_EXIT_MS = 1500;
 /** Board rotation (1s) plus the fall itself (0.6s) plus a buffer */
 const GRAVITY_CLEAR_MS = 1800;
 
@@ -119,21 +118,4 @@ export function useMineExplosions(
   }, [key, resolveExplosion]);
 
   return explosions;
-}
-
-/** Keeps the fog on screen while it fades out after fog mode ends */
-export function useFogExit(hasFog: boolean): boolean {
-  const [exiting, setExiting] = useState(false);
-  const hadFog = useRef(hasFog);
-
-  useEffect(() => {
-    const ended = hadFog.current && !hasFog;
-    hadFog.current = hasFog;
-    if (!ended) return;
-    setExiting(true);
-    const timer = setTimeout(() => setExiting(false), FOG_EXIT_MS);
-    return () => clearTimeout(timer);
-  }, [hasFog]);
-
-  return exiting;
 }

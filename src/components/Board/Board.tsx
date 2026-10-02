@@ -7,7 +7,7 @@ import { Portal } from "./Portal";
 import { PortalArrows } from "./PortalArrows";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
-import { FogOverlay } from "./FogOverlay";
+import { BoardFog } from "../Fog/Fog";
 import { CollapsingRing, DoomedTile, Fissure } from "./BattleRoyale";
 import { useRingCollapse } from "./useRingCollapse";
 import { offsetBetween } from "./boardGeometry";
@@ -17,7 +17,6 @@ import { phaseDurationMs, usePortalTravel } from "./usePortalTravel";
 import type { PortalPhase } from "./usePortalTravel";
 import { sfx } from "../../audio/sfx";
 import {
-  useFogExit,
   useGravityFalls,
   useMineExplosions,
   useSlideAnimation,
@@ -138,8 +137,6 @@ export function Board() {
     overlays.pendingExplosions,
     resolveExplosion,
   );
-  const fogExiting = useFogExit(overlays.hasFog);
-  const showFog = overlays.hasFog || fogExiting;
 
   const battleRoyale = overlays.battleRoyale;
   const dangerProgress = battleRoyale?.dangerProgress ?? 0;
@@ -299,7 +296,7 @@ export function Board() {
 
   const boardClass =
     "board" +
-    (showFog ? " fog-active" : "") +
+    (overlays.hasFog ? " fog-active" : "") +
     (overlays.portalPairs.length > 0 ? " portal-active" : "") +
     (overlays.gravityDirection ? " gravity-active" : "") +
     (battleRoyale ? " battle-royale" : "") +
@@ -362,7 +359,7 @@ export function Board() {
             squareSize={squareSize}
           />
         )}
-        {showFog && <FogOverlay enemyOnTop={!flipped} exiting={fogExiting} />}
+        <BoardFog active={overlays.hasFog} enemyOnTop={!flipped} />
         {drag?.isDragging && (
           <DraggedPiece
             drag={drag}
