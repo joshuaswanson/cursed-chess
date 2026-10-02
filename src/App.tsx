@@ -5,6 +5,7 @@ import { PromotionDialog } from "./components/PromotionDialog/PromotionDialog";
 import { ShowCards } from "./components/Show/ShowCards";
 import { CurseIntro } from "./components/Show/CurseIntro";
 import { HexWarp } from "./components/HexWarp/HexWarp";
+import { MoveCountdown } from "./components/Countdown/MoveCountdown";
 import { Hud } from "./components/Hud/Hud";
 import { FoeRallyBar, YourRallyBar } from "./components/RallyPanel/RallyPanel";
 import { Backdrop } from "./components/Backdrop/Backdrop";
@@ -62,7 +63,10 @@ function App() {
       <main className="stage">
         <div className="board-container">
           {cursed && <FoeRallyBar />}
-          {board}
+          <div className="board-stack">
+            {board}
+            <MoveCountdown />
+          </div>
           {cursed && <YourRallyBar />}
         </div>
         {cursed ? <Hud /> : <BoringSidebar />}

@@ -481,4 +481,21 @@ export const sfx = {
     sweep.stop(t + 1.05);
     chord(c, out, t + 0.5, [659.3, 830.6, 987.8], 0.9, "sine", 0.07);
   },
+
+  /** One second of the move clock running out; a bomb beep in minefield */
+  tick(secondsLeft: number, bomb: boolean): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const osc = c.createOscillator();
+    osc.type = bomb ? "square" : "triangle";
+    osc.frequency.value = bomb ? 1800 : 600 + (6 - secondsLeft) * 120;
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(bomb ? 0.08 : 0.16, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + (bomb ? 0.12 : 0.09));
+    osc.connect(gain).connect(out);
+    osc.start(t);
+    osc.stop(t + 0.15);
+  },
 };

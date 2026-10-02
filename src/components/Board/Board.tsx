@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { rankOf, toIndex } from "../../utils/squareUtils";
-import { Color, GameStatus, PieceType } from "../../engine";
+import { GameStatus, PieceType } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import { Portal } from "./Portal";
@@ -72,8 +72,6 @@ export function Board() {
     selectSquare,
     game,
     pluginManager,
-    timeWhite,
-    turn,
     deployPieceType,
     resolveExplosion,
     hexTransition,
@@ -315,11 +313,6 @@ export function Board() {
     );
   }
 
-  const countdown =
-    turn === Color.White && timeWhite <= 5 && timeWhite > 0
-      ? Math.ceil(timeWhite)
-      : null;
-
   const boardClass =
     "board" +
     (overlays.hasFog ? " fog-active" : "") +
@@ -407,11 +400,6 @@ export function Board() {
         )}
         {returnAnim && (
           <ReturningPiece anim={returnAnim} squareSize={squareSize} />
-        )}
-        {countdown !== null && (
-          <div className="countdown-overlay" key={countdown}>
-            <span className="countdown-number">{countdown}</span>
-          </div>
         )}
       </div>
     </div>

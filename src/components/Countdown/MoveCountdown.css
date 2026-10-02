@@ -1,0 +1,301 @@
+.move-countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.countdown-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  animation: count-pop 1s ease-out forwards;
+}
+
+.countdown-digit {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: calc(var(--square-size) * 2.6);
+  line-height: 1;
+  color: var(--paper);
+  -webkit-text-stroke: 0.04em var(--ink);
+  paint-order: stroke fill;
+  text-shadow:
+    0.04em 0.04em 0 var(--ink),
+    0.08em 0.08em 0 var(--ink);
+}
+
+.countdown-prop {
+  position: absolute;
+}
+
+@keyframes count-pop {
+  0% {
+    scale: 1.8;
+    opacity: 0;
+  }
+  15% {
+    scale: 1;
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    scale: 0.85;
+    opacity: 0;
+  }
+}
+
+/* --- Portals: the digit spins out of a portal --- */
+
+[data-countdown="portals"] .countdown-prop {
+  width: calc(var(--square-size) * 3);
+  height: calc(var(--square-size) * 3);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #000 0 32%, transparent 33%),
+    repeating-conic-gradient(#ff8a1a 0deg 18deg, #2f9bff 18deg 36deg);
+  box-shadow: 0 0 40px #ff8a1a;
+  animation: count-spin 1s linear;
+  opacity: 0.85;
+}
+
+[data-countdown="portals"] .countdown-digit {
+  animation: count-warp 0.45s ease-out;
+}
+
+@keyframes count-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes count-warp {
+  from {
+    scale: 0;
+    rotate: -270deg;
+  }
+}
+
+/* --- Fog of war: ghostly digits condense out of mist --- */
+
+[data-countdown="fog"] .countdown-digit {
+  color: rgba(235, 245, 242, 0.9);
+  -webkit-text-stroke: 0;
+  text-shadow: 0 0 30px rgba(220, 240, 235, 0.9);
+  animation: count-condense 0.6s ease-out;
+}
+
+[data-countdown="fog"] .countdown-prop {
+  width: calc(var(--square-size) * 4);
+  height: calc(var(--square-size) * 3);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    rgba(220, 235, 230, 0.55),
+    transparent 70%
+  );
+  filter: blur(8px);
+}
+
+@keyframes count-condense {
+  from {
+    filter: blur(18px);
+    scale: 1.5;
+    opacity: 0;
+  }
+}
+
+/* --- Battle royale: molten digits slam down --- */
+
+[data-countdown="royale"] .countdown-digit {
+  color: #ffd27a;
+  background: linear-gradient(180deg, #fff1a8, #ff8a1a 55%, #c2250a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 18px #ff5a00);
+  animation: count-slam 0.35s cubic-bezier(0.5, 0, 0.9, 0.5);
+}
+
+@keyframes count-slam {
+  from {
+    translate: 0 -60vh;
+  }
+}
+
+/* --- Clash royale: a chunky arena number --- */
+
+[data-countdown="clash"] .countdown-digit {
+  color: #ffffff;
+  -webkit-text-stroke: 0.06em #0b3fd1;
+  text-shadow:
+    0.05em 0.06em 0 #0b1430,
+    0.1em 0.12em 0 #0b1430;
+  animation: count-bounce 0.5s cubic-bezier(0.3, 1.9, 0.5, 1);
+}
+
+@keyframes count-bounce {
+  from {
+    scale: 0.2;
+  }
+}
+
+/* --- Minefield: a red bomb timer --- */
+
+[data-countdown="mines"] .countdown-prop {
+  width: calc(var(--square-size) * 2.6);
+  height: calc(var(--square-size) * 2);
+  background: #111;
+  border: 5px solid #3a3d1a;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 4px #141808,
+    inset 0 0 20px #000;
+}
+
+[data-countdown="mines"] .countdown-prop::before,
+[data-countdown="mines"] .countdown-prop::after {
+  content: "";
+  position: absolute;
+  top: -18px;
+  width: 6px;
+  height: 22px;
+  border-radius: 3px;
+}
+
+[data-countdown="mines"] .countdown-prop::before {
+  left: 30%;
+  background: #e2304a;
+}
+
+[data-countdown="mines"] .countdown-prop::after {
+  left: 60%;
+  background: #2c6bff;
+}
+
+[data-countdown="mines"] .countdown-digit {
+  font-size: calc(var(--square-size) * 1.5);
+  color: #ff2a2a;
+  -webkit-text-stroke: 0;
+  text-shadow:
+    0 0 10px #ff2a2a,
+    0 0 24px #ff0000;
+  letter-spacing: 0.1em;
+  animation: count-blink 0.5s steps(1) 2;
+}
+
+[data-countdown="mines"] .countdown-stage {
+  animation: none;
+}
+
+@keyframes count-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* --- King of the hill: a gold coin flips --- */
+
+[data-countdown="hill"] .countdown-prop {
+  width: calc(var(--square-size) * 2.6);
+  height: calc(var(--square-size) * 2.6);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff6c4, #ffd23f 40%, #c88a00);
+  border: 6px solid #8a4b00;
+  box-shadow: 0 0 40px rgba(255, 210, 63, 0.7);
+}
+
+[data-countdown="hill"] .countdown-stage {
+  animation:
+    count-pop 1s ease-out forwards,
+    coin-flip 0.5s ease-out;
+}
+
+[data-countdown="hill"] .countdown-digit {
+  font-size: calc(var(--square-size) * 1.7);
+  color: #8a4b00;
+  -webkit-text-stroke: 0;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.6);
+}
+
+@keyframes coin-flip {
+  from {
+    rotate: y 540deg;
+  }
+}
+
+/* --- Gravity: the digit drops and bounces --- */
+
+[data-countdown="gravity"] .countdown-digit {
+  color: #3ee6b0;
+  animation: count-drop 0.7s linear;
+}
+
+@keyframes count-drop {
+  0% {
+    translate: 0 -50vh;
+    animation-timing-function: cubic-bezier(0.5, 0, 1, 0.6);
+  }
+  55% {
+    translate: 0 0;
+    animation-timing-function: cubic-bezier(0, 0.4, 0.5, 1);
+  }
+  75% {
+    translate: 0 -8vh;
+    animation-timing-function: cubic-bezier(0.5, 0, 1, 0.6);
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+/* --- Hex chess: a neon tube flickers on --- */
+
+[data-countdown="hex"] .countdown-digit {
+  color: #ffffff;
+  -webkit-text-stroke: 0;
+  text-shadow:
+    0 0 8px #fff,
+    0 0 22px #ff2e88,
+    0 0 50px #ff2e88,
+    0.05em 0.05em 0 #21e6ff;
+  animation: count-neon 0.5s steps(1);
+}
+
+@keyframes count-neon {
+  0%,
+  30%,
+  60% {
+    opacity: 0;
+  }
+  15%,
+  45%,
+  75% {
+    opacity: 1;
+  }
+}
+
+/* --- Stratego: a rubber stamp --- */
+
+[data-countdown="stratego"] .countdown-digit {
+  padding: 0 0.25em;
+  color: #b3202a;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  border: 0.07em solid #b3202a;
+  border-radius: 0.12em;
+  background: rgba(234, 219, 174, 0.85);
+  rotate: -8deg;
+  animation: count-stamp 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+@keyframes count-stamp {
+  from {
+    scale: 3;
+    opacity: 0;
+  }
+}
