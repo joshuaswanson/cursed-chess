@@ -298,7 +298,8 @@
   position: absolute;
   left: -4px;
   right: -4px;
-  z-index: -2;
+  /* Above the river, so its banks end beneath the frame */
+  z-index: -1;
   border: 4px solid var(--ink);
   border-radius: inherit;
   pointer-events: none;
@@ -454,7 +455,7 @@
 /* Runs off both sides of the board, behind the frame */
 .world-river {
   position: absolute;
-  z-index: -1;
+  z-index: -2;
   left: -100vw;
   width: calc(200vw + 100%);
   top: calc(var(--square-size) * (3 - var(--river-pad)));
