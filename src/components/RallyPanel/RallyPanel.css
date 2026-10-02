@@ -258,13 +258,29 @@
   border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
 }
 
-.deploy-floating-piece {
+/* The card you are dragging leaves an empty slot behind it */
+.deploy-card.lifted {
+  background: rgba(0, 0, 0, 0.18);
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: none;
+  animation: none;
+}
+
+.deploy-card.lifted > * {
+  visibility: hidden;
+}
+
+/* The card itself rides along under the cursor, tilted as if held */
+.deploy-floating-card {
   position: fixed;
-  width: 64px;
-  height: 64px;
-  pointer-events: none;
   z-index: 1000;
-  filter: drop-shadow(4px 8px 4px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+  rotate: -6deg;
+  scale: 1.12;
+  box-shadow:
+    3px 4px 0 var(--ink),
+    8px 16px 18px rgba(0, 0, 0, 0.4);
 }
 
 /* The arena bars take vertical room, so the board shrinks to keep everything on screen */

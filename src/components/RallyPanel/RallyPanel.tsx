@@ -30,6 +30,9 @@ interface DeployDrag {
   startY: number;
   moved: boolean;
   wasSelected: boolean;
+  /** Where on the card it was grabbed, so it stays under the same spot of the cursor */
+  grabX: number;
+  grabY: number;
 }
 
 function useRallyPlugin() {
@@ -180,13 +183,16 @@ export function YourRallyBar() {
             <div
               key={type}
               title={`Click or drag onto your half to deploy a ${label.toLowerCase()} for ${cost} elixir`}
-              className={`deploy-card${canAfford ? "" : " disabled"}${selected === type ? " selected" : ""}`}
+              className={`deploy-card${canAfford ? "" : " disabled"}${selected === type ? " selected" : ""}${drag?.moved && drag.type === type ? " lifted" : ""}`}
               aria-pressed={selected === type}
               onPointerDown={(e) => {
                 if (!canAfford) return;
                 e.preventDefault();
                 setDeployPieceType(type);
+                const card = e.currentTarget.getBoundingClientRect();
                 setDrag({
+                  grabX: e.clientX - card.left,
+                  grabY: e.clientY - card.top,
                   type,
                   img,
                   x: e.clientX,
@@ -205,13 +211,14 @@ export function YourRallyBar() {
         })}
       </div>
       {drag?.moved && (
-        <img
-          src={drag.img}
-          className="deploy-floating-piece"
-          style={{ left: drag.x - 32, top: drag.y - 32 }}
-          draggable={false}
-          alt=""
-        />
+        <div
+          className="deploy-card deploy-floating-card"
+          style={{ left: drag.x - drag.grabX, top: drag.y - drag.grabY }}
+          aria-hidden
+        >
+          <img src={drag.img} alt="" draggable={false} />
+          <span className="deploy-cost">{PIECE_COST[drag.type]}</span>
+        </div>
       )}
     </section>
   );
