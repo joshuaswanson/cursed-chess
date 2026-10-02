@@ -239,7 +239,7 @@ function RubbleHeap({ seed, round }: { seed: number; round: boolean }) {
   // Small stones scatter around the edges, under the big blocks
   blocks.reverse();
   return (
-    <g>
+    <g className="rubble-heap">
       <ellipse
         cx="50"
         cy="54"
@@ -499,12 +499,27 @@ export function Castle({
         return `${col},${row}`;
       }),
   );
-  /** A segment runs on into a standing tower's center, so it disappears under it */
+  const towerFallen = new Set(
+    rubble
+      .filter((sq) => TOWERS.includes(sq))
+      .map((sq) => {
+        const { col, row } = at(sq);
+        return `${col},${row}`;
+      }),
+  );
+  /**
+   * A segment runs on into a standing tower's center, so it disappears under
+   * it, and breaks off raggedly where a tower beside it has fallen
+   */
   const reach = (col: number, row: number, angle: number) => {
     const [dc, dr] = along(angle);
-    const into = (sign: number) =>
-      towerStanding.has(`${col + dc * sign},${row + dr * sign}`);
-    return { start: into(-1) ? -50 : 0, end: into(1) ? 150 : 100 };
+    const next = (sign: number) => `${col + dc * sign},${row + dr * sign}`;
+    return {
+      start: towerStanding.has(next(-1)) ? -50 : 0,
+      end: towerStanding.has(next(1)) ? 150 : 100,
+      brokenStart: towerFallen.has(next(-1)),
+      brokenEnd: towerFallen.has(next(1)),
+    };
   };
 
   const straight = walls.filter((sq) => !TOWERS.includes(sq));
@@ -670,39 +685,62 @@ export function Castle({
               OUTER - 2 + (i / 6) * (INNER - OUTER + 4),
             ),
           ).join(" L");
+        const off = toLocal(SHADOW, angle);
+        const stubs = [
+          { from: start, to: 30, edge: jag(12, 1), dir: 1 },
+          { from: 70, to: end, edge: jag(88, -1), dir: -1 },
+        ].map((stub) => {
+          const base = stub.dir > 0 ? start : end;
+          return {
+            ...stub,
+            outline: `M${base} ${OUTER - 2} L${stub.edge} L${base} ${INNER + 2} Z`,
+          };
+        });
+        const ruin = [
+          [2.3, 3.7],
+          [5.1, 5.9],
+          [0.6, 1.0],
+        ]
+          .map(([a0, a1]) => sector(TOWER_R - TOWER_RIM, TOWER_R, a0, a1))
+          .join(" ");
         return (
           <g
             key={`r${sq}`}
             transform={`translate(${col * 100} ${row * 100}) rotate(${angle} 50 50)`}
           >
-            {!tower && (
-              <>
-                <clipPath id={`stub-a-${sq}`}>
-                  <path
-                    d={`M${start} ${OUTER - 2} L${jag(12, 1)} L${start} ${INNER + 2} Z`}
-                  />
-                </clipPath>
-                <clipPath id={`stub-b-${sq}`}>
-                  <path
-                    d={`M${end} ${OUTER - 2} L${jag(88, -1)} L${end} ${INNER + 2} Z`}
-                  />
-                </clipPath>
-                <g clipPath={`url(#stub-a-${sq})`}>
-                  <SegmentBody start={start} end={30} />
-                </g>
-                <g clipPath={`url(#stub-b-${sq})`}>
-                  <SegmentBody start={70} end={end} />
-                </g>
-              </>
-            )}
-            {tower && (
-              <path
-                d={`${sector(TOWER_R - TOWER_RIM, TOWER_R, 2.3, 3.7)} ${sector(TOWER_R - TOWER_RIM, TOWER_R, 5.1, 5.9)} ${sector(TOWER_R - TOWER_RIM, TOWER_R, 0.6, 1.0)}`}
-                fill="url(#castle-masonry)"
-                className="ruin-arc"
-              />
-            )}
             <RubbleHeap seed={sq} round={tower} />
+            {/* What still stands throws a shadow down onto the heap below it */}
+            <g className="ruin-cast" filter="url(#castle-blur)">
+              {tower ? (
+                <path
+                  d={ruin}
+                  transform={`translate(${SHADOW.x * 1.4} ${SHADOW.y * 1.4})`}
+                />
+              ) : (
+                stubs.map((stub) => (
+                  <path
+                    key={stub.dir}
+                    d={stub.outline}
+                    transform={`translate(${stub.dir * 10 + off.x} ${off.y})`}
+                  />
+                ))
+              )}
+            </g>
+            {tower ? (
+              <path d={ruin} fill="url(#castle-masonry)" className="ruin-arc" />
+            ) : (
+              stubs.map((stub) => (
+                <g key={stub.dir}>
+                  <clipPath id={`stub-${stub.dir}-${sq}`}>
+                    <path d={stub.outline} />
+                  </clipPath>
+                  <g clipPath={`url(#stub-${stub.dir}-${sq})`}>
+                    <SegmentBody start={stub.from} end={stub.to} />
+                  </g>
+                  <path d={`M${stub.edge}`} className="break-edge" />
+                </g>
+              ))
+            )}
           </g>
         );
       })}
@@ -710,9 +748,32 @@ export function Castle({
       {straight.map((sq) => {
         const { col, row } = at(sq);
         const angle = facing(col, row);
-        const { start, end } = reach(col, row, angle);
+        const { start, end, brokenStart, brokenEnd } = reach(col, row, angle);
         const cracked = hpOf(sq) === 1;
         const rand = seeded(sq);
+        const breakRand = seeded(sq + 11);
+        const ragged = (x: number, dir: number) =>
+          Array.from({ length: 7 }, (_, i) =>
+            pt(
+              x + dir * breakRand() * 12,
+              OUTER - 2 + (i / 6) * (INNER - OUTER + 4),
+            ),
+          );
+        const startEdge = brokenStart ? ragged(-8, 1) : null;
+        const endEdge = brokenEnd ? ragged(108, -1) : null;
+        const outline = `M${(endEdge ?? [pt(end, OUTER - 2), pt(end, INNER + 2)]).join(" L")} L${[...(startEdge ?? [pt(start, OUTER - 2), pt(start, INNER + 2)])].reverse().join(" L")} Z`;
+        const off = toLocal(SHADOW, angle);
+        const breaks = [
+          { edge: startEdge, back: 30, dir: -1 },
+          { edge: endEdge, back: 70, dir: 1 },
+        ].filter((b) => b.edge !== null);
+        const body = (
+          <SegmentBody
+            start={brokenStart ? -8 : start}
+            end={brokenEnd ? 108 : end}
+            missing={cracked ? 1 + (sq % 2) : -1}
+          />
+        );
         return (
           <Placed
             key={sq}
@@ -722,11 +783,32 @@ export function Castle({
             delay={riseDelay(sq)}
             className={cracked ? "cracked" : ""}
           >
-            <SegmentBody
-              start={start}
-              end={end}
-              missing={cracked ? 1 + (sq % 2) : -1}
-            />
+            {breaks.length > 0 ? (
+              <>
+                <g className="ruin-cast" filter="url(#castle-blur)">
+                  {breaks.map(({ edge, back, dir }) => (
+                    <path
+                      key={dir}
+                      d={`M${back} ${OUTER - 2} L${edge!.join(" L")} L${back} ${INNER + 2} Z`}
+                      transform={`translate(${dir * 10 + off.x} ${off.y})`}
+                    />
+                  ))}
+                </g>
+                <clipPath id={`broken-${sq}`}>
+                  <path d={outline} />
+                </clipPath>
+                <g clipPath={`url(#broken-${sq})`}>{body}</g>
+                {breaks.map(({ edge, dir }) => (
+                  <path
+                    key={dir}
+                    d={`M${edge!.join(" L")}`}
+                    className="break-edge"
+                  />
+                ))}
+              </>
+            ) : (
+              body
+            )}
             {cracked && (
               <>
                 <Damage

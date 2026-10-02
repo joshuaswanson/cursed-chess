@@ -159,6 +159,23 @@
   filter: blur(4px);
 }
 
+.ruin-cast {
+  fill: rgba(8, 5, 2, 0.75);
+}
+
+/* The freshly broken end of a wall, paler than its weathered top */
+.break-edge {
+  fill: none;
+  stroke: #b8ad99;
+  stroke-width: 2;
+  stroke-linejoin: bevel;
+}
+
+/* The heap lies below the wall tops, out of the light */
+.rubble-heap {
+  filter: brightness(0.82);
+}
+
 .ruin-arc {
   stroke: #241d16;
   stroke-width: 2;
