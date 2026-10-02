@@ -10,12 +10,14 @@ function shuffle<T>(arr: T[]): void {
 }
 
 /** Place pieces: pawns in front cells, king + others in back cells */
+/** Places the pieces and returns where each one landed */
 function placeGroup(
   board: HexBoard,
   pieces: Piece[],
   front: HexCoord[],
   back: HexCoord[],
-): void {
+): Map<Piece, HexCoord> {
+  const placed = new Map<Piece, HexCoord>();
   const kings: Piece[] = [];
   const pawns: Piece[] = [];
   const others: Piece[] = [];
@@ -33,6 +35,7 @@ function placeGroup(
     if (!cell) return;
     used.add(cell);
     board.set(cell.q, cell.r, p);
+    placed.set(p, cell);
   };
   const placeBack = (p: Piece) => place(p, backFirst);
   const placeFront = (p: Piece) => place(p, frontFirst);
@@ -40,6 +43,7 @@ function placeGroup(
   for (const p of kings) placeBack(p);
   for (const p of others) placeBack(p);
   for (const p of pawns) placeFront(p);
+  return placed;
 }
 
 export class HexBoard {
@@ -144,7 +148,10 @@ export class HexBoard {
    * Uses visual y-position (q + 2r) to determine top/bottom halves,
    * since the axial r-axis runs diagonally, not vertically.
    */
-  setupFromPieces(whitePieces: Piece[], blackPieces: Piece[]): void {
+  setupFromPieces(
+    whitePieces: Piece[],
+    blackPieces: Piece[],
+  ): Map<Piece, HexCoord> {
     this.cells.clear();
 
     const whiteBack: HexCoord[] = [];
@@ -169,7 +176,9 @@ export class HexBoard {
     shuffle(blackBack);
     shuffle(blackFront);
 
-    placeGroup(this, whitePieces, whiteFront, whiteBack);
-    placeGroup(this, blackPieces, blackFront, blackBack);
+    return new Map([
+      ...placeGroup(this, whitePieces, whiteFront, whiteBack),
+      ...placeGroup(this, blackPieces, blackFront, blackBack),
+    ]);
   }
 }

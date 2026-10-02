@@ -4,6 +4,7 @@ import { HexBoard } from "./components/HexBoard/HexBoard";
 import { PromotionDialog } from "./components/PromotionDialog/PromotionDialog";
 import { ShowCards } from "./components/Show/ShowCards";
 import { CurseIntro } from "./components/Show/CurseIntro";
+import { HexWarp } from "./components/HexWarp/HexWarp";
 import { Hud } from "./components/Hud/Hud";
 import { FoeRallyBar, YourRallyBar } from "./components/RallyPanel/RallyPanel";
 import { Backdrop } from "./components/Backdrop/Backdrop";
@@ -71,6 +72,7 @@ function App() {
       <PromotionDialog />
       <ShowCards />
       <CurseIntro />
+      <HexWarp />
     </div>
   );
 }

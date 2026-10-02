@@ -8,7 +8,7 @@ import {
   isGameOver,
   opponent,
 } from "../engine";
-import type { SquareIndex, Move, MoveRecord } from "../engine";
+import type { SquareIndex, Move, MoveRecord, Piece } from "../engine";
 import { PluginManager } from "../plugins/manager";
 import type { ModePlugin } from "../plugins/types";
 import { rankOf, ALL_SQUARES } from "../utils/squareUtils";
@@ -52,9 +52,10 @@ const GAME_END_DELAY_MS = 600;
 const RESULT_MS = 2500;
 const RESULT_HOLD_MS = 2800;
 
-const HEX_MORPH_OUT_MS = 4800;
-const HEX_MORPH_IN_MS = 5600;
-const HEX_MORPH_DONE_MS = 6400;
+/** The square board shatters right after the hex title card leaves */
+const HEX_MORPH_OUT_MS = 3000;
+const HEX_MORPH_IN_MS = 3900;
+const HEX_MORPH_DONE_MS = 5300;
 
 export interface GameMode {
   name: string;
@@ -172,6 +173,8 @@ export interface GameStore {
   lastHexMove: { from: HexCoord; to: HexCoord } | null;
   hexPromotionPending: { from: HexCoord; to: HexCoord } | null;
   hexTransition: "morph-out" | "morph-in" | null;
+  /** Pieces flying from their old square to their new hex cell as the hex board forms */
+  hexArrivals: { from: SquareIndex; to: HexCoord; piece: Piece }[];
 
   selectHex: (coord: HexCoord) => void;
   makeHexMove: (from: HexCoord, to: HexCoord, promotion?: PieceType) => void;
@@ -220,6 +223,7 @@ const CLEARED_HEX = {
   lastHexMove: null,
   hexPromotionPending: null,
   hexTransition: null,
+  hexArrivals: [],
 } satisfies Partial<GameStore>;
 
 const FRESH_BOARD = {
@@ -788,20 +792,39 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().showAnnouncement(mode.name, MODE_CARD_MS, "mode");
 
     if (mode.isHex) {
+      // Remember each piece's square so it can fly to its new hex cell
+      const sources = isHexMode
+        ? []
+        : ALL_SQUARES.flatMap((sq) => {
+            const piece = game.board.get(sq);
+            return piece ? [{ sq, piece: { ...piece } }] : [];
+          });
+      const army = (color: Color) =>
+        sources.length > 0
+          ? sources.filter((s) => s.piece.color === color).map((s) => s.piece)
+          : armies[color];
+
       schedule(() => set({ hexTransition: "morph-out" }), HEX_MORPH_OUT_MS);
+      schedule(() => {
+        const hexGame = new HexGame(army(Color.White), army(Color.Black));
+        const hexArrivals = sources.flatMap(({ sq, piece }) => {
+          const to = hexGame.placements.get(piece);
+          return to ? [{ from: sq, to, piece }] : [];
+        });
+        set({
+          ...CLEARED_HEX,
+          pluginManager: freshPluginManager(game),
+          hexGame,
+          hexArrivals,
+          isHexMode: true,
+          hexTransition: "morph-in",
+          turn: Color.White,
+        });
+      }, HEX_MORPH_IN_MS);
       schedule(
-        () =>
-          set({
-            ...CLEARED_HEX,
-            pluginManager: freshPluginManager(game),
-            hexGame: new HexGame(armies[Color.White], armies[Color.Black]),
-            isHexMode: true,
-            hexTransition: "morph-in",
-            turn: Color.White,
-          }),
-        HEX_MORPH_IN_MS,
+        () => set({ hexTransition: null, hexArrivals: [] }),
+        HEX_MORPH_DONE_MS,
       );
-      schedule(() => set({ hexTransition: null }), HEX_MORPH_DONE_MS);
       return;
     }
 

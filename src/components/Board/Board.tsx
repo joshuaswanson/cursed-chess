@@ -6,6 +6,7 @@ import type { SquareIndex } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import { Portal } from "./Portal";
 import { Battlefield, WorldRiver } from "./Battlefield";
+import { BoardShatter } from "../HexWarp/HexWarp";
 import { PortalArrows } from "./PortalArrows";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
@@ -75,6 +76,7 @@ export function Board() {
     turn,
     deployPieceType,
     resolveExplosion,
+    hexTransition,
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -364,6 +366,7 @@ export function Board() {
             ]}
           />
         )}
+        {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
         {rows}
         {overlays.hasRally && (
           <div

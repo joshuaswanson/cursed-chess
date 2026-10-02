@@ -436,4 +436,49 @@ export const sfx = {
     const { ctx: c, out } = a;
     chord(c, out, c.currentTime, [392, 493.9], 0.6, "triangle", 0.12);
   },
+
+  /** The square board breaks: a glassy crack and tinkling shards */
+  shatter(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    crackle(c, out, 1.4);
+    for (let i = 0; i < 18; i++) {
+      const at = t + Math.random() * 0.7;
+      const osc = c.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.value = 1800 + Math.random() * 3200;
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.06, at);
+      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.12);
+      osc.connect(gain).connect(out);
+      osc.start(at);
+      osc.stop(at + 0.14);
+    }
+  },
+
+  /** Space folds into hexagons: a rising sweep with a shimmering tail */
+  warp(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const sweep = c.createOscillator();
+    sweep.type = "sawtooth";
+    sweep.frequency.setValueAtTime(110, t);
+    sweep.frequency.exponentialRampToValueAtTime(880, t + 0.6);
+    const filter = c.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(400, t);
+    filter.frequency.exponentialRampToValueAtTime(5000, t + 0.6);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.12, t + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 1);
+    sweep.connect(filter).connect(gain).connect(out);
+    sweep.start(t);
+    sweep.stop(t + 1.05);
+    chord(c, out, t + 0.5, [659.3, 830.6, 987.8], 0.9, "sine", 0.07);
+  },
 };

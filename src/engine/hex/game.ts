@@ -10,10 +10,13 @@ export class HexGame {
   halfMoveClock = 0;
   fullMoveNumber = 1;
 
+  /** Where each carried-over piece was placed, keyed by the piece passed in */
+  placements = new Map<Piece, HexCoord>();
+
   constructor(whitePieces?: Piece[], blackPieces?: Piece[]) {
     this.board = new HexBoard();
     if (whitePieces && blackPieces) {
-      this.board.setupFromPieces(whitePieces, blackPieces);
+      this.placements = this.board.setupFromPieces(whitePieces, blackPieces);
     } else {
       this.board.setupInitial();
     }

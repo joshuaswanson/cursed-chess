@@ -213,6 +213,12 @@ export function HexBoard() {
                 top: OFFSET_Y + y - HEX_H / 2,
                 width: HEX_W,
                 height: HEX_H,
+                // Rings out from the center, used when the board assembles
+                ["--ring" as string]:
+                  (Math.abs(coord.q) +
+                    Math.abs(coord.r) +
+                    Math.abs(coord.q + coord.r)) /
+                  2,
               }}
               onClick={() => handleHexClick(coord)}
             >
