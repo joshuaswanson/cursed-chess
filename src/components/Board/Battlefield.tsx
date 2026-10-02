@@ -50,13 +50,14 @@ function traceBackward({ points, controls }: ReturnType<typeof bank>): string {
   return d;
 }
 
-const PEBBLE_TONES = ["#8f877c", "#6f665c", "#a39a8c", "#5c534a"];
-const GRASS_TONES = ["#6f8f34", "#5a7a28", "#86a843", "#4b6820"];
+const STONE_TONES = ["#8f877c", "#77706a", "#a39a8c", "#6a625a"];
+const GRASS_TONES = ["#6f8f34", "#5a7a28", "#86a843", "#4b6820", "#9bbd52"];
 
 /**
- * A natural river bank along `d`: a slope of dry dirt, dark wet mud at the
- * waterline, pebbles, and grass hanging out over the edge. `side` is -1 when
- * the land lies above the line and 1 when it lies below.
+ * A natural river bank along `d`. From the land to the water: dirt fading out
+ * of the grass, a slope that darkens to wet mud, stones and foam at the
+ * waterline, the bank's shadow, and pale shallows. Grass clumps hang over the
+ * edge. `side` is -1 when the land lies above the line and 1 when below.
  */
 function Bank({
   d,
@@ -74,14 +75,14 @@ function Bank({
   const rand = seeded(seed);
   const pick = <T,>(items: T[]) => items[Math.floor(rand() * items.length)];
   const shift = (k: number) => `translate(0 ${side * k})`;
-  const pebbles: {
+  const stones: {
     x: number;
     y: number;
-    rx: number;
-    ry: number;
+    r: number;
     tone: string;
+    foam: boolean;
   }[] = [];
-  const tufts: { d: string; tone: string }[] = [];
+  const blades: { d: string; tone: string; width: number }[] = [];
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i];
     const b = points[i + 1];
@@ -89,35 +90,44 @@ function Bank({
       x: a.x + (b.x - a.x) * t,
       y: a.y + (b.y - a.y) * t,
     });
-    for (let k = 0; k < 3; k++) {
-      if (rand() > 0.6) continue;
+    for (let k = 0; k < 2; k++) {
+      if (rand() > 0.55) continue;
       const p = along(rand());
-      pebbles.push({
+      stones.push({
         x: p.x,
-        y: p.y + side * (3 + rand() * 13),
-        rx: 1.2 + rand() * 2.6,
-        ry: 0.9 + rand() * 1.6,
-        tone: pick(PEBBLE_TONES),
+        y: p.y + side * (rand() * 5 - 1),
+        r: 2.2 + rand() * 3.8,
+        tone: pick(STONE_TONES),
+        foam: rand() < 0.6,
       });
     }
-    if (rand() > 0.85) continue;
-    const root = along(rand());
-    const baseY = root.y + side * (16 + rand() * 4);
-    const blades = 3 + Math.floor(rand() * 3);
-    for (let j = 0; j < blades; j++) {
-      const bx = root.x + (j - blades / 2) * 2.2;
-      const length = 7 + rand() * 9;
-      const lean = (rand() - 0.5) * 9;
-      const tipY = baseY - side * length;
-      tufts.push({
-        d: `M${bx.toFixed(1)} ${baseY.toFixed(1)} Q${(bx + lean * 0.3).toFixed(1)} ${(baseY - side * length * 0.6).toFixed(1)} ${(bx + lean).toFixed(1)} ${tipY.toFixed(1)}`,
-        tone: pick(GRASS_TONES),
-      });
+    const clumps = rand() < 0.5 ? 2 : 1;
+    for (let c = 0; c < clumps; c++) {
+      const root = along(rand());
+      const baseY = root.y + side * (17 + rand() * 5);
+      const count = 5 + Math.floor(rand() * 5);
+      for (let j = 0; j < count; j++) {
+        const bx = root.x + (j - count / 2) * 1.8 + (rand() - 0.5) * 2;
+        const length = 9 + rand() * 13;
+        const lean = (rand() - 0.5) * 14;
+        const tipY = baseY - side * length;
+        blades.push({
+          d: `M${bx.toFixed(1)} ${baseY.toFixed(1)} Q${(bx + lean * 0.25).toFixed(1)} ${(baseY - side * length * 0.65).toFixed(1)} ${(bx + lean).toFixed(1)} ${tipY.toFixed(1)}`,
+          tone: pick(GRASS_TONES),
+          width: 1.3 + rand() * 1.1,
+        });
+      }
     }
   }
 
   return (
     <g className="bf-bank">
+      <path
+        d={d}
+        className="bank-blend"
+        transform={shift(16)}
+        filter={`url(#${roughId}-soft)`}
+      />
       <path
         d={d}
         className="bank-dirt"
@@ -126,34 +136,102 @@ function Bank({
       />
       <path
         d={d}
-        className="bank-mud"
-        transform={shift(2)}
+        className="bank-slope"
+        transform={shift(5)}
         filter={`url(#${roughId})`}
       />
-      <path d={d} className="bank-waterline" transform={shift(-2.5)} />
-      <path d={d} className="bank-sheen" transform={shift(-7)} />
-      {pebbles.map((p, i) => (
-        <ellipse key={i} cx={p.x} cy={p.y} rx={p.rx} ry={p.ry} fill={p.tone} />
+      <path
+        d={d}
+        className="bank-mud"
+        transform={shift(1.5)}
+        filter={`url(#${roughId})`}
+      />
+      <path
+        d={d}
+        className="bank-shallows"
+        transform={shift(-11)}
+        filter={`url(#${roughId}-soft)`}
+      />
+      <path
+        d={d}
+        className="bank-shadow"
+        transform={shift(-4)}
+        filter={`url(#${roughId}-soft)`}
+      />
+      <path d={d} className="bank-sheen" transform={shift(-3)} />
+      {stones.map((st, i) => (
+        <g key={i}>
+          {st.foam && (
+            <ellipse
+              cx={st.x}
+              cy={st.y - side * st.r * 0.5}
+              rx={st.r * 1.7}
+              ry={st.r * 0.9}
+              className="bank-foam"
+            />
+          )}
+          <ellipse
+            cx={st.x}
+            cy={st.y + 1}
+            rx={st.r}
+            ry={st.r * 0.75}
+            fill="#2a1d12"
+            opacity="0.5"
+          />
+          <ellipse
+            cx={st.x}
+            cy={st.y}
+            rx={st.r}
+            ry={st.r * 0.72}
+            fill={st.tone}
+          />
+          <ellipse
+            cx={st.x - st.r * 0.3}
+            cy={st.y - st.r * 0.28}
+            rx={st.r * 0.45}
+            ry={st.r * 0.28}
+            fill="#ffffff"
+            opacity="0.3"
+          />
+        </g>
       ))}
-      {tufts.map((t, i) => (
-        <path key={i} d={t.d} className="bank-grass" stroke={t.tone} />
+      {blades.map((bl, i) => (
+        <path
+          key={i}
+          d={bl.d}
+          className="bank-grass"
+          stroke={bl.tone}
+          strokeWidth={bl.width}
+        />
       ))}
     </g>
   );
 }
 
-/** Roughens the bank's dirt and mud so their edges are never smooth */
+/** Roughens the bank's dirt and mud so their edges are never smooth, and softens its blends */
 function RoughFilter({ id }: { id: string }) {
   return (
-    <filter id={id} x="-5%" y="-50%" width="110%" height="200%">
-      <feTurbulence
-        type="fractalNoise"
-        baseFrequency="0.09"
-        numOctaves="2"
-        seed="3"
-      />
-      <feDisplacementMap in="SourceGraphic" scale="6" />
-    </filter>
+    <>
+      <filter id={id} x="-5%" y="-50%" width="110%" height="200%">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.09"
+          numOctaves="2"
+          seed="3"
+        />
+        <feDisplacementMap in="SourceGraphic" scale="6" />
+      </filter>
+      <filter id={`${id}-soft`} x="-5%" y="-80%" width="110%" height="260%">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.05"
+          numOctaves="2"
+          seed="8"
+        />
+        <feDisplacementMap in="SourceGraphic" scale="10" result="rough" />
+        <feGaussianBlur in="rough" stdDeviation="3" />
+      </filter>
+    </>
   );
 }
 
