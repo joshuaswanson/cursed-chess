@@ -15,6 +15,8 @@ export interface Particle {
   color: string;
   /** Set when the channel changes; the particle fades out over a second */
   fading?: number;
+  /** Seconds to fade in from nothing; one second when unset */
+  fadeInSeconds?: number;
   draw: (ctx: CanvasRenderingContext2D, p: Particle, t: number) => void;
   step?: (p: Particle, dt: number, w: number, h: number, t: number) => void;
 }
@@ -159,12 +161,75 @@ function comet(w: number, h: number): Particle {
   };
 }
 
-/** A burst of fiery meteors raining down on parallel paths */
+/** Meteor colors from the head back: white-hot core, burning body, cooling tail */
+const METEOR_COLORS = [
+  ["255,246,220", "255,170,70", "230,70,30"],
+  ["255,246,220", "255,170,70", "230,70,30"],
+  ["255,246,220", "255,170,70", "230,70,30"],
+  ["235,255,240", "120,255,170", "30,170,120"],
+  ["235,245,255", "140,200,255", "70,90,235"],
+];
+
+/** A fireball: glowing head, tapered tail that cools as it trails off, and shed sparks */
+function drawMeteor(ctx: CanvasRenderingContext2D, p: Particle, t: number) {
+  if (p.age < 0) return;
+  const [core, body, tail] = METEOR_COLORS[Number(p.color)];
+  const speed = Math.hypot(p.vx, p.vy) || 1;
+  const ux = p.vx / speed;
+  const uy = p.vy / speed;
+  const nx = -uy;
+  const ny = ux;
+  const length = p.size * 46;
+  const tx = p.x - ux * length;
+  const ty = p.y - uy * length;
+  ctx.globalCompositeOperation = "lighter";
+
+  const taper = (width: number, fill: CanvasGradient) => {
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(p.x + nx * width, p.y + ny * width);
+    ctx.lineTo(tx, ty);
+    ctx.lineTo(p.x - nx * width, p.y - ny * width);
+    ctx.arc(p.x, p.y, width, Math.atan2(-ny, -nx), Math.atan2(ny, nx));
+    ctx.fill();
+  };
+  const glow = ctx.createLinearGradient(p.x, p.y, tx, ty);
+  glow.addColorStop(0, `rgba(${body},0.35)`);
+  glow.addColorStop(0.5, `rgba(${tail},0.12)`);
+  glow.addColorStop(1, `rgba(${tail},0)`);
+  taper(p.size * 3.2, glow);
+  const flame = ctx.createLinearGradient(p.x, p.y, tx, ty);
+  flame.addColorStop(0, `rgba(${core},1)`);
+  flame.addColorStop(0.12, `rgba(${body},0.9)`);
+  flame.addColorStop(0.55, `rgba(${tail},0.35)`);
+  flame.addColorStop(1, `rgba(${tail},0)`);
+  taper(p.size * 1.1, flame);
+
+  for (let k = 0; k < 6; k++) {
+    const along = (t * 2.6 + k / 6 + p.phase) % 1;
+    const drift =
+      Math.sin(t * 9 + k * 2.1 + p.phase * 7) * p.size * 2.2 * along;
+    const sx = p.x - ux * length * along * 0.85 + nx * drift;
+    const sy = p.y - uy * length * along * 0.85 + ny * drift;
+    ctx.fillStyle = `rgba(${body},${0.85 * (1 - along)})`;
+    dot(ctx, sx, sy, p.size * 0.45 * (1 - along * 0.6));
+  }
+
+  const head = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 5);
+  head.addColorStop(0, `rgba(${core},1)`);
+  head.addColorStop(0.25, `rgba(${body},0.7)`);
+  head.addColorStop(1, `rgba(${body},0)`);
+  ctx.fillStyle = head;
+  dot(ctx, p.x, p.y, p.size * 5);
+}
+
+/** A burst of fireballs raining down on parallel paths */
 function meteorShower(w: number, h: number): Particle[] {
   const angle = rand(0.45, 0.75);
   const fromRight = Math.random() < 0.5;
   return Array.from({ length: Math.floor(rand(14, 26)) }, () => {
-    const speed = rand(700, 1100);
+    const fireball = Math.random() < 0.15;
+    const speed = rand(700, 1100) * (fireball ? 0.7 : 1);
     const vx = (fromRight ? -1 : 1) * Math.cos(angle) * speed;
     const vy = Math.sin(angle) * speed;
     const delay = rand(0, 1.6);
@@ -175,17 +240,13 @@ function meteorShower(w: number, h: number): Particle[] {
       y: y - vy * delay,
       vx,
       vy,
-      size: rand(1.5, 3.2),
+      size: fireball ? rand(3.6, 5.2) : rand(1.4, 2.8),
       age: -delay,
-      life: rand(0.9, 1.5),
-      phase: 0,
-      color: pick(["255,200,120", "255,150,90", "255,235,180"]),
-      draw: (ctx, p) => {
-        if (p.age < 0) return;
-        drawStreak(0.12, p.size)(ctx, p);
-        ctx.fillStyle = "rgba(255,255,240,0.95)";
-        dot(ctx, p.x, p.y, p.size * 0.8);
-      },
+      life: rand(0.9, 1.5) * (fireball ? 1.4 : 1),
+      fadeInSeconds: 0.06,
+      phase: Math.random(),
+      color: String(Math.floor(Math.random() * METEOR_COLORS.length)),
+      draw: drawMeteor,
     };
   });
 }
@@ -532,7 +593,9 @@ export function stepParticles(
 
     ctx.save();
     ctx.globalAlpha =
-      fadeIn(p) * lifeFade(p) * (p.fading !== undefined ? p.fading : 1);
+      fadeIn(p, p.fadeInSeconds) *
+      lifeFade(p) *
+      (p.fading !== undefined ? p.fading : 1);
     p.draw(ctx, p, t);
     ctx.restore();
     alive.push(p);
