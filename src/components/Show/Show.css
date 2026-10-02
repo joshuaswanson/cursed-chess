@@ -1,0 +1,1082 @@
+/* ===== Confetti ===== */
+
+.confetti {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.confetti i {
+  position: absolute;
+  width: var(--w);
+  height: calc(var(--w) * 0.45);
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-burst cubic-bezier(0.15, 0.6, 0.35, 1) both;
+}
+
+@keyframes confetti-burst {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(var(--dx), var(--dy)) rotate(calc(var(--spin) * 0.5));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), calc(var(--dy) + var(--fall)))
+      rotate(var(--spin));
+    opacity: 0;
+  }
+}
+
+/* ===== The curse, part one: the plain site glitches ===== */
+
+.app.curse-glitch .boring-header,
+.app.curse-glitch .board-container,
+.app.curse-glitch .boring-sidebar {
+  animation: glitch-jitter 0.22s steps(2) infinite;
+}
+
+.app.curse-glitch .boring-sidebar {
+  animation-delay: -0.07s;
+}
+
+.app.curse-glitch .board-container {
+  animation-name: glitch-jitter, glitch-hue;
+  animation-duration: 0.22s, 0.6s;
+  animation-timing-function: steps(2), steps(3);
+}
+
+.app.curse-glitch .boring-brand,
+.app.curse-glitch .boring-panel h2,
+.app.curse-glitch .boring-player-name {
+  text-shadow:
+    3px 0 0 rgba(255, 0, 90, 0.8),
+    -3px 0 0 rgba(0, 220, 255, 0.8);
+}
+
+@keyframes glitch-jitter {
+  0% {
+    translate: 0 0;
+  }
+  25% {
+    translate: -6px 2px;
+  }
+  50% {
+    translate: 5px -3px;
+  }
+  75% {
+    translate: -2px 4px;
+  }
+}
+
+@keyframes glitch-hue {
+  33% {
+    filter: hue-rotate(160deg) saturate(3);
+  }
+  66% {
+    filter: invert(1) hue-rotate(90deg);
+  }
+}
+
+.curse-glitch-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.glitch-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.18) 0 1px,
+    transparent 1px 3px
+  );
+  animation: glitch-fade-in 1.5s ease-in both;
+}
+
+.glitch-static {
+  position: absolute;
+  inset: -50%;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1.5px),
+    radial-gradient(rgba(0, 0, 0, 0.5) 1px, transparent 1.5px);
+  background-size:
+    5px 7px,
+    7px 5px;
+  opacity: 0.25;
+  mix-blend-mode: overlay;
+  animation: static-shift 0.12s steps(3) infinite;
+}
+
+@keyframes static-shift {
+  33% {
+    transform: translate(-3%, 2%);
+  }
+  66% {
+    transform: translate(2%, -4%);
+  }
+}
+
+@keyframes glitch-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.glitch-tear {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3vh;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 0, 110, 0.55),
+    rgba(0, 230, 255, 0.55),
+    transparent
+  );
+  mix-blend-mode: difference;
+  animation: tear-slide 0.7s steps(4) infinite;
+}
+
+@keyframes tear-slide {
+  0% {
+    translate: -40% 0;
+    scale: 1 0.4;
+  }
+  50% {
+    translate: 30% 8vh;
+    scale: 1 1.6;
+  }
+  100% {
+    translate: -10% -6vh;
+    scale: 1 0.8;
+  }
+}
+
+.glitch-notice {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  padding: 12px 16px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  color: #312e2b;
+  background: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: notice-in 0.3s ease-out both;
+}
+
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+/* ===== The curse, part two: BOOM ===== */
+
+.curse-boom {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle, #6b2fd6 0%, #2b0a5e 60%, #12052e 100%);
+  animation:
+    boom-shake 0.5s 0.1s linear,
+    boom-shake 0.4s 0.75s linear,
+    boom-exit 0.5s 2.75s ease-in both;
+}
+
+@keyframes boom-shake {
+  20% {
+    translate: -14px 8px;
+  }
+  40% {
+    translate: 12px -10px;
+  }
+  60% {
+    translate: -8px 6px;
+  }
+  80% {
+    translate: 6px -4px;
+  }
+}
+
+@keyframes boom-exit {
+  to {
+    opacity: 0;
+    scale: 1.25;
+    filter: blur(6px);
+  }
+}
+
+.boom-rays {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 250vmax;
+  height: 250vmax;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(
+    #ff4fa3 0deg 10deg,
+    #6b2fd6 10deg 20deg,
+    #ffd23f 20deg 30deg,
+    #6b2fd6 30deg 40deg,
+    #3ee6b0 40deg 50deg,
+    #6b2fd6 50deg 60deg
+  );
+  mask-image: radial-gradient(
+    circle,
+    transparent 8%,
+    #000 30%,
+    transparent 70%
+  );
+  opacity: 0.55;
+  animation: rays-spin 6s linear infinite;
+}
+
+@keyframes rays-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.boom-flash {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  animation: flash-out 0.45s ease-out both;
+}
+
+@keyframes flash-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.boom-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 20vmin;
+  height: 20vmin;
+  translate: -50% -50%;
+  border: 10px solid #ffffff;
+  border-radius: 50%;
+  opacity: 0;
+  animation: ring-out 1s cubic-bezier(0.1, 0.7, 0.3, 1) both;
+}
+
+@keyframes ring-out {
+  0% {
+    scale: 0.2;
+    opacity: 1;
+  }
+  100% {
+    scale: 9;
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+.boom-logo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1vmin;
+  text-align: center;
+}
+
+.boom-cursed {
+  display: flex;
+  font-family: var(--font-display);
+  font-size: clamp(64px, 15vw, 220px);
+  line-height: 0.9;
+}
+
+.boom-letter {
+  display: inline-block;
+  -webkit-text-stroke: 0.05em #1b1033;
+  paint-order: stroke fill;
+  text-shadow:
+    0.03em 0.03em 0 #1b1033,
+    0.06em 0.06em 0 #1b1033,
+    0.09em 0.09em 0 #1b1033,
+    0.12em 0.12em 0 #1b1033;
+  rotate: var(--tilt);
+  animation: letter-slam 0.42s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  animation-delay: calc(150ms + var(--i) * 85ms);
+}
+
+@keyframes letter-slam {
+  from {
+    scale: 5;
+    rotate: calc(var(--tilt) * -6);
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+.boom-chess {
+  font-family: var(--font-shade);
+  font-size: clamp(48px, 10vw, 150px);
+  line-height: 1;
+  color: #fff4e0;
+  text-shadow: 0.05em 0.05em 0 #1b1033;
+  animation: chess-drop 0.55s 0.75s cubic-bezier(0.3, 1.7, 0.5, 1) both;
+}
+
+@keyframes chess-drop {
+  from {
+    translate: 0 -80vh;
+    rotate: -10deg;
+  }
+}
+
+.boom-tagline {
+  margin-top: 2vmin;
+  padding: 10px 18px;
+  font-size: clamp(14px, 1.8vw, 22px);
+  font-weight: 800;
+  color: #1b1033;
+  background: #ffd23f;
+  border: 3px solid #1b1033;
+  border-radius: 10px;
+  box-shadow: 5px 6px 0 #1b1033;
+  rotate: -2deg;
+  animation: sticker-in 0.45s 1.3s cubic-bezier(0.3, 1.8, 0.5, 1) both;
+}
+
+@keyframes sticker-in {
+  from {
+    scale: 0;
+    rotate: 20deg;
+  }
+}
+
+/* ===== Title cards ===== */
+
+.show-card {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.mode-card {
+  background: rgba(10, 4, 24, 0.45);
+  animation: card-dim-in 0.2s ease-out both;
+}
+
+.show-card.closing {
+  animation: card-out 0.45s ease-in both;
+}
+
+@keyframes card-dim-in {
+  from {
+    background: rgba(10, 4, 24, 0);
+  }
+}
+
+@keyframes card-out {
+  to {
+    opacity: 0;
+    scale: 1.08;
+  }
+}
+
+/* A burst of TV static as the channel flips */
+.card-static {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.8) 1px, transparent 1.5px),
+    radial-gradient(rgba(0, 0, 0, 0.8) 1px, transparent 1.5px);
+  background-size:
+    4px 6px,
+    6px 4px;
+  animation:
+    static-shift 0.08s steps(3) infinite,
+    static-off 0.32s ease-out both;
+}
+
+@keyframes static-off {
+  0%,
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.card-band {
+  position: relative;
+  width: 112vw;
+  padding: 4.5vh 14vw 5vh;
+  overflow: hidden;
+  text-align: center;
+  color: var(--paper);
+  background: linear-gradient(100deg, var(--sky-2), var(--sky-3));
+  border-block: 6px solid var(--ink);
+  box-shadow: 0 14px 0 rgba(0, 0, 0, 0.35);
+  rotate: -3deg;
+  animation: band-slam 0.5s 0.18s cubic-bezier(0.25, 1.4, 0.5, 1) both;
+}
+
+.mode-card.closing .card-band {
+  animation: band-leave 0.45s ease-in both;
+}
+
+@keyframes band-slam {
+  from {
+    translate: -120vw 0;
+  }
+}
+
+@keyframes band-leave {
+  to {
+    translate: 120vw 0;
+  }
+}
+
+.card-channel {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1vh;
+  padding: 4px 12px;
+  font-size: clamp(13px, 1.4vw, 18px);
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--accent);
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  rotate: 2deg;
+}
+
+.card-title {
+  position: relative;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: clamp(44px, 9vw, 130px);
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow:
+    0.04em 0.04em 0 var(--ink),
+    0.08em 0.08em 0 var(--ink);
+}
+
+.card-letter {
+  display: inline-block;
+  animation: letter-pop 0.4s cubic-bezier(0.3, 1.8, 0.5, 1) both;
+  animation-delay: calc(0.4s + var(--i) * 45ms);
+}
+
+@keyframes letter-pop {
+  from {
+    scale: 0;
+    rotate: -30deg;
+  }
+}
+
+.card-tagline {
+  position: relative;
+  margin-top: 1.4vh;
+  font-size: clamp(16px, 1.8vw, 24px);
+  font-weight: 700;
+  animation: tagline-in 0.4s 0.9s ease-out both;
+}
+
+@keyframes tagline-in {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+
+/* --- Portals: letters warp in between spinning portals --- */
+
+[data-card-theme="portals"] .card-band {
+  background:
+    radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+    radial-gradient(1px 1px at 70% 60%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #fff, transparent),
+    linear-gradient(100deg, #10083a, #3a1078);
+  background-size:
+    120px 120px,
+    90px 90px,
+    150px 150px,
+    auto;
+}
+
+[data-card-theme="portals"] .card-letter {
+  animation-name: letter-warp;
+}
+
+@keyframes letter-warp {
+  from {
+    scale: 0.1 3;
+    filter: blur(8px) brightness(3);
+    opacity: 0;
+  }
+}
+
+.card-portal {
+  position: absolute;
+  top: 50%;
+  width: 22vh;
+  height: 22vh;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #000 0 30%, transparent 31%),
+    repeating-conic-gradient(var(--c1) 0deg 20deg, var(--c2) 20deg 40deg);
+  box-shadow: 0 0 40px var(--c1);
+  animation: rays-spin 1.2s linear infinite;
+}
+
+.card-portal-blue {
+  left: 9vw;
+  --c1: #2f9bff;
+  --c2: #d6f1ff;
+}
+
+.card-portal-orange {
+  right: 9vw;
+  --c1: #ff8a1a;
+  --c2: #fff1c2;
+}
+
+/* --- Fog of war: letters condense out of the mist --- */
+
+[data-card-theme="fog"] .card-band {
+  background: linear-gradient(100deg, #2b3c44, #6b8285);
+}
+
+[data-card-theme="fog"] .card-letter {
+  animation-name: letter-condense;
+  animation-duration: 0.9s;
+  animation-timing-function: ease-out;
+}
+
+@keyframes letter-condense {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    scale: 1.6;
+  }
+}
+
+.card-mist {
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(
+    ellipse 30% 40% at 30% 50%,
+    rgba(230, 240, 236, 0.5),
+    transparent 70%
+  );
+  animation: mist-drift 3s ease-in-out infinite alternate;
+}
+
+.card-mist-b {
+  background: radial-gradient(
+    ellipse 35% 30% at 70% 40%,
+    rgba(230, 240, 236, 0.4),
+    transparent 70%
+  );
+  animation-delay: -1.5s;
+}
+
+@keyframes mist-drift {
+  to {
+    translate: 10% 0;
+  }
+}
+
+/* --- Battle royale: letters crash onto cracked lava rock --- */
+
+[data-card-theme="royale"] .card-band {
+  background: linear-gradient(100deg, #2a0805, #5c1408 60%, #2a0805);
+}
+
+[data-card-theme="royale"] .card-letter {
+  color: #ffd9a8;
+  animation-name: letter-crash;
+}
+
+@keyframes letter-crash {
+  0% {
+    translate: 0 -60vh;
+  }
+  70% {
+    translate: 0 6px;
+  }
+}
+
+.card-cracks {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.card-cracks path {
+  fill: none;
+  stroke: #ff7a1a;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 6px #ff3b00);
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: crack-run 0.6s 0.5s ease-out forwards;
+}
+
+@keyframes crack-run {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* --- Clash royale: blue meets red with a lightning seam --- */
+
+[data-card-theme="clash"] .card-band {
+  background: transparent;
+}
+
+.card-team {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  animation: team-in 0.45s 0.2s cubic-bezier(0.25, 1.4, 0.5, 1) both;
+}
+
+.card-team-blue {
+  left: 0;
+  background: linear-gradient(90deg, #0b3fd1, #2c6bff);
+  --from: -60vw;
+}
+
+.card-team-red {
+  right: 0;
+  background: linear-gradient(90deg, #e2304a, #8a1424);
+  --from: 60vw;
+}
+
+@keyframes team-in {
+  from {
+    translate: var(--from) 0;
+  }
+}
+
+.card-bolt {
+  position: absolute;
+  left: 50%;
+  top: -10%;
+  width: 6vw;
+  height: 120%;
+  translate: -50% 0;
+  fill: #ffd23f;
+  filter: drop-shadow(0 0 12px #fff);
+  animation: bolt-flash 0.5s 0.55s steps(2) both;
+}
+
+@keyframes bolt-flash {
+  from {
+    opacity: 0;
+  }
+}
+
+[data-card-theme="clash"] .card-letter {
+  animation-name: letter-bounce;
+}
+
+@keyframes letter-bounce {
+  0% {
+    scale: 0;
+  }
+  60% {
+    scale: 1.35;
+  }
+}
+
+/* --- Minefield: stenciled hazard tape --- */
+
+[data-card-theme="mines"] .card-band {
+  background: repeating-linear-gradient(
+    -45deg,
+    #ffcc00 0 40px,
+    #1b1f0a 40px 80px
+  );
+  color: #ffcc00;
+}
+
+[data-card-theme="mines"] .card-title {
+  display: inline-block;
+  padding: 0 0.3em;
+  background: #1b1f0a;
+  text-shadow: none;
+  letter-spacing: 0.06em;
+}
+
+[data-card-theme="mines"] .card-tagline {
+  display: inline-block;
+  padding: 4px 12px;
+  color: #1b1f0a;
+  background: #ffcc00;
+}
+
+[data-card-theme="mines"] .card-letter {
+  animation-name: letter-stencil;
+  animation-timing-function: steps(2);
+}
+
+@keyframes letter-stencil {
+  from {
+    opacity: 0;
+  }
+}
+
+.card-ping {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 20vh;
+  height: 20vh;
+  translate: -50% -50%;
+  border: 4px solid rgba(255, 80, 46, 0.8);
+  border-radius: 50%;
+  animation: ring-out 1.2s 0.4s ease-out infinite;
+}
+
+/* --- King of the hill: golden rays and a crown --- */
+
+[data-card-theme="hill"] .card-band {
+  background: linear-gradient(100deg, #ff9a1f, #ffcf3f, #ff9a1f);
+  color: #fff8dc;
+}
+
+.card-rays {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200vw;
+  height: 200vw;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(
+    rgba(255, 255, 255, 0.35) 0deg 8deg,
+    transparent 8deg 16deg
+  );
+  animation: rays-spin 12s linear infinite;
+}
+
+.card-crown {
+  position: relative;
+  display: block;
+  width: 9vh;
+  margin: 0 auto -1vh;
+  fill: #ffd23f;
+  stroke: #3d1a00;
+  stroke-width: 5;
+  stroke-linejoin: round;
+  animation: crown-drop 0.6s 0.25s cubic-bezier(0.3, 1.8, 0.5, 1) both;
+}
+
+@keyframes crown-drop {
+  from {
+    translate: 0 -40vh;
+    rotate: 30deg;
+  }
+}
+
+[data-card-theme="hill"] .card-letter {
+  animation-name: letter-rise;
+}
+
+@keyframes letter-rise {
+  from {
+    translate: 0 30vh;
+  }
+}
+
+/* --- Gravity: letters fall in and bounce --- */
+
+[data-card-theme="gravity"] .card-band {
+  background: linear-gradient(100deg, #2b1263, #00b3a7);
+  rotate: 4deg;
+}
+
+[data-card-theme="gravity"] .card-letter {
+  animation-name: letter-fall;
+  animation-duration: 0.8s;
+  animation-timing-function: linear;
+}
+
+@keyframes letter-fall {
+  0% {
+    translate: 0 -70vh;
+    animation-timing-function: cubic-bezier(0.5, 0, 1, 0.6);
+  }
+  55% {
+    translate: 0 0;
+    animation-timing-function: cubic-bezier(0, 0.4, 0.5, 1);
+  }
+  75% {
+    translate: 0 -6vh;
+    animation-timing-function: cubic-bezier(0.5, 0, 1, 0.6);
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+.card-spiral {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 160vw;
+  height: 160vw;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(
+    rgba(62, 230, 176, 0.25) 0deg 10deg,
+    transparent 10deg 20deg
+  );
+  animation: rays-spin 4s linear infinite reverse;
+}
+
+/* --- Hex chess: neon flickering on over a synthwave sunset --- */
+
+[data-card-theme="hex"] .card-band {
+  background: linear-gradient(180deg, #2a0845 0%, #ff2e88 140%);
+}
+
+[data-card-theme="hex"] .card-title {
+  color: #fff;
+  text-shadow:
+    0 0 6px #fff,
+    0 0 18px #ff2e88,
+    0 0 40px #ff2e88,
+    0.06em 0.06em 0 #21e6ff;
+}
+
+[data-card-theme="hex"] .card-letter {
+  animation-name: letter-neon;
+  animation-duration: 0.7s;
+  animation-timing-function: steps(1);
+}
+
+@keyframes letter-neon {
+  0%,
+  20%,
+  50% {
+    opacity: 0;
+  }
+  10%,
+  35%,
+  60% {
+    opacity: 1;
+  }
+}
+
+.card-synth-sun {
+  position: absolute;
+  left: 50%;
+  bottom: -30%;
+  width: 40vh;
+  height: 40vh;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fdf500, #ff2e88);
+  opacity: 0.5;
+}
+
+.card-synth-grid {
+  position: absolute;
+  inset: 50% -20% -50%;
+  background-image:
+    linear-gradient(#21e6ff 2px, transparent 2px),
+    linear-gradient(90deg, #21e6ff 2px, transparent 2px);
+  background-size: 50px 50px;
+  transform: perspective(200px) rotateX(60deg);
+  opacity: 0.45;
+}
+
+/* --- Stratego: stamped on a war map --- */
+
+[data-card-theme="stratego"] .card-band {
+  background:
+    linear-gradient(rgba(70, 50, 20, 0.15) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, rgba(70, 50, 20, 0.15) 1px, transparent 1px) 0 0 /
+      40px 40px,
+    linear-gradient(100deg, #d8c08a, #eadbae, #c9ad72);
+  color: #b3202a;
+}
+
+[data-card-theme="stratego"] .card-title {
+  display: inline-block;
+  padding: 0.05em 0.35em;
+  border: 0.08em solid #b3202a;
+  border-radius: 0.12em;
+  text-shadow: none;
+  rotate: -4deg;
+  mix-blend-mode: multiply;
+  animation: stamp 0.35s 0.35s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+[data-card-theme="stratego"] .card-letter {
+  animation: none;
+}
+
+[data-card-theme="stratego"] .card-tagline {
+  color: #3d2610;
+}
+
+@keyframes stamp {
+  from {
+    scale: 3;
+    opacity: 0;
+  }
+}
+
+.card-stamp-ring {
+  position: absolute;
+  right: 12vw;
+  top: 50%;
+  width: 16vh;
+  height: 16vh;
+  translate: 0 -50%;
+  border: 6px double rgba(47, 95, 168, 0.6);
+  border-radius: 50%;
+  rotate: 18deg;
+  animation: stamp 0.35s 0.6s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+/* ===== Result cards ===== */
+
+.result-card {
+  animation: card-dim-in 0.2s ease-out both;
+}
+
+.result-plate {
+  position: relative;
+  padding: 3vh 6vw;
+  text-align: center;
+  border: 6px solid #1b1033;
+  border-radius: 28px;
+  box-shadow: 12px 14px 0 #1b1033;
+  animation: plate-slam 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+@keyframes plate-slam {
+  from {
+    scale: 3;
+    rotate: -12deg;
+    opacity: 0;
+  }
+}
+
+.result-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: clamp(56px, 11vw, 160px);
+  line-height: 1;
+  color: #fff4e0;
+  text-shadow:
+    0.04em 0.04em 0 #1b1033,
+    0.08em 0.08em 0 #1b1033;
+}
+
+.result-title .card-letter {
+  animation-delay: calc(0.2s + var(--i) * 40ms);
+}
+
+.result-detail {
+  margin-top: 1vh;
+  font-size: clamp(16px, 2vw, 24px);
+  font-weight: 800;
+  color: #1b1033;
+}
+
+.result-win {
+  background: rgba(40, 20, 0, 0.45);
+}
+
+.result-win .result-plate {
+  background: linear-gradient(160deg, #ffe066, #ffb703);
+  rotate: -3deg;
+}
+
+.result-rays {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 250vmax;
+  height: 250vmax;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(
+    rgba(255, 210, 63, 0.4) 0deg 9deg,
+    transparent 9deg 18deg
+  );
+  animation: rays-spin 8s linear infinite;
+}
+
+.result-lose {
+  background: rgba(90, 0, 16, 0.55);
+  animation:
+    card-dim-in 0.2s ease-out both,
+    boom-shake 0.45s 0.1s linear;
+}
+
+.result-lose .result-plate {
+  background: linear-gradient(160deg, #ff5a6e, #b3122e);
+  rotate: 2deg;
+}
+
+.result-shatter {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.result-shatter path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.75);
+  stroke-width: 0.35;
+  stroke-dasharray: 160;
+  stroke-dashoffset: 160;
+  animation: crack-run 0.35s 0.05s ease-out forwards;
+}
+
+.result-draw {
+  background: rgba(10, 4, 24, 0.5);
+}
+
+.result-draw .result-plate {
+  background: linear-gradient(90deg, #fff4e0 50%, #2a174f 50%);
+}
+
+.result-draw .result-title {
+  color: #ffd23f;
+}
+
+.result-draw .result-detail {
+  color: #ffd23f;
+  text-shadow: 2px 2px 0 #1b1033;
+}

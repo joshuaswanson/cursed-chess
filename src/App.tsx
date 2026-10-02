@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { Board } from "./components/Board/Board";
 import { HexBoard } from "./components/HexBoard/HexBoard";
 import { PromotionDialog } from "./components/PromotionDialog/PromotionDialog";
-import { Announcement } from "./components/Announcement/Announcement";
+import { ShowCards } from "./components/Show/ShowCards";
+import { CurseIntro } from "./components/Show/CurseIntro";
 import { Hud } from "./components/Hud/Hud";
 import { FoeRallyBar, YourRallyBar } from "./components/RallyPanel/RallyPanel";
 import { Backdrop } from "./components/Backdrop/Backdrop";
@@ -68,7 +69,8 @@ function App() {
       {!cursed && <BoringFooter />}
       <PageFog active={theme.id === "fog"} />
       <PromotionDialog />
-      <Announcement />
+      <ShowCards />
+      <CurseIntro />
     </div>
   );
 }

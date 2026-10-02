@@ -89,6 +89,30 @@ function creak(
   src.stop(at + length + 0.02);
 }
 
+/** Several notes at once with a quick attack and a decay */
+function chord(
+  c: AudioContext,
+  out: AudioNode,
+  at: number,
+  frequencies: number[],
+  length: number,
+  type: OscillatorType,
+  loudness: number,
+): void {
+  for (const f of frequencies) {
+    const osc = c.createOscillator();
+    osc.type = type;
+    osc.frequency.value = f;
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(loudness, at + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, at + length);
+    osc.connect(gain).connect(out);
+    osc.start(at);
+    osc.stop(at + length + 0.05);
+  }
+}
+
 function stopHum(): void {
   if (!hum || !ctx) return;
   const { oscillators, gain } = hum;
@@ -280,5 +304,136 @@ export const sfx = {
     for (let i = 0; i < 14; i++) {
       creak(c, out, t + Math.random() * 1.1, 1);
     }
+  },
+
+  /** Digital breakup: stuttering square-wave blips and static */
+  glitch(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    for (let i = 0; i < 7; i++) {
+      const at = t + i * 0.07 + Math.random() * 0.04;
+      const osc = c.createOscillator();
+      osc.type = "square";
+      osc.frequency.value = 80 + Math.random() * 900;
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.09, at);
+      gain.gain.setValueAtTime(0.0001, at + 0.04 + Math.random() * 0.04);
+      osc.connect(gain).connect(out);
+      osc.start(at);
+      osc.stop(at + 0.1);
+    }
+    const src = noiseSource(c);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    src.connect(gain).connect(out);
+    src.start(t);
+    src.stop(t + 0.55);
+  },
+
+  /** The curse arrives: a deep impact, a rising whoosh, and a bright chord */
+  boom(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+
+    const hit = c.createOscillator();
+    hit.type = "sine";
+    hit.frequency.setValueAtTime(120, t);
+    hit.frequency.exponentialRampToValueAtTime(32, t + 0.9);
+    const hitGain = c.createGain();
+    hitGain.gain.setValueAtTime(0.9, t);
+    hitGain.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
+    hit.connect(hitGain).connect(out);
+    hit.start(t);
+    hit.stop(t + 1.2);
+
+    const src = noiseSource(c);
+    const band = c.createBiquadFilter();
+    band.type = "bandpass";
+    band.Q.value = 1;
+    band.frequency.setValueAtTime(200, t);
+    band.frequency.exponentialRampToValueAtTime(4000, t + 0.6);
+    const whoosh = c.createGain();
+    whoosh.gain.setValueAtTime(0.5, t);
+    whoosh.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+    src.connect(band).connect(whoosh).connect(out);
+    src.start(t);
+    src.stop(t + 0.85);
+
+    chord(c, out, t + 0.35, [261.6, 329.6, 392, 523.3], 1.4, "sawtooth", 0.06);
+  },
+
+  /** A short sting as a new mode's title card lands, pitched per channel */
+  modeSting(step: number): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const root = 220 * Math.pow(2, (step % 7) / 12);
+    const src = noiseSource(c);
+    const band = c.createBiquadFilter();
+    band.type = "bandpass";
+    band.Q.value = 1.2;
+    band.frequency.setValueAtTime(300, t);
+    band.frequency.exponentialRampToValueAtTime(3000, t + 0.25);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.35, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    src.connect(band).connect(gain).connect(out);
+    src.start(t);
+    src.stop(t + 0.32);
+    chord(
+      c,
+      out,
+      t + 0.12,
+      [root, root * 1.26, root * 1.5],
+      0.7,
+      "triangle",
+      0.12,
+    );
+  },
+
+  win(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    [523.3, 659.3, 784, 1046.5].forEach((f, i) =>
+      chord(c, out, t + i * 0.11, [f], 0.35, "square", 0.07),
+    );
+    chord(c, out, t + 0.48, [523.3, 659.3, 784, 1046.5], 1, "triangle", 0.1);
+  },
+
+  lose(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    [392, 370, 349.2, 329.6].forEach((f, i) => {
+      const osc = c.createOscillator();
+      osc.type = "sawtooth";
+      const at = t + i * 0.3;
+      osc.frequency.setValueAtTime(f, at);
+      if (i === 3)
+        osc.frequency.exponentialRampToValueAtTime(f * 0.85, at + 0.9);
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(0.08, at + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, at + (i === 3 ? 1 : 0.28));
+      osc.connect(gain).connect(out);
+      osc.start(at);
+      osc.stop(at + 1.05);
+    });
+  },
+
+  draw(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    chord(c, out, c.currentTime, [392, 493.9], 0.6, "triangle", 0.12);
   },
 };
