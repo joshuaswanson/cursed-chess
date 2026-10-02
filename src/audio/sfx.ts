@@ -498,4 +498,78 @@ export const sfx = {
     osc.start(t);
     osc.stop(t + 0.15);
   },
+
+  /** A mine primes under a piece: three beeps, each one quicker */
+  mineArm(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    [0, 0.26, 0.44].forEach((at) => {
+      const osc = c.createOscillator();
+      osc.type = "square";
+      osc.frequency.value = 2100;
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.09, t + at);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + at + 0.09);
+      osc.connect(gain).connect(out);
+      osc.start(t + at);
+      osc.stop(t + at + 0.1);
+    });
+  },
+
+  /** The mine goes off: a crack, a deep blast, and dirt raining back down */
+  mineBlast(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    crackle(c, out, 2);
+
+    const sub = c.createOscillator();
+    sub.type = "sine";
+    sub.frequency.setValueAtTime(90, t);
+    sub.frequency.exponentialRampToValueAtTime(30, t + 0.9);
+    const subGain = c.createGain();
+    subGain.gain.setValueAtTime(0.9, t);
+    subGain.gain.exponentialRampToValueAtTime(0.001, t + 1);
+    sub.connect(subGain).connect(out);
+    sub.start(t);
+    sub.stop(t + 1.05);
+
+    const src = noiseSource(c);
+    const low = c.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.setValueAtTime(3000, t);
+    low.frequency.exponentialRampToValueAtTime(200, t + 1.2);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(1, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 1.3);
+    src.connect(low).connect(gain).connect(out);
+    src.start(t);
+    src.stop(t + 1.35);
+
+    for (let i = 0; i < 10; i++) {
+      creak(c, out, t + 0.3 + Math.random() * 0.8, 0.5);
+    }
+  },
+
+  /** A piece is taken: a punchy thump with a slap on top */
+  capture(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const thump = c.createOscillator();
+    thump.type = "sine";
+    thump.frequency.setValueAtTime(180, t);
+    thump.frequency.exponentialRampToValueAtTime(50, t + 0.18);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    thump.connect(gain).connect(out);
+    thump.start(t);
+    thump.stop(t + 0.25);
+    crackle(c, out, 1.2);
+  },
 };

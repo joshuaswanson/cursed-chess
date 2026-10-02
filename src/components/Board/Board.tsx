@@ -7,6 +7,11 @@ import { pieceImage } from "../../utils/pieceImages";
 import { Portal } from "./Portal";
 import { Battlefield, WorldRiver } from "./Battlefield";
 import { BoardShatter } from "../HexWarp/HexWarp";
+import { MineBlast } from "./MineBlast";
+import {
+  visualCol as colOnScreen,
+  visualRow as rowOnScreen,
+} from "./boardGeometry";
 import { PortalArrows } from "./PortalArrows";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
@@ -22,6 +27,7 @@ import { sfx } from "../../audio/sfx";
 import {
   useGravityFalls,
   useMineExplosions,
+  useCaptureBurst,
   useSlideAnimation,
 } from "./useBoardEffects";
 import "./Board.css";
@@ -75,6 +81,8 @@ export function Board() {
     deployPieceType,
     resolveExplosion,
     hexTransition,
+    moveHistory,
+    cursed,
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -135,7 +143,15 @@ export function Board() {
     flipped,
     squareSize,
   );
-  const explosions = useMineExplosions(
+  // Autonomous battles capture constantly, so only turn-based captures burst
+  const lastRecord = moveHistory[moveHistory.length - 1];
+  const capture = useCaptureBurst(
+    cursed && lastRecord?.move.captured && lastAutonomousMoves.length === 0
+      ? lastRecord.move.to
+      : null,
+    moveHistory.length,
+  );
+  const { armed: minesArmed, blasting: minesBlasting } = useMineExplosions(
     overlays.pendingExplosions,
     resolveExplosion,
   );
@@ -203,7 +219,8 @@ export function Board() {
       const isLifted =
         (drag?.isDragging && drag.sq === sq) ||
         returnAnim?.sq === sq ||
-        travel?.info.landing === sq;
+        travel?.info.landing === sq ||
+        minesBlasting.has(sq);
 
       let className = `square ${(rank + file) % 2 !== 0 ? "light" : "dark"}`;
       for (const mod of squareMods) {
@@ -214,6 +231,7 @@ export function Board() {
       if (isCheck) className += " in-check";
       if (drag?.isDragging && isLegalTarget) className += " drag-target";
       if (isDeployTarget) className += " deploy-target";
+      if (minesArmed.has(sq)) className += " mine-armed";
       className += riverClasses(file, rank, sq);
 
       const slide = slides.get(sq);
@@ -238,6 +256,26 @@ export function Board() {
                 animation: "gravity-fall 0.6s ease-in-out 1.05s both",
               } as React.CSSProperties)
             : undefined;
+
+      // Pieces next to a detonating mine are shoved away from it
+      const blastFrom = [...minesBlasting].find(
+        (m) =>
+          m !== sq &&
+          Math.abs((m & 7) - file) <= 1 &&
+          Math.abs((m >> 4) - rank) <= 1,
+      );
+      const shove =
+        blastFrom !== undefined
+          ? offsetBetween(sq, blastFrom, flipped, squareSize * 0.35)
+          : null;
+      const finalPieceStyle = shove
+        ? ({
+            ...pieceStyle,
+            "--shove-x": `${shove.x}px`,
+            "--shove-y": `${shove.y}px`,
+            animation: "blast-shove 0.5s cubic-bezier(0.2, 0.8, 0.3, 1)",
+          } as React.CSSProperties)
+        : pieceStyle;
 
       const portalColor = overlays.portalSquares.get(sq);
       const closingColor = closingPortals.get(sq);
@@ -280,7 +318,7 @@ export function Board() {
                 src={pieceImage(piece)}
                 alt={`${piece.color}${piece.type}`}
                 className={`piece-img${isHidden ? " stratego-piece-hidden" : ""}`}
-                style={pieceStyle}
+                style={finalPieceStyle}
                 draggable={false}
                 onPointerDown={(e) => onPiecePointerDown(e, sq, piece)}
               />
@@ -295,7 +333,22 @@ export function Board() {
             </>
           )}
 
-          {explosions.has(sq) && <div className="mine-explosion" />}
+          {minesArmed.has(sq) && <span className="mine-pop" aria-hidden />}
+          {capture?.sq === sq && (
+            <div className="capture-burst" key={capture.id} aria-hidden>
+              <span
+                className="capture-word"
+                style={
+                  {
+                    "--tilt": `${(capture.id % 2 ? 1 : -1) * 10}deg`,
+                  } as React.CSSProperties
+                }
+              >
+                {capture.word}
+              </span>
+            </div>
+          )}
+          {isCheck && cursed && <span className="check-sticker">Check!</span>}
 
           {visualCol === 0 && (
             <span className="coord coord-rank">{rank + 1}</span>
@@ -320,6 +373,8 @@ export function Board() {
     (overlays.gravityDirection ? " gravity-active" : "") +
     (battleRoyale ? " battle-royale" : "") +
     (collapse ? " br-quake" : "") +
+    (minesBlasting.size > 0 ? " mine-quake" : "") +
+    (capture ? " capture-jolt" : "") +
     (dangerProgress >= 0.6 ? " br-trembling" : "");
 
   const { gravityAngle } = overlays;
@@ -361,6 +416,33 @@ export function Board() {
         )}
         {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
         {rows}
+        {[...minesBlasting].map((sq) => {
+          const piece = game.board.get(sq);
+          const col = colOnScreen(sq, flipped);
+          const row = rowOnScreen(sq, flipped);
+          return (
+            <div key={sq}>
+              <MineBlast col={col} row={row} squareSize={squareSize} />
+              {piece && (
+                <img
+                  src={pieceImage(piece)}
+                  className="launched-piece"
+                  style={
+                    {
+                      left: `${col * 12.5 + 0.625}%`,
+                      top: `${row * 12.5 + 0.625}%`,
+                      "--fly-x": `${(col < 4 ? -1 : 1) * squareSize * 3.5}px`,
+                      "--fly-y": `${-squareSize * 6}px`,
+                    } as React.CSSProperties
+                  }
+                  draggable={false}
+                  alt=""
+                />
+              )}
+            </div>
+          );
+        })}
+        {minesBlasting.size > 0 && <div className="board-flash" aria-hidden />}
         {overlays.hasRally && (
           <div
             className={`deploy-zone-border${deployPieceType ? " dragging" : ""}`}

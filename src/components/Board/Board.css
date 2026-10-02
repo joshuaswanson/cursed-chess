@@ -86,116 +86,99 @@
 }
 
 /* --- Minefield --- */
+
+/* A revealed mine: a hazard sign stuck to the square */
 .square.mine-warning {
-  box-shadow: inset 0 0 14px rgba(255, 200, 0, 0.4);
-  animation: mine-pulse 1.5s ease-in-out infinite;
+  box-shadow: inset 0 0 0 3px #ffcc00;
 }
 
-@keyframes mine-pulse {
-  0%,
-  100% {
-    box-shadow: inset 0 0 10px rgba(255, 200, 0, 0.3);
-  }
+.square.mine-warning::after {
+  content: "!";
+  position: absolute;
+  top: 6%;
+  right: 6%;
+  display: grid;
+  place-items: end center;
+  width: 34%;
+  height: 30%;
+  padding-bottom: 1%;
+  font-family: var(--font-display);
+  font-size: calc(var(--square-size) * 0.17);
+  color: #141808;
+  background: #ffcc00;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  z-index: 3;
+  animation: hazard-blink 1.2s steps(1) infinite;
+}
+
+@keyframes hazard-blink {
   50% {
-    box-shadow: inset 0 0 20px rgba(255, 200, 0, 0.6);
+    background: #ff4f2e;
   }
 }
 
+/* Where a mine went off: a scorched crater */
 .square.mine-exploded {
-  background-color: transparent !important;
-  background-image: none !important;
+  background-image:
+    radial-gradient(
+      circle,
+      #1a1005 0 18%,
+      rgba(40, 25, 8, 0.85) 30%,
+      rgba(60, 40, 10, 0.4) 48%,
+      transparent 62%
+    ),
+    conic-gradient(
+      from 20deg,
+      transparent 0 8%,
+      rgba(20, 12, 4, 0.5) 8% 10%,
+      transparent 10% 30%,
+      rgba(20, 12, 4, 0.5) 30% 32%,
+      transparent 32% 58%,
+      rgba(20, 12, 4, 0.5) 58% 60%,
+      transparent 60%
+    ) !important;
+  background-size: 100% 100% !important;
 }
 
-/* --- King of the Hill --- */
+/* --- King of the hill: gold throne squares --- */
+
 .square.hill-square {
-  background: radial-gradient(
-    circle,
-    rgba(255, 215, 0, 0.25) 0%,
-    transparent 70%
-  );
-  box-shadow:
-    inset 0 0 20px rgba(255, 215, 0, 0.4),
-    0 0 10px rgba(255, 215, 0, 0.2);
-  animation: hill-pulse 2s ease-in-out infinite;
+  background-image: linear-gradient(
+    135deg,
+    #fff3a8 0%,
+    #ffd23f 45%,
+    #d99a06 100%
+  ) !important;
+  box-shadow: inset 0 0 0 3px #8a4b00;
 }
 
-.square.hill-square.light {
-  background-color: #ddc860;
-}
-
-.square.hill-square.dark {
-  background-color: #b8a040;
-}
-
-@keyframes hill-pulse {
-  0%,
-  100% {
-    box-shadow:
-      inset 0 0 16px rgba(255, 215, 0, 0.3),
-      0 0 6px rgba(255, 215, 0, 0.15);
-  }
-  50% {
-    box-shadow:
-      inset 0 0 28px rgba(255, 215, 0, 0.6),
-      0 0 16px rgba(255, 215, 0, 0.3);
-  }
+.square.hill-square::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  background: rgba(138, 75, 0, 0.28);
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 70'><path d='M8 60 L14 18 L34 40 L50 6 L66 40 L86 18 L92 60 Z'/></svg>")
+    center / contain no-repeat;
+  pointer-events: none;
 }
 
 .square.hill-white {
   box-shadow:
-    inset 0 0 20px rgba(100, 200, 255, 0.6),
-    0 0 12px rgba(100, 200, 255, 0.4);
-  animation: hill-glow-white 1.2s ease-in-out infinite;
-}
-
-.square.hill-white.light {
-  background-color: #a8d8e8;
-}
-
-.square.hill-white.dark {
-  background-color: #78a8c0;
+    inset 0 0 0 4px #2c6bff,
+    inset 0 0 22px rgba(44, 107, 255, 0.7);
+  animation: hill-held 1s ease-in-out infinite alternate;
 }
 
 .square.hill-black {
   box-shadow:
-    inset 0 0 20px rgba(255, 50, 50, 0.6),
-    0 0 12px rgba(255, 50, 50, 0.4);
-  animation: hill-glow-black 1.2s ease-in-out infinite;
+    inset 0 0 0 4px #e2304a,
+    inset 0 0 22px rgba(226, 48, 74, 0.7);
+  animation: hill-held 1s ease-in-out infinite alternate;
 }
 
-.square.hill-black.light {
-  background-color: #e8a8a8;
-}
-
-.square.hill-black.dark {
-  background-color: #c07878;
-}
-
-@keyframes hill-glow-white {
-  0%,
-  100% {
-    box-shadow:
-      inset 0 0 16px rgba(100, 200, 255, 0.5),
-      0 0 8px rgba(100, 200, 255, 0.3);
-  }
-  50% {
-    box-shadow:
-      inset 0 0 30px rgba(100, 200, 255, 0.8),
-      0 0 18px rgba(100, 200, 255, 0.5);
-  }
-}
-
-@keyframes hill-glow-black {
-  0%,
-  100% {
-    box-shadow:
-      inset 0 0 16px rgba(255, 50, 50, 0.5),
-      0 0 8px rgba(255, 50, 50, 0.3);
-  }
-  50% {
-    box-shadow:
-      inset 0 0 30px rgba(255, 50, 50, 0.8),
-      0 0 18px rgba(255, 50, 50, 0.5);
+@keyframes hill-held {
+  to {
+    filter: brightness(1.15);
   }
 }
 
@@ -229,34 +212,312 @@
 }
 
 /* --- Minefield explosion --- */
-.mine-explosion {
+/* --- Stepping on a mine --- */
+
+/* The mine pops up under the piece, its light blinking */
+.mine-pop {
   position: absolute;
-  inset: -50%;
-  z-index: 10;
-  pointer-events: none;
+  inset: 18%;
+  z-index: 1;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(255, 200, 0, 0.9) 0%,
-    rgba(255, 100, 0, 0.7) 30%,
-    rgba(255, 50, 0, 0.4) 60%,
-    transparent 80%
-  );
-  animation: mine-boom 0.6s ease-out forwards;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      #ff2a2a 0 12%,
+      #6b0000 13% 16%,
+      transparent 17%
+    ),
+    radial-gradient(circle at 35% 30%, #6f7573, #2b2f2e 60%, #141616);
+  box-shadow:
+    0 0 0 3px #141616,
+    0 -0.18em 0 -0.02em #141616;
+  animation: mine-rise 0.25s cubic-bezier(0.3, 1.8, 0.5, 1) both;
 }
 
-@keyframes mine-boom {
-  0% {
-    transform: scale(0.2);
-    opacity: 1;
+.mine-pop::before {
+  content: "";
+  position: absolute;
+  inset: -16%;
+  background: conic-gradient(
+    #141616 0 6%,
+    transparent 6% 12.5%,
+    #141616 12.5% 18.5%,
+    transparent 18.5% 25%,
+    #141616 25% 31%,
+    transparent 31% 37.5%,
+    #141616 37.5% 43.5%,
+    transparent 43.5% 50%,
+    #141616 50% 56%,
+    transparent 56% 62.5%,
+    #141616 62.5% 68.5%,
+    transparent 68.5% 75%,
+    #141616 75% 81%,
+    transparent 81% 87.5%,
+    #141616 87.5% 93.5%,
+    transparent 93.5%
+  );
+  mask: radial-gradient(circle, transparent 58%, #000 60%);
+  z-index: -1;
+}
+
+.mine-pop::after {
+  content: "";
+  position: absolute;
+  inset: 38%;
+  border-radius: 50%;
+  background: #ff2a2a;
+  box-shadow: 0 0 14px 6px #ff2a2a;
+  animation: mine-blink 0.2s steps(1) infinite;
+}
+
+@keyframes mine-rise {
+  from {
+    scale: 0;
+    translate: 0 30%;
   }
-  40% {
-    transform: scale(1.5);
-    opacity: 0.9;
+}
+
+@keyframes mine-blink {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+.square.mine-armed .piece-img {
+  z-index: 2;
+  animation: mine-tremble 0.08s linear infinite;
+}
+
+@keyframes mine-tremble {
+  50% {
+    translate: 2px -3px;
+    rotate: 3deg;
+  }
+}
+
+/* The detonation */
+.mine-blast {
+  position: absolute;
+  z-index: 14;
+  translate: -50% -50%;
+  pointer-events: none;
+}
+
+.launched-piece {
+  position: absolute;
+  width: 11.25%;
+  height: 11.25%;
+  z-index: 15;
+  pointer-events: none;
+  animation: piece-launch 1.15s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+}
+
+@keyframes piece-launch {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    filter: brightness(3);
+  }
+  20% {
+    filter: brightness(0.4) sepia(1);
   }
   100% {
-    transform: scale(2);
+    transform: translate(var(--fly-x), var(--fly-y)) rotate(900deg) scale(0.5);
+    filter: brightness(0.3) sepia(1);
     opacity: 0;
+  }
+}
+
+@keyframes blast-shove {
+  30% {
+    translate: var(--shove-x) var(--shove-y);
+    rotate: 12deg;
+  }
+}
+
+.board.mine-quake {
+  animation: mine-quake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes mine-quake {
+  10% {
+    translate: -10px 6px;
+  }
+  25% {
+    translate: 9px -8px;
+  }
+  40% {
+    translate: -7px 5px;
+  }
+  60% {
+    translate: 5px -3px;
+  }
+  80% {
+    translate: -2px 2px;
+  }
+}
+
+.board-flash {
+  position: absolute;
+  inset: -20px;
+  z-index: 16;
+  background: #fffbe8;
+  pointer-events: none;
+  animation: board-flash 0.35s ease-out forwards;
+}
+
+@keyframes board-flash {
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ring-burst {
+  from {
+    scale: 0.2;
+    opacity: 1;
+  }
+  to {
+    scale: 1.6;
+    opacity: 0;
+  }
+}
+
+@keyframes sticker-pop {
+  0% {
+    scale: 0;
+  }
+  70% {
+    scale: 1;
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* --- Capture bursts and check stickers --- */
+
+.capture-burst {
+  position: absolute;
+  inset: -45%;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.capture-burst::before {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  background: var(--accent);
+  clip-path: polygon(
+    50% 0%,
+    61% 30%,
+    95% 20%,
+    72% 47%,
+    100% 65%,
+    66% 66%,
+    72% 100%,
+    50% 76%,
+    25% 100%,
+    32% 68%,
+    0% 70%,
+    27% 48%,
+    3% 22%,
+    38% 30%
+  );
+  filter: drop-shadow(3px 4px 0 var(--ink));
+  animation: burst-star 0.7s cubic-bezier(0.3, 1.8, 0.5, 1) forwards;
+}
+
+.capture-word {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: calc(var(--square-size) * 0.36);
+  color: var(--paper);
+  -webkit-text-stroke: 0.08em var(--ink);
+  paint-order: stroke fill;
+  rotate: var(--tilt);
+  animation: burst-word 0.7s cubic-bezier(0.3, 1.8, 0.5, 1) forwards;
+}
+
+@keyframes burst-star {
+  0% {
+    scale: 0;
+    rotate: -40deg;
+  }
+  60% {
+    scale: 1;
+    opacity: 1;
+  }
+  100% {
+    scale: 1.15;
+    opacity: 0;
+  }
+}
+
+@keyframes burst-word {
+  0% {
+    scale: 0;
+  }
+  55% {
+    scale: 1.2;
+    opacity: 1;
+  }
+  100% {
+    scale: 1;
+    opacity: 0;
+  }
+}
+
+.board.capture-jolt {
+  animation: capture-jolt 0.3s ease-out;
+}
+
+@keyframes capture-jolt {
+  25% {
+    translate: -4px 3px;
+  }
+  50% {
+    translate: 4px -2px;
+  }
+  75% {
+    translate: -2px 1px;
+  }
+}
+
+.check-sticker {
+  position: absolute;
+  top: -28%;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 13;
+  padding: 0.12em 0.4em;
+  font-family: var(--font-display);
+  font-size: calc(var(--square-size) * 0.22);
+  white-space: nowrap;
+  color: #fff4e0;
+  background: #e2304a;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  box-shadow: 3px 3px 0 var(--ink);
+  rotate: 6deg;
+  pointer-events: none;
+  animation: check-sticker 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes check-sticker {
+  from {
+    scale: 0.9;
+    rotate: 6deg;
+  }
+  to {
+    scale: 1.08;
+    rotate: -4deg;
   }
 }
 
