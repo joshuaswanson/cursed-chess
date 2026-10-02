@@ -13,41 +13,7 @@ function seeded(seed: number) {
 const inBands = (rand: () => number) =>
   rand() < 0.5 ? 20 + rand() * 300 : 600 + rand() * 280;
 
-/** A zigzag trench across the field at height `y` */
-function trench(rand: () => number, y: number): string {
-  let d = `M-40 ${y}`;
-  for (let x = 60; x <= W + 120; x += 120) {
-    d += ` L${x - 60} ${y + (rand() - 0.5) * 45} L${x} ${y + (rand() < 0.5 ? -40 : 40)}`;
-  }
-  return d;
-}
-
-/** Coiled barbed wire across the field at height `y`, held up by crossed stakes */
-function wire(rand: () => number, y: number) {
-  const coils: { x: number; y: number; tilt: number }[] = [];
-  const barbs: { x: number; y: number; a: number }[] = [];
-  const stakes: number[] = [];
-  for (let x = -20; x <= W + 20; x += 17) {
-    const cy = y + Math.sin(x / 120) * 6;
-    coils.push({ x, y: cy, tilt: (rand() - 0.5) * 20 });
-    // Barbs bristle off the top and bottom of each loop
-    for (const side of [-1, 1]) {
-      barbs.push({
-        x: x + (rand() - 0.5) * 9,
-        y: cy + side * (10 + rand() * 3),
-        a: rand() * 180,
-      });
-    }
-  }
-  for (let x = 30; x <= W; x += 160 + rand() * 80) stakes.push(x);
-  return { coils, barbs, stakes, y };
-}
-
-/**
- * The battlefield the Stratego board sits on, seen from above: a meadow torn
- * by craters, trenches lined with sandbags, barbed wire along no man's land
- * by the river, and trees at the edges.
- */
+/** The meadow the Stratego board sits on, seen from above, with trees at the edges */
 export function BattleLand() {
   const rand = seeded(19);
   const patches = Array.from({ length: 16 }, () => ({
@@ -56,11 +22,6 @@ export function BattleLand() {
     rx: 80 + rand() * 180,
     ry: 50 + rand() * 120,
     tone: rand() < 0.6 ? "#4f6a26" : "#9a9a4a",
-  }));
-  const craters = Array.from({ length: 14 }, () => ({
-    x: rand() * W,
-    y: inBands(rand),
-    r: 10 + rand() * 22,
   }));
   const trees = Array.from({ length: 22 }, () => {
     const left = rand() < 0.5;
@@ -87,8 +48,6 @@ export function BattleLand() {
       tone: Math.floor(rand() * 3),
     };
   });
-  const trenches = [trench(rand, 115), trench(rand, 795)];
-  const wires = [wire(rand, 228), wire(rand, 678)];
 
   return (
     <svg
@@ -132,21 +91,6 @@ export function BattleLand() {
         <filter id="land-shadow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="6" />
         </filter>
-        <filter id="land-rough" x="-5%" y="-150%" width="110%" height="400%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.06"
-            numOctaves="2"
-            seed="2"
-          />
-          <feDisplacementMap in="SourceGraphic" scale="8" />
-        </filter>
-        <radialGradient id="land-crater">
-          <stop offset="0" stopColor="#24180c" />
-          <stop offset="0.55" stopColor="#3d2a16" />
-          <stop offset="0.8" stopColor="#7b6040" />
-          <stop offset="1" stopColor="#7b6040" stopOpacity="0" />
-        </radialGradient>
         {[
           ["#86ab4a", "#4f7226", "#263c11"],
           ["#9aa94a", "#617128", "#323a12"],
@@ -214,74 +158,6 @@ export function BattleLand() {
           />
         ))}
       </g>
-
-      {trenches.map((d, i) => (
-        <g key={i} filter="url(#land-rough)">
-          <path d={d} className="trench-spoil" />
-          <path d={d} className="trench-bags" />
-          <path d={d} className="trench-bags trench-bags-top" />
-          <path d={d} className="trench-cut" />
-          <path d={d} className="trench-wall" transform="translate(-3 -4)" />
-          <path d={d} className="trench-floor" />
-          <path d={d} className="trench-boards" />
-        </g>
-      ))}
-
-      {craters.map((c, i) => (
-        <g key={i}>
-          <circle
-            cx={c.x}
-            cy={c.y}
-            r={c.r * 1.6}
-            fill="#5c4528"
-            opacity="0.35"
-            filter="url(#land-shadow)"
-          />
-          <circle cx={c.x} cy={c.y} r={c.r} fill="url(#land-crater)" />
-        </g>
-      ))}
-
-      {wires.map((w, i) => (
-        <g key={i} className="barbed-wire">
-          {w.stakes.map((x) => (
-            <g key={x} className="wire-stake">
-              <path
-                d={`M${x - 14} ${w.y - 18} L${x + 14} ${w.y + 18} M${x + 14} ${w.y - 18} L${x - 14} ${w.y + 18}`}
-              />
-            </g>
-          ))}
-          <g className="wire-shadow" transform="translate(3 5)">
-            {w.coils.map((c, k) => (
-              <ellipse
-                key={k}
-                cx={c.x}
-                cy={c.y}
-                rx="13"
-                ry="10"
-                transform={`rotate(${c.tilt} ${c.x} ${c.y})`}
-              />
-            ))}
-          </g>
-          {w.coils.map((c, k) => (
-            <ellipse
-              key={k}
-              cx={c.x}
-              cy={c.y}
-              rx="13"
-              ry="10"
-              transform={`rotate(${c.tilt} ${c.x} ${c.y})`}
-            />
-          ))}
-          {w.barbs.map((b, k) => (
-            <path
-              key={`b${k}`}
-              className="wire-barb"
-              d={`M${b.x - 4} ${b.y} L${b.x + 4} ${b.y} M${b.x} ${b.y - 4} L${b.x} ${b.y + 4}`}
-              transform={`rotate(${b.a} ${b.x} ${b.y})`}
-            />
-          ))}
-        </g>
-      ))}
 
       {trees.map((t, i) => (
         <g key={i}>
