@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
-import { toIndex } from "../../utils/squareUtils";
+import { rankOf, toIndex } from "../../utils/squareUtils";
 import { Color, GameStatus, PieceType } from "../../engine";
+import type { SquareIndex } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import { Portal } from "./Portal";
 import { PortalArrows } from "./PortalArrows";
@@ -152,6 +153,31 @@ export function Board() {
     ]),
   );
 
+  // Stratego's lakes sit in a river across the middle; the other squares there are bridges
+  const lakes = overlays.strategoLakes;
+  const riverRanks = new Set([...lakes].map(rankOf));
+  const riverClasses = (file: number, rank: number, sq: SquareIndex) => {
+    if (riverRanks.size === 0) return "";
+    if (riverRanks.has(rank)) {
+      if (lakes.has(sq)) return "";
+      const isOpen = (f: number) =>
+        f < 0 || f > 7 || lakes.has(toIndex(f, rank));
+      const left = flipped ? file + 1 : file - 1;
+      const right = flipped ? file - 1 : file + 1;
+      return (
+        " bridge" +
+        (isOpen(left) ? " bridge-rail-left" : "") +
+        (isOpen(right) ? " bridge-rail-right" : "")
+      );
+    }
+    const above = flipped ? rank - 1 : rank + 1;
+    const below = flipped ? rank + 1 : rank - 1;
+    return (
+      (riverRanks.has(above) ? " bank-top" : "") +
+      (riverRanks.has(below) ? " bank-bottom" : "")
+    );
+  };
+
   const rows = [];
   for (let visualRow = 0; visualRow < 8; visualRow++) {
     const rank = flipped ? visualRow : 7 - visualRow;
@@ -187,6 +213,7 @@ export function Board() {
       if (isCheck) className += " in-check";
       if (drag?.isDragging && isLegalTarget) className += " drag-target";
       if (isDeployTarget) className += " deploy-target";
+      className += riverClasses(file, rank, sq);
 
       const slide = slides.get(sq);
       const fall = gravityFalls.get(sq);

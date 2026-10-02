@@ -154,15 +154,16 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   stratego: {
     id: "stratego",
     title: "Stratego",
-    tagline: "Their pieces stay masked until they strike.",
-    sky: ["#04404f", "#0a8fa3", "#7fe0d0"],
-    accent: "#ffd23f",
-    accent2: "#ff6a4d",
-    ink: "#032a33",
-    frame: "#0b5f6b",
-    light: "#f8e8c4",
-    dark: "#d4a868",
-    text: "#f2fffb",
+    tagline:
+      "Their pieces stay masked until they strike. Cross at the bridges.",
+    sky: ["#1c140b", "#3d2c18", "#6b5232"],
+    accent: "#d6342f",
+    accent2: "#2f5fa8",
+    ink: "#1f150a",
+    frame: "#5b3a1c",
+    light: "#d9cf96",
+    dark: "#8f9150",
+    text: "#f4ead0",
   },
 };
 

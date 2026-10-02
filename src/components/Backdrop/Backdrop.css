@@ -523,93 +523,139 @@
   }
 }
 
-/* --- Stratego: tropical lagoon --- */
+/* --- Stratego: a campaign map on an old war table --- */
 
-.caustics {
+.war-table {
   position: absolute;
-  inset: -20%;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.12) 0 2px,
+      transparent 2px 140px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.025) 0 1px,
+      transparent 1px 7px
+    ),
+    linear-gradient(180deg, #3a2814, #24180b);
+}
+
+.war-map {
+  position: absolute;
+  inset: 5vh 3vw;
+  rotate: -1deg;
   background:
     radial-gradient(
-      ellipse 8% 4% at 20% 30%,
-      rgba(255, 255, 255, 0.18),
-      transparent
+      ellipse 40% 30% at 20% 75%,
+      rgba(120, 80, 30, 0.18),
+      transparent 70%
     ),
     radial-gradient(
-      ellipse 6% 5% at 60% 20%,
-      rgba(255, 255, 255, 0.15),
-      transparent
+      ellipse 30% 20% at 80% 20%,
+      rgba(120, 80, 30, 0.15),
+      transparent 70%
     ),
-    radial-gradient(
-      ellipse 10% 4% at 80% 60%,
-      rgba(255, 255, 255, 0.16),
-      transparent
-    ),
-    radial-gradient(
-      ellipse 7% 5% at 35% 70%,
-      rgba(255, 255, 255, 0.14),
-      transparent
-    );
-  background-size: 50% 50%;
-  animation: caustic-drift 12s ease-in-out infinite alternate;
+    linear-gradient(rgba(70, 50, 20, 0.12) 1px, transparent 1px) 0 0 / 80px 80px,
+    linear-gradient(90deg, rgba(70, 50, 20, 0.12) 1px, transparent 1px) 0 0 /
+      80px 80px,
+    radial-gradient(ellipse at center, #eadbae 0%, #d8c08a 70%, #b8975a 100%);
+  border-radius: 6px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    inset 0 0 80px rgba(90, 60, 20, 0.5);
+  filter: brightness(0.82) saturate(0.85);
 }
 
-@keyframes caustic-drift {
-  to {
-    transform: translate(5%, 4%) rotate(4deg);
-  }
-}
-
-.island {
+.war-map-ink {
   position: absolute;
-  right: 4vw;
-  bottom: 12vh;
-  width: 24vw;
-  height: 18vh;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.island-sand {
-  fill: #f2d48f;
-}
-
-.palm-trunk {
+.contours ellipse {
   fill: none;
-  stroke: #7a4b22;
-  stroke-width: 6;
+  stroke: rgba(110, 75, 35, 0.35);
+  stroke-width: 2;
+}
+
+.map-river {
+  fill: none;
+  stroke: rgba(60, 110, 150, 0.45);
+  stroke-width: 10;
   stroke-linecap: round;
 }
 
-.palm-leaf {
-  fill: #1f9a52;
+.troop-arrow {
+  fill: none;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 18 12;
+  animation: troops-advance 2.4s linear infinite;
 }
 
-.waves {
-  position: absolute;
-  left: -10%;
-  right: -10%;
-  bottom: 0;
-  height: 16vh;
-  background: radial-gradient(
-      circle at 50% 0,
-      transparent 22px,
-      var(--wave) 23px
-    )
-    0 0 / 60px 100%;
-  animation: wave-roll 6s linear infinite;
+.troop-head {
+  fill: none;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.waves-back {
-  --wave: rgba(5, 96, 122, 0.8);
-  bottom: 4vh;
-  animation-duration: 9s;
-  animation-direction: reverse;
+.troop-red {
+  stroke: rgba(196, 40, 40, 0.75);
 }
 
-.waves-front {
-  --wave: #04404f;
+.troop-blue {
+  stroke: rgba(40, 80, 170, 0.75);
 }
 
-@keyframes wave-roll {
+@keyframes troops-advance {
   to {
-    background-position: 60px 0;
+    stroke-dashoffset: -60;
+  }
+}
+
+.compass {
+  position: absolute;
+  left: 3vw;
+  bottom: 4vh;
+  width: 16vmin;
+  height: 16vmin;
+  opacity: 0.6;
+  animation: compass-wobble 9s ease-in-out infinite;
+}
+
+.compass-ring {
+  fill: none;
+  stroke: #5a3b17;
+  stroke-width: 2;
+}
+
+.compass-ring-inner {
+  stroke-dasharray: 3 4;
+}
+
+.compass-needle {
+  fill: #8a2a1c;
+  stroke: #3d2610;
+  stroke-width: 1.5;
+}
+
+.compass-needle-cross {
+  fill: #5a3b17;
+}
+
+.compass-n {
+  font-family: var(--font-display);
+  font-size: 14px;
+  fill: #3d2610;
+  text-anchor: middle;
+}
+
+@keyframes compass-wobble {
+  50% {
+    rotate: 6deg;
   }
 }

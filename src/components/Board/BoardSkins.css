@@ -236,41 +236,126 @@
   );
 }
 
-/* --- Stratego: driftwood raft --- */
+/* --- Stratego: an old battlefield split by a river --- */
 
 [data-theme="stratego"] .board-shell {
-  background: repeating-linear-gradient(
-    0deg,
-    #a87445 0 16px,
-    #8c5c33 16px 18px,
-    #b98552 18px 34px
-  );
+  background:
+    radial-gradient(
+      circle at 14px 14px,
+      #9aa0a6 0 4px,
+      #3a3d40 5px,
+      transparent 6px
+    ),
+    radial-gradient(
+      circle at calc(100% - 14px) 14px,
+      #9aa0a6 0 4px,
+      #3a3d40 5px,
+      transparent 6px
+    ),
+    radial-gradient(
+      circle at 14px calc(100% - 14px),
+      #9aa0a6 0 4px,
+      #3a3d40 5px,
+      transparent 6px
+    ),
+    radial-gradient(
+      circle at calc(100% - 14px) calc(100% - 14px),
+      #9aa0a6 0 4px,
+      #3a3d40 5px,
+      transparent 6px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      #6b4524 0 18px,
+      #553519 18px 20px,
+      #74502c 20px 38px
+    );
   box-shadow:
     10px 12px 0 var(--ink),
-    0 0 50px rgba(127, 224, 208, 0.45);
-}
-
-[data-theme="stratego"] .square.dark {
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.06) 0 2px,
-    transparent 2px 9px
-  );
+    0 10px 40px rgba(0, 0, 0, 0.55);
 }
 
 [data-theme="stratego"] .square.light {
   background-image:
     radial-gradient(
       circle at 30% 40%,
-      rgba(160, 120, 60, 0.2) 0 1px,
+      rgba(120, 100, 40, 0.25) 0 1px,
       transparent 1.5px
     ),
     radial-gradient(
       circle at 70% 75%,
-      rgba(160, 120, 60, 0.18) 0 1px,
+      rgba(120, 100, 40, 0.2) 0 1px,
       transparent 1.5px
     );
   background-size:
     8px 8px,
     11px 11px;
+}
+
+[data-theme="stratego"] .square.dark {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 0 4px,
+    transparent 4px 8px
+  );
+}
+
+/* Bridge decks: planks across the river, highlights still show through */
+[data-theme="stratego"]
+  .square.bridge:not(.last-move):not(.selected):not(.drag-target) {
+  background-color: #a5703f;
+}
+
+[data-theme="stratego"] .square.bridge {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(40, 20, 5, 0.45) 0 2px,
+      transparent 2px calc(var(--square-size) / 4)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0 1px,
+      transparent 1px 6px
+    );
+}
+
+/* Railings on any side of a bridge that faces water or the board's edge */
+[data-theme="stratego"] .square.bridge-rail-left {
+  box-shadow:
+    inset 7px 0 0 #3b2410,
+    inset 10px 0 0 rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="stratego"] .square.bridge-rail-right {
+  box-shadow:
+    inset -7px 0 0 #3b2410,
+    inset -10px 0 0 rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="stratego"] .square.bridge-rail-left.bridge-rail-right {
+  box-shadow:
+    inset 7px 0 0 #3b2410,
+    inset -7px 0 0 #3b2410;
+}
+
+/* Muddy banks where the fields meet the river */
+[data-theme="stratego"] .square.bank-top {
+  background-image: linear-gradient(
+    180deg,
+    #5d4a2a 0%,
+    rgba(93, 74, 42, 0.55) 14%,
+    transparent 30%
+  );
+  background-size: 100% 100%;
+}
+
+[data-theme="stratego"] .square.bank-bottom {
+  background-image: linear-gradient(
+    0deg,
+    #5d4a2a 0%,
+    rgba(93, 74, 42, 0.55) 14%,
+    transparent 30%
+  );
+  background-size: 100% 100%;
 }

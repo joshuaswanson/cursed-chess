@@ -184,32 +184,57 @@ function Scene({ theme }: { theme: ThemeId }) {
     case "stratego":
       return (
         <>
-          <div className="caustics" />
-          <svg
-            className="island"
-            viewBox="0 0 400 160"
-            preserveAspectRatio="xMidYMax meet"
-          >
-            <path
-              className="island-sand"
-              d="M20 160 Q120 90 210 100 Q300 105 380 160 Z"
-            />
-            <path className="palm-trunk" d="M200 102 Q190 60 214 22" />
-            <path
-              className="palm-leaf"
-              d="M214 22 Q250 10 280 32 Q246 24 214 30 Z"
-            />
-            <path
-              className="palm-leaf"
-              d="M214 22 Q180 4 150 24 Q184 18 212 30 Z"
-            />
-            <path
-              className="palm-leaf"
-              d="M214 22 Q238 40 246 70 Q226 44 210 32 Z"
-            />
-          </svg>
-          <div className="waves waves-back" />
-          <div className="waves waves-front" />
+          <div className="war-table" />
+          <div className="war-map">
+            <svg
+              className="war-map-ink"
+              viewBox="0 0 1000 600"
+              preserveAspectRatio="none"
+            >
+              <g className="contours">
+                <ellipse cx="160" cy="140" rx="120" ry="70" />
+                <ellipse cx="160" cy="140" rx="85" ry="48" />
+                <ellipse cx="160" cy="140" rx="48" ry="26" />
+                <ellipse cx="840" cy="470" rx="140" ry="80" />
+                <ellipse cx="840" cy="470" rx="98" ry="54" />
+                <ellipse cx="840" cy="470" rx="56" ry="30" />
+                <ellipse cx="860" cy="110" rx="90" ry="50" />
+                <ellipse cx="860" cy="110" rx="52" ry="28" />
+              </g>
+              <path
+                className="map-river"
+                d="M-10 330 C150 300 260 360 420 320 S700 280 1010 330"
+              />
+              <path
+                className="troop-arrow troop-red"
+                d="M880 60 C760 140 700 200 640 270"
+              />
+              <path
+                className="troop-head troop-red"
+                d="M628 252 L640 270 L656 258"
+              />
+              <path
+                className="troop-arrow troop-blue"
+                d="M110 560 C220 470 300 420 370 380"
+              />
+              <path
+                className="troop-head troop-blue"
+                d="M352 378 L370 380 L364 398"
+              />
+            </svg>
+            <svg className="compass" viewBox="-50 -50 100 100" aria-hidden>
+              <circle r="44" className="compass-ring" />
+              <circle r="36" className="compass-ring compass-ring-inner" />
+              <path d="M0 -42 L8 0 L0 42 L-8 0 Z" className="compass-needle" />
+              <path
+                d="M-42 0 L0 8 L42 0 L0 -8 Z"
+                className="compass-needle compass-needle-cross"
+              />
+              <text y="-30" className="compass-n">
+                N
+              </text>
+            </svg>
+          </div>
         </>
       );
     default:

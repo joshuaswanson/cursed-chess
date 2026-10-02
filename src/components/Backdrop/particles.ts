@@ -293,29 +293,25 @@ const neon: Preset = {
   }),
 };
 
-const bubbles: Preset = {
-  count: 55,
+const smoke: Preset = {
+  count: 34,
   spawn: (w, h, initial) => ({
-    x: rand(0, w),
-    y: initial ? rand(0, h) : h + 20,
-    vx: 0,
-    vy: rand(-45, -18),
-    size: rand(2, 9),
+    x: rand(-100, w),
+    y: initial ? rand(0, h) : h + 80,
+    vx: rand(6, 18),
+    vy: rand(-22, -8),
+    size: rand(50, 130),
     age: 0,
-    life: rand(8, 16),
+    life: rand(14, 24),
     phase: rand(0, Math.PI * 2),
-    color: "",
+    color: pick(["60,52,40", "90,80,64", "40,34,26"]),
     draw: (ctx, p) => {
-      ctx.strokeStyle = "rgba(255,255,255,0.55)";
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      dot(ctx, p.x - p.size * 0.35, p.y - p.size * 0.35, p.size * 0.22);
-    },
-    step: (p, dt, _w, _h, t) => {
-      p.x += Math.sin(t * 2 + p.phase) * 14 * dt;
+      const r = p.size * (1 + p.age / p.life);
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+      grad.addColorStop(0, `rgba(${p.color},0.16)`);
+      grad.addColorStop(1, `rgba(${p.color},0)`);
+      ctx.fillStyle = grad;
+      dot(ctx, p.x, p.y, r);
     },
   }),
 };
@@ -329,7 +325,7 @@ export const PRESETS: Partial<Record<ThemeId, Preset>> = {
   hill: glitter,
   gravity: vortex,
   hex: neon,
-  stratego: bubbles,
+  stratego: smoke,
 };
 
 /** Advance and draw one frame. Returns the particles still alive. */
