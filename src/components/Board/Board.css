@@ -1146,6 +1146,8 @@
   width: 90%;
   height: 90%;
   pointer-events: auto;
+  /* Positioned so every browser stacks pieces above craters and other board marks */
+  position: relative;
   z-index: 2;
   cursor: grab;
   touch-action: none;
