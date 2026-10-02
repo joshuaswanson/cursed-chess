@@ -73,6 +73,7 @@ export class PortalChessPlugin implements ModePlugin {
   onGameStart(): void {
     this.portals = [];
     this.moveCount = 0;
+    this.respawnDue = false;
   }
 
   /** Portals tear open once the title cards are out of the way */
@@ -80,13 +81,24 @@ export class PortalChessPlugin implements ModePlugin {
     this.spawnPortals(ctx);
   }
 
-  onTurnEnd(ctx: PluginContext, color: Color): void {
+  /** Portals are due to move, once the last move has finished animating */
+  respawnDue = false;
+
+  onTurnEnd(_ctx: PluginContext, color: Color): void {
     if (color === Color.Black) {
       this.moveCount++;
       if (this.moveCount % this.repositionInterval === 0) {
-        this.spawnPortals(ctx);
+        this.respawnDue = true;
       }
     }
+  }
+
+  /** Moves the portals if they are due. Returns whether they moved. */
+  settle(ctx: PluginContext): boolean {
+    if (!this.respawnDue) return false;
+    this.respawnDue = false;
+    this.spawnPortals(ctx);
+    return true;
   }
 
   onBeforeMove(_ctx: PluginContext, move: Move): Move | null {

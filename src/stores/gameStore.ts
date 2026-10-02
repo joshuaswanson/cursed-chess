@@ -250,6 +250,8 @@ export interface GameStore {
   tickModeTimer: () => void;
   tickAutonomous: () => void;
   resolveExplosion: (square: SquareIndex) => void;
+  /** Moves the portals if a reshuffle is due, once the board has finished animating */
+  settlePortals: () => void;
   switchMode: (index?: number) => void;
 }
 
@@ -846,6 +848,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const next = Math.max(0, modeTimeRemaining - 1);
     set({ modeTimeRemaining: next });
     if (next <= 0) get().switchMode();
+  },
+
+  settlePortals: () => {
+    const { pluginManager, game } = get();
+    const portals = pluginManager.find<PortalChessPlugin>("portal-chess");
+    if (!portals?.settle({ game, board: game.board })) return;
+    // Hints worked out against the old portals no longer apply
+    set({ ...CLEARED_SELECTION });
   },
 
   resolveExplosion: (square) => {

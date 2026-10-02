@@ -12,6 +12,7 @@ import { Crater } from "./Crater";
 import { FootballLayer, Goal, PassMarker, Pitch } from "./Football";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
+import type { PortalChessPlugin } from "../../plugins/portalChess";
 import { BattleEffects, BattleUnit } from "./Battle";
 import {
   visualCol as colOnScreen,
@@ -40,6 +41,8 @@ import "./Board.css";
 import "./BoardSkins.css";
 
 const FILES = "abcdefgh";
+/** A beat after a move lands before the portals move */
+const PORTAL_SETTLE_MS = 150;
 
 /** Warns that gravity is turning: the arrow starts at the new fall direction and swings down with the board */
 function GravityAlert({ delta }: { delta: number }) {
@@ -141,6 +144,11 @@ export function Board() {
     if (openingPortals.size > 0) sfx.portalOpen();
   }, [openingPortals]);
 
+  // Portals only move once the last move has finished sliding or flying
+  const portalsDue =
+    pluginManager.find<PortalChessPlugin>("portal-chess")?.respawnDue ?? false;
+  const settlePortals = useGameStore((s) => s.settlePortals);
+
   const slides = useSlideAnimation({
     lastMove,
     isPortalMove: lastPortalMove !== null,
@@ -148,6 +156,12 @@ export function Board() {
     flipped,
     squareSize,
   });
+  useEffect(() => {
+    if (!portalsDue || travel || slides.size > 0) return;
+    const timer = setTimeout(settlePortals, PORTAL_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [portalsDue, travel, slides, settlePortals]);
+
   const gravityShift = useGravityShift(
     overlays.gravityMoves,
     overlays.gravityAngle,
