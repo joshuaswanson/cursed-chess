@@ -251,18 +251,51 @@ function meteorShower(w: number, h: number): Particle[] {
   });
 }
 
-/** A lumpy rock tumbling slowly past */
+/** Sunlight falls on every rock from the upper left, whichever way it is turned */
+const LIGHT = { x: -0.6, y: -0.8 };
+
+const ROCK_TONES = [
+  { base: "#6f6259", lit: "255,236,214", dark: "#1c1418" },
+  { base: "#5f5a66", lit: "226,232,255", dark: "#121019" },
+  { base: "#7a5e4a", lit: "255,224,190", dark: "#1e120c" },
+];
+
+/** A lumpy rock tumbling slowly past, lit from one side with cratered, gritty skin */
 function asteroid(w: number, h: number, big = false): Particle {
   const fromLeft = Math.random() < 0.5;
   const speed = big ? rand(90, 180) : rand(30, 80);
   const size = big ? rand(26, 60) : rand(6, 22);
-  const corners = Array.from({ length: 9 }, () => rand(0.7, 1.15));
-  const craters = Array.from({ length: 3 }, () => [
-    rand(-0.4, 0.4),
-    rand(-0.4, 0.4),
-    rand(0.12, 0.25),
-  ]);
-  const spin = rand(-1.2, 1.2);
+  const tone = pick(ROCK_TONES);
+
+  // A smooth, lopsided outline: a few broad bulges with small lumps on top
+  const stretch = rand(0.72, 0.95);
+  const lobes = [rand(0, 6), rand(0, 6)];
+  const outline = Array.from({ length: 18 }, (_, i) => {
+    const a = (i / 18) * Math.PI * 2;
+    const r =
+      1 +
+      0.12 * Math.sin(2 * a + lobes[0]) +
+      0.07 * Math.sin(3 * a + lobes[1]) +
+      rand(-0.05, 0.05);
+    return [Math.cos(a) * r, Math.sin(a) * r * stretch];
+  });
+  const craters = Array.from({ length: big ? 6 : 3 }, () => {
+    const a = rand(0, Math.PI * 2);
+    const d = Math.sqrt(Math.random()) * 0.6;
+    return {
+      x: Math.cos(a) * d,
+      y: Math.sin(a) * d * stretch,
+      r: rand(0.08, 0.24),
+    };
+  });
+  const grit = Array.from({ length: big ? 40 : 14 }, () => ({
+    x: rand(-1, 1),
+    y: rand(-1, 1) * stretch,
+    r: rand(0.015, 0.045),
+    light: Math.random() < 0.5,
+  }));
+  const spin = rand(-0.6, 0.6);
+
   return {
     x: fromLeft ? -size * 2 : w + size * 2,
     y: rand(h * 0.1, h * 0.9),
@@ -272,35 +305,94 @@ function asteroid(w: number, h: number, big = false): Particle {
     age: 0,
     life: (w + size * 4) / speed,
     phase: rand(0, Math.PI * 2),
-    color: pick(["#6d6066", "#7a6a5c", "#5c5a6e"]),
+    color: tone.base,
     draw: (ctx, p, t) => {
+      const s = p.size;
+      const turn = p.phase + t * spin;
+      // The light, seen from the rock's own turning frame
+      const lx = LIGHT.x * Math.cos(-turn) - LIGHT.y * Math.sin(-turn);
+      const ly = LIGHT.x * Math.sin(-turn) + LIGHT.y * Math.cos(-turn);
+
       ctx.translate(p.x, p.y);
-      ctx.rotate(p.phase + t * spin);
+      ctx.rotate(turn);
       ctx.beginPath();
-      corners.forEach((k, i) => {
-        const a = (i / corners.length) * Math.PI * 2;
-        const r = p.size * k;
-        if (i === 0) ctx.moveTo(r * Math.cos(a), r * Math.sin(a));
-        else ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
-      });
-      ctx.closePath();
-      const shade = ctx.createRadialGradient(
-        -p.size * 0.4,
-        -p.size * 0.4,
-        0,
-        0,
-        0,
-        p.size * 1.2,
-      );
-      shade.addColorStop(0, "#b9aca2");
-      shade.addColorStop(0.5, p.color);
-      shade.addColorStop(1, "#211a22");
-      ctx.fillStyle = shade;
-      ctx.fill();
-      ctx.fillStyle = "rgba(20,14,22,0.45)";
-      for (const [cx, cy, cr] of craters) {
-        dot(ctx, cx * p.size, cy * p.size, cr * p.size);
+      const mid = (k: number) => {
+        const [x1, y1] = outline[k % outline.length];
+        const [x2, y2] = outline[(k + 1) % outline.length];
+        return [((x1 + x2) / 2) * s, ((y1 + y2) / 2) * s];
+      };
+      const [sx, sy] = mid(0);
+      ctx.moveTo(sx, sy);
+      for (let k = 1; k <= outline.length; k++) {
+        const [cx, cy] = outline[k % outline.length];
+        const [mx, my] = mid(k);
+        ctx.quadraticCurveTo(cx * s, cy * s, mx, my);
       }
+      ctx.closePath();
+      ctx.fillStyle = tone.base;
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+
+      for (const g of grit) {
+        ctx.fillStyle = g.light ? "rgba(255,245,230,0.12)" : "rgba(0,0,0,0.18)";
+        dot(ctx, g.x * s, g.y * s, g.r * s);
+      }
+      for (const c of craters) {
+        const cx = c.x * s;
+        const cy = c.y * s;
+        const r = c.r * s;
+        // The bowl's wall nearest the light is in shadow; the far wall catches it
+        const bowl = ctx.createRadialGradient(
+          cx + lx * r * 0.45,
+          cy + ly * r * 0.45,
+          0,
+          cx,
+          cy,
+          r,
+        );
+        bowl.addColorStop(0, "rgba(0,0,0,0.5)");
+        bowl.addColorStop(0.7, "rgba(0,0,0,0.25)");
+        bowl.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = bowl;
+        dot(ctx, cx, cy, r);
+        const far = Math.atan2(-ly, -lx);
+        ctx.strokeStyle = `rgba(${tone.lit},0.35)`;
+        ctx.lineWidth = Math.max(0.6, r * 0.22);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.82, far - 1.1, far + 1.1);
+        ctx.stroke();
+      }
+
+      // Lighting is applied in the world's frame, so it does not turn with the rock
+      ctx.rotate(-turn);
+      const lit = ctx.createRadialGradient(
+        LIGHT.x * s * 0.55,
+        LIGHT.y * s * 0.55,
+        0,
+        LIGHT.x * s * 0.55,
+        LIGHT.y * s * 0.55,
+        s * 1.3,
+      );
+      lit.addColorStop(0, `rgba(${tone.lit},0.42)`);
+      lit.addColorStop(0.5, `rgba(${tone.lit},0.08)`);
+      lit.addColorStop(1, `rgba(${tone.lit},0)`);
+      ctx.fillStyle = lit;
+      ctx.fillRect(-s * 1.5, -s * 1.5, s * 3, s * 3);
+      const shade = ctx.createRadialGradient(
+        -LIGHT.x * s * 0.9,
+        -LIGHT.y * s * 0.9,
+        s * 0.2,
+        -LIGHT.x * s * 0.9,
+        -LIGHT.y * s * 0.9,
+        s * 1.6,
+      );
+      shade.addColorStop(0, tone.dark);
+      shade.addColorStop(0.45, `${tone.dark}cc`);
+      shade.addColorStop(1, `${tone.dark}00`);
+      ctx.fillStyle = shade;
+      ctx.fillRect(-s * 1.5, -s * 1.5, s * 3, s * 3);
+      ctx.restore();
     },
   };
 }
