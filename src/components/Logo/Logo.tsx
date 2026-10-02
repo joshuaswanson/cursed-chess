@@ -36,16 +36,3 @@ export function Logo() {
     </div>
   );
 }
-
-/** Broadcast-style badge naming the channel that is live */
-export function OnAir({ title }: { title: string }) {
-  return (
-    <div className="on-air" role="status">
-      <span className="on-air-light" aria-hidden />
-      <span className="on-air-label">On air</span>
-      <span className="on-air-title" key={title}>
-        {title}
-      </span>
-    </div>
-  );
-}

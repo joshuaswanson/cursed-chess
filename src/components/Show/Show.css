@@ -400,31 +400,6 @@
   }
 }
 
-/* A burst of TV static as the channel flips */
-.card-static {
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(rgba(255, 255, 255, 0.8) 1px, transparent 1.5px),
-    radial-gradient(rgba(0, 0, 0, 0.8) 1px, transparent 1.5px);
-  background-size:
-    4px 6px,
-    6px 4px;
-  animation:
-    static-shift 0.08s steps(3) infinite,
-    static-off 0.32s ease-out both;
-}
-
-@keyframes static-off {
-  0%,
-  60% {
-    opacity: 0.9;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
 .card-band {
   position: relative;
   width: 112vw;
@@ -453,20 +428,6 @@
   to {
     translate: 120vw 0;
   }
-}
-
-.card-channel {
-  position: relative;
-  display: inline-block;
-  margin-bottom: 1vh;
-  padding: 4px 12px;
-  font-size: clamp(13px, 1.4vw, 18px);
-  font-weight: 800;
-  color: var(--ink);
-  background: var(--accent);
-  border: 3px solid var(--ink);
-  border-radius: 8px;
-  rotate: 2deg;
 }
 
 .card-title {

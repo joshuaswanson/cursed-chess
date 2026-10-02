@@ -25,7 +25,7 @@ function Letters({ text }: { text: string }) {
   );
 }
 
-/** Decorations that give each channel's title card its own entrance */
+/** Decorations that give each mode's title card its own entrance */
 function Flair({ theme }: { theme: ThemeId }) {
   switch (theme) {
     case "portals":
@@ -95,25 +95,15 @@ function Flair({ theme }: { theme: ThemeId }) {
   }
 }
 
-function ModeCard({
-  theme,
-  channel,
-  closing,
-}: {
-  theme: ModeTheme;
-  channel: number;
-  closing: boolean;
-}) {
+function ModeCard({ theme, closing }: { theme: ModeTheme; closing: boolean }) {
   return (
     <div
       className={`show-card mode-card${closing ? " closing" : ""}`}
       data-card-theme={theme.id}
       role="status"
     >
-      <div className="card-static" />
       <div className="card-band">
         <Flair theme={theme.id} />
-        <span className="card-channel">Channel {channel}</span>
         <h1 className="card-title" aria-label={theme.title}>
           <Letters text={theme.title} />
         </h1>
@@ -167,7 +157,7 @@ function ResultCard({
   );
 }
 
-/** Title cards for each new channel and the result of every game */
+/** Title cards for each new mode and the result of every game */
 export function ShowCards() {
   const announcement = useGameStore((s) => s.announcement);
   const type = useGameStore((s) => s.announcementType);
@@ -176,7 +166,7 @@ export function ShowCards() {
   const [shown, setShown] = useState<{
     type: AnnouncementType;
     theme: ModeTheme;
-    channel: number;
+    step: number;
     key: number;
   } | null>(null);
   const [closing, setClosing] = useState(false);
@@ -189,7 +179,7 @@ export function ShowCards() {
       setShown({
         type,
         theme,
-        channel: modeIndex + 1,
+        step: modeIndex + 1,
         key: (shown?.key ?? 0) + 1,
       });
       setClosing(false);
@@ -200,7 +190,7 @@ export function ShowCards() {
 
   useEffect(() => {
     if (!shown || closing) return;
-    if (shown.type === "mode") sfx.modeSting(shown.channel);
+    if (shown.type === "mode") sfx.modeSting(shown.step);
     else sfx[shown.type]();
   }, [shown, closing]);
 
@@ -215,12 +205,7 @@ export function ShowCards() {
 
   if (!shown) return null;
   return shown.type === "mode" ? (
-    <ModeCard
-      key={shown.key}
-      theme={shown.theme}
-      channel={shown.channel}
-      closing={closing}
-    />
+    <ModeCard key={shown.key} theme={shown.theme} closing={closing} />
   ) : (
     <ResultCard key={shown.key} kind={shown.type} closing={closing} />
   );

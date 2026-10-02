@@ -10,7 +10,7 @@ import { Hud } from "./components/Hud/Hud";
 import { FoeRallyBar, YourRallyBar } from "./components/RallyPanel/RallyPanel";
 import { Backdrop } from "./components/Backdrop/Backdrop";
 import { PageFog } from "./components/Fog/Fog";
-import { Logo, OnAir } from "./components/Logo/Logo";
+import { Logo } from "./components/Logo/Logo";
 import {
   BoringFooter,
   BoringHeader,
@@ -55,7 +55,6 @@ function App() {
       {cursed ? (
         <header className="topbar">
           <Logo />
-          <OnAir title={theme.title} />
         </header>
       ) : (
         <BoringHeader />
