@@ -5,8 +5,6 @@ import { ALL_SQUARES, fileOf, rankOf, toIndex } from "../utils/squareUtils";
 
 /** Hits a wall square takes: the first cracks it, the second brings it down */
 const WALL_HP = 2;
-/** The attackers' catapults fire on their own every this many rounds */
-const VOLLEY_EVERY_ROUNDS = 2;
 const PIECE_VALUE: Record<PieceType, number> = {
   [PieceType.Pawn]: 1,
   [PieceType.Knight]: 3,
@@ -74,7 +72,6 @@ export interface SiegeView {
   /** Wall squares that have been knocked down */
   rubble: SquareIndex[];
   throne: SquareIndex;
-  lastBoulder: Strike | null;
   lastRam: Ram | null;
 }
 
@@ -90,8 +87,8 @@ const distance = (a: SquareIndex, b: SquareIndex) =>
 
 /**
  * One side holds a walled castle in the middle of the board, the other
- * surrounds it. Attackers batter the walls and catapults pound them every
- * few rounds. The attackers win by taking the king; the defenders win if
+ * surrounds it. Attackers batter down the walls to get in.
+ * The attackers win by taking the king; the defenders win if
  * the king is still standing when time runs out.
  */
 export class SiegePlugin implements ModePlugin {
@@ -103,11 +100,9 @@ export class SiegePlugin implements ModePlugin {
   /** The side behind on material gets the castle */
   defender: Color = Color.Black;
   throne: SquareIndex = toIndex(4, 4);
-  lastBoulder: Strike | null = null;
   lastRam: Ram | null = null;
   private hp = new Map<SquareIndex, number>();
   private rubble = new Set<SquareIndex>();
-  private rounds = 0;
   private nextId = 1;
 
   get attacker(): Color {
@@ -116,8 +111,6 @@ export class SiegePlugin implements ModePlugin {
 
   onGameStart(ctx: PluginContext): void {
     const { board, game } = ctx;
-    this.rounds = 0;
-    this.lastBoulder = null;
     this.lastRam = null;
     this.rubble.clear();
     this.defender =
@@ -136,12 +129,6 @@ export class SiegePlugin implements ModePlugin {
     game.enPassant = null;
   }
 
-  onTurnEnd(ctx: PluginContext, color: Color): void {
-    if (color !== Color.Black) return;
-    this.rounds++;
-    if (this.rounds % VOLLEY_EVERY_ROUNDS === 0) this.volley(ctx.board);
-  }
-
   /** The defenders win the siege if their king lasts until the timer runs out */
   onTimeUp(ctx: PluginContext): Color | null {
     return ctx.board.findKing(this.defender) !== null ? this.defender : null;
@@ -153,7 +140,6 @@ export class SiegePlugin implements ModePlugin {
       walls: Object.fromEntries(this.hp),
       rubble: [...this.rubble],
       throne: this.throne,
-      lastBoulder: this.lastBoulder,
       lastRam: this.lastRam,
     };
     return [{ type: "siege", squares: [...this.hp.keys()], data: view }];
@@ -257,23 +243,6 @@ export class SiegePlugin implements ModePlugin {
       board.walls.delete(target);
     }
     return hpAfter;
-  }
-
-  /** A catapult stone lands on a standing wall, favoring the stretch nearest the king */
-  private volley(board: Board): void {
-    const standing = [...this.hp.keys()];
-    if (standing.length === 0) return;
-    const king = board.findKing(this.defender);
-    const weight = (sq: SquareIndex) =>
-      (king === null ? 1 : 8 - distance(sq, king)) +
-      (this.hp.get(sq) === 1 ? 3 : 0);
-    const total = standing.reduce((sum, sq) => sum + weight(sq), 0);
-    let roll = Math.random() * total;
-    const target =
-      standing.find((sq) => (roll -= weight(sq)) <= 0) ??
-      standing[standing.length - 1];
-    const hpAfter = this.strike(board, target);
-    this.lastBoulder = { id: this.nextId++, target, hpAfter };
   }
 
   /** Moves every piece into position: defenders in the courtyard, attackers around the field */

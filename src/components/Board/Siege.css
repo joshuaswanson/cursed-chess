@@ -275,89 +275,6 @@
   }
 }
 
-/* --- Catapult stones --- */
-
-.boulder,
-.boulder-shadow {
-  position: absolute;
-  width: 12.5%;
-  height: 12.5%;
-  pointer-events: none;
-  z-index: 6;
-}
-
-/* Drawn on the page itself, above the logo and panels, so nothing covers it in flight */
-.boulder {
-  position: fixed;
-  z-index: 35;
-  animation: boulder-path linear both;
-}
-
-@keyframes boulder-path {
-  from {
-    translate: var(--from-x) var(--from-y);
-  }
-  to {
-    translate: 0 0;
-  }
-}
-
-.boulder-rock {
-  position: absolute;
-  inset: 22%;
-  border-radius: 46% 54% 42% 58%;
-  background: radial-gradient(circle at 35% 30%, #b9b0a2, #6f665a 55%, #2c2620);
-  box-shadow: 0 0 0 2px #1e1812;
-  animation: boulder-lob both;
-}
-
-/* Rises toward the viewer at the top of its arc, then drops onto the wall */
-@keyframes boulder-lob {
-  0% {
-    translate: 0 0;
-    scale: 0.9;
-    rotate: 0deg;
-    animation-timing-function: cubic-bezier(0.3, 0.6, 0.6, 1);
-  }
-  50% {
-    translate: 0 var(--lift);
-    scale: 1.6;
-    animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.5);
-  }
-  100% {
-    translate: 0 0;
-    scale: 1;
-    rotate: 540deg;
-  }
-}
-
-.boulder-shadow::before {
-  content: "";
-  position: absolute;
-  inset: 30% 20%;
-  border-radius: 50%;
-  background: rgba(10, 6, 2, 0.5);
-  filter: blur(2px);
-}
-
-.boulder-shadow {
-  animation: boulder-shadow ease-in both;
-}
-
-@keyframes boulder-shadow {
-  from {
-    scale: 0.2;
-    opacity: 0;
-  }
-  99% {
-    scale: 1;
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
 /* --- Where a blow lands --- */
 
 .siege-impact {
@@ -401,7 +318,7 @@
 }
 
 .impact-dust {
-  inset: -10%;
+  inset: 10%;
   background: radial-gradient(
     circle,
     rgba(190, 170, 140, 0.85),
@@ -412,12 +329,8 @@
 }
 
 .siege-impact.fell .impact-dust {
-  inset: -60%;
+  inset: -40%;
   animation-duration: 1.6s;
-}
-
-.siege-impact.small .impact-dust {
-  inset: 10%;
 }
 
 @keyframes impact-dust {

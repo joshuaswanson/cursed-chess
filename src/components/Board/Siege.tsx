@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import type { SquareIndex } from "../../engine";
 import { COURTYARD } from "../../plugins/siege";
 import type { SiegeView, Strike } from "../../plugins/siege";
@@ -8,8 +7,6 @@ import { sfx } from "../../audio/sfx";
 import { Castle, COURT_REACH } from "./Castle";
 import "./Siege.css";
 
-/** How long a catapult stone is in the air */
-export const BOULDER_FLIGHT_MS = 950;
 /** When a battering piece's blow lands */
 const RAM_HIT_MS = 170;
 
@@ -74,7 +71,7 @@ function Courtyard({
 
 /**
  * The castle on the board: walls, towers, gates and rubble under the pieces,
- * plus catapult stones and battering blows landing on the walls.
+ * plus the dust and chips where a battering blow lands.
  */
 export function SiegeLayer({
   view,
@@ -90,21 +87,13 @@ export function SiegeLayer({
   /** The walls are rising out of the ground as the mode begins */
   rising: boolean;
 }) {
-  const boulder = useFreshStrike(view.lastBoulder, BOULDER_FLIGHT_MS);
-  const [layer, setLayer] = useState<HTMLDivElement | null>(null);
   const ram = useFreshStrike(view.lastRam, RAM_HIT_MS);
 
   // A blow still on its way has not hit its wall yet, so show the wall as it was
-  const landing = [boulder, ram].flatMap((b) =>
-    b.flying && b.strike ? [b.strike] : [],
-  );
-  const shownHp = (sq: SquareIndex) => {
-    const pending = landing.find((strike) => strike.target === sq);
-    return pending ? pending.hpAfter + 1 : view.walls[sq];
-  };
-  const stillStanding = landing
-    .filter((strike) => strike.hpAfter === 0)
-    .map((strike) => strike.target);
+  const landing = ram.flying ? ram.strike : null;
+  const shownHp = (sq: SquareIndex) =>
+    landing?.target === sq ? landing.hpAfter + 1 : view.walls[sq];
+  const stillStanding = landing?.hpAfter === 0 ? [landing.target] : [];
 
   const placed = (sq: SquareIndex) => ({
     col: visualCol(sq, flipped),
@@ -120,7 +109,6 @@ export function SiegeLayer({
   const pct = (n: number) => `${n * 12.5}%`;
   return (
     <div
-      ref={setLayer}
       className={`siege-layer${rising ? " rising" : ""}`}
       style={{ "--sq": `${squareSize}px` } as Style}
     >
@@ -183,22 +171,12 @@ export function SiegeLayer({
         );
       })}
 
-      {boulder.strike && layer && (
-        <Boulder
-          key={boulder.strike.id}
-          strike={boulder.strike}
-          flipped={flipped}
-          squareSize={squareSize}
-          board={layer.getBoundingClientRect()}
-        />
-      )}
       {ram.strike && (
         <Impact
           key={`ram${ram.strike.id}`}
           strike={ram.strike}
           flipped={flipped}
           delayMs={RAM_HIT_MS}
-          small
         />
       )}
     </div>
@@ -226,102 +204,27 @@ function useFreshStrike(strike: Strike | null, travelMs: number) {
   return { strike: current, flying };
 }
 
-/** A catapult stone arcing in from beyond the board's edge */
-function Boulder({
-  strike,
-  flipped,
-  squareSize,
-  board,
-}: {
-  strike: Strike;
-  flipped: boolean;
-  squareSize: number;
-  /** Where the board sits on screen, since the stone flies above the whole page */
-  board: DOMRect;
-}) {
-  const col = visualCol(strike.target, flipped);
-  const row = visualRow(strike.target, flipped);
-  const fromLeft = col < 4;
-  const startCol = fromLeft ? -3 : 11;
-  const startRow = row - 1;
-  // The arc peaks as high as it can while staying on screen
-  const landY = board.top + row * squareSize;
-  const lift = Math.max(
-    0,
-    Math.min(squareSize * 2.2, landY - squareSize * 0.8),
-  );
-
-  useEffect(() => {
-    sfx.catapult();
-    const hit = setTimeout(
-      () => sfx.stoneHit(strike.hpAfter === 0),
-      BOULDER_FLIGHT_MS,
-    );
-    return () => clearTimeout(hit);
-  }, [strike]);
-
-  return (
-    <>
-      <span
-        className="boulder-shadow"
-        style={{
-          left: `${col * 12.5}%`,
-          top: `${row * 12.5}%`,
-          animationDuration: `${BOULDER_FLIGHT_MS}ms`,
-        }}
-      />
-      {createPortal(
-        <span
-          className="boulder"
-          style={
-            {
-              left: board.left + col * squareSize,
-              top: board.top + row * squareSize,
-              width: squareSize,
-              height: squareSize,
-              "--from-x": `${(startCol - col) * squareSize}px`,
-              "--from-y": `${(startRow - row) * squareSize}px`,
-              "--lift": `${-lift}px`,
-              animationDuration: `${BOULDER_FLIGHT_MS}ms`,
-            } as Style
-          }
-        >
-          <span
-            className="boulder-rock"
-            style={{ animationDuration: `${BOULDER_FLIGHT_MS}ms` }}
-          />
-        </span>,
-        document.body,
-      )}
-      <Impact strike={strike} flipped={flipped} delayMs={BOULDER_FLIGHT_MS} />
-    </>
-  );
-}
-
 /** Dust, flying stone chips, and a flash where a blow lands; a bigger cloud when a wall falls */
 function Impact({
   strike,
   flipped,
   delayMs,
-  small = false,
 }: {
   strike: Strike;
   flipped: boolean;
   delayMs: number;
-  small?: boolean;
 }) {
   const rand = seeded(strike.id);
   const col = visualCol(strike.target, flipped);
   const row = visualRow(strike.target, flipped);
   const fell = strike.hpAfter === 0;
   useEffect(() => {
-    if (!small) return;
     const hit = setTimeout(() => sfx.stoneHit(fell), delayMs);
     return () => clearTimeout(hit);
-  }, [small, fell, delayMs]);
+  }, [fell, delayMs]);
   return (
     <span
-      className={`siege-impact${fell ? " fell" : ""}${small ? " small" : ""}`}
+      className={`siege-impact${fell ? " fell" : ""}`}
       style={{ left: `${col * 12.5}%`, top: `${row * 12.5}%` }}
     >
       <span

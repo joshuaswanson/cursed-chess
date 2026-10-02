@@ -786,37 +786,6 @@
   }
 }
 
-/* Seen from above, the arm whips over its pivot as the catapult fires */
-.catapult-arm.firing {
-  animation: catapult-fire 0.7s cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-@keyframes catapult-fire {
-  0% {
-    scale: 1;
-  }
-  25% {
-    scale: -1.15 1;
-  }
-  60% {
-    scale: -0.6 1;
-  }
-  100% {
-    scale: 1;
-  }
-}
-
-.catapult-arm.firing .catapult-stone {
-  animation: catapult-release 0.7s steps(1);
-}
-
-@keyframes catapult-release {
-  20%,
-  85% {
-    opacity: 0;
-  }
-}
-
 /* --- FIFA: a packed stadium under floodlights --- */
 
 .stand {

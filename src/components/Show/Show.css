@@ -923,32 +923,6 @@
   }
 }
 
-.card-boulder {
-  position: absolute;
-  left: 0;
-  top: 10%;
-  width: 7vh;
-  height: 7vh;
-  border-radius: 46% 54% 42% 58%;
-  background: radial-gradient(circle at 35% 30%, #b9b0a2, #6f665a 55%, #2c2620);
-  box-shadow: 0 0 0 3px #120c08;
-  animation: card-boulder 1.4s 0.4s cubic-bezier(0.3, 0.1, 0.6, 1) both;
-}
-
-@keyframes card-boulder {
-  0% {
-    translate: -10vh 40vh;
-    rotate: 0deg;
-  }
-  50% {
-    translate: 45vw -6vh;
-  }
-  100% {
-    translate: calc(100vw + 10vh) 40vh;
-    rotate: 900deg;
-  }
-}
-
 /* --- King of the hill: golden rays and a crown --- */
 
 [data-card-theme="hill"] .card-band {

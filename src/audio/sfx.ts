@@ -900,41 +900,6 @@ export const sfx = {
     for (let i = 0; i < 6; i++) crackle(c, out, 1);
   },
 
-  /** A catapult lets fly: a creaking arm, a thump, and a stone whistling away */
-  catapult(): void {
-    const a = audio();
-    if (!a) return;
-    const { ctx: c, out } = a;
-    const t = c.currentTime;
-    creak(c, out, t, 0.6);
-    creak(c, out, t + 0.06, 0.5);
-    const thump = c.createOscillator();
-    thump.type = "sine";
-    thump.frequency.setValueAtTime(110, t + 0.08);
-    thump.frequency.exponentialRampToValueAtTime(45, t + 0.3);
-    const thumpGain = c.createGain();
-    thumpGain.gain.setValueAtTime(0.0001, t);
-    thumpGain.gain.setValueAtTime(0.4, t + 0.08);
-    thumpGain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
-    thump.connect(thumpGain).connect(out);
-    thump.start(t + 0.08);
-    thump.stop(t + 0.34);
-    const src = noiseSource(c);
-    const band = c.createBiquadFilter();
-    band.type = "bandpass";
-    band.Q.value = 3;
-    band.frequency.setValueAtTime(400, t + 0.1);
-    band.frequency.exponentialRampToValueAtTime(1600, t + 0.6);
-    band.frequency.exponentialRampToValueAtTime(500, t + 0.9);
-    const gain = c.createGain();
-    gain.gain.setValueAtTime(0.0001, t + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.12, t + 0.5);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.92);
-    src.connect(band).connect(gain).connect(out);
-    src.start(t + 0.1, Math.random() * 0.5);
-    src.stop(t + 0.95);
-  },
-
   /** Stone strikes stone. When the wall gives way, it crumbles with a rumble. */
   stoneHit(collapse: boolean): void {
     const a = audio();

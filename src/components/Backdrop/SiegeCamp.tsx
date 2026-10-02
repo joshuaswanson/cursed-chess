@@ -1,7 +1,3 @@
-import { useGameStore } from "../../stores/gameStore";
-import type { SiegePlugin } from "../../plugins/siege";
-import { visualCol } from "../Board/boardGeometry";
-
 const W = 1600;
 const H = 900;
 
@@ -145,18 +141,8 @@ function Campfire({ x, y, delay }: { x: number; y: number; delay: number }) {
   );
 }
 
-/** A catapult seen from above: a timber frame and a throwing arm that swings when it fires */
-function Catapult({
-  x,
-  y,
-  facing,
-  firing,
-}: {
-  x: number;
-  y: number;
-  facing: 1 | -1;
-  firing: number;
-}) {
+/** A catapult seen from above: a timber frame and a loaded throwing arm */
+function Catapult({ x, y, facing }: { x: number; y: number; facing: 1 | -1 }) {
   return (
     <g transform={`translate(${x} ${y}) scale(${facing} 1)`}>
       <rect
@@ -220,36 +206,25 @@ function Catapult({
         stroke="#24150a"
         strokeWidth="2"
       />
-      <g
-        key={firing}
-        className={firing ? "catapult-arm firing" : "catapult-arm"}
-      >
-        <rect
-          x="-4"
-          y="-6"
-          width="78"
-          height="12"
-          rx="4"
-          fill="#8a5c34"
-          stroke="#24150a"
-          strokeWidth="2"
-        />
-        <circle
-          cx="74"
-          cy="0"
-          r="11"
-          fill="#5a3a1e"
-          stroke="#24150a"
-          strokeWidth="2"
-        />
-        <circle
-          cx="74"
-          cy="0"
-          r="7"
-          fill="#8f877c"
-          className="catapult-stone"
-        />
-      </g>
+      <rect
+        x="-4"
+        y="-6"
+        width="78"
+        height="12"
+        rx="4"
+        fill="#8a5c34"
+        stroke="#24150a"
+        strokeWidth="2"
+      />
+      <circle
+        cx="74"
+        cy="0"
+        r="11"
+        fill="#5a3a1e"
+        stroke="#24150a"
+        strokeWidth="2"
+      />
+      <circle cx="74" cy="0" r="7" fill="#8f877c" />
     </g>
   );
 }
@@ -300,15 +275,9 @@ function Banner({ x, y, cloth }: { x: number; y: number; cloth: string }) {
 
 /**
  * The besieging army's camp at night, seen from above: scorched earth, tents,
- * campfires, banners, and a catapult on each side that swings when it fires.
+ * campfires, banners, and a catapult on each side.
  */
 export function SiegeCamp() {
-  const boulder = useGameStore(
-    (s) => s.pluginManager.find<SiegePlugin>("siege")?.lastBoulder ?? null,
-  );
-  const flipped = useGameStore((s) => s.flipped);
-  const fromLeft = boulder ? visualCol(boulder.target, flipped) < 4 : null;
-
   const rand = seeded(41);
   const tents = Array.from({ length: 18 }, () => {
     const left = rand() < 0.5;
@@ -388,18 +357,8 @@ export function SiegeCamp() {
       {banners.map((b, i) => (
         <Banner key={i} {...b} />
       ))}
-      <Catapult
-        x={110}
-        y={450}
-        facing={1}
-        firing={fromLeft === true ? boulder!.id : 0}
-      />
-      <Catapult
-        x={W - 110}
-        y={450}
-        facing={-1}
-        firing={fromLeft === false ? boulder!.id : 0}
-      />
+      <Catapult x={110} y={450} facing={1} />
+      <Catapult x={W - 110} y={450} facing={-1} />
       <rect width={W} height={H} fill="url(#camp-night)" />
     </svg>
   );

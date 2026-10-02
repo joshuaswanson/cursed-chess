@@ -130,7 +130,6 @@ function Flair({ theme }: { theme: ThemeId }) {
             <path d="M126 18 V2 L144 8 L126 14" className="card-castle-flag" />
             <path d="M274 18 V2 L292 8 L274 14" className="card-castle-flag" />
           </svg>
-          <span className="card-boulder" />
         </>
       );
     default:
