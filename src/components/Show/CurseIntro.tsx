@@ -84,17 +84,12 @@ function CurseBoom() {
         />
       ))}
       <div className="boom-logo">
-        <div className="boom-cursed">
+        <div className="boom-cursed" data-text="CURSED">
           {"CURSED".split("").map((ch, i) => (
             <span
               key={i}
               className="boom-letter"
-              style={
-                {
-                  "--i": i,
-                  "--tilt": `${(i % 2 ? 1 : -1) * 3}deg`,
-                } as React.CSSProperties
-              }
+              style={{ "--i": i } as React.CSSProperties}
             >
               {ch}
             </span>
