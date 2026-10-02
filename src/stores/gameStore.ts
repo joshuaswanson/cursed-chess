@@ -148,7 +148,15 @@ export const GAME_MODES: GameMode[] = [
 export type AnnouncementType = "mode" | "win" | "lose" | "draw";
 
 /** Pages of the plain chess site that shows before the curse */
-export type SiteTab = "Play" | "Puzzles" | "Learn" | "Watch" | "Community";
+export type SiteTab =
+  | "Play"
+  | "Puzzles"
+  | "Learn"
+  | "Watch"
+  | "Community"
+  | "Terms"
+  | "Privacy"
+  | "Help";
 
 export interface GameStore {
   game: Game;

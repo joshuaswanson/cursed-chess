@@ -287,3 +287,68 @@
   font-size: 13px;
   color: #4a4744;
 }
+
+/* --- Terms and Privacy --- */
+
+.legal-card {
+  padding: 18px 24px;
+}
+
+.legal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 22px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.legal-section + .legal-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #eeeeee;
+}
+
+/* --- Help --- */
+
+.faq-list {
+  overflow: hidden;
+}
+
+.faq-item + .faq-item {
+  border-top: 1px solid #eeeeee;
+}
+
+.faq-question {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.faq-question:hover {
+  background: #f7f7f7;
+}
+
+.faq-answer {
+  padding: 0 16px 14px;
+  font-size: 13px;
+  color: #4a4744;
+}
+
+.help-contact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 14px 16px;
+}

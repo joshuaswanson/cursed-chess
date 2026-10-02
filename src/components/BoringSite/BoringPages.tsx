@@ -370,7 +370,164 @@ function CommunityPage() {
   );
 }
 
-/** The fake content behind each tab of the plain site's header */
+const TERMS = [
+  "By reading this sentence you agree to these terms. By not reading it you also agree to these terms.",
+  "Totally Normal Chess is a normal chess website. Any suggestion otherwise is a violation of these terms.",
+  "We are not responsible for the movement of the knight. Nobody is.",
+  "The rules of chess are fixed and will not change. We reserve the right to change them at any time, including every 45 seconds.",
+  "You agree not to ask what happens after the third move.",
+  "Pieces you capture remain the property of Totally Normal Chess and may be returned to the board without notice.",
+  "Users may not tickle, bribe, or emotionally manipulate the computer opponent. It has feelings, and they are mostly about you.",
+  "All disputes will be settled by a single game against a Roomba. The Roomba moves first.",
+  "These terms are governed by the laws of a country we will name later.",
+];
+
+function TermsPage() {
+  return (
+    <div className="boring-page">
+      <div className="page-head">
+        <h1>Terms of Service</h1>
+        <p>Last updated: tomorrow.</p>
+      </div>
+      <article className="boring-card legal-card">
+        <ol className="legal-list">
+          {TERMS.map((term) => (
+            <li key={term}>{term}</li>
+          ))}
+        </ol>
+      </article>
+    </div>
+  );
+}
+
+const PRIVACY = [
+  {
+    title: "What we collect",
+    body: "Your moves, your mouse movements, how long you stare at the board, and the small sigh you make before resigning.",
+  },
+  {
+    title: "Who we share it with",
+    body: "The pieces. They talk to each other, and we cannot stop them.",
+  },
+  {
+    title: "Cookies",
+    body: "We use one cookie. It is oatmeal raisin. We are sorry.",
+  },
+  {
+    title: "Data retention",
+    body: "We keep your data forever, plus 45 seconds.",
+  },
+  {
+    title: "Your rights",
+    body: "You may request that we delete your data. Your request will be reviewed by the king, who has not left his square in years.",
+  },
+  {
+    title: "Children",
+    body: "This site is not intended for children under 13, or for adults who castle queenside on purpose.",
+  },
+];
+
+function PrivacyPage() {
+  return (
+    <div className="boring-page">
+      <div className="page-head">
+        <h1>Privacy Policy</h1>
+        <p>
+          We take your privacy as seriously as we take anything, which is not
+          very.
+        </p>
+      </div>
+      <article className="boring-card legal-card">
+        {PRIVACY.map((section) => (
+          <section key={section.title} className="legal-section">
+            <h2>{section.title}</h2>
+            <p>{section.body}</p>
+          </section>
+        ))}
+      </article>
+    </div>
+  );
+}
+
+const FAQ = [
+  {
+    q: "How do I move a piece?",
+    a: "Click it, then click where you want it to go. If that does not work, click it harder.",
+  },
+  {
+    q: "Why did my rating drop?",
+    a: "Gravity.",
+  },
+  {
+    q: "Can I undo a move?",
+    a: "No. Live with what you have done.",
+  },
+  {
+    q: "Is this site haunted?",
+    a: "No. Please stop asking. The pieces do not like it.",
+  },
+  {
+    q: "Why does the computer always win?",
+    a: "It is Level 1. It is trying its best. You should try yours.",
+  },
+  {
+    q: "Can I talk to a human?",
+    a: "Our support team is a single pawn named Gary. He moves one square per business day and cannot go backwards.",
+  },
+];
+
+function HelpPage() {
+  const [opened, setOpened] = useState<number | null>(null);
+  const [ticket, setTicket] = useState(false);
+  return (
+    <div className="boring-page">
+      <div className="page-head">
+        <h1>Help Center</h1>
+        <p>
+          Answers to the questions people ask most, and to some nobody asked.
+        </p>
+      </div>
+      <div className="boring-card faq-list">
+        {FAQ.map((item, i) => (
+          <div key={item.q} className="faq-item">
+            <button
+              type="button"
+              className="faq-question"
+              aria-expanded={opened === i}
+              onClick={() => setOpened(opened === i ? null : i)}
+            >
+              <span>{item.q}</span>
+              <span className="muted">{opened === i ? "−" : "+"}</span>
+            </button>
+            {opened === i && <p className="faq-answer">{item.a}</p>}
+          </div>
+        ))}
+      </div>
+      <div className="boring-card help-contact">
+        <div>
+          <h2>Still stuck?</h2>
+          <p className="muted">Open a ticket and Gary will get to it.</p>
+        </div>
+        {ticket ? (
+          <p className="reveal">
+            Ticket #00000001 created. Gary is on his way. Estimated arrival: 6
+            business days.
+          </p>
+        ) : (
+          <button
+            type="button"
+            className="boring-btn"
+            onClick={() => setTicket(true)}
+          >
+            Open a ticket
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** The fake content behind each link in the plain site's header and footer */
 export function BoringPage({ tab }: { tab: Exclude<SiteTab, "Play"> }) {
   switch (tab) {
     case "Puzzles":
@@ -381,5 +538,11 @@ export function BoringPage({ tab }: { tab: Exclude<SiteTab, "Play"> }) {
       return <WatchPage />;
     case "Community":
       return <CommunityPage />;
+    case "Terms":
+      return <TermsPage />;
+    case "Privacy":
+      return <PrivacyPage />;
+    case "Help":
+      return <HelpPage />;
   }
 }

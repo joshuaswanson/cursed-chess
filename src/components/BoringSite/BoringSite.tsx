@@ -111,13 +111,18 @@ export function BoringSidebar() {
   );
 }
 
+const FOOTER_LINKS: SiteTab[] = ["Terms", "Privacy", "Help"];
+
 export function BoringFooter() {
+  const setTab = useGameStore((s) => s.setSiteTab);
   return (
     <footer className="boring-footer">
       <span>&copy; 2026 Totally Normal Chess</span>
-      <span>Terms</span>
-      <span>Privacy</span>
-      <span>Help</span>
+      {FOOTER_LINKS.map((link) => (
+        <button type="button" key={link} onClick={() => setTab(link)}>
+          {link}
+        </button>
+      ))}
     </footer>
   );
 }
