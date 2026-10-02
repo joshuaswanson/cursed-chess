@@ -572,4 +572,49 @@ export const sfx = {
     thump.stop(t + 0.25);
     crackle(c, out, 1.2);
   },
+
+  /** Gravity turns: a wobbling whirr that winds up as the board spins */
+  gravityShift(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const osc = c.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.exponentialRampToValueAtTime(520, t + 1.2);
+    const wobble = c.createOscillator();
+    wobble.frequency.value = 9;
+    const depth = c.createGain();
+    depth.gain.value = 40;
+    wobble.connect(depth).connect(osc.frequency);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.14, t + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 1.3);
+    osc.connect(gain).connect(out);
+    osc.start(t);
+    wobble.start(t);
+    osc.stop(t + 1.35);
+    wobble.stop(t + 1.35);
+  },
+
+  /** A piece lands after falling */
+  thud(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const osc = c.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(160, t);
+    osc.frequency.exponentialRampToValueAtTime(55, t + 0.12);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.45, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    osc.connect(gain).connect(out);
+    osc.start(t);
+    osc.stop(t + 0.18);
+    creak(c, out, t, 0.4);
+  },
 };

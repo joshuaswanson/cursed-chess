@@ -25,15 +25,34 @@ import { phaseDurationMs, usePortalTravel } from "./usePortalTravel";
 import type { PortalPhase } from "./usePortalTravel";
 import { sfx } from "../../audio/sfx";
 import {
-  useGravityFalls,
+  useGravityShift,
   useMineExplosions,
   useCaptureBurst,
   useSlideAnimation,
 } from "./useBoardEffects";
+import type { GravityFall } from "./useBoardEffects";
 import "./Board.css";
 import "./BoardSkins.css";
 
 const FILES = "abcdefgh";
+
+/** Warns that gravity is turning: the arrow starts at the new fall direction and swings down with the board */
+function GravityAlert({ delta }: { delta: number }) {
+  return (
+    <div className="gravity-alert" aria-live="polite">
+      <div
+        className="gravity-arrow"
+        style={{ "--from": `${-delta}deg` } as React.CSSProperties}
+        aria-hidden
+      >
+        <svg viewBox="0 0 60 60">
+          <path d="M30 6 V44 M14 30 L30 48 L46 30" />
+        </svg>
+      </div>
+      <span className="gravity-alert-label">Gravity shift!</span>
+    </div>
+  );
+}
 
 function playPortalPhase(phase: PortalPhase): void {
   if (phase.type === "shrink") sfx.portalEnter();
@@ -138,11 +157,14 @@ export function Board() {
     flipped,
     squareSize,
   });
-  const gravityFalls = useGravityFalls(
+  const gravityShift = useGravityShift(
     overlays.gravityMoves,
+    overlays.gravityAngle,
     flipped,
     squareSize,
   );
+  const gravityFalls =
+    gravityShift?.falls ?? new Map<SquareIndex, GravityFall>();
   // Autonomous battles capture constantly, so only turn-based captures burst
   const lastRecord = moveHistory[moveHistory.length - 1];
   const capture = useCaptureBurst(
@@ -253,7 +275,7 @@ export function Board() {
             ? ({
                 "--grav-x": `${fall.x}px`,
                 "--grav-y": `${fall.y}px`,
-                animation: "gravity-fall 0.6s ease-in-out 1.05s both",
+                animation: `gravity-drop ${fall.durationMs}ms ${fall.delayMs}ms both`,
               } as React.CSSProperties)
             : undefined;
 
@@ -334,6 +356,16 @@ export function Board() {
           )}
 
           {minesArmed.has(sq) && <span className="mine-pop" aria-hidden />}
+          {fall && piece && (
+            <span
+              key={`dust-${gravityShift?.id}`}
+              className="gravity-dust"
+              style={{
+                animationDelay: `${fall.delayMs + fall.durationMs * 0.78}ms`,
+              }}
+              aria-hidden
+            />
+          )}
           {capture?.sq === sq && (
             <div className="capture-burst" key={capture.id} aria-hidden>
               <span
@@ -371,6 +403,7 @@ export function Board() {
     (overlays.hasFog ? " fog-active" : "") +
     (overlays.portalPairs.length > 0 ? " portal-active" : "") +
     (overlays.gravityDirection ? " gravity-active" : "") +
+    (gravityShift ? " gravity-shifting" : "") +
     (battleRoyale ? " battle-royale" : "") +
     (collapse ? " br-quake" : "") +
     (minesBlasting.size > 0 ? " mine-quake" : "") +
@@ -384,106 +417,120 @@ export function Board() {
     }),
   } as React.CSSProperties;
   // The frame turns with the board so the board never pokes through it
+  // At diagonal angles the board shrinks so its corners stay inside its spot
+  const fitScale =
+    gravityAngle === null
+      ? 1
+      : 1 /
+        (Math.abs(Math.cos((gravityAngle * Math.PI) / 180)) +
+          Math.abs(Math.sin((gravityAngle * Math.PI) / 180)));
   const shellStyle = {
     ...(gravityAngle !== null && {
       "--gravity-rotation": `${gravityAngle}deg`,
-      transform: `rotate(${gravityAngle}deg)`,
+      transform: `rotate(${gravityAngle}deg) scale(${fitScale})`,
     }),
   } as React.CSSProperties;
 
   return (
-    <div
-      className={`board-shell${overlays.gravityDirection ? " gravity-active" : ""}`}
-      style={shellStyle}
-    >
+    <>
       <div
-        className={boardClass}
-        ref={boardRef}
-        style={boardStyle}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
+        className={`board-shell${overlays.gravityDirection ? " gravity-active" : ""}`}
+        style={shellStyle}
       >
-        {lakes.size > 0 && <WorldRiver rows={riverRanks.size} />}
-        {lakes.size > 0 && (
-          <Battlefield
-            riverRows={[...riverRanks].map((r) => (flipped ? r : 7 - r))}
-            lakeCols={[
-              ...new Set(
-                [...lakes].map((sq) => (flipped ? 7 - (sq & 7) : sq & 7)),
-              ),
-            ]}
-          />
-        )}
-        {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
-        {rows}
-        {[...minesBlasting].map((sq) => {
-          const piece = game.board.get(sq);
-          const col = colOnScreen(sq, flipped);
-          const row = rowOnScreen(sq, flipped);
-          return (
-            <div key={sq}>
-              <MineBlast col={col} row={row} squareSize={squareSize} />
-              {piece && (
-                <img
-                  src={pieceImage(piece)}
-                  className="launched-piece"
-                  style={
-                    {
-                      left: `${col * 12.5 + 0.625}%`,
-                      top: `${row * 12.5 + 0.625}%`,
-                      "--fly-x": `${(col < 4 ? -1 : 1) * squareSize * 3.5}px`,
-                      "--fly-y": `${-squareSize * 6}px`,
-                    } as React.CSSProperties
-                  }
-                  draggable={false}
-                  alt=""
-                />
-              )}
-            </div>
-          );
-        })}
-        {minesBlasting.size > 0 && <div className="board-flash" aria-hidden />}
-        {overlays.hasRally && (
-          <div
-            className={`deploy-zone-border${deployPieceType ? " dragging" : ""}`}
-          />
-        )}
-        {hasPortalMoves &&
-          selectedSquare !== null &&
-          portalEntrance !== null && (
-            <PortalArrows
-              pairs={overlays.portalPairs}
-              entrance={portalEntrance}
-              flipped={flipped}
+        <div
+          className={boardClass}
+          ref={boardRef}
+          style={boardStyle}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+        >
+          {lakes.size > 0 && <WorldRiver rows={riverRanks.size} />}
+          {lakes.size > 0 && (
+            <Battlefield
+              riverRows={[...riverRanks].map((r) => (flipped ? r : 7 - r))}
+              lakeCols={[
+                ...new Set(
+                  [...lakes].map((sq) => (flipped ? 7 - (sq & 7) : sq & 7)),
+                ),
+              ]}
             />
           )}
-        {battleRoyale && (
-          <Fissure
-            ring={Math.max(1, battleRoyale.shrinkRing)}
-            progress={dangerProgress}
-            collapsed={battleRoyale.shrinkRing > 0}
-          />
-        )}
-        {collapse && <CollapsingRing collapse={collapse} flipped={flipped} />}
-        {travel && (
-          <PortalTravelPiece
-            travel={travel}
-            flipped={flipped}
-            squareSize={squareSize}
-          />
-        )}
-        <BoardFog active={overlays.hasFog} enemyOnTop={!flipped} />
-        {drag?.isDragging && (
-          <DraggedPiece
-            drag={drag}
-            imgRef={dragImgRef}
-            squareSize={squareSize}
-          />
-        )}
-        {returnAnim && (
-          <ReturningPiece anim={returnAnim} squareSize={squareSize} />
-        )}
+          {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
+          {rows}
+          {[...minesBlasting].map((sq) => {
+            const piece = game.board.get(sq);
+            const col = colOnScreen(sq, flipped);
+            const row = rowOnScreen(sq, flipped);
+            return (
+              <div key={sq}>
+                <MineBlast col={col} row={row} squareSize={squareSize} />
+                {piece && (
+                  <img
+                    src={pieceImage(piece)}
+                    className="launched-piece"
+                    style={
+                      {
+                        left: `${col * 12.5 + 0.625}%`,
+                        top: `${row * 12.5 + 0.625}%`,
+                        "--fly-x": `${(col < 4 ? -1 : 1) * squareSize * 3.5}px`,
+                        "--fly-y": `${-squareSize * 6}px`,
+                      } as React.CSSProperties
+                    }
+                    draggable={false}
+                    alt=""
+                  />
+                )}
+              </div>
+            );
+          })}
+          {minesBlasting.size > 0 && (
+            <div className="board-flash" aria-hidden />
+          )}
+          {overlays.hasRally && (
+            <div
+              className={`deploy-zone-border${deployPieceType ? " dragging" : ""}`}
+            />
+          )}
+          {hasPortalMoves &&
+            selectedSquare !== null &&
+            portalEntrance !== null && (
+              <PortalArrows
+                pairs={overlays.portalPairs}
+                entrance={portalEntrance}
+                flipped={flipped}
+              />
+            )}
+          {battleRoyale && (
+            <Fissure
+              ring={Math.max(1, battleRoyale.shrinkRing)}
+              progress={dangerProgress}
+              collapsed={battleRoyale.shrinkRing > 0}
+            />
+          )}
+          {collapse && <CollapsingRing collapse={collapse} flipped={flipped} />}
+          {travel && (
+            <PortalTravelPiece
+              travel={travel}
+              flipped={flipped}
+              squareSize={squareSize}
+            />
+          )}
+          <BoardFog active={overlays.hasFog} enemyOnTop={!flipped} />
+          {drag?.isDragging && (
+            <DraggedPiece
+              drag={drag}
+              imgRef={dragImgRef}
+              squareSize={squareSize}
+            />
+          )}
+          {returnAnim && (
+            <ReturningPiece anim={returnAnim} squareSize={squareSize} />
+          )}
+        </div>
       </div>
-    </div>
+      {gravityShift && (
+        <GravityAlert key={gravityShift.id} delta={gravityShift.delta} />
+      )}
+    </>
   );
 }

@@ -12,8 +12,6 @@ const EXPLOSION_DELAY_MS = 350;
 const EXPLOSION_MS = 1300;
 /** The mine pops up and beeps before it goes off */
 const MINE_ARMED_MS = 620;
-/** Board rotation (1s) plus the fall itself (0.6s) plus a buffer */
-const GRAVITY_CLEAR_MS = 1800;
 
 /** Pieces slide in from where they came from after a click or autonomous move */
 export function useSlideAnimation({
@@ -69,30 +67,62 @@ export function useSlideAnimation({
   return slides;
 }
 
-/** Pieces hold still while the board rotates, then fall to where gravity moved them */
-export function useGravityFalls(
+export interface GravityFall {
+  x: number;
+  y: number;
+  delayMs: number;
+  durationMs: number;
+}
+
+export interface GravityShift {
+  id: number;
+  /** Degrees the board turns this shift */
+  delta: number;
+  falls: Map<SquareIndex, GravityFall>;
+}
+
+/** The board finishes spinning and the pieces come loose at this point */
+export const GRAVITY_RELEASE_MS = 1250;
+const GRAVITY_SHIFT_MS = 2900;
+
+/**
+ * When gravity changes direction: the board spins, then each piece drops from
+ * where it was, taking longer to land the farther it falls.
+ */
+export function useGravityShift(
   gravityMoves: Move[],
+  angle: number | null,
   flipped: boolean,
   squareSize: number,
-): Offsets {
-  const [falls, setFalls] = useState<Offsets>(new Map());
-  const prevKey = useRef("");
-  const key = gravityMoves.map((m) => `${m.from}-${m.to}`).join(",");
+): GravityShift | null {
+  const [shift, setShift] = useState<GravityShift | null>(null);
+  const prevAngle = useRef(angle);
+  const moveKey = gravityMoves.map((m) => `${m.from}-${m.to}`).join(",");
 
   useLayoutEffect(() => {
-    if (key === prevKey.current || key === "") return;
-    prevKey.current = key;
-    const offsets: Offsets = new Map();
-    for (const pair of key.split(",")) {
-      const [from, to] = pair.split("-").map(Number);
-      offsets.set(to, offsetBetween(from, to, flipped, squareSize));
-    }
-    setFalls(offsets);
-    const timer = setTimeout(() => setFalls(new Map()), GRAVITY_CLEAR_MS);
-    return () => clearTimeout(timer);
-  }, [key, flipped, squareSize]);
+    const before = prevAngle.current;
+    prevAngle.current = angle;
+    if (angle === null || before === null || angle === before) return;
 
-  return falls;
+    const falls = new Map<SquareIndex, GravityFall>();
+    const landings = new Set<number>();
+    for (const pair of moveKey === "" ? [] : moveKey.split(",")) {
+      const [from, to] = pair.split("-").map(Number);
+      const offset = offsetBetween(from, to, flipped, squareSize);
+      const distance = Math.hypot(offset.x, offset.y) / squareSize;
+      const durationMs = Math.round(260 + 140 * Math.sqrt(distance));
+      const delayMs = GRAVITY_RELEASE_MS + Math.round(Math.random() * 120);
+      falls.set(to, { ...offset, delayMs, durationMs });
+      landings.add(Math.round((delayMs + durationMs * 0.78) / 60) * 60);
+    }
+    setShift({ id: Date.now(), delta: angle - before, falls });
+    sfx.gravityShift();
+    const timers = [...landings].map((ms) => setTimeout(() => sfx.thud(), ms));
+    timers.push(setTimeout(() => setShift(null), GRAVITY_SHIFT_MS));
+    return () => timers.forEach(clearTimeout);
+  }, [angle, moveKey, flipped, squareSize]);
+
+  return shift;
 }
 
 /**
