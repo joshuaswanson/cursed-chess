@@ -10,14 +10,7 @@ import {
 } from "../utils/squareUtils";
 
 type GravityDirection =
-  | "south"
-  | "north"
-  | "east"
-  | "west"
-  | "se"
-  | "sw"
-  | "ne"
-  | "nw";
+  "south" | "north" | "east" | "west" | "se" | "sw" | "ne" | "nw";
 
 const DIR_OFFSETS: Record<GravityDirection, { df: number; dr: number }> = {
   south: { df: 0, dr: -1 },

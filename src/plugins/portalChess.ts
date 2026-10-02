@@ -28,10 +28,7 @@ const SLIDING_DIRECTIONS: Partial<Record<PieceType, number[]>> = {
 };
 
 /** Unit 0x88 step from one square toward another, or null if they are not on a line */
-function slidingDirection(
-  from: SquareIndex,
-  to: SquareIndex,
-): number | null {
+function slidingDirection(from: SquareIndex, to: SquareIndex): number | null {
   const df = fileOf(to) - fileOf(from);
   const dr = rankOf(to) - rankOf(from);
   if (df === 0 && dr === 0) return null;
