@@ -50,6 +50,113 @@ function traceBackward({ points, controls }: ReturnType<typeof bank>): string {
   return d;
 }
 
+const PEBBLE_TONES = ["#8f877c", "#6f665c", "#a39a8c", "#5c534a"];
+const GRASS_TONES = ["#6f8f34", "#5a7a28", "#86a843", "#4b6820"];
+
+/**
+ * A natural river bank along `d`: a slope of dry dirt, dark wet mud at the
+ * waterline, pebbles, and grass hanging out over the edge. `side` is -1 when
+ * the land lies above the line and 1 when it lies below.
+ */
+function Bank({
+  d,
+  points,
+  side,
+  seed,
+  roughId,
+}: {
+  d: string;
+  points: Point[];
+  side: 1 | -1;
+  seed: number;
+  roughId: string;
+}) {
+  const rand = seeded(seed);
+  const pick = <T,>(items: T[]) => items[Math.floor(rand() * items.length)];
+  const shift = (k: number) => `translate(0 ${side * k})`;
+  const pebbles: {
+    x: number;
+    y: number;
+    rx: number;
+    ry: number;
+    tone: string;
+  }[] = [];
+  const tufts: { d: string; tone: string }[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    const along = (t: number) => ({
+      x: a.x + (b.x - a.x) * t,
+      y: a.y + (b.y - a.y) * t,
+    });
+    for (let k = 0; k < 3; k++) {
+      if (rand() > 0.6) continue;
+      const p = along(rand());
+      pebbles.push({
+        x: p.x,
+        y: p.y + side * (3 + rand() * 13),
+        rx: 1.2 + rand() * 2.6,
+        ry: 0.9 + rand() * 1.6,
+        tone: pick(PEBBLE_TONES),
+      });
+    }
+    if (rand() > 0.85) continue;
+    const root = along(rand());
+    const baseY = root.y + side * (16 + rand() * 4);
+    const blades = 3 + Math.floor(rand() * 3);
+    for (let j = 0; j < blades; j++) {
+      const bx = root.x + (j - blades / 2) * 2.2;
+      const length = 7 + rand() * 9;
+      const lean = (rand() - 0.5) * 9;
+      const tipY = baseY - side * length;
+      tufts.push({
+        d: `M${bx.toFixed(1)} ${baseY.toFixed(1)} Q${(bx + lean * 0.3).toFixed(1)} ${(baseY - side * length * 0.6).toFixed(1)} ${(bx + lean).toFixed(1)} ${tipY.toFixed(1)}`,
+        tone: pick(GRASS_TONES),
+      });
+    }
+  }
+
+  return (
+    <g className="bf-bank">
+      <path
+        d={d}
+        className="bank-dirt"
+        transform={shift(10)}
+        filter={`url(#${roughId})`}
+      />
+      <path
+        d={d}
+        className="bank-mud"
+        transform={shift(2)}
+        filter={`url(#${roughId})`}
+      />
+      <path d={d} className="bank-waterline" transform={shift(-2.5)} />
+      <path d={d} className="bank-sheen" transform={shift(-7)} />
+      {pebbles.map((p, i) => (
+        <ellipse key={i} cx={p.x} cy={p.y} rx={p.rx} ry={p.ry} fill={p.tone} />
+      ))}
+      {tufts.map((t, i) => (
+        <path key={i} d={t.d} className="bank-grass" stroke={t.tone} />
+      ))}
+    </g>
+  );
+}
+
+/** Roughens the bank's dirt and mud so their edges are never smooth */
+function RoughFilter({ id }: { id: string }) {
+  return (
+    <filter id={id} x="-5%" y="-50%" width="110%" height="200%">
+      <feTurbulence
+        type="fractalNoise"
+        baseFrequency="0.09"
+        numOctaves="2"
+        seed="3"
+      />
+      <feDisplacementMap in="SourceGraphic" scale="6" />
+    </filter>
+  );
+}
+
 /** Runs of consecutive columns, used to find each bridge's span */
 function runs(cols: number[]): [number, number][] {
   const sorted = [...cols].sort((a, b) => a - b);
@@ -191,6 +298,7 @@ export function Battlefield({
   const grassId = `bf-grass-${id}`;
   const grainId = `bf-grain-${id}`;
   const riverClipId = `bf-river-${id}`;
+  const roughId = `bf-rough-${id}`;
 
   const y0 = Math.min(...riverRows) * SQ;
   const y1 = (Math.max(...riverRows) + 1) * SQ;
@@ -335,6 +443,7 @@ export function Battlefield({
           <clipPath id={riverClipId}>
             <path d={riverShape} />
           </clipPath>
+          <RoughFilter id={roughId} />
         </defs>
         <rect
           y={bandTop}
@@ -344,8 +453,20 @@ export function Battlefield({
           filter="url(#bf-soft)"
           clipPath={`url(#${riverClipId})`}
         />
-        <path d={topBank} className="bf-bank" />
-        <path d={bottomBank} className="bf-bank" />
+        <Bank
+          d={topBank}
+          points={top.points}
+          side={-1}
+          seed={61}
+          roughId={roughId}
+        />
+        <Bank
+          d={bottomBank}
+          points={bottom.points}
+          side={1}
+          seed={67}
+          roughId={roughId}
+        />
         {bridgeCols.map(([a, b], i) => (
           <Bridge
             key={i}
@@ -380,6 +501,11 @@ export function WorldRiver({ rows }: { rows: number }) {
       (_, x, y) => `${(+x + 20) * scaleX} ${y}`,
     );
   const shape = stretch(traceForward(top) + traceBackward(bottom)) + " Z";
+  const stretchPoint = (p: Point): Point => ({
+    x: (p.x + 20) * scaleX,
+    y: p.y,
+  });
+  const worldRoughId = `wr-rough-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   const total = height + pad * 2;
   const viewBox = `0 0 ${WORLD_WIDTH} ${total}`;
@@ -414,8 +540,23 @@ export function WorldRiver({ rows }: { rows: number }) {
         style={style}
         aria-hidden
       >
-        <path d={stretch(traceForward(top))} className="bf-bank" />
-        <path d={stretch(traceForward(bottom))} className="bf-bank" />
+        <defs>
+          <RoughFilter id={worldRoughId} />
+        </defs>
+        <Bank
+          d={stretch(traceForward(top))}
+          points={top.points.map(stretchPoint)}
+          side={-1}
+          seed={71}
+          roughId={worldRoughId}
+        />
+        <Bank
+          d={stretch(traceForward(bottom))}
+          points={bottom.points.map(stretchPoint)}
+          side={1}
+          seed={73}
+          roughId={worldRoughId}
+        />
       </svg>
     </>
   );

@@ -334,11 +334,36 @@
   filter: url(#bf-soft);
 }
 
-.bf-bank {
+.bf-bank path {
   fill: none;
-  stroke: #5b4426;
-  stroke-width: 7;
   stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bank-dirt {
+  stroke: #8d6e47;
+  stroke-width: 24;
+}
+
+.bank-mud {
+  stroke: #5a3f25;
+  stroke-width: 11;
+}
+
+.bank-waterline {
+  stroke: #2a1b0e;
+  stroke-width: 2.5;
+  opacity: 0.55;
+}
+
+.bank-sheen {
+  stroke: rgba(235, 252, 255, 0.45);
+  stroke-width: 1.6;
+  stroke-dasharray: 16 10 6 14;
+}
+
+.bf-bank .bank-grass {
+  stroke-width: 1.7;
 }
 
 [data-theme="stratego"] .square.light {
