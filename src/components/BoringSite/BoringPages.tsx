@@ -327,7 +327,7 @@ const THREADS = [
 ];
 
 function CommunityPage() {
-  const [opened, setOpened] = useState<number | null>(null);
+  const [opened, setOpened] = useState<Set<number>>(new Set());
   return (
     <div className="boring-page">
       <div className="page-head">
@@ -349,7 +349,13 @@ function CommunityPage() {
               type="button"
               className="thread-row"
               role="row"
-              onClick={() => setOpened(opened === i ? null : i)}
+              aria-expanded={opened.has(i)}
+              onClick={() => {
+                const next = new Set(opened);
+                if (next.has(i)) next.delete(i);
+                else next.add(i);
+                setOpened(next);
+              }}
             >
               <span className="thread-title" role="cell">
                 {thread.pinned && <span className="tag">Pinned</span>}
@@ -362,7 +368,7 @@ function CommunityPage() {
               <span role="cell">{thread.replies.toLocaleString()}</span>
               <span role="cell">{thread.views}</span>
             </button>
-            {opened === i && <p className="thread-body">{thread.body}</p>}
+            {opened.has(i) && <p className="thread-body">{thread.body}</p>}
           </div>
         ))}
       </div>
