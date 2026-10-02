@@ -618,7 +618,7 @@ export const sfx = {
     creak(c, out, t, 0.4);
   },
 
-  /** A melee swing: a short whoosh of filtered noise */
+  /** A sword swing: a whoosh with a ringing blade on top */
   swing(): void {
     const a = audio();
     if (!a) return;
@@ -637,24 +637,40 @@ export const sfx = {
     src.connect(band).connect(gain).connect(out);
     src.start(t, Math.random() * 0.8);
     src.stop(t + 0.18);
+
+    const ring = t + 0.08;
+    const pitch = 2600 + Math.random() * 600;
+    chord(c, out, ring, [pitch, pitch * 1.48], 0.25, "sine", 0.025);
   },
 
-  /** A ranged shot: a quick falling pew */
-  zap(): void {
+  /** A bow fires: a plucked string and the arrow hissing away */
+  bowShot(): void {
     const a = audio();
     if (!a) return;
     const { ctx: c, out } = a;
     const t = c.currentTime;
-    const osc = c.createOscillator();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(1400 + Math.random() * 400, t);
-    osc.frequency.exponentialRampToValueAtTime(320, t + 0.12);
-    const gain = c.createGain();
-    gain.gain.setValueAtTime(0.04, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
-    osc.connect(gain).connect(out);
-    osc.start(t);
-    osc.stop(t + 0.15);
+    const string = c.createOscillator();
+    string.type = "triangle";
+    string.frequency.setValueAtTime(260 + Math.random() * 60, t);
+    string.frequency.exponentialRampToValueAtTime(150, t + 0.12);
+    const pluck = c.createGain();
+    pluck.gain.setValueAtTime(0.18, t);
+    pluck.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+    string.connect(pluck).connect(out);
+    string.start(t);
+    string.stop(t + 0.16);
+
+    const src = noiseSource(c);
+    const high = c.createBiquadFilter();
+    high.type = "highpass";
+    high.frequency.value = 3500;
+    const hiss = c.createGain();
+    hiss.gain.setValueAtTime(0.0001, t);
+    hiss.gain.exponentialRampToValueAtTime(0.05, t + 0.03);
+    hiss.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    src.connect(high).connect(hiss).connect(out);
+    src.start(t, Math.random() * 0.8);
+    src.stop(t + 0.24);
   },
 
   /** A blow lands. A finishing blow hits harder. */

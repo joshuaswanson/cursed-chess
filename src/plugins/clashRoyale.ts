@@ -132,7 +132,7 @@ export function travelMs(from: SquareIndex, to: SquareIndex): number {
 }
 
 function projectileMs(from: SquareIndex, to: SquareIndex): number {
-  return Math.round(150 + 70 * distance(from, to));
+  return Math.round(220 + 90 * distance(from, to));
 }
 
 /**

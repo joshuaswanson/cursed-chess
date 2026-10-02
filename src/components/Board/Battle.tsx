@@ -31,6 +31,13 @@ function heading(
   return { x: x / length, y: y / length };
 }
 
+function squaresApart(event: AttackEvent): number {
+  return Math.hypot(
+    visualCol(event.to, false) - visualCol(event.from, false),
+    visualRow(event.to, false) - visualRow(event.from, false),
+  );
+}
+
 function arrivalStyle(
   event: ArrivalEvent | undefined,
   flipped: boolean,
@@ -79,9 +86,10 @@ function actionStyle(
       animation: "unit-recoil 320ms ease-out",
     };
   }
+  const reach = Math.max(0.38, squaresApart(event) - 0.62);
   return {
-    "--lunge-x": px(dir.x * squareSize * 0.38),
-    "--lunge-y": px(dir.y * squareSize * 0.38),
+    "--lunge-x": px(dir.x * squareSize * reach),
+    "--lunge-y": px(dir.y * squareSize * reach),
     animation: "unit-lunge 340ms ease-in-out",
   };
 }
@@ -156,6 +164,120 @@ export function BattleUnit({
   );
 }
 
+/** Contact lands this far into the sword swing */
+const SWING_CONTACT = 0.45;
+const SWING_MS = 300;
+
+/** A sword held just short of the target that sweeps through it as the blow lands */
+function Sword({ event, flipped }: { event: AttackEvent; flipped: boolean }) {
+  const dir = heading(event.from, event.to, flipped);
+  const angle = (Math.atan2(dir.y, dir.x) * 180) / Math.PI;
+  const side = event.id % 2 ? 1 : -1;
+  const pivotCol = visualCol(event.to, flipped) + 0.5 - dir.x * 0.5;
+  const pivotRow = visualRow(event.to, flipped) + 0.5 - dir.y * 0.5;
+  return (
+    <span
+      className="sword"
+      style={css({
+        left: `${pivotCol * 12.5}%`,
+        top: `${pivotRow * 12.5}%`,
+        "--swing-from": `${angle - 80 * side}deg`,
+        "--swing-hit": `${angle}deg`,
+        "--swing-to": `${angle + 60 * side}deg`,
+        animationDelay: `${Math.max(0, event.hitMs - SWING_MS * SWING_CONTACT)}ms`,
+        animationDuration: `${SWING_MS}ms`,
+      })}
+    >
+      <svg viewBox="0 0 100 28">
+        <defs>
+          <linearGradient id="blade-shine" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#ffffff" />
+            <stop offset="0.5" stopColor="#c9d3df" />
+            <stop offset="1" stopColor="#7d8896" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M22 10 L90 10 L100 14 L90 18 L22 18 Z"
+          fill="url(#blade-shine)"
+          stroke="#4b5260"
+          strokeWidth="1.2"
+        />
+        <path d="M24 14 L86 14" stroke="#8e99a8" strokeWidth="1.2" />
+        <rect x="5" y="11" width="13" height="6" rx="2" fill="#7a4a22" />
+        <rect x="16" y="3" width="6" height="22" rx="2.5" fill="#ffd23f" />
+        <circle cx="4" cy="14" r="3.6" fill="#ffd23f" />
+      </svg>
+    </span>
+  );
+}
+
+/** An arrow that arcs from shooter to target, turning to follow its path */
+function Arrow({
+  event,
+  travel,
+  start,
+  squareSize,
+}: {
+  event: AttackEvent;
+  travel: { x: number; y: number };
+  start: Style;
+  squareSize: number;
+}) {
+  const length = Math.hypot(travel.x, travel.y) || 1;
+  const dir = { x: travel.x / length, y: travel.y / length };
+  // The arc bows toward the top of the screen, or to one side on straight up-and-down shots
+  let bow = { x: dir.y, y: -dir.x };
+  if (Math.abs(bow.y) < 0.05) bow = { x: event.id % 2 ? 1 : -1, y: 0 };
+  else if (bow.y > 0) bow = { x: -bow.x, y: -bow.y };
+  const height = Math.min(length * 0.22, squareSize * 0.7);
+  const turn = dir.x * bow.y - dir.y * bow.x > 0 ? 1 : -1;
+  const tilt = Math.atan2(height * Math.PI, length);
+  const angle = Math.atan2(dir.y, dir.x);
+  const duration = `${event.hitMs}ms`;
+  return (
+    <span
+      className={`arrow side-${team(event.color)}`}
+      style={css({
+        ...start,
+        "--dx": px(travel.x),
+        "--dy": px(travel.y),
+        animationDuration: duration,
+      })}
+    >
+      <span
+        className="arrow-lob"
+        style={css({
+          "--lob-x": px(bow.x * height),
+          "--lob-y": px(bow.y * height),
+          animationDuration: duration,
+        })}
+      >
+        <svg
+          className="arrow-shaft"
+          viewBox="0 0 100 20"
+          style={css({
+            "--turn-from": `${angle + turn * tilt}rad`,
+            "--turn-to": `${angle - turn * tilt}rad`,
+            animationDuration: duration,
+          })}
+        >
+          <path
+            className="arrow-fletch"
+            d="M0 2 L18 8.5 L12 10 L18 11.5 L0 18 L6 10 Z"
+          />
+          <rect x="4" y="8.7" width="80" height="2.6" rx="1.3" fill="#8a5a2b" />
+          <path
+            d="M78 3.5 L100 10 L78 16.5 L83 10 Z"
+            fill="#e6ecf2"
+            stroke="#4b5260"
+            strokeWidth="1.2"
+          />
+        </svg>
+      </span>
+    </span>
+  );
+}
+
 function Effect({
   event,
   flipped,
@@ -176,17 +298,29 @@ function Effect({
       const hitAt = { animationDelay: `${event.hitMs}ms` };
       return (
         <>
-          {event.ranged && (
+          {!event.ranged && (
             <span
-              className={`bolt side-${team(event.color)}`}
-              style={css({
-                ...cell(event.from),
-                "--dx": px(travel.x),
-                "--dy": px(travel.y),
-                rotate: `${Math.atan2(travel.y, travel.x)}rad`,
-                animationDuration: `${event.hitMs}ms`,
-              })}
+              className="slash"
+              style={{
+                ...cell(event.to),
+                ...hitAt,
+                rotate: `${Math.atan2(travel.y, travel.x) + Math.PI / 2}rad`,
+              }}
+            >
+              <svg viewBox="0 0 100 100">
+                <path d="M14 74 Q50 6 86 74" />
+              </svg>
+            </span>
+          )}
+          {event.ranged ? (
+            <Arrow
+              event={event}
+              travel={travel}
+              start={cell(event.from)}
+              squareSize={squareSize}
             />
+          ) : (
+            <Sword event={event} flipped={flipped} />
           )}
           <span className="hit-spark" style={{ ...cell(event.to), ...hitAt }} />
           <span
@@ -247,7 +381,7 @@ function playEvent(event: BattleEvent): void {
   const later = (ms: number, play: () => void) => setTimeout(play, ms);
   switch (event.kind) {
     case "attack":
-      if (event.ranged) sfx.zap();
+      if (event.ranged) sfx.bowShot();
       else sfx.swing();
       later(event.hitMs, () => sfx.hit(event.kill));
       break;

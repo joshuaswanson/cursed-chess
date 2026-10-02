@@ -240,25 +240,36 @@
   height: 12.5%;
 }
 
-/* A glowing shot flying from shooter to target */
-.bolt {
-  animation: bolt-fly linear both;
+/* An arrow arcing from shooter to target */
+.arrow {
+  animation: arrow-travel linear both;
 }
 
-.bolt::before {
-  content: "";
+.arrow-lob {
+  position: absolute;
+  inset: 0;
+  animation: arrow-lob both;
+}
+
+.arrow-shaft {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 55%;
-  height: 12%;
-  translate: -70% -50%;
-  border-radius: 99px;
-  background: linear-gradient(90deg, transparent, var(--team-light) 60%, #fff);
-  box-shadow: 0 0 10px 3px var(--team-glow);
+  width: 78%;
+  height: 16%;
+  translate: -50% -50%;
+  overflow: visible;
+  filter: drop-shadow(0 2px 1px rgba(20, 8, 40, 0.45));
+  animation: arrow-turn linear both;
 }
 
-@keyframes bolt-fly {
+.arrow-fletch {
+  fill: var(--team);
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+@keyframes arrow-travel {
   from {
     translate: 0 0;
   }
@@ -268,6 +279,125 @@
   to {
     translate: var(--dx) var(--dy);
     opacity: 0;
+  }
+}
+
+/* Rises off the line of flight, then drops back onto the target */
+@keyframes arrow-lob {
+  0% {
+    translate: 0 0;
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.3, 0.6, 0.6, 1);
+  }
+  50% {
+    translate: var(--lob-x) var(--lob-y);
+    scale: 1.2;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.7, 0.4);
+  }
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes arrow-turn {
+  from {
+    rotate: var(--turn-from);
+  }
+  to {
+    rotate: var(--turn-to);
+  }
+}
+
+/* The sword pivots on its grip, which sits half a square short of the target */
+.battle-effects > .sword {
+  width: calc(var(--sq) * 0.8);
+  height: calc(var(--sq) * 0.22);
+  translate: -11% -50%;
+  transform-origin: 11% 50%;
+  filter: drop-shadow(0 2px 1px rgba(20, 8, 40, 0.5));
+  animation-name: sword-swing;
+  animation-fill-mode: both;
+}
+
+.sword svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+@keyframes sword-swing {
+  0% {
+    rotate: var(--swing-from);
+    opacity: 0;
+    scale: 0.8;
+    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
+  }
+  12% {
+    opacity: 1;
+  }
+  45% {
+    rotate: var(--swing-hit);
+    scale: 1.1;
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
+  }
+  80% {
+    rotate: var(--swing-to);
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    rotate: var(--swing-to);
+    opacity: 0;
+  }
+}
+
+/* A white crescent where the blade cuts through */
+.slash {
+  animation: slash 0.32s ease-out both;
+}
+
+.slash svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.slash path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-dasharray: 120;
+  filter: drop-shadow(0 0 4px rgba(255, 240, 200, 0.9));
+  animation: slash-draw 0.32s ease-out both;
+  animation-delay: inherit;
+}
+
+@keyframes slash {
+  0% {
+    opacity: 0;
+    scale: 0.7;
+  }
+  1% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.15;
+  }
+}
+
+@keyframes slash-draw {
+  from {
+    stroke-dashoffset: 120;
+  }
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
