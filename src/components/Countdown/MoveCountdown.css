@@ -51,13 +51,7 @@
   }
 }
 
-/* --- Portals: the digit spins out of a portal --- */
-
-/* The board's own portal tears open behind each second */
-[data-countdown="portals"] .countdown-prop {
-  width: calc(var(--square-size) * 2.4);
-  height: calc(var(--square-size) * 2.4);
-}
+/* --- Portals: the digit warps in with a spin --- */
 
 [data-countdown="portals"] .countdown-digit {
   animation: count-warp 0.45s ease-out;
