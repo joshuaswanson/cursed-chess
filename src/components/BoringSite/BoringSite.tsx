@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useGameStore } from "../../stores/gameStore";
+import { GAME_MODES, useGameStore } from "../../stores/gameStore";
+import { THEMES } from "../../theme/themes";
 import type { SiteTab } from "../../stores/gameStore";
 import { AuthDialog } from "./AuthDialog";
 import type { AuthMode } from "./AuthDialog";
@@ -97,11 +98,35 @@ function MoveList() {
   );
 }
 
+/** Dev mode's shortcut straight into any cursed mode, dressed as a plain admin panel */
+function BoringDevPanel() {
+  const { switchMode } = useGameStore.getState();
+  return (
+    <section className="boring-panel boring-dev">
+      <h2>Developer: jump to a mode</h2>
+      <div className="boring-dev-grid">
+        {GAME_MODES.map((mode, i) => (
+          <button
+            key={mode.theme}
+            type="button"
+            className="boring-btn boring-btn-plain"
+            onClick={() => switchMode(i)}
+          >
+            {THEMES[mode.theme].title}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /** Opponent, move list, and a couple of sensible buttons */
 export function BoringSidebar() {
+  const devMode = useGameStore((s) => s.devMode);
   const { newGame, flipBoard } = useGameStore.getState();
   return (
     <aside className="boring-sidebar">
+      {devMode && <BoringDevPanel />}
       <PlayerCard name="Computer (Level 1)" rating={800} />
       <section className="boring-panel">
         <h2>Moves</h2>

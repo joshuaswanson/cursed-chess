@@ -205,14 +205,9 @@ function ToolButton({
 }
 
 function useShortcuts() {
-  const { togglePause, switchMode, toggleDevMode } = useGameStore.getState();
+  const { togglePause, switchMode } = useGameStore.getState();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
-        e.preventDefault();
-        toggleDevMode();
-        return;
-      }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.target instanceof HTMLElement && e.target.closest("button")) {
         if (e.key === " ") return;
@@ -232,7 +227,7 @@ function useShortcuts() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePause, switchMode, toggleDevMode]);
+  }, [togglePause, switchMode]);
 }
 
 function Toolbar() {

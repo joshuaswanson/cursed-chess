@@ -200,3 +200,15 @@
   color: #312e2b;
   text-decoration: underline;
 }
+
+.boring-dev {
+  flex: none;
+  min-height: auto;
+}
+
+.boring-dev-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px;
+}
