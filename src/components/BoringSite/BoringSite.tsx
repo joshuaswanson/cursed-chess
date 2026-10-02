@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../../stores/gameStore";
+import type { SiteTab } from "../../stores/gameStore";
 import "./BoringSite.css";
 
-const NAV_LINKS = ["Play", "Puzzles", "Learn", "Watch", "Community"];
+const NAV_LINKS: SiteTab[] = ["Play", "Puzzles", "Learn", "Watch", "Community"];
 
 function PawnMark() {
   return (
@@ -15,6 +16,8 @@ function PawnMark() {
 
 /** The forgettable header of a forgettable chess site */
 export function BoringHeader() {
+  const tab = useGameStore((s) => s.siteTab);
+  const setTab = useGameStore((s) => s.setSiteTab);
   return (
     <header className="boring-header">
       <div className="boring-brand">
@@ -23,9 +26,15 @@ export function BoringHeader() {
       </div>
       <nav className="boring-nav" aria-label="Site">
         {NAV_LINKS.map((link) => (
-          <span key={link} className={link === "Play" ? "current" : ""}>
+          <button
+            type="button"
+            key={link}
+            className={link === tab ? "current" : ""}
+            aria-current={link === tab ? "page" : undefined}
+            onClick={() => setTab(link)}
+          >
             {link}
-          </span>
+          </button>
         ))}
       </nav>
       <div className="boring-account">

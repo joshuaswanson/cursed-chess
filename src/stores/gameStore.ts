@@ -147,6 +147,9 @@ export const GAME_MODES: GameMode[] = [
 
 export type AnnouncementType = "mode" | "win" | "lose" | "draw";
 
+/** Pages of the plain chess site that shows before the curse */
+export type SiteTab = "Play" | "Puzzles" | "Learn" | "Watch" | "Community";
+
 export interface GameStore {
   game: Game;
   pluginManager: PluginManager;
@@ -192,6 +195,8 @@ export interface GameStore {
   autonomousTick: number;
   /** The current mode's title cards have cleared */
   introDone: boolean;
+  siteTab: SiteTab;
+  setSiteTab: (tab: SiteTab) => void;
 
   hexGame: HexGame | null;
   isHexMode: boolean;
@@ -403,6 +408,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   curseStage: null,
   autonomousTick: 0,
   introDone: true,
+  siteTab: "Play",
+  setSiteTab: (tab) => set({ siteTab: tab }),
 
   selectHex: (coord) => {
     const { paused, hexGame, selectedHex, legalHexMoves, makeHexMove } = get();

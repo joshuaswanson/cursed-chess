@@ -1,0 +1,289 @@
+/* The plain site's other pages, styled as blandly as the game page */
+
+/* The stage is a two-column grid for the game; a page spans both columns */
+.boring-page {
+  grid-column: 1 / -1;
+  width: 960px;
+  max-width: 100%;
+  margin: 0 auto;
+  padding-bottom: 32px;
+  color: #312e2b;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.page-head {
+  margin-bottom: 18px;
+}
+
+.page-head h1 {
+  margin-bottom: 6px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.page-head p {
+  font-size: 14px;
+  color: #6b6967;
+}
+
+.boring-card {
+  background: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 4px;
+}
+
+.boring-card h2 {
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.boring-card p {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.muted {
+  color: #8b8987;
+}
+
+.reveal {
+  padding: 8px 10px;
+  border-left: 3px solid #81b64c;
+  background: #f4f9ee;
+}
+
+.mini-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  aspect-ratio: 1;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mini-board span {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+.mini-board .light {
+  background: #eeeed2;
+}
+
+.mini-board .dark {
+  background: #769656;
+}
+
+.mini-board img {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+}
+
+/* --- Puzzles --- */
+
+.puzzle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.puzzle-card {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 14px;
+  padding: 14px;
+}
+
+.puzzle-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* --- Learn --- */
+
+.lesson-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lesson-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+}
+
+.lesson-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lesson-progress {
+  height: 6px;
+  max-width: 360px;
+  border-radius: 3px;
+  background: #e8e8e8;
+  overflow: hidden;
+}
+
+.lesson-progress span {
+  display: block;
+  height: 100%;
+  background: #81b64c;
+}
+
+/* --- Watch --- */
+
+.stream-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.stream-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 0 0 12px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.stream-card h2,
+.stream-card p {
+  padding: 0 12px;
+}
+
+.stream-card h2 {
+  margin-top: 10px;
+}
+
+.stream-thumb {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  background: #262421;
+}
+
+.stream-thumb .mini-board {
+  height: 100%;
+  margin: 0 auto;
+}
+
+.live-badge {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #e02828;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.viewer-count {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  font-size: 11px;
+}
+
+.stream-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(20, 20, 20, 0.88);
+  color: #ffffff;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* --- Community --- */
+
+.thread-table {
+  overflow: hidden;
+}
+
+.thread-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 90px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 14px;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  border-top: 1px solid #eeeeee;
+  cursor: pointer;
+}
+
+.thread-row:hover {
+  background: #f7f7f7;
+}
+
+.thread-head {
+  border-top: none;
+  font-size: 12px;
+  font-weight: bold;
+  color: #8b8987;
+  background: #fafafa;
+  cursor: default;
+}
+
+.thread-head:hover {
+  background: #fafafa;
+}
+
+.thread-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: bold;
+}
+
+.thread-author {
+  width: 100%;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.tag {
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #81b64c;
+  color: #ffffff;
+  font-size: 11px;
+}
+
+.tag-locked {
+  background: #8b8987;
+}
+
+.thread-body {
+  padding: 4px 14px 14px;
+  font-size: 13px;
+  color: #4a4744;
+}

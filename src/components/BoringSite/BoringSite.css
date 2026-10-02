@@ -38,9 +38,24 @@
   color: #6b6967;
 }
 
+.boring-nav button {
+  padding: 4px 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.boring-nav button:hover {
+  color: #312e2b;
+}
+
 .boring-nav .current {
   color: #312e2b;
   font-weight: bold;
+  border-bottom-color: #81b64c;
 }
 
 .boring-account {

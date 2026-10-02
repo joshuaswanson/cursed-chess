@@ -10,6 +10,7 @@ import { Hud } from "./components/Hud/Hud";
 import { FoeRallyBar, YourRallyBar } from "./components/RallyPanel/RallyPanel";
 import { Backdrop } from "./components/Backdrop/Backdrop";
 import { SpaceTraffic } from "./components/Backdrop/SpaceTraffic";
+import { BoringPage } from "./components/BoringSite/BoringPages";
 import { PageFog } from "./components/Fog/Fog";
 import { Logo } from "./components/Logo/Logo";
 import {
@@ -31,6 +32,8 @@ function App() {
   const isHexMode = useGameStore((s) => s.isHexMode);
   const hexTransition = useGameStore((s) => s.hexTransition);
   const introDone = useGameStore((s) => s.introDone);
+  const siteTab = useGameStore((s) => s.siteTab);
+  const onFakePage = !cursed && siteTab !== "Play";
 
   useEffect(() => {
     document.title = cursed ? "CURSED CHESS" : "Totally Normal Chess";
@@ -61,17 +64,23 @@ function App() {
       ) : (
         <BoringHeader />
       )}
-      <main className="stage">
-        <div className="board-container">
-          {cursed && <FoeRallyBar />}
-          <div className="board-stack">
-            {board}
-            <MoveCountdown />
+      {onFakePage ? (
+        <main className="stage">
+          <BoringPage tab={siteTab} />
+        </main>
+      ) : (
+        <main className="stage">
+          <div className="board-container">
+            {cursed && <FoeRallyBar />}
+            <div className="board-stack">
+              {board}
+              <MoveCountdown />
+            </div>
+            {cursed && <YourRallyBar />}
           </div>
-          {cursed && <YourRallyBar />}
-        </div>
-        {cursed ? <Hud /> : <BoringSidebar />}
-      </main>
+          {cursed ? <Hud /> : <BoringSidebar />}
+        </main>
+      )}
       {!cursed && <BoringFooter />}
       <PageFog active={theme.id === "fog" && introDone} />
       {cursed && theme.id === "portals" && <SpaceTraffic />}
