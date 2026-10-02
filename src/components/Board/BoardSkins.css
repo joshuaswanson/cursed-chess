@@ -280,7 +280,27 @@
 
 /* --- Stratego: an old battlefield split by a river --- */
 
+/* The wooden frame is drawn beneath the board's own layers, so the river,
+   which flows out past the board, runs over it as if cutting through */
 [data-theme="stratego"] .board-shell {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+[data-theme="stratego"] .board {
+  outline-color: transparent;
+}
+
+[data-theme="stratego"] .board-shell::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  z-index: -2;
+  border: 4px solid var(--ink);
+  border-radius: inherit;
+  pointer-events: none;
+
   background:
     radial-gradient(
       circle at 14px 14px,
