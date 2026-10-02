@@ -477,7 +477,7 @@ const FAQ = [
 ];
 
 function HelpPage() {
-  const [opened, setOpened] = useState<number | null>(null);
+  const [opened, setOpened] = useState<Set<number>>(new Set());
   const [ticket, setTicket] = useState(false);
   return (
     <div className="boring-page">
@@ -493,13 +493,18 @@ function HelpPage() {
             <button
               type="button"
               className="faq-question"
-              aria-expanded={opened === i}
-              onClick={() => setOpened(opened === i ? null : i)}
+              aria-expanded={opened.has(i)}
+              onClick={() => {
+                const next = new Set(opened);
+                if (next.has(i)) next.delete(i);
+                else next.add(i);
+                setOpened(next);
+              }}
             >
               <span>{item.q}</span>
-              <span className="muted">{opened === i ? "−" : "+"}</span>
+              <span className="muted">{opened.has(i) ? "−" : "+"}</span>
             </button>
-            {opened === i && <p className="faq-answer">{item.a}</p>}
+            {opened.has(i) && <p className="faq-answer">{item.a}</p>}
           </div>
         ))}
       </div>
