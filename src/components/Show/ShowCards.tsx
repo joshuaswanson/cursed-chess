@@ -12,16 +12,25 @@ const CLOSE_MS = 450;
 /** When the title clears and the catchphrase comes in */
 const CATCHPHRASE_AT_MS = 1900;
 
+/** Letters that animate one by one, grouped by word so a line only breaks between words */
 function Letters({ text }: { text: string }) {
+  let index = 0;
   return (
     <>
-      {text.split("").map((ch, i) => (
-        <span
-          key={i}
-          className="card-letter"
-          style={{ "--i": i } as React.CSSProperties}
-        >
-          {ch === " " ? " " : ch}
+      {text.split(" ").map((word, w) => (
+        <span key={w}>
+          {w > 0 && " "}
+          <span className="card-word">
+            {word.split("").map((ch) => (
+              <span
+                key={index}
+                className="card-letter"
+                style={{ "--i": index++ } as React.CSSProperties}
+              >
+                {ch}
+              </span>
+            ))}
+          </span>
         </span>
       ))}
     </>

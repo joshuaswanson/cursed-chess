@@ -524,6 +524,10 @@
     0.08em 0.08em 0 var(--ink);
 }
 
+.card-word {
+  white-space: nowrap;
+}
+
 .card-letter {
   display: inline-block;
   animation: letter-pop 0.4s cubic-bezier(0.3, 1.8, 0.5, 1) both;
