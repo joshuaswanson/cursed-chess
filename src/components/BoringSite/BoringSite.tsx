@@ -1,6 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import type { SiteTab } from "../../stores/gameStore";
+import { AuthDialog } from "./AuthDialog";
+import type { AuthMode } from "./AuthDialog";
 import "./BoringSite.css";
 
 const NAV_LINKS: SiteTab[] = ["Play", "Puzzles", "Learn", "Watch", "Community"];
@@ -18,6 +20,8 @@ function PawnMark() {
 export function BoringHeader() {
   const tab = useGameStore((s) => s.siteTab);
   const setTab = useGameStore((s) => s.setSiteTab);
+  const [auth, setAuth] = useState<AuthMode | null>(null);
+  const closeAuth = useCallback(() => setAuth(null), []);
   return (
     <header className="boring-header">
       <div className="boring-brand">
@@ -38,13 +42,22 @@ export function BoringHeader() {
         ))}
       </nav>
       <div className="boring-account">
-        <button type="button" className="boring-btn boring-btn-plain">
+        <button
+          type="button"
+          className="boring-btn boring-btn-plain"
+          onClick={() => setAuth("login")}
+        >
           Log in
         </button>
-        <button type="button" className="boring-btn">
+        <button
+          type="button"
+          className="boring-btn"
+          onClick={() => setAuth("signup")}
+        >
           Sign up
         </button>
       </div>
+      {auth && <AuthDialog key={auth} mode={auth} onClose={closeAuth} />}
     </header>
   );
 }
