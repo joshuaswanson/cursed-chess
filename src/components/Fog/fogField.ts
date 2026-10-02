@@ -109,9 +109,21 @@ export class EdgeFog {
  */
 export class FogBank {
   private puffs: Puff[] = [];
+  /** Thin patches drifting through the bank, where pieces briefly show through */
+  private thinSpots: Puff[] = [];
+  private time = 0;
+
+  /** A slowly turning breeze that carries every puff and thin spot */
+  private wind() {
+    return {
+      x: 9 + 7 * Math.sin(this.time * 0.07),
+      y: 2.5 * Math.sin(this.time * 0.05 + 1),
+    };
+  }
 
   private spawn(core: Rect, cover: number, onEdge: boolean): Puff {
     const coveredH = core.h * cover;
+    const wind = this.wind();
     let x: number;
     let y: number;
     if (onEdge) {
@@ -138,13 +150,36 @@ export class FogBank {
     return {
       x,
       y,
-      vx: rand(-10, 10),
-      vy: rand(-3, 6),
+      vx: wind.x + rand(-5, 5),
+      vy: wind.y + rand(-3, 4),
       r: onEdge ? rand(36, 80) : rand(50, 110),
-      alpha: onEdge ? rand(0.45, 0.7) : rand(0.35, 0.55),
+      alpha: onEdge ? rand(0.4, 0.62) : rand(0.3, 0.5),
       age: 0,
       life: rand(5, 11),
       tint: Math.random(),
+    };
+  }
+
+  private spawnThinSpot(core: Rect, cover: number): Puff {
+    const wind = this.wind();
+    // Mostly near the outline, where a thinning bank looks natural
+    const nearEdge = Math.random() < 0.7;
+    const x = nearEdge
+      ? Math.random() < 0.5
+        ? core.x + rand(0, core.w * 0.2)
+        : core.x + core.w - rand(0, core.w * 0.2)
+      : core.x + rand(0.2, 0.8) * core.w;
+    const y = core.y + rand(0, core.h * cover);
+    return {
+      x,
+      y,
+      vx: wind.x * 1.4,
+      vy: wind.y,
+      r: rand(40, 85),
+      alpha: rand(0.45, 0.8),
+      age: 0,
+      life: rand(7, 13),
+      tint: 0,
     };
   }
 
@@ -155,32 +190,51 @@ export class FogBank {
     scale: number,
     cover: number,
   ) {
+    this.time += dt;
     const target =
       Math.round(((core.w * core.h) / 4200) * Math.max(cover, 0.05)) + 50;
-    this.puffs = this.puffs.filter((p) => {
+    const advance = (p: Puff) => {
       p.age += dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       return p.age < p.life;
-    });
+    };
+    this.puffs = this.puffs.filter(advance);
+    this.thinSpots = this.thinSpots.filter(advance);
     while (this.puffs.length < target) {
       this.puffs.push(this.spawn(core, cover, this.puffs.length % 3 === 0));
     }
+    while (cover > 0.8 && this.thinSpots.length < 4) {
+      this.thinSpots.push(this.spawnThinSpot(core, cover));
+    }
 
-    // A blurred solid core keeps every hidden square covered; its soft edge
-    // disappears into the billows around it
     if (cover > 0) {
       // Grown past the core so its blurred falloff lands outside the hidden squares
-      const grow = 26;
+      const grow = 20;
       ctx.save();
       ctx.filter = `blur(${22 * scale}px)`;
-      ctx.fillStyle = `rgba(212,222,219,${Math.min(1, cover * 1.4)})`;
+      ctx.fillStyle = `rgba(212,222,219,${Math.min(0.96, cover * 1.4)})`;
       ctx.fillRect(
         (core.x - grow) * scale,
         (core.y - grow) * scale,
         (core.w + grow * 2) * scale,
-        (core.h * cover + grow + 6) * scale,
+        (core.h * cover + grow) * scale,
       );
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalCompositeOperation = "destination-out";
+      for (const spot of this.thinSpots) {
+        const a = puffAlpha(spot);
+        const x = spot.x * scale;
+        const y = spot.y * scale;
+        const r = spot.r * scale;
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+        grad.addColorStop(0, `rgba(0,0,0,${a})`);
+        grad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      }
       ctx.restore();
     }
     for (const p of this.puffs)
