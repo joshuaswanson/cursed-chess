@@ -6,38 +6,30 @@ Play it [here](https://joshuaswanson.github.io/cursed-chess/).
 
 ## Reviews
 
-> ★☆☆☆☆ "An insult to chess. An insult to the beauty of chess. An insult, frankly, to me personally."
+> ★☆☆☆☆ "An insult to chess. Fifteen centuries of theory, and this game throws all of it away for portals and explosions."
 >
-> Grandmaster Viktor Petrosyan-Kowalski
+> International Master
 
-> ★☆☆☆☆ "My rook fell into a volcano. I have been playing this game for forty years and I have never once seen a volcano."
+> ★☆☆☆☆ "There is no strategy here. You cannot plan three moves ahead when the rules change every forty-five seconds. You cannot plan one move ahead. This is not chess. It is a slot machine with a chessboard painted on it."
 >
-> Harold, chess club treasurer since 1987
+> Club coach, 30 years
 
-> ★☆☆☆☆ "I spent nineteen years studying the Sicilian Defense. Today a portal teleported my queen into a minefield."
+> ★☆☆☆☆ "The beauty of chess is that it is a game of perfect information. Nothing is hidden and nothing is random. This game hides half the board, buries mines under the squares, and calls it fun."
 >
-> FIDE Candidate Master, wishes to remain anonymous
+> Chess historian
 
-> ★☆☆☆☆ "The knight already did not make sense. Now the board is hexagons. Who asked for this."
+> ★☆☆☆☆ "Every opening I have studied is useless here. Every endgame I know is useless here. Talent is useless here. Luck decides everything."
 >
-> r/chess moderator
+> FIDE-rated player, 2100
 
-> ★☆☆☆☆ "Gravity should not be a game mechanic. Gravity should be left alone."
+> ★☆☆☆☆ "Chess teaches patience, calculation, and respect for your opponent. This teaches you to click fast and hope."
 >
-> Professor of Physics, emeritus
+> Scholastic chess instructor
 
-> ★☆☆☆☆ "I was winning. Then my pieces started fighting on their own and I was not winning."
+> ★☆☆☆☆ "I lost a won position because the board fell into a volcano. There was nothing I could have done. That is the opposite of what a game should be."
 >
-> Concerned parent
+> Tournament player
 
-> ★☆☆☆☆ "Bobby Fischer would have hated this. I hate this on his behalf."
+> ★☆☆☆☆ "A cheap gimmick that mistakes noise for depth. Avoid."
 >
-> Anonymous
-
-> ★☆☆☆☆ "There was a football. On the chessboard. My king was the goalkeeper. He let it in."
->
-> Former club champion, now retired
-
-> ★★★★★ "Best chess game ever made."
->
-> The developer's mom
+> Chess magazine reviewer
