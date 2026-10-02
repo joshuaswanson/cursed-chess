@@ -15,83 +15,166 @@
   overflow: visible;
 }
 
-.wall-body {
-  stroke: #2a231c;
-  stroke-width: 2;
+.castle-shadows {
+  fill: rgba(8, 5, 2, 0.6);
 }
 
-.wall-cast {
-  fill: rgba(10, 6, 2, 0.45);
-}
-
-.wall-edge {
-  fill: none;
-  stroke: #2a231c;
+.wall-face {
+  stroke: #241d16;
   stroke-width: 2.5;
+}
+
+.wall-face-ring {
+  fill: none;
+  stroke: #241d16;
+  stroke-width: 2.5;
+}
+
+.walk-shade {
+  fill: rgba(10, 6, 2, 0.28);
+}
+
+.parapet-inner {
+  fill: #958c7c;
+}
+
+.parapet-lit {
+  fill: rgba(255, 240, 215, 0.3);
+}
+
+.parapet-base {
+  fill: #7d7466;
 }
 
 .merlon {
-  fill: #b3aa9a;
+  fill: #aaa192;
   stroke: #2a231c;
-  stroke-width: 1.5;
+  stroke-width: 1.3;
 }
 
 .merlon-lit {
-  fill: #dcd3c1;
-  opacity: 0.7;
+  fill: #e6dccb;
+  opacity: 0.6;
 }
 
-.merlon-shadow {
-  fill: rgba(10, 6, 2, 0.45);
+.merlon-cast {
+  fill: rgba(10, 6, 2, 0.4);
 }
 
-.tower-floor {
-  fill: #6b6254;
-  stroke: #2a231c;
+.tower-rim-shade {
+  fill: none;
+  stroke: rgba(10, 6, 2, 0.35);
+  stroke-width: 4;
+}
+
+.roof-cast {
+  fill: rgba(10, 6, 2, 0.4);
+}
+
+.roof-seam {
+  stroke: rgba(10, 12, 18, 0.45);
+  stroke-width: 1;
+}
+
+.roof-edge {
+  fill: none;
+  stroke: #15171c;
   stroke-width: 2;
 }
 
-.flag-pole {
-  stroke: #3a2a18;
-  stroke-width: 2.5;
+.roof-finial {
+  fill: #d4ad52;
+  stroke: #3a2a10;
+  stroke-width: 1;
+}
+
+.flag-lit {
+  fill: rgba(255, 255, 255, 0.3);
+  stroke: none;
 }
 
 .flag {
   stroke: #1a0f08;
   stroke-width: 1.2;
-  transform-origin: 50px 27px;
+  transform-origin: 50px 50px;
   animation: flag-wave 1.4s ease-in-out infinite alternate;
 }
 
 @keyframes flag-wave {
   to {
-    transform: scaleX(0.82) skewY(6deg);
+    transform: scaleX(0.84) skewY(5deg);
   }
 }
 
-.wall-cracks path {
-  fill: none;
-  stroke: #1a130c;
-  stroke-width: 3;
-  stroke-linejoin: round;
+.crack-core {
+  fill: #120c07;
 }
 
-.wall-square.cracked .wall-body {
-  filter: brightness(0.85);
+.crack-lip {
+  fill: rgba(240, 228, 205, 0.5);
 }
 
-/* Each wall square rises out of the ground as the siege begins */
-.siege-layer.rising .wall-square,
-.siege-layer.rising .gate {
+.pit {
+  fill: #2b241d;
+}
+
+.pit-lip {
+  fill: rgba(240, 228, 205, 0.55);
+}
+
+.pit-floor {
+  fill: #463e34;
+}
+
+.scorch {
+  fill: rgba(18, 10, 4, 0.35);
+  filter: blur(5px);
+}
+
+.wall-rise.cracked {
+  filter: brightness(0.9) saturate(0.85);
+}
+
+.block-shadow {
+  fill: rgba(10, 6, 2, 0.45);
+}
+
+.block-side {
+  fill: #4d453b;
+  stroke: #241d16;
+  stroke-width: 0.8;
+}
+
+.block-top {
+  stroke: #2a231c;
+  stroke-width: 0.8;
+}
+
+.block-lit {
+  fill: rgba(255, 245, 225, 0.35);
+}
+
+.rubble-dust {
+  fill: rgba(70, 58, 44, 0.55);
+  filter: blur(4px);
+}
+
+.ruin-arc {
+  stroke: #241d16;
+  stroke-width: 2;
+}
+
+/* Each part of the castle pops up out of the ground as the siege begins */
+.siege-layer.rising .wall-rise {
   transform-box: fill-box;
-  transform-origin: 50% 100%;
+  transform-origin: 50% 50%;
   animation: wall-rise 0.6s cubic-bezier(0.3, 1.5, 0.5, 1) both;
 }
 
 @keyframes wall-rise {
   from {
     opacity: 0;
-    scale: 1 0.1;
+    scale: 0.4;
   }
 }
 
@@ -106,35 +189,19 @@
   stroke-width: 1.5;
 }
 
+.iron-band {
+  fill: #3a3634;
+}
+
 .portcullis {
   fill: #2c2c30;
   stroke: #0e0e10;
   stroke-width: 1.5;
 }
 
-.rubble-dust {
-  fill: rgba(120, 104, 84, 0.45);
-}
-
-.rubble-shadow {
-  fill: rgba(10, 6, 2, 0.45);
-}
-
-.rubble-stone {
-  stroke: #2a231c;
-  stroke-width: 1;
-}
-
-.rubble-stone.tone-0 {
-  fill: #9b9283;
-}
-
-.rubble-stone.tone-1 {
-  fill: #857c6e;
-}
-
-.rubble-stone.tone-2 {
-  fill: #a8a090;
+.portcullis-bar {
+  stroke: #121214;
+  stroke-width: 2.5;
 }
 
 /* A wall the selected attacker can batter */

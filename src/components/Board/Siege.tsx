@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Color } from "../../engine";
 import type { SquareIndex } from "../../engine";
-import { COURTYARD, GATES, TOWERS } from "../../plugins/siege";
+import { COURTYARD } from "../../plugins/siege";
 import type { SiegeView, Strike } from "../../plugins/siege";
 import { visualCol, visualRow } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
+import { Castle } from "./Castle";
 import "./Siege.css";
 
 /** How long a catapult stone is in the air */
@@ -21,279 +21,6 @@ function seeded(seed: number) {
     s = (s * 16807) % 2147483647;
     return (s - 1) / 2147483646;
   };
-}
-
-const flagColor = (defender: Color) =>
-  defender === Color.White ? "#3b6fe0" : "#c8283a";
-
-/** Sides of a square that face out of the castle, in screen terms */
-function outerSides(col: number, row: number) {
-  return {
-    left: col === 1,
-    right: col === 6,
-    top: row === 1,
-    bottom: row === 6,
-  };
-}
-
-/** Battlements along one edge of a wall square, in the square's 0 to 100 space */
-function Merlons({ side, missing }: { side: string; missing: number }) {
-  const blocks = [6, 31, 56, 81];
-  return (
-    <>
-      {blocks.map((at, i) => {
-        if (i === missing) return null;
-        const horizontal = side === "top" || side === "bottom";
-        const x = horizontal ? at : side === "left" ? 2 : 82;
-        const y = horizontal ? (side === "top" ? 2 : 82) : at;
-        return (
-          <g key={i}>
-            <rect
-              x={x + 2}
-              y={y + 3}
-              width="16"
-              height="16"
-              rx="2"
-              className="merlon-shadow"
-            />
-            <rect
-              x={x}
-              y={y}
-              width="16"
-              height="16"
-              rx="2"
-              className="merlon"
-            />
-            <rect
-              x={x + 2}
-              y={y + 2}
-              width="12"
-              height="4"
-              className="merlon-lit"
-            />
-          </g>
-        );
-      })}
-    </>
-  );
-}
-
-function Cracks({ seed }: { seed: number }) {
-  const rand = seeded(seed);
-  const crack = () => {
-    let x = 20 + rand() * 60;
-    let y = 15 + rand() * 20;
-    let d = `M${x.toFixed(0)} ${y.toFixed(0)}`;
-    for (let i = 0; i < 5; i++) {
-      x += (rand() - 0.5) * 22;
-      y += 10 + rand() * 8;
-      d += ` L${x.toFixed(0)} ${y.toFixed(0)}`;
-    }
-    return d;
-  };
-  return (
-    <g className="wall-cracks">
-      <path d={crack()} />
-      <path d={crack()} />
-    </g>
-  );
-}
-
-function Rubble({ seed }: { seed: number }) {
-  const rand = seeded(seed + 101);
-  return (
-    <g className="rubble">
-      <ellipse cx="50" cy="55" rx="46" ry="38" className="rubble-dust" />
-      {Array.from({ length: 16 }, (_, i) => {
-        const x = 10 + rand() * 80;
-        const y = 12 + rand() * 76;
-        const w = 7 + rand() * 13;
-        const h = 6 + rand() * 9;
-        return (
-          <g
-            key={i}
-            transform={`rotate(${(rand() * 70 - 35).toFixed(0)} ${x} ${y})`}
-          >
-            <rect
-              x={x - w / 2 + 1.5}
-              y={y - h / 2 + 2}
-              width={w}
-              height={h}
-              rx="2"
-              className="rubble-shadow"
-            />
-            <rect
-              x={x - w / 2}
-              y={y - h / 2}
-              width={w}
-              height={h}
-              rx="2"
-              className={`rubble-stone tone-${i % 3}`}
-            />
-          </g>
-        );
-      })}
-    </g>
-  );
-}
-
-type Sides = ReturnType<typeof outerSides>;
-
-/** The wall's height casts a shadow onto the courtyard on its inner side */
-function WallShadow({ sides }: { sides: Sides }) {
-  if (sides.left)
-    return (
-      <rect x="100" y="0" width="14" height="100" fill="url(#wall-shade-r)" />
-    );
-  if (sides.right)
-    return (
-      <rect x="-14" y="0" width="14" height="100" fill="url(#wall-shade-l)" />
-    );
-  if (sides.top)
-    return (
-      <rect x="0" y="100" width="100" height="14" fill="url(#wall-shade-d)" />
-    );
-  return (
-    <rect x="0" y="-14" width="100" height="14" fill="url(#wall-shade-u)" />
-  );
-}
-
-/** Dark lines along the outer and inner faces, so neighboring squares join into one wall */
-function WallEdges({ sides }: { sides: Sides }) {
-  const vertical = sides.left || sides.right;
-  return vertical ? (
-    <path d="M1 0 V100 M99 0 V100" className="wall-edge" />
-  ) : (
-    <path d="M0 1 H100 M0 99 H100" className="wall-edge" />
-  );
-}
-
-/** One stretch of castle wall seen from above: stone walkway with battlements on the outer side */
-function WallSquare({
-  sq,
-  hp,
-  col,
-  row,
-  delay,
-  defender,
-}: {
-  sq: SquareIndex;
-  hp: number;
-  col: number;
-  row: number;
-  delay: number;
-  defender: Color;
-}) {
-  const sides = outerSides(col, row);
-  const tower = TOWERS.includes(sq);
-  const missing = hp === 1 ? sq % 4 : -1;
-  return (
-    <g
-      className={`wall-square${hp === 1 ? " cracked" : ""}`}
-      transform={`translate(${col * 100} ${row * 100})`}
-      style={{ animationDelay: `${delay}ms` } as Style}
-    >
-      {tower ? (
-        <>
-          <circle cx="53" cy="55" r="49" className="wall-cast" />
-          <circle
-            cx="50"
-            cy="50"
-            r="49"
-            fill="url(#siege-stone)"
-            className="wall-body"
-          />
-          <circle cx="50" cy="50" r="49" fill="url(#siege-light)" />
-          <circle cx="50" cy="50" r="31" className="tower-floor" />
-          {Array.from({ length: 12 }, (_, i) =>
-            i === missing * 3 ? null : (
-              <rect
-                key={i}
-                x="45"
-                y="3"
-                width="10"
-                height="13"
-                rx="2"
-                className="merlon"
-                transform={`rotate(${i * 30} 50 50)`}
-              />
-            ),
-          )}
-          <line x1="50" y1="50" x2="50" y2="20" className="flag-pole" />
-          <path
-            d="M50 21 L78 27 L50 34 Z"
-            fill={flagColor(defender)}
-            className="flag"
-          />
-        </>
-      ) : (
-        <>
-          <WallShadow sides={sides} />
-          <rect width="100" height="100" fill="url(#siege-stone)" />
-          <rect width="100" height="100" fill="url(#siege-light)" />
-          <WallEdges sides={sides} />
-          {Object.entries(sides).map(
-            ([side, outer]) =>
-              outer && <Merlons key={side} side={side} missing={missing} />,
-          )}
-        </>
-      )}
-      {hp === 1 && <Cracks seed={sq} />}
-    </g>
-  );
-}
-
-/** A gatehouse: a lowered drawbridge with the portcullis raised above it */
-function Gate({
-  col,
-  row,
-  delay,
-}: {
-  col: number;
-  row: number;
-  delay: number;
-}) {
-  const vertical = row === 1 || row === 6;
-  return (
-    <g
-      className="gate"
-      transform={`translate(${col * 100} ${row * 100}) ${vertical ? "" : "rotate(90 50 50)"}`}
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <rect
-        x="0"
-        width="12"
-        height="100"
-        fill="url(#siege-stone)"
-        className="wall-body"
-      />
-      <rect
-        x="88"
-        width="12"
-        height="100"
-        fill="url(#siege-stone)"
-        className="wall-body"
-      />
-      <rect x="12" width="76" height="100" className="drawbridge" />
-      {Array.from({ length: 9 }, (_, i) => (
-        <line
-          key={i}
-          x1="12"
-          x2="88"
-          y1={6 + i * 11}
-          y2={6 + i * 11}
-          className="plank-seam"
-        />
-      ))}
-      <rect
-        x="12"
-        y={row === 1 ? 0 : 92}
-        width="76"
-        height="8"
-        className="portcullis"
-      />
-    </g>
-  );
 }
 
 /** Stone flags over the courtyard */
@@ -378,47 +105,6 @@ export function SiegeLayer({
       <svg className="siege-castle" viewBox="0 0 800 800" aria-hidden>
         <defs>
           <pattern
-            id="siege-stone"
-            width="40"
-            height="22"
-            patternUnits="userSpaceOnUse"
-          >
-            <rect width="40" height="22" fill="#8a8173" />
-            <rect x="1" y="1" width="18" height="9" rx="1.5" fill="#9b9283" />
-            <rect x="21" y="1" width="18" height="9" rx="1.5" fill="#857c6e" />
-            <rect x="-9" y="12" width="18" height="9" rx="1.5" fill="#928a7b" />
-            <rect x="11" y="12" width="18" height="9" rx="1.5" fill="#a0978a" />
-            <rect x="31" y="12" width="18" height="9" rx="1.5" fill="#877e70" />
-          </pattern>
-          <radialGradient id="siege-light" cx="0.3" cy="0.25" r="0.9">
-            <stop offset="0" stopColor="#fff2d8" stopOpacity="0.25" />
-            <stop offset="0.6" stopColor="#000" stopOpacity="0" />
-            <stop offset="1" stopColor="#000" stopOpacity="0.35" />
-          </radialGradient>
-          {(
-            [
-              ["r", 0, 1],
-              ["l", 1, 0],
-              ["d", 0, 1],
-              ["u", 1, 0],
-            ] as const
-          ).map(([dir, from, to]) => {
-            const across = dir === "r" || dir === "l";
-            return (
-              <linearGradient
-                key={dir}
-                id={`wall-shade-${dir}`}
-                x1={across ? from : 0}
-                x2={across ? to : 0}
-                y1={across ? 0 : from}
-                y2={across ? 0 : to}
-              >
-                <stop offset="0" stopColor="#000" stopOpacity="0.5" />
-                <stop offset="1" stopColor="#000" stopOpacity="0" />
-              </linearGradient>
-            );
-          })}
-          <pattern
             id="siege-flags"
             width="50"
             height="50"
@@ -440,39 +126,16 @@ export function SiegeLayer({
         </defs>
 
         <Courtyard squares={COURTYARD} flipped={flipped} />
-        {view.rubble.map((sq) => {
-          const { col, row } = placed(sq);
-          return (
-            <g
-              key={`r${sq}`}
-              transform={`translate(${col * 100} ${row * 100})`}
-              className="rubble-pile"
-            >
-              <Rubble seed={sq} />
-            </g>
-          );
-        })}
-        {GATES.map((sq) => {
-          const { col, row } = placed(sq);
-          return <Gate key={sq} col={col} row={row} delay={riseDelay(sq)} />;
-        })}
-        {Object.keys(view.walls)
-          .map(Number)
-          .concat(inFlight !== null ? [inFlight] : [])
-          .map((sq) => {
-            const { col, row } = placed(sq);
-            return (
-              <WallSquare
-                key={sq}
-                sq={sq}
-                hp={shownHp(sq) ?? 1}
-                col={col}
-                row={row}
-                delay={riseDelay(sq)}
-                defender={view.defender}
-              />
-            );
-          })}
+        <Castle
+          walls={Object.keys(view.walls)
+            .map(Number)
+            .concat(inFlight !== null ? [inFlight] : [])}
+          rubble={view.rubble.filter((sq) => sq !== inFlight)}
+          hpOf={(sq) => shownHp(sq) ?? 1}
+          flipped={flipped}
+          defender={view.defender}
+          riseDelay={riseDelay}
+        />
       </svg>
 
       {ramTargets.map((sq) => {
