@@ -400,7 +400,7 @@ function GoalCelebration({ kick }: { kick: Kick }) {
       aria-live="assertive"
     >
       <span className="goal-word" style={{ "--delay": `${delay}ms` } as Style}>
-        {"GOAL!".split("").map((ch, i) => (
+        {"GOOOAAALLL!".split("").map((ch, i) => (
           <span key={i} style={{ "--i": i } as Style}>
             {ch}
           </span>
