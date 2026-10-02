@@ -1,147 +1,126 @@
 .rally-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  background: linear-gradient(135deg, #1a0e30, #251848);
-  border: 1px solid #5533aa;
-  border-radius: 8px;
+  gap: 12px;
+  background:
+    linear-gradient(90deg, rgba(29, 92, 255, 0.35), rgba(226, 48, 74, 0.35)),
+    color-mix(in srgb, var(--frame) 70%, #000);
 }
-
-/* --- Resource bars --- */
 
 .rally-resources {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .resource-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .resource-label {
-  font-family: "Bangers", cursive;
+  width: 34px;
+  font-weight: 800;
   font-size: 14px;
-  letter-spacing: 2px;
-  color: #bb66ff;
-  width: 32px;
-}
-
-.resource-row.enemy .resource-label {
-  color: #ff3377;
 }
 
 .resource-bar {
   display: flex;
-  gap: 2px;
+  gap: 3px;
   flex: 1;
 }
 
 .resource-pip {
   flex: 1;
-  height: 14px;
-  border-radius: 2px;
-  background: #2a1850;
-  border: 1px solid #443388;
-  transition:
-    background 0.2s,
-    box-shadow 0.2s;
+  height: 16px;
+  background: var(--ink);
+  border-radius: 4px;
+  transition: background-color 0.2s;
 }
 
 .resource-pip.filled {
-  background: linear-gradient(180deg, #bb66ff, #8833cc);
-  border-color: #cc88ff;
-  box-shadow: 0 0 4px rgba(187, 102, 255, 0.4);
-  animation: pip-fill 0.3s ease-out;
+  background: linear-gradient(180deg, #8fc0ff, #2c6bff);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+  animation: pip-fill 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
 }
 
 .resource-pip.enemy.filled {
-  background: linear-gradient(180deg, #ff3377, #cc1155);
-  border-color: #ff6699;
-  box-shadow: 0 0 4px rgba(255, 51, 119, 0.4);
-  animation: pip-fill 0.3s ease-out;
+  background: linear-gradient(180deg, #ff9aa8, #e2304a);
 }
 
 @keyframes pip-fill {
-  0% {
-    transform: scaleY(0.3);
-    opacity: 0.4;
-  }
-  60% {
-    transform: scaleY(1.15);
-    opacity: 1;
-  }
-  100% {
-    transform: scaleY(1);
-    opacity: 1;
+  from {
+    scale: 1 0.2;
   }
 }
 
 .resource-count {
-  font-family: "Inter", monospace;
-  font-weight: 700;
-  font-size: 16px;
-  color: #eeddff;
   width: 24px;
+  font-family: var(--font-display);
+  font-size: 18px;
   text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 
-/* --- Deploy grid --- */
-
 .deploy-label {
-  font-family: "Bangers", cursive;
-  font-size: 16px;
-  letter-spacing: 3px;
-  color: #c4b0f0;
-  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
 }
 
 .deploy-grid {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
 }
 
 .deploy-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 8px;
-  border: 2px solid #443388;
-  border-radius: 6px;
-  background: #2a1850;
-  cursor: pointer;
-  transition: all 0.15s;
   position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 3px 4px 0 var(--ink);
+  cursor: grab;
+  touch-action: none;
+  transition:
+    translate 0.1s,
+    opacity 0.2s;
 }
 
-.deploy-btn:hover:not(:disabled) {
-  border-color: #bb66ff;
-  background: #3d2280;
-  box-shadow: 0 0 10px rgba(187, 102, 255, 0.3);
+.deploy-btn:not(.disabled):hover {
+  translate: 0 -3px;
+  background: var(--accent);
 }
 
 .deploy-btn.disabled {
-  opacity: 0.3;
+  opacity: 0.35;
   cursor: not-allowed;
+  filter: grayscale(1);
 }
 
 .deploy-piece-img {
-  width: 32px;
-  height: 32px;
-  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5));
+  width: 82%;
+  height: 82%;
+  pointer-events: none;
 }
 
 .deploy-cost {
-  font-family: "Bangers", cursive;
-  font-size: 14px;
-  color: #bb66ff;
-  line-height: 1;
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--accent);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
 }
 
 .deploy-floating-piece {
@@ -150,7 +129,5 @@
   height: 64px;
   pointer-events: none;
   z-index: 1000;
-  filter: drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.6));
-  opacity: 0.9;
-}
+  filter: drop-shadow(4px 8px 4px rgba(0, 0, 0, 0.45));
 }

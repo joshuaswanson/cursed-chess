@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { useGameStore } from "../../stores/gameStore";
-import { PieceType } from "../../engine";
+import { Color, PieceType } from "../../engine";
+import { pieceImage } from "../../utils/pieceImages";
 import type { SquareIndex } from "../../engine";
 import { PIECE_COST } from "../../plugins/clashRoyale";
 import type { RallyPlugin } from "../../plugins/clashRoyale";
 import "./RallyPanel.css";
 
-const DEPLOYABLE: { type: PieceType; label: string; img: string }[] = [
-  { type: PieceType.Pawn, label: "Pawn", img: "/pieces/wP.svg" },
-  { type: PieceType.Knight, label: "Knight", img: "/pieces/wN.svg" },
-  { type: PieceType.Bishop, label: "Bishop", img: "/pieces/wB.svg" },
-  { type: PieceType.Rook, label: "Rook", img: "/pieces/wR.svg" },
-  { type: PieceType.Queen, label: "Queen", img: "/pieces/wQ.svg" },
+const DEPLOYABLE: { type: PieceType; label: string }[] = [
+  { type: PieceType.Pawn, label: "Pawn" },
+  { type: PieceType.Knight, label: "Knight" },
+  { type: PieceType.Bishop, label: "Bishop" },
+  { type: PieceType.Rook, label: "Rook" },
+  { type: PieceType.Queen, label: "Queen" },
 ];
 
 interface DeployDrag {
@@ -74,10 +75,10 @@ export function RallyPanel() {
   const blackRes = rallyPlugin.resourceBlack;
 
   return (
-    <div className="rally-panel">
+    <section className="hud-card rally-panel" aria-label="Reinforcements">
       <div className="rally-resources">
         <div className="resource-row">
-          <span className="resource-label">YOU</span>
+          <span className="resource-label">You</span>
           <div className="resource-bar">
             {Array.from({ length: 10 }, (_, i) => (
               <div
@@ -89,7 +90,7 @@ export function RallyPanel() {
           <span className="resource-count">{Math.floor(whiteRes)}</span>
         </div>
         <div className="resource-row enemy">
-          <span className="resource-label">FOE</span>
+          <span className="resource-label">Foe</span>
           <div className="resource-bar">
             {Array.from({ length: 10 }, (_, i) => (
               <div
@@ -102,15 +103,17 @@ export function RallyPanel() {
         </div>
       </div>
 
-      <div className="deploy-label">DEPLOY</div>
+      <div className="deploy-label">Drag a piece onto your half</div>
       <div className="deploy-grid">
-        {DEPLOYABLE.map(({ type, img }) => {
+        {DEPLOYABLE.map(({ type, label }) => {
+          const img = pieceImage({ type, color: Color.White });
           const cost = PIECE_COST[type];
           const canAfford = whiteRes >= cost;
 
           return (
             <div
               key={type}
+              title={`${label}, costs ${cost}`}
               className={`deploy-btn ${!canAfford ? "disabled" : ""}`}
               onPointerDown={(e) => {
                 if (!canAfford) return;
@@ -121,7 +124,7 @@ export function RallyPanel() {
             >
               <img
                 src={img}
-                alt={type}
+                alt={label}
                 className="deploy-piece-img"
                 draggable={false}
               />
@@ -142,6 +145,6 @@ export function RallyPanel() {
           draggable={false}
         />
       )}
-    </div>
+    </section>
   );
 }

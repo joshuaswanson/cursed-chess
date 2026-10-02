@@ -1,14 +1,11 @@
 import { useEffect } from "react";
 import { Board } from "./components/Board/Board";
 import { HexBoard } from "./components/HexBoard/HexBoard";
-import { GameControls } from "./components/GameControls/GameControls";
 import { PromotionDialog } from "./components/PromotionDialog/PromotionDialog";
 import { Announcement } from "./components/Announcement/Announcement";
-import { Timer } from "./components/Timer/Timer";
-import { ModePanel } from "./components/ModePanel/ModePanel";
-import { RallyPanel } from "./components/RallyPanel/RallyPanel";
+import { Hud } from "./components/Hud/Hud";
 import { Backdrop } from "./components/Backdrop/Backdrop";
-import { Logo } from "./components/Logo/Logo";
+import { Logo, OnAir } from "./components/Logo/Logo";
 import {
   BoringFooter,
   BoringHeader,
@@ -53,22 +50,14 @@ function App() {
       {cursed ? (
         <header className="topbar">
           <Logo />
+          <OnAir title={theme.title} />
         </header>
       ) : (
         <BoringHeader />
       )}
       <main className="stage">
         <div className="board-container">{board}</div>
-        {cursed ? (
-          <aside className="hud">
-            <ModePanel />
-            <Timer />
-            <RallyPanel />
-            <GameControls />
-          </aside>
-        ) : (
-          <BoringSidebar />
-        )}
+        {cursed ? <Hud /> : <BoringSidebar />}
       </main>
       {!cursed && <BoringFooter />}
       <PromotionDialog />

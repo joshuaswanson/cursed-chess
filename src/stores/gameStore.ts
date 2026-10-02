@@ -29,7 +29,7 @@ import type { HexCoord, HexMove } from "../engine/hex";
 
 export type { PortalMoveInfo };
 
-const MODE_SECONDS = 45;
+export const MODE_SECONDS = 45;
 const PLAYER_MOVE_SECONDS = 10;
 const AI_MOVE_SECONDS = 1;
 /** Clock value for the opening normal-chess phase, which has no time limit */

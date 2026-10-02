@@ -569,13 +569,21 @@
   overflow: visible;
 }
 
+/* Clipped to the board plus a feathered margin so the fog never covers the panel */
 .fog-overlay {
   position: absolute;
   left: -120px;
   right: -120px;
   z-index: 6;
   pointer-events: none;
-  overflow: visible;
+  overflow: hidden;
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 110px,
+    #000 calc(100% - 110px),
+    transparent 100%
+  );
   animation: fog-enter 8s ease-out forwards;
 }
 
