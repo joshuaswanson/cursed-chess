@@ -176,11 +176,10 @@
   fill: rgba(8, 5, 2, 0.75);
 }
 
-/* The freshly broken end of a wall, paler than its weathered top */
 .break-edge {
   fill: none;
-  stroke: #b8ad99;
-  stroke-width: 2;
+  stroke: #241d16;
+  stroke-width: 2.5;
   stroke-linejoin: bevel;
 }
 
