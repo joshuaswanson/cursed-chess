@@ -8,6 +8,8 @@ type Move = { from: SquareIndex; to: SquareIndex };
 type Offsets = Map<SquareIndex, { x: number; y: number }>;
 
 const SLIDE_CLEAR_MS = 600;
+/** How long a moved piece takes to slide onto its square */
+export const SLIDE_MS = 200;
 const EXPLOSION_DELAY_MS = 350;
 const EXPLOSION_MS = 1300;
 /** The mine pops up and beeps before it goes off */
@@ -160,6 +162,8 @@ const CAPTURE_BURST_MS = 700;
 export function useCaptureBurst(
   captureSquare: SquareIndex | null,
   moveCount: number,
+  /** Waits for the capturing piece to finish arriving */
+  delayMs: number = 0,
 ): { sq: SquareIndex; word: string; id: number } | null {
   const [burst, setBurst] = useState<{
     sq: SquareIndex;
@@ -169,15 +173,19 @@ export function useCaptureBurst(
 
   useEffect(() => {
     if (captureSquare === null) return;
-    setBurst({
-      sq: captureSquare,
-      word: CAPTURE_WORDS[moveCount % CAPTURE_WORDS.length],
-      id: moveCount,
-    });
-    sfx.capture();
-    const timer = setTimeout(() => setBurst(null), CAPTURE_BURST_MS);
-    return () => clearTimeout(timer);
-  }, [captureSquare, moveCount]);
+    const timers = [
+      setTimeout(() => {
+        setBurst({
+          sq: captureSquare,
+          word: CAPTURE_WORDS[moveCount % CAPTURE_WORDS.length],
+          id: moveCount,
+        });
+        sfx.capture();
+      }, delayMs),
+      setTimeout(() => setBurst(null), delayMs + CAPTURE_BURST_MS),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [captureSquare, moveCount, delayMs]);
 
   return burst;
 }

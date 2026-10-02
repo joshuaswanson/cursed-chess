@@ -35,6 +35,7 @@ import {
   useMineExplosions,
   useCaptureBurst,
   useSlideAnimation,
+  SLIDE_MS,
 } from "./useBoardEffects";
 import type { GravityFall } from "./useBoardEffects";
 import "./Board.css";
@@ -176,6 +177,7 @@ export function Board() {
       ? lastRecord.move.to
       : null,
     moveHistory.length,
+    SLIDE_MS,
   );
   // A capture through a portal bursts once the piece has flown out and landed
   const portalCapture = useCaptureBurst(
@@ -312,7 +314,7 @@ export function Board() {
           ? ({
               "--slide-from-x": `${slide.x}px`,
               "--slide-from-y": `${slide.y}px`,
-              animation: "slide-in 0.2s ease-out forwards",
+              animation: `slide-in ${SLIDE_MS}ms ease-out forwards`,
             } as React.CSSProperties)
           : fall
             ? ({
