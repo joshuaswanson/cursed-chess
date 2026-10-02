@@ -9,6 +9,7 @@ import { MoveCountdown } from "./components/Countdown/MoveCountdown";
 import { Hud } from "./components/Hud/Hud";
 import { FoeRallyBar, YourRallyBar } from "./components/RallyPanel/RallyPanel";
 import { Backdrop } from "./components/Backdrop/Backdrop";
+import { SpaceTraffic } from "./components/Backdrop/SpaceTraffic";
 import { PageFog } from "./components/Fog/Fog";
 import { Logo } from "./components/Logo/Logo";
 import {
@@ -72,6 +73,7 @@ function App() {
       </main>
       {!cursed && <BoringFooter />}
       <PageFog active={theme.id === "fog"} />
+      {cursed && theme.id === "portals" && <SpaceTraffic />}
       <PromotionDialog />
       <ShowCards />
       <CurseIntro />

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { rankOf, toIndex } from "../../utils/squareUtils";
 import { Color, GameStatus, PieceType, isGameOver } from "../../engine";
@@ -134,6 +134,10 @@ export function Board() {
     primedPortal: selectedSquare !== null ? portalEntrance : null,
     onPhase: playPortalPhase,
   });
+
+  useEffect(() => {
+    if (openingPortals.size > 0) sfx.portalOpen();
+  }, [openingPortals]);
 
   const slides = useSlideAnimation({
     lastMove,

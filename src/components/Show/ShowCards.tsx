@@ -5,6 +5,7 @@ import { useTheme } from "../../theme/useTheme";
 import type { ModeTheme, ThemeId } from "../../theme/themes";
 import { sfx } from "../../audio/sfx";
 import { Confetti } from "./Confetti";
+import { Portal } from "../Board/Portal";
 import "./Show.css";
 
 const CLOSE_MS = 450;
@@ -33,8 +34,12 @@ function Flair({ theme }: { theme: ThemeId }) {
     case "portals":
       return (
         <>
-          <span className="card-portal card-portal-blue" />
-          <span className="card-portal card-portal-orange" />
+          <span className="card-portal card-portal-blue">
+            <Portal color="blue" state="spawn" />
+          </span>
+          <span className="card-portal card-portal-orange">
+            <Portal color="orange" state="spawn" />
+          </span>
         </>
       );
     case "fog":

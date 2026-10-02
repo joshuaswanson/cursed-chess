@@ -604,30 +604,21 @@
   }
 }
 
+/* The same swirling portals as the board, tearing open on either side of the title */
 .card-portal {
   position: absolute;
   top: 50%;
-  width: 22vh;
-  height: 22vh;
+  width: 24vh;
+  height: 24vh;
   translate: 0 -50%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle, #000 0 30%, transparent 31%),
-    repeating-conic-gradient(var(--c1) 0deg 20deg, var(--c2) 20deg 40deg);
-  box-shadow: 0 0 40px var(--c1);
-  animation: rays-spin 1.2s linear infinite;
 }
 
 .card-portal-blue {
-  left: 9vw;
-  --c1: #2f9bff;
-  --c2: #d6f1ff;
+  left: 13vw;
 }
 
 .card-portal-orange {
-  right: 9vw;
-  --c1: #ff8a1a;
-  --c2: #fff1c2;
+  right: 13vw;
 }
 
 /* --- Fog of war: letters condense out of the mist --- */

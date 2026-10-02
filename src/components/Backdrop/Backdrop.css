@@ -97,30 +97,345 @@
 
 .planet {
   position: absolute;
-  right: 6vw;
-  top: 12vh;
-  width: 13vmin;
-  height: 13vmin;
+  right: 5vw;
+  top: 9vh;
+  width: 17vmin;
+  height: 17vmin;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 35% 30%,
-    #ffd9a0 0%,
-    #ff7a59 45%,
-    #6b1f6b 100%
-  );
+  background:
+    repeating-linear-gradient(
+      -18deg,
+      transparent 0 1.6vmin,
+      rgba(120, 30, 80, 0.25) 1.6vmin 2.4vmin
+    ),
+    radial-gradient(circle at 35% 30%, #ffd9a0 0%, #ff7a59 45%, #6b1f6b 100%);
   box-shadow:
-    inset -2vmin -1.5vmin 3vmin rgba(0, 0, 0, 0.55),
+    inset -2.4vmin -1.8vmin 3.4vmin rgba(0, 0, 0, 0.6),
     0 0 6vmin rgba(255, 122, 89, 0.35);
   animation: float 9s ease-in-out infinite;
 }
 
 .planet-ring {
   position: absolute;
-  inset: 38% -55%;
+  inset: 36% -60%;
   border-radius: 50%;
-  border: 0.9vmin solid rgba(255, 220, 180, 0.65);
+  border: 1.2vmin solid rgba(255, 220, 180, 0.7);
   border-top-color: transparent;
+  box-shadow: 0 0 2vmin rgba(255, 220, 180, 0.35);
   rotate: -18deg;
+}
+
+.planet-giant {
+  position: absolute;
+  left: -22vmin;
+  bottom: -38vmin;
+  width: 70vmin;
+  height: 70vmin;
+  border-radius: 50%;
+  background:
+    repeating-linear-gradient(
+      8deg,
+      rgba(255, 255, 255, 0.07) 0 3vmin,
+      rgba(0, 0, 0, 0.12) 3vmin 5vmin,
+      transparent 5vmin 8vmin
+    ),
+    radial-gradient(circle at 65% 25%, #b16bff 0%, #5a22b8 40%, #1a0a44 75%);
+  box-shadow:
+    0 0 8vmin 2vmin rgba(177, 107, 255, 0.45),
+    inset 4vmin 3vmin 6vmin rgba(255, 255, 255, 0.12);
+  animation: giant-spin 120s linear infinite;
+}
+
+@keyframes giant-spin {
+  to {
+    background-position:
+      40vmin 0,
+      0 0;
+  }
+}
+
+.planet-blue {
+  position: absolute;
+  left: 7vw;
+  top: 16vh;
+  width: 9vmin;
+  height: 9vmin;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 30%,
+    #d6f6ff 0%,
+    #34b7ff 40%,
+    #0b2f8a 85%
+  );
+  box-shadow:
+    0 0 3vmin 0.6vmin rgba(52, 183, 255, 0.6),
+    inset -1.4vmin -1vmin 2vmin rgba(0, 0, 0, 0.5);
+  animation: float 12s -4s ease-in-out infinite;
+}
+
+.moon-cratered {
+  position: absolute;
+  right: 18vw;
+  bottom: 12vh;
+  width: 6vmin;
+  height: 6vmin;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 30% 40%,
+      rgba(0, 0, 0, 0.3) 0 9%,
+      transparent 10%
+    ),
+    radial-gradient(
+      circle at 62% 28%,
+      rgba(0, 0, 0, 0.25) 0 7%,
+      transparent 8%
+    ),
+    radial-gradient(
+      circle at 55% 68%,
+      rgba(0, 0, 0, 0.3) 0 12%,
+      transparent 13%
+    ),
+    radial-gradient(circle at 35% 30%, #f2efe9 0%, #a9a4b5 55%, #4a4458 100%);
+  box-shadow: inset -1vmin -0.8vmin 1.4vmin rgba(0, 0, 0, 0.55);
+  animation: float 10s -2s ease-in-out infinite;
+}
+
+/* --- Ships flying over the board. Each loops, spending part of its cycle out of view. --- */
+
+.space-traffic {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  overflow: hidden;
+  pointer-events: none;
+  animation: scene-in 1.2s ease-out both;
+}
+
+.ship {
+  position: absolute;
+  left: 0;
+  top: 0;
+  filter: drop-shadow(0 1.2vmin 1.4vmin rgba(0, 0, 0, 0.5));
+}
+
+.ship-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ship-ufo {
+  width: 13vmin;
+  height: 9.75vmin;
+  animation: ufo-path 22s -4s linear infinite;
+}
+
+.ship-ufo .ship-art {
+  animation: ufo-wobble 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes ufo-path {
+  0% {
+    translate: -18vw 46vh;
+  }
+  8% {
+    translate: 12vw 30vh;
+  }
+  16% {
+    translate: 30vw 52vh;
+  }
+  24% {
+    translate: 48vw 26vh;
+  }
+  32% {
+    translate: 70vw 48vh;
+  }
+  40% {
+    translate: 90vw 22vh;
+  }
+  46%,
+  100% {
+    translate: 118vw 36vh;
+  }
+}
+
+@keyframes ufo-wobble {
+  from {
+    rotate: -10deg;
+    translate: 0 -8%;
+  }
+  to {
+    rotate: 10deg;
+    translate: 0 8%;
+  }
+}
+
+.ufo-light {
+  fill: #ffd23f;
+  animation: ufo-blink 0.75s steps(2) infinite;
+}
+
+@keyframes ufo-blink {
+  50% {
+    fill: #ff3d6e;
+  }
+}
+
+.ufo-beam {
+  animation: ufo-beam 2.4s ease-in-out infinite;
+}
+
+@keyframes ufo-beam {
+  0%,
+  55%,
+  100% {
+    opacity: 0;
+  }
+  65%,
+  90% {
+    opacity: 1;
+  }
+}
+
+.ship-rocket {
+  width: 5vmin;
+  height: 13.75vmin;
+  animation: rocket-path 15s -9s cubic-bezier(0.5, 0, 0.8, 0.6) infinite;
+}
+
+@keyframes rocket-path {
+  0% {
+    translate: 12vw 115vh;
+    rotate: 30deg;
+  }
+  30% {
+    translate: 80vw -30vh;
+    rotate: 42deg;
+  }
+  30.01%,
+  100% {
+    translate: 80vw -40vh;
+    rotate: 42deg;
+  }
+}
+
+.rocket-flame {
+  fill: #ff8a1a;
+  transform-origin: 20px 78px;
+  animation: rocket-flame 0.12s steps(2) infinite alternate;
+}
+
+.rocket-flame-core {
+  fill: #fff1c2;
+}
+
+@keyframes rocket-flame {
+  to {
+    scale: 0.8 1.25;
+  }
+}
+
+.ship-fighter {
+  width: 14vmin;
+  height: 5vmin;
+  animation: fighter-path 11s -2s linear infinite;
+}
+
+/* A dogfight: the pair weaves across the board, the red one a moment behind */
+@keyframes fighter-path {
+  0% {
+    translate: 112vw 34vh;
+    rotate: 0deg;
+  }
+  6% {
+    translate: 82vw 22vh;
+    rotate: 14deg;
+  }
+  12% {
+    translate: 52vw 40vh;
+    rotate: -14deg;
+  }
+  18% {
+    translate: 22vw 18vh;
+    rotate: 12deg;
+  }
+  24% {
+    translate: -25vw 30vh;
+    rotate: 0deg;
+  }
+  24.01%,
+  100% {
+    translate: -35vw 30vh;
+  }
+}
+
+.ship-chaser {
+  animation-delay: -1.55s;
+  filter: hue-rotate(150deg) saturate(1.6)
+    drop-shadow(0 1.2vmin 1.4vmin rgba(0, 0, 0, 0.5));
+}
+
+.ship-mothership {
+  width: 70vw;
+  height: 16.3vw;
+  animation: mothership-path 34s -20s linear infinite;
+}
+
+@keyframes mothership-path {
+  0% {
+    translate: 105vw -2vh;
+  }
+  32% {
+    translate: -75vw -10vh;
+  }
+  32.01%,
+  100% {
+    translate: -80vw -10vh;
+  }
+}
+
+.mother-engine {
+  fill: #18d4ff;
+  filter: drop-shadow(0 0 12px #18d4ff);
+  animation: rocket-flame 0.1s steps(2) infinite alternate;
+  transform-origin: 560px 70px;
+}
+
+.mother-window {
+  fill: #ffe9a6;
+  animation: ufo-blink 1.6s steps(2) infinite;
+}
+
+.fighter-thrust {
+  fill: #18d4ff;
+  filter: drop-shadow(0 0 4px #18d4ff);
+  animation: rocket-flame 0.08s steps(2) infinite alternate;
+  transform-origin: 112px 25px;
+}
+
+.fighter-laser {
+  stroke: #ff3d6e;
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px #ff3d6e);
+  animation: laser-fire 0.5s linear infinite;
+}
+
+.fighter-laser-b {
+  animation-delay: 0.25s;
+}
+
+@keyframes laser-fire {
+  from {
+    translate: 40px 0;
+    opacity: 1;
+  }
+  to {
+    translate: -120px 0;
+    opacity: 0;
+  }
 }
 
 @keyframes float {

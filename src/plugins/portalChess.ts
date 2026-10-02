@@ -68,9 +68,13 @@ export class PortalChessPlugin implements ModePlugin {
   private moveCount = 0;
   private repositionInterval = 4;
 
-  onGameStart(ctx: PluginContext): void {
+  onGameStart(): void {
     this.portals = [];
     this.moveCount = 0;
+  }
+
+  /** Portals tear open once the title cards are out of the way */
+  onIntroEnd(ctx: PluginContext): void {
     this.spawnPortals(ctx);
   }
 

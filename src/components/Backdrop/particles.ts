@@ -23,8 +23,8 @@ export interface Preset {
   /** Particles kept alive at once */
   count: number;
   spawn: (w: number, h: number, initial: boolean) => Particle;
-  /** Rare extra particles, like shooting stars, spawned with this chance per second */
-  extra?: { rate: number; spawn: (w: number, h: number) => Particle };
+  /** Rare events, like shooting stars or a meteor shower, each with its chance per second */
+  extras?: { rate: number; spawn: (w: number, h: number) => Particle[] }[];
 }
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
@@ -69,38 +69,180 @@ const stars: Preset = {
       }
     },
   }),
-  extra: {
-    rate: 0.35,
-    spawn: (w, h) => ({
-      x: rand(w * 0.2, w * 1.1),
-      y: rand(-20, h * 0.4),
-      vx: rand(-900, -600),
-      vy: rand(250, 420),
-      size: 2,
-      age: 0,
-      life: 0.9,
-      phase: 0,
-      color: "#ffffff",
-      draw: (ctx, p) => {
-        const tail = 0.08;
-        const grad = ctx.createLinearGradient(
-          p.x,
-          p.y,
-          p.x - p.vx * tail,
-          p.y - p.vy * tail,
-        );
-        grad.addColorStop(0, "rgba(255,255,255,0.95)");
-        grad.addColorStop(1, "rgba(255,255,255,0)");
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x - p.vx * tail, p.y - p.vy * tail);
-        ctx.stroke();
-      },
-    }),
-  },
+  extras: [
+    { rate: 0.5, spawn: (w, h) => [shootingStar(w, h)] },
+    { rate: 0.14, spawn: (w, h) => [comet(w, h)] },
+    { rate: 0.07, spawn: meteorShower },
+    { rate: 0.18, spawn: (w, h) => [asteroid(w, h)] },
+  ],
 };
+
+function shootingStar(w: number, h: number): Particle {
+  return {
+    x: rand(w * 0.2, w * 1.1),
+    y: rand(-20, h * 0.4),
+    vx: rand(-900, -600),
+    vy: rand(250, 420),
+    size: 2,
+    age: 0,
+    life: 0.9,
+    phase: 0,
+    color: "255,255,255",
+    draw: drawStreak(0.08, 2),
+  };
+}
+
+/** A glowing streak whose tail trails behind its motion */
+function drawStreak(tail: number, width: number) {
+  return (ctx: CanvasRenderingContext2D, p: Particle) => {
+    if (p.age < 0) return;
+    const tx = p.x - p.vx * tail;
+    const ty = p.y - p.vy * tail;
+    const grad = ctx.createLinearGradient(p.x, p.y, tx, ty);
+    grad.addColorStop(0, `rgba(${p.color},0.95)`);
+    grad.addColorStop(1, `rgba(${p.color},0)`);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+  };
+}
+
+/** A slow comet with a glowing head and a long two-tone tail */
+function comet(w: number, h: number): Particle {
+  const fromRight = Math.random() < 0.5;
+  const speed = rand(220, 360);
+  const vy = rand(40, 130);
+  return {
+    x: fromRight ? w + 60 : -60,
+    y: rand(h * 0.05, h * 0.55),
+    vx: fromRight ? -speed : speed,
+    vy,
+    size: rand(3, 5),
+    age: 0,
+    life: (w + 400) / speed,
+    phase: 0,
+    color: pick(["160,240,255", "255,170,240", "255,225,150"]),
+    draw: (ctx, p) => {
+      const tx = p.x - p.vx * 0.9;
+      const ty = p.y - p.vy * 0.9;
+      const glow = ctx.createLinearGradient(p.x, p.y, tx, ty);
+      glow.addColorStop(0, `rgba(${p.color},0.45)`);
+      glow.addColorStop(1, `rgba(${p.color},0)`);
+      ctx.strokeStyle = glow;
+      ctx.lineCap = "round";
+      ctx.lineWidth = p.size * 4;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+      const core = ctx.createLinearGradient(p.x, p.y, tx, ty);
+      core.addColorStop(0, "rgba(255,255,255,0.95)");
+      core.addColorStop(0.5, `rgba(${p.color},0.3)`);
+      core.addColorStop(1, `rgba(${p.color},0)`);
+      ctx.strokeStyle = core;
+      ctx.lineWidth = p.size;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+      const head = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 5);
+      head.addColorStop(0, "rgba(255,255,255,1)");
+      head.addColorStop(0.3, `rgba(${p.color},0.8)`);
+      head.addColorStop(1, `rgba(${p.color},0)`);
+      ctx.fillStyle = head;
+      dot(ctx, p.x, p.y, p.size * 5);
+    },
+  };
+}
+
+/** A burst of fiery meteors raining down on parallel paths */
+function meteorShower(w: number, h: number): Particle[] {
+  const angle = rand(0.45, 0.75);
+  const fromRight = Math.random() < 0.5;
+  return Array.from({ length: Math.floor(rand(14, 26)) }, () => {
+    const speed = rand(700, 1100);
+    const vx = (fromRight ? -1 : 1) * Math.cos(angle) * speed;
+    const vy = Math.sin(angle) * speed;
+    const delay = rand(0, 1.6);
+    const x = rand(-0.2 * w, 1.2 * w);
+    const y = rand(-0.3 * h, 0.1 * h);
+    return {
+      x: x - vx * delay,
+      y: y - vy * delay,
+      vx,
+      vy,
+      size: rand(1.5, 3.2),
+      age: -delay,
+      life: rand(0.9, 1.5),
+      phase: 0,
+      color: pick(["255,200,120", "255,150,90", "255,235,180"]),
+      draw: (ctx, p) => {
+        if (p.age < 0) return;
+        drawStreak(0.12, p.size)(ctx, p);
+        ctx.fillStyle = "rgba(255,255,240,0.95)";
+        dot(ctx, p.x, p.y, p.size * 0.8);
+      },
+    };
+  });
+}
+
+/** A lumpy rock tumbling slowly past */
+function asteroid(w: number, h: number, big = false): Particle {
+  const fromLeft = Math.random() < 0.5;
+  const speed = big ? rand(90, 180) : rand(30, 80);
+  const size = big ? rand(26, 60) : rand(6, 22);
+  const corners = Array.from({ length: 9 }, () => rand(0.7, 1.15));
+  const craters = Array.from({ length: 3 }, () => [
+    rand(-0.4, 0.4),
+    rand(-0.4, 0.4),
+    rand(0.12, 0.25),
+  ]);
+  const spin = rand(-1.2, 1.2);
+  return {
+    x: fromLeft ? -size * 2 : w + size * 2,
+    y: rand(h * 0.1, h * 0.9),
+    vx: fromLeft ? speed : -speed,
+    vy: rand(-15, 15),
+    size,
+    age: 0,
+    life: (w + size * 4) / speed,
+    phase: rand(0, Math.PI * 2),
+    color: pick(["#6d6066", "#7a6a5c", "#5c5a6e"]),
+    draw: (ctx, p, t) => {
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.phase + t * spin);
+      ctx.beginPath();
+      corners.forEach((k, i) => {
+        const a = (i / corners.length) * Math.PI * 2;
+        const r = p.size * k;
+        if (i === 0) ctx.moveTo(r * Math.cos(a), r * Math.sin(a));
+        else ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
+      });
+      ctx.closePath();
+      const shade = ctx.createRadialGradient(
+        -p.size * 0.4,
+        -p.size * 0.4,
+        0,
+        0,
+        0,
+        p.size * 1.2,
+      );
+      shade.addColorStop(0, "#b9aca2");
+      shade.addColorStop(0.5, p.color);
+      shade.addColorStop(1, "#211a22");
+      ctx.fillStyle = shade;
+      ctx.fill();
+      ctx.fillStyle = "rgba(20,14,22,0.45)";
+      for (const [cx, cy, cr] of craters) {
+        dot(ctx, cx * p.size, cy * p.size, cr * p.size);
+      }
+    },
+  };
+}
 
 const wisps: Preset = {
   count: 26,
@@ -341,6 +483,19 @@ const flashes: Preset = {
         ctx.fillRect(p.x - p.size * 7, p.y - 0.5, p.size * 14, 1);
       },
     };
+  },
+};
+
+/** Things that fly in front of the board */
+export const FRONT_PRESETS: Partial<Record<ThemeId, Preset>> = {
+  portals: {
+    count: 0,
+    spawn: shootingStar,
+    extras: [
+      { rate: 0.08, spawn: (w, h) => [comet(w, h)] },
+      { rate: 0.045, spawn: meteorShower },
+      { rate: 0.12, spawn: (w, h) => [asteroid(w, h, true)] },
+    ],
   },
 };
 

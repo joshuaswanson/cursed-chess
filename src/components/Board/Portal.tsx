@@ -125,6 +125,12 @@ export function Portal({
         } as React.CSSProperties
       }
     >
+      {state === "spawn" && (
+        <>
+          <span className="portal-rift" aria-hidden />
+          <span className="portal-shock" aria-hidden />
+        </>
+      )}
       <svg className="portal-svg" viewBox="-60 -60 120 120" aria-hidden>
         <defs>
           <radialGradient id={`light-${id}`}>

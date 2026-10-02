@@ -64,6 +64,8 @@ const HEX_MORPH_OUT_MS = 4600;
 const HEX_MORPH_IN_MS = 5500;
 const HEX_MORPH_DONE_MS = 6900;
 
+/** Modes that hold back their setup until the title card clears start here */
+const INTRO_END_MS = MODE_CARD_MS + 100;
 /** Reinforcements start arriving as the mode's title card clears */
 const REINFORCE_START_MS = 4300;
 const REINFORCE_STAGGER_MS = 160;
@@ -188,6 +190,8 @@ export interface GameStore {
   deployPieceType: PieceType | null;
   /** Bumped every autonomous tick, since plugins change resources and the board in place */
   autonomousTick: number;
+  /** The current mode's title cards have cleared */
+  introDone: boolean;
 
   hexGame: HexGame | null;
   isHexMode: boolean;
@@ -398,6 +402,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   cursed: false,
   curseStage: null,
   autonomousTick: 0,
+  introDone: true,
 
   selectHex: (coord) => {
     const { paused, hexGame, selectedHex, legalHexMoves, makeHexMove } = get();
@@ -716,6 +721,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       } else {
         pluginManager.setContext(game);
         pluginManager.invokeOnGameStart();
+        pluginManager.invokeOnIntroEnd();
         set(FRESH_CLOCKS);
       }
     }, RESULT_HOLD_MS);
@@ -923,10 +929,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       game: nextGame,
       reinforcements,
       arrivalStyle: Math.random() < 0.5 ? "parachute" : "sprint",
+      introDone: false,
       pluginManager: freshPluginManager(nextGame, mode.create()),
       turn: nextGame.turn,
       moveHistory: [...nextGame.history],
       ...(isHexMode ? { lastMove: null } : {}),
     });
+    schedule(() => {
+      get().pluginManager.invokeOnIntroEnd();
+      set({ introDone: true });
+    }, INTRO_END_MS);
   },
 }));

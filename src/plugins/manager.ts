@@ -36,6 +36,10 @@ export class PluginManager {
     for (const p of this.plugins) p.onGameStart?.(this.ctx);
   }
 
+  invokeOnIntroEnd(): void {
+    for (const p of this.plugins) p.onIntroEnd?.(this.ctx);
+  }
+
   invokeOnTurnStart(color: Color): void {
     for (const p of this.plugins) p.onTurnStart?.(this.ctx, color);
   }

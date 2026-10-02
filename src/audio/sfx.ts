@@ -865,4 +865,38 @@ export const sfx = {
       chord(c, out, t + at, [freq], length, "square", 0.025);
     }
   },
+
+  /** A portal rips open: a tearing crackle, a falling shriek, and a deep thump */
+  portalOpen(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const src = noiseSource(c);
+    const band = c.createBiquadFilter();
+    band.type = "bandpass";
+    band.Q.value = 4;
+    band.frequency.setValueAtTime(5000, t);
+    band.frequency.exponentialRampToValueAtTime(300, t + 0.6);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.3, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+    src.connect(band).connect(gain).connect(out);
+    src.start(t, Math.random() * 0.5);
+    src.stop(t + 0.75);
+
+    const boom = c.createOscillator();
+    boom.type = "sine";
+    boom.frequency.setValueAtTime(120, t + 0.2);
+    boom.frequency.exponentialRampToValueAtTime(40, t + 0.8);
+    const boomGain = c.createGain();
+    boomGain.gain.setValueAtTime(0.0001, t);
+    boomGain.gain.setValueAtTime(0.5, t + 0.2);
+    boomGain.gain.exponentialRampToValueAtTime(0.001, t + 0.85);
+    boom.connect(boomGain).connect(out);
+    boom.start(t + 0.2);
+    boom.stop(t + 0.9);
+    for (let i = 0; i < 6; i++) crackle(c, out, 1);
+  },
 };
