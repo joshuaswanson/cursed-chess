@@ -3,6 +3,7 @@ import type { BoardOverlay } from "../../plugins/types";
 import type { PortalColor } from "../../plugins/portalChess";
 import type { BattleRoyaleOverlay } from "../../plugins/battleRoyale";
 import type { BattleView } from "../../plugins/clashRoyale";
+import type { FootballView } from "../../plugins/football";
 
 export interface PortalPair {
   a: SquareIndex;
@@ -16,6 +17,7 @@ export interface BoardOverlays {
   hasFog: boolean;
   hasRally: boolean;
   rallyBattle: BattleView | null;
+  football: FootballView | null;
   battleRoyale: BattleRoyaleOverlay | null;
   gravityDirection: string | null;
   gravityAngle: number | null;
@@ -33,6 +35,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     hasFog: false,
     hasRally: false,
     rallyBattle: null,
+    football: null,
     battleRoyale: null,
     gravityDirection: null,
     gravityAngle: null,
@@ -59,6 +62,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
         break;
       case "rally-resources":
         result.hasRally = true;
+        break;
+      case "football":
+        result.football = overlay.data as FootballView;
         break;
       case "rally-battle":
         result.rallyBattle = overlay.data as BattleView;

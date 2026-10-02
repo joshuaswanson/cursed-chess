@@ -8,7 +8,7 @@ import {
   isGameOver,
   opponent,
 } from "../engine";
-import type { SquareIndex, Move, MoveRecord, Piece } from "../engine";
+import type { Board, SquareIndex, Move, MoveRecord, Piece } from "../engine";
 import { PluginManager } from "../plugins/manager";
 import type { ModePlugin } from "../plugins/types";
 import { rankOf, ALL_SQUARES } from "../utils/squareUtils";
@@ -21,6 +21,8 @@ import { MinefieldPlugin } from "../plugins/minefield";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GravityPlugin } from "../plugins/gravity";
 import { StrategoPlugin } from "../plugins/stratego";
+import { FootballPlugin } from "../plugins/football";
+import type { KickTarget } from "../plugins/football";
 import { HexGame } from "../engine/hex/game";
 import { chooseMove, PIECE_VALUE } from "../ai/chooseMove";
 import type { ThemeId } from "../theme/themes";
@@ -50,6 +52,8 @@ const MODE_CARD_MS = 4200;
 const INTRO_HOLD_MS = 4700;
 /** Lets the final move animate before the result banner covers the board */
 const GAME_END_DELAY_MS = 600;
+/** A goal gets its celebration before the result banner */
+const GOAL_CELEBRATION_MS = 2600;
 const RESULT_MS = 2500;
 const RESULT_HOLD_MS = 2800;
 
@@ -103,6 +107,12 @@ export const GAME_MODES: GameMode[] = [
     create: () => [new KingOfTheHillPlugin()],
   },
   {
+    name: "FIFA",
+    theme: "fifa",
+    create: () => [new FootballPlugin()],
+    durationSeconds: 60,
+  },
+  {
     name: "GRAVITY",
     theme: "gravity",
     create: () => [new GravityPlugin()],
@@ -135,6 +145,8 @@ export interface GameStore {
   legalMoveSquares: SquareIndex[];
   hasPortalMoves: boolean;
   portalEntrance: SquareIndex | null;
+  /** Teammates the selected ball carrier can pass to, with the chance each pass arrives */
+  kickOptions: { to: SquareIndex; chance: number }[];
   lastMove: { from: SquareIndex; to: SquareIndex } | null;
   lastPortalMove: PortalMoveInfo | null;
   promotionPending: { from: SquareIndex; to: SquareIndex } | null;
@@ -185,7 +197,9 @@ export interface GameStore {
   requestMove: (
     from: SquareIndex,
     to: SquareIndex,
-  ) => "moved" | "promotion" | null;
+  ) => "moved" | "promotion" | "kicked" | null;
+  /** The ball carrier passes or shoots instead of moving */
+  kick: (target: KickTarget) => boolean;
   makeMove: (from: SquareIndex, to: SquareIndex, promotion?: PieceType) => void;
   newGame: () => void;
   flipBoard: () => void;
@@ -213,6 +227,7 @@ const CLEARED_SELECTION = {
   legalMoveSquares: [],
   hasPortalMoves: false,
   portalEntrance: null,
+  kickOptions: [],
 } satisfies Partial<GameStore>;
 
 const CLEARED_HEX = {
@@ -279,11 +294,11 @@ function holdPause(ms: number): void {
   }, ms);
 }
 
-function endGameSoon(winner: Color | null): void {
-  schedule(
-    () => useGameStore.getState().handleGameEnd(winner),
-    GAME_END_DELAY_MS,
-  );
+function endGameSoon(
+  winner: Color | null,
+  delayMs: number = GAME_END_DELAY_MS,
+): void {
+  schedule(() => useGameStore.getState().handleGameEnd(winner), delayMs);
 }
 
 /** The plain chess site starts glitching, then the curse bursts through */
@@ -304,8 +319,12 @@ function startCursedIntro(): void {
 }
 
 /** How the current mode's square markings make a square better or worse to stand on */
-function modeSquareBonus(pluginManager: PluginManager): SquareBonus {
-  return (square, piece) => {
+function modeSquareBonus(
+  pluginManager: PluginManager,
+  board: Board,
+): SquareBonus {
+  const football = pluginManager.find<FootballPlugin>("football");
+  return (square, piece, from) => {
     const classes = pluginManager
       .getSquareModifiers(square)
       .map((m) => m.className ?? "")
@@ -317,6 +336,7 @@ function modeSquareBonus(pluginManager: PluginManager): SquareBonus {
       bonus -= value;
     }
     if (classes.includes("hill-square")) bonus += 0.5;
+    if (football) bonus += football.squareBonus(board, square, piece, from);
     return bonus;
   };
 }
@@ -431,9 +451,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // The human always plays White
     if (state.game.turn !== Color.White) return;
 
-    const { game, selectedSquare, legalMoveSquares } = state;
+    const { game, selectedSquare, legalMoveSquares, kickOptions } = state;
     if (selectedSquare !== null && legalMoveSquares.includes(square)) {
       state.requestMove(selectedSquare, square);
+      return;
+    }
+    if (selectedSquare !== null && kickOptions.some((k) => k.to === square)) {
+      state.kick(square);
       return;
     }
 
@@ -443,12 +467,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const hasPortalMoves = moves.some((m) => m.flags & MoveFlag.Portal);
       const portal =
         state.pluginManager.find<PortalChessPlugin>("portal-chess");
+      const football = state.pluginManager.find<FootballPlugin>("football");
+      const canKick =
+        football !== undefined && square === football.ball && !game.isInCheck();
       set({
         selectedSquare: square,
         legalMoveSquares: moves.map((m) => m.to),
         hasPortalMoves,
         portalEntrance:
           hasPortalMoves && portal ? portal.findEntrance(square, moves) : null,
+        kickOptions: canKick
+          ? football
+              .passOptions(game.board, square)
+              .map(({ to, chance }) => ({ to, chance }))
+          : [],
       });
       return;
     }
@@ -460,7 +492,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const moves = get()
       .legalMovesFrom(from)
       .filter((m) => m.to === to);
-    if (moves.length === 0) return null;
+    if (moves.length === 0) {
+      const { selectedSquare, kickOptions } = get();
+      const canPass =
+        selectedSquare === from && kickOptions.some((k) => k.to === to);
+      return canPass && get().kick(to) ? "kicked" : null;
+    }
     if (moves.some((m) => m.promotion)) {
       set({ promotionPending: { from, to } });
       return "promotion";
@@ -551,6 +588,45 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (isNormalChess && game.history.length === NORMAL_CHESS_PLIES) {
       startCursedIntro();
     }
+  },
+
+  kick: (target) => {
+    const state = get();
+    const { game, pluginManager } = state;
+    if (state.paused || isGameOver(state.status)) return false;
+    const football = pluginManager.find<FootballPlugin>("football");
+    if (football?.carrier(game.board)?.color !== game.turn) return false;
+    if (game.isInCheck()) return false;
+    const kick = football.kick(game.board, target);
+    if (!kick) return false;
+
+    // A kick takes the turn without moving a piece
+    const mover = game.turn;
+    game.turn = opponent(mover);
+    game.enPassant = null;
+    pluginManager.invokeOnTurnEnd(mover);
+    const status = pluginManager.invokeModifyGameStatus(game.getStatus());
+    set({
+      ...CLEARED_SELECTION,
+      promotionPending: null,
+      turn: game.turn,
+      status,
+      timeWhite:
+        game.turn === Color.White ? PLAYER_MOVE_SECONDS : state.timeWhite,
+      timeBlack: AI_MOVE_SECONDS,
+      moveTimerActive: true,
+    });
+
+    if (isGameOver(status)) {
+      const winner =
+        pluginManager.getWinner() ??
+        (status === GameStatus.Checkmate ? mover : null);
+      endGameSoon(
+        winner,
+        kick.outcome === "goal" ? GOAL_CELEBRATION_MS : GAME_END_DELAY_MS,
+      );
+    }
+    return true;
   },
 
   newGame: () => {
@@ -685,9 +761,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
+    const football = get().pluginManager.find<FootballPlugin>("football");
+    const kick =
+      game.turn === Color.Black && !game.isInCheck()
+        ? football?.chooseKick(game.board, Color.Black)
+        : null;
+    if (kick != null && get().kick(kick)) return;
+
     const pick =
       game.turn === Color.Black
-        ? chooseMove(game, moves, modeSquareBonus(get().pluginManager))
+        ? chooseMove(
+            game,
+            moves,
+            modeSquareBonus(get().pluginManager, game.board),
+          )
         : moves[Math.floor(Math.random() * moves.length)];
     get().makeMove(pick.from, pick.to, pick.promotion);
   },

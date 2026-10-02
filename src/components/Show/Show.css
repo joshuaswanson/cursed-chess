@@ -825,6 +825,71 @@
   animation: ring-out 1.2s 0.4s ease-out infinite;
 }
 
+/* --- FIFA: a ball rockets across the pitch --- */
+
+[data-card-theme="fifa"] .card-band {
+  background: repeating-linear-gradient(90deg, #1f8a3c 0 8vw, #26963f 8vw 16vw);
+}
+
+.card-pitch-line {
+  position: absolute;
+  left: 50%;
+  top: -10%;
+  bottom: -10%;
+  width: 0.6vw;
+  translate: -50% 0;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 0 transparent;
+}
+
+.card-pitch-line::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22vh;
+  height: 22vh;
+  translate: -50% -50%;
+  border: 0.6vw solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+}
+
+.card-ball {
+  position: absolute;
+  left: 0;
+  bottom: 12%;
+  width: 9vh;
+  height: 9vh;
+  border: 3px solid #1a1d22;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #1a1d22 0 17%, transparent 18%),
+    radial-gradient(circle at 50% -4%, #1a1d22 0 15%, transparent 16%),
+    radial-gradient(circle at 104% 40%, #1a1d22 0 15%, transparent 16%),
+    radial-gradient(circle at 80% 104%, #1a1d22 0 15%, transparent 16%),
+    radial-gradient(circle at 20% 104%, #1a1d22 0 15%, transparent 16%),
+    radial-gradient(circle at -4% 40%, #1a1d22 0 15%, transparent 16%),
+    radial-gradient(circle at 35% 30%, #fff, #c9d1d9);
+  animation: card-ball-shot 1.3s 0.3s cubic-bezier(0.3, 0.1, 0.5, 1) both;
+}
+
+@keyframes card-ball-shot {
+  0% {
+    translate: -12vh 0;
+    rotate: 0deg;
+  }
+  30% {
+    translate: 30vw -6vh;
+  }
+  60% {
+    translate: 62vw 0;
+  }
+  100% {
+    translate: calc(100vw + 12vh) -3vh;
+    rotate: 1080deg;
+  }
+}
+
 /* --- King of the hill: golden rays and a crown --- */
 
 [data-card-theme="hill"] .card-band {

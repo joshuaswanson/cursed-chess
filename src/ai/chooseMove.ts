@@ -26,8 +26,12 @@ export const PIECE_VALUE: Record<PieceType, number> = {
   [PieceType.King]: 1000,
 };
 
-/** Extra score (or penalty, if negative) the current mode gives a piece for standing on a square */
-export type SquareBonus = (square: SquareIndex, piece: Piece) => number;
+/** Extra score (or penalty, if negative) the current mode gives a piece for moving from one square to another */
+export type SquareBonus = (
+  square: SquareIndex,
+  piece: Piece,
+  from: SquareIndex,
+) => number;
 
 const CHECKMATE_SCORE = 10_000;
 const CHECK_BONUS = 0.4;
@@ -87,7 +91,8 @@ function scoreMove(game: Game, move: Move, squareBonus: SquareBonus): number {
     after.enPassant,
     after.pawnRules,
   );
-  score += centerBonus(move.to, landed) + squareBonus(move.to, landed);
+  score +=
+    centerBonus(move.to, landed) + squareBonus(move.to, landed, move.from);
   return score;
 }
 

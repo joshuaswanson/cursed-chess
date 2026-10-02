@@ -165,6 +165,20 @@ function Scene({ theme }: { theme: ThemeId }) {
           </svg>
         </>
       );
+    case "fifa":
+      return (
+        <>
+          <div className="stand stand-far" />
+          <div className="stand stand-near" />
+          <div className="floodlight floodlight-left">
+            <div className="floodlight-beam" />
+          </div>
+          <div className="floodlight floodlight-right">
+            <div className="floodlight-beam" />
+          </div>
+          <div className="stadium-turf" />
+        </>
+      );
     case "gravity":
       return (
         <>

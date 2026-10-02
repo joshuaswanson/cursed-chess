@@ -316,6 +316,34 @@ const smoke: Preset = {
   }),
 };
 
+/** Camera flashes popping in the stands */
+const flashes: Preset = {
+  count: 16,
+  spawn: (w, h) => {
+    const inUpperStand = Math.random() < 0.6;
+    return {
+      x: rand(0, w),
+      y: inUpperStand ? rand(h * 0.02, h * 0.3) : rand(h * 0.78, h * 0.98),
+      vx: 0,
+      vy: 0,
+      size: rand(1.5, 3.2),
+      age: rand(-4, 0),
+      life: rand(0.12, 0.28),
+      phase: 0,
+      color: "255,255,255",
+      draw: (ctx, p) => {
+        if (p.age < 0) return;
+        const glow = 1 - p.age / p.life;
+        ctx.fillStyle = `rgba(${p.color},${glow})`;
+        dot(ctx, p.x, p.y, p.size);
+        ctx.fillStyle = `rgba(${p.color},${glow * 0.25})`;
+        dot(ctx, p.x, p.y, p.size * 5);
+        ctx.fillRect(p.x - p.size * 7, p.y - 0.5, p.size * 14, 1);
+      },
+    };
+  },
+};
+
 export const PRESETS: Partial<Record<ThemeId, Preset>> = {
   portals: stars,
   fog: wisps,
@@ -324,6 +352,7 @@ export const PRESETS: Partial<Record<ThemeId, Preset>> = {
   mines: blips,
   hill: glitter,
   gravity: vortex,
+  fifa: flashes,
   hex: neon,
   stratego: smoke,
 };

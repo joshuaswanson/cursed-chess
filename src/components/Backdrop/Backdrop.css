@@ -659,3 +659,126 @@
     rotate: 6deg;
   }
 }
+
+/* --- FIFA: a packed stadium under floodlights --- */
+
+.stand {
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.4) 0 2px,
+      transparent 2px 16px
+    ),
+    radial-gradient(circle, rgba(255, 255, 255, 0.5) 0 1.2px, transparent 1.7px)
+      0 0 / 11px 9px,
+    radial-gradient(circle, rgba(255, 61, 110, 0.6) 0 1.4px, transparent 1.9px)
+      4px 3px / 13px 10px,
+    radial-gradient(circle, rgba(24, 212, 255, 0.55) 0 1.3px, transparent 1.8px)
+      7px 6px / 17px 12px,
+    radial-gradient(circle, rgba(255, 210, 63, 0.5) 0 1.2px, transparent 1.7px)
+      2px 8px / 19px 11px,
+    linear-gradient(180deg, #04080d, #10201a);
+  animation: crowd-bounce 0.55s steps(2) infinite;
+}
+
+.stand-far {
+  top: 0;
+  height: 30%;
+  mask: linear-gradient(180deg, #000 70%, transparent);
+}
+
+.stand-near {
+  bottom: 0;
+  height: 18%;
+  background-size:
+    auto,
+    16px 13px,
+    19px 15px,
+    25px 18px,
+    28px 16px,
+    auto;
+  mask: linear-gradient(0deg, #000 65%, transparent);
+  animation-delay: -0.27s;
+}
+
+@keyframes crowd-bounce {
+  50% {
+    translate: 0 -2px;
+  }
+}
+
+.stadium-turf {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 24%;
+  bottom: 12%;
+  background:
+    radial-gradient(70% 60% at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.55)),
+    repeating-linear-gradient(90deg, #1f7a35 0 6vw, #237f39 6vw 12vw);
+  mask: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+}
+
+.floodlight {
+  position: absolute;
+  top: 3%;
+  width: 11vw;
+  height: 5vw;
+  padding: 0.5vw;
+  border: 3px solid #05080b;
+  border-radius: 6px;
+  background:
+    radial-gradient(
+        circle,
+        #ffffff 0 30%,
+        #fffbe0 38%,
+        rgba(255, 250, 220, 0) 52%
+      )
+      0 0 / 16.66% 33.33%,
+    #161c22;
+  background-origin: content-box;
+  box-shadow:
+    0 0 24px 10px rgba(255, 255, 235, 0.6),
+    0 0 110px 50px rgba(255, 255, 225, 0.22);
+}
+
+.floodlight-left {
+  left: 4%;
+  rotate: 12deg;
+}
+
+.floodlight-right {
+  right: 4%;
+  rotate: -12deg;
+}
+
+.floodlight-beam {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 60vw;
+  height: 90vh;
+  translate: -50% 0;
+  background: conic-gradient(
+    from 162deg at 50% 0,
+    transparent 0deg,
+    rgba(255, 255, 235, 0.16) 14deg,
+    rgba(255, 255, 235, 0.16) 22deg,
+    transparent 36deg
+  );
+  mix-blend-mode: screen;
+  animation: floodlight-flicker 7s ease-in-out infinite;
+}
+
+.floodlight-right .floodlight-beam {
+  animation-delay: -3s;
+}
+
+@keyframes floodlight-flicker {
+  50% {
+    opacity: 0.75;
+  }
+}

@@ -144,6 +144,32 @@
   }
 }
 
+/* --- FIFA: the fourth official's LED board --- */
+
+[data-countdown="fifa"] .countdown-digit {
+  padding: 0 0.22em;
+  border: 0.06em solid #2b3038;
+  border-radius: 0.12em;
+  color: #ff3030;
+  font-family: "Courier New", monospace;
+  font-weight: 900;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1.5px) 0
+      0 / 0.08em 0.08em,
+    #0b0c0f;
+  text-shadow:
+    0 0 0.08em #ff3030,
+    0 0 0.3em rgba(255, 48, 48, 0.7);
+  box-shadow: 0.05em 0.07em 0 var(--ink);
+  animation: count-board 0.3s steps(2);
+}
+
+@keyframes count-board {
+  from {
+    opacity: 0.25;
+  }
+}
+
 /* --- Minefield: a red bomb timer --- */
 
 [data-countdown="mines"] .countdown-prop {

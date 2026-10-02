@@ -161,6 +161,48 @@
   );
 }
 
+/* --- FIFA: floodlit grass inside a ring of scrolling LED ad boards --- */
+
+[data-theme="fifa"] .board-shell {
+  background:
+    linear-gradient(90deg, transparent 0 3px, rgba(0, 0, 0, 0.45) 3px 4px) 0 0 /
+      4px 100%,
+    linear-gradient(transparent 0 3px, rgba(0, 0, 0, 0.45) 3px 4px) 0 0 / 100%
+      4px,
+    linear-gradient(
+        90deg,
+        #18d4ff,
+        #c8ff3d 25%,
+        #ff3d6e 50%,
+        #ffd23f 75%,
+        #18d4ff
+      )
+      0 0 / 200% 100%;
+  box-shadow:
+    10px 12px 0 var(--ink),
+    0 0 36px rgba(200, 255, 61, 0.3),
+    inset 0 0 0 4px rgba(0, 0, 0, 0.5);
+  animation: led-boards 8s linear infinite;
+}
+
+@keyframes led-boards {
+  to {
+    background-position:
+      0 0,
+      0 0,
+      200% 0;
+  }
+}
+
+[data-theme="fifa"] .square.light,
+[data-theme="fifa"] .square.dark {
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, 0.08),
+    rgba(0, 0, 0, 0.06)
+  );
+}
+
 /* --- Minefield: hazard striped bunker --- */
 
 [data-theme="mines"] .board-shell {

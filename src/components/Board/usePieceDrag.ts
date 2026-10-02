@@ -127,7 +127,7 @@ export function usePieceDrag({
   /** Called each animation frame of a drag with the current portal pull, 0 to 1 */
   onFrame?: (pullStrength: number) => void;
 }) {
-  const { selectSquare, requestMove } = useGameStore.getState();
+  const { selectSquare, requestMove, kick } = useGameStore.getState();
   const [drag, setDrag] = useState<DragState | null>(null);
   const [returnAnim, setReturnAnim] = useState<ReturnAnim | null>(null);
   const dragImgRef = useRef<HTMLImageElement>(null);
@@ -310,12 +310,17 @@ export function usePieceDrag({
 
       let moveMade = false;
       const targetSq = squareAt(e.clientX, e.clientY);
-      if (targetSq !== null && targetSq !== drag.sq) {
+      const overGoal = document
+        .elementFromPoint(e.clientX, e.clientY)
+        ?.closest(".goal.shootable");
+      if (overGoal) {
+        kick("goal");
+      } else if (targetSq !== null && targetSq !== drag.sq) {
         wasDropRef.current = true;
         droppedMoveRef.current = { from: drag.sq, to: targetSq };
         const result = requestMove(drag.sq, targetSq);
         if (result !== "moved") wasDropRef.current = false;
-        moveMade = result !== null;
+        moveMade = result === "moved" || result === "promotion";
       }
 
       if (!moveMade) {
@@ -352,6 +357,7 @@ export function usePieceDrag({
       squareSize,
       requestMove,
       selectSquare,
+      kick,
     ],
   );
 

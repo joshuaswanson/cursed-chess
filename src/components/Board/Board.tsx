@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { rankOf, toIndex } from "../../utils/squareUtils";
-import { Color, GameStatus, PieceType } from "../../engine";
+import { Color, GameStatus, PieceType, isGameOver } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import { Portal } from "./Portal";
@@ -9,6 +9,8 @@ import { Battlefield, WorldRiver } from "./Battlefield";
 import { BoardShatter } from "../HexWarp/HexWarp";
 import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
+import { FootballLayer, Goal, PassMarker, Pitch } from "./Football";
+import type { FootballPlugin } from "../../plugins/football";
 import { BattleEffects, BattleUnit } from "./Battle";
 import {
   visualCol as colOnScreen,
@@ -81,6 +83,8 @@ export function Board() {
     hexTransition,
     moveHistory,
     cursed,
+    kickOptions,
+    kick,
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -154,6 +158,24 @@ export function Board() {
   );
 
   const battle = overlays.rallyBattle;
+  const football = overlays.football;
+  const footballRules = pluginManager.find<FootballPlugin>("football");
+  const ourBall =
+    football !== null && game.board.get(football.ball)?.color === Color.White;
+  const canShoot =
+    footballRules !== undefined &&
+    ourBall &&
+    game.turn === Color.White &&
+    !isGameOver(status) &&
+    !game.isInCheck();
+  const shotChance = canShoot
+    ? (footballRules.shotOption(game.board, footballRules.ball)?.chance ?? null)
+    : null;
+  const noShotReason = !ourBall
+    ? "Win the ball first!"
+    : game.turn !== Color.White
+      ? "Wait for your turn!"
+      : "No clear shot!";
   const battleRoyale = overlays.battleRoyale;
   const dangerProgress = battleRoyale?.dangerProgress ?? 0;
   const collapse = useRingCollapse(
@@ -234,6 +256,8 @@ export function Board() {
       if (drag?.isDragging && isLegalTarget) className += " drag-target";
       if (isDeployTarget) className += " deploy-target";
       if (minesArmed.has(sq)) className += " mine-armed";
+      const passChance = kickOptions.find((k) => k.to === sq)?.chance;
+      if (passChance !== undefined) className += " kick-target";
       className += riverClasses(file, rank, sq);
 
       const slide = slides.get(sq);
@@ -343,6 +367,7 @@ export function Board() {
           )}
 
           {minesArmed.has(sq) && <span className="mine-pop" aria-hidden />}
+          {passChance !== undefined && <PassMarker chance={passChance} />}
           {fall && piece && (
             <span
               key={`dust-${gravityShift?.id}`}
@@ -451,6 +476,33 @@ export function Board() {
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
           {rows}
+          {football && <Pitch />}
+          {football &&
+            [Color.Black, Color.White].map((defender) => (
+              <Goal
+                key={defender}
+                atTop={(defender === Color.Black) !== flipped}
+                defender={defender}
+                attacked={defender === Color.Black}
+                shotChance={defender === Color.Black ? shotChance : null}
+                noShotReason={noShotReason}
+                scoredKick={
+                  football.lastKick?.outcome === "goal" &&
+                  football.lastKick.color !== defender
+                    ? football.lastKick
+                    : null
+                }
+                onShoot={() => kick("goal")}
+              />
+            ))}
+          {football && (
+            <FootballLayer
+              view={football}
+              carried={game.board.get(football.ball) !== null}
+              flipped={flipped}
+              squareSize={squareSize}
+            />
+          )}
           {battle && (
             <BattleEffects
               view={battle}

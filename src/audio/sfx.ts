@@ -750,4 +750,99 @@ export const sfx = {
     thump.stop(land + 0.22);
     creak(c, out, land, 0.5);
   },
+
+  /** A boot striking the ball. Shots hit harder. */
+  kick(shot: boolean): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const thump = c.createOscillator();
+    thump.type = "sine";
+    thump.frequency.setValueAtTime(shot ? 150 : 210, t);
+    thump.frequency.exponentialRampToValueAtTime(55, t + 0.12);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(shot ? 0.6 : 0.35, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    thump.connect(gain).connect(out);
+    thump.start(t);
+    thump.stop(t + 0.17);
+
+    const src = noiseSource(c);
+    const band = c.createBiquadFilter();
+    band.type = "bandpass";
+    band.frequency.value = 1400;
+    band.Q.value = 1.5;
+    const slap = c.createGain();
+    slap.gain.setValueAtTime(shot ? 0.35 : 0.2, t);
+    slap.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+    src.connect(band).connect(slap).connect(out);
+    src.start(t, Math.random() * 0.8);
+    src.stop(t + 0.06);
+  },
+
+  /** The referee's pea whistle: one short blast, or a long one for a goal */
+  whistle(long: boolean): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const blasts = long
+      ? [
+          [0, 0.22],
+          [0.3, 0.75],
+        ]
+      : [[0, 0.38]];
+    for (const [at, length] of blasts) {
+      const tone = c.createOscillator();
+      tone.type = "sine";
+      tone.frequency.value = 2900;
+      const trill = c.createOscillator();
+      trill.frequency.value = 34;
+      const depth = c.createGain();
+      depth.gain.value = 160;
+      trill.connect(depth).connect(tone.frequency);
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.0001, t + at);
+      gain.gain.exponentialRampToValueAtTime(0.13, t + at + 0.02);
+      gain.gain.setValueAtTime(0.13, t + at + length - 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + at + length);
+      tone.connect(gain).connect(out);
+      tone.start(t + at);
+      trill.start(t + at);
+      tone.stop(t + at + length + 0.02);
+      trill.stop(t + at + length + 0.02);
+    }
+  },
+
+  /** The crowd: a disappointed ooh, or a roar for a goal */
+  crowd(kind: "ooh" | "roar"): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const roar = kind === "roar";
+    const length = roar ? 3 : 1.3;
+    const src = noiseSource(c);
+    const voice = c.createBiquadFilter();
+    voice.type = "bandpass";
+    voice.Q.value = roar ? 0.7 : 3;
+    voice.frequency.setValueAtTime(roar ? 700 : 380, t);
+    voice.frequency.linearRampToValueAtTime(
+      roar ? 1100 : 520,
+      t + length * 0.3,
+    );
+    voice.frequency.linearRampToValueAtTime(roar ? 800 : 300, t + length);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(roar ? 0.55 : 0.35, t + 0.25);
+    gain.gain.setValueAtTime(roar ? 0.55 : 0.3, t + length * 0.55);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + length);
+    src.connect(voice).connect(gain).connect(out);
+    src.start(t, Math.random() * 0.5);
+    src.stop(t + length + 0.05);
+    if (roar) {
+      for (let i = 0; i < 14; i++) crackle(c, out, 0.25);
+    }
+  },
 };

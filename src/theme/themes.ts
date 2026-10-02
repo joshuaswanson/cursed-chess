@@ -7,6 +7,7 @@ export type ThemeId =
   | "mines"
   | "hill"
   | "gravity"
+  | "fifa"
   | "hex"
   | "stratego";
 
@@ -105,6 +106,21 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#e9f3c8",
     dark: "#7fb257",
     text: "#fffaf0",
+  },
+  fifa: {
+    id: "fifa",
+    title: "FIFA",
+    tagline:
+      "Click your ball carrier, then a teammate to pass or the goal to shoot. Take the carrier to steal the ball.",
+    catchphrase: "First goal wins!",
+    sky: ["#030a12", "#0b2a1c", "#1d6b35"],
+    accent: "#c8ff3d",
+    accent2: "#18d4ff",
+    ink: "#03140a",
+    frame: "#0f1d16",
+    light: "#74c95a",
+    dark: "#5fb247",
+    text: "#f2fff0",
   },
   mines: {
     id: "mines",

@@ -81,6 +81,13 @@ function Flair({ theme }: { theme: ThemeId }) {
           </svg>
         </>
       );
+    case "fifa":
+      return (
+        <>
+          <span className="card-pitch-line" />
+          <span className="card-ball" />
+        </>
+      );
     case "gravity":
       return <span className="card-spiral" />;
     case "hex":
