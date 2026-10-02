@@ -35,7 +35,7 @@
   background-color: var(--tile-dark);
 }
 
-/* --- Rally deploy zone border (bottom half = player's ranks 0-3) --- */
+/* --- Rally deploy zone: your half, which lights up while you hold a card --- */
 .deploy-zone-border {
   position: absolute;
   bottom: 4px;
@@ -46,12 +46,60 @@
   border-radius: 4px;
   pointer-events: none;
   z-index: 5;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.deploy-zone-border.flipped {
+  top: 4px;
+  bottom: auto;
 }
 
 .deploy-zone-border.dragging {
-  background-color: rgba(102, 255, 51, 0.08);
-  border-color: rgba(102, 255, 51, 0.7);
+  border: 4px solid #66ff33;
+  box-shadow:
+    0 0 18px 4px rgba(102, 255, 51, 0.65),
+    inset 0 0 26px rgba(102, 255, 51, 0.45);
+  animation: deploy-zone-pulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes deploy-zone-pulse {
+  to {
+    box-shadow:
+      0 0 28px 8px rgba(102, 255, 51, 0.85),
+      inset 0 0 36px rgba(102, 255, 51, 0.6);
+  }
+}
+
+/* The foe's half dims and gets hatched off while you hold a card */
+.deploy-no-go {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 60, 80, 0.14) 0 10px,
+      transparent 10px 22px
+    ),
+    rgba(8, 10, 30, 0.55);
+  transition: opacity 0.2s ease;
+}
+
+.deploy-no-go.flipped {
+  top: auto;
+  bottom: 0;
+}
+
+.deploy-no-go.active {
+  opacity: 1;
 }
 
 /* --- Rally deploy target (active drag) --- */

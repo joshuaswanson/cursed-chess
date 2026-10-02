@@ -614,9 +614,15 @@ export function Board() {
             <div className="board-flash" aria-hidden />
           )}
           {overlays.hasRally && (
-            <div
-              className={`deploy-zone-border${deployPieceType ? " dragging" : ""}`}
-            />
+            <>
+              <div
+                className={`deploy-no-go${deployPieceType ? " active" : ""}${flipped ? " flipped" : ""}`}
+                aria-hidden
+              />
+              <div
+                className={`deploy-zone-border${deployPieceType ? " dragging" : ""}${flipped ? " flipped" : ""}`}
+              />
+            </>
           )}
           {hasPortalMoves &&
             selectedSquare !== null &&
