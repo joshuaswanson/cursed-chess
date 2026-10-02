@@ -1,51 +1,104 @@
 .promotion-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(13, 10, 26, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  inset: 0;
   z-index: 100;
-  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .promotion-dialog {
   display: flex;
-  gap: 6px;
-  background: #1a1530;
-  padding: 10px;
-  border-radius: 10px;
-  border: 2px solid #a855f7;
-  box-shadow:
-    0 0 30px rgba(168, 85, 247, 0.4),
-    0 8px 32px rgba(0, 0, 0, 0.6);
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  background: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+
+.promotion-title {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: #312e2b;
+}
+
+.promotion-choices {
+  display: flex;
+  gap: 8px;
 }
 
 .promotion-choice {
-  width: 76px;
-  height: 76px;
-  border: 2px solid #3a2870;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #2a1f4e, #1a1530);
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  background: #f2f2f2;
+  border: 1px solid #dddddd;
+  border-radius: 4px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
 }
 
 .promotion-choice:hover {
-  background: linear-gradient(135deg, #3a2870, #2a1f4e);
-  border-color: #00f0ff;
-  box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
-  transform: scale(1.08);
+  background: #e4ebd6;
 }
 
 .promotion-piece-img {
-  width: 85%;
-  height: 85%;
-  filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.4));
+  width: 82%;
+  height: 82%;
+}
+
+/* Once cursed, promotion is a party: chunky stickers that bounce in */
+.is-cursed .promotion-overlay {
+  background: rgba(10, 4, 24, 0.55);
+}
+
+.is-cursed .promotion-dialog {
+  padding: 16px 18px 20px;
+  background: var(--accent);
+  border: 4px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 8px 10px 0 var(--ink);
+  rotate: -2deg;
+  animation: promo-in 0.4s cubic-bezier(0.3, 1.7, 0.5, 1);
+}
+
+.is-cursed .promotion-title {
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.is-cursed .promotion-choice {
+  width: 84px;
+  height: 84px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 5px 0 var(--ink);
+  transition: translate 0.12s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.is-cursed .promotion-choice:hover {
+  translate: 0 -6px;
+  background: #ffffff;
+}
+
+.is-cursed .promotion-choice:nth-child(odd) {
+  rotate: 3deg;
+}
+
+.is-cursed .promotion-choice:nth-child(even) {
+  rotate: -3deg;
+}
+
+@keyframes promo-in {
+  from {
+    scale: 0.3;
+    rotate: 15deg;
+  }
 }

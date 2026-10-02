@@ -19,22 +19,30 @@ export function PromotionDialog() {
 
   return (
     <div className="promotion-overlay" onClick={clearSelection}>
-      <div className="promotion-dialog" onClick={(e) => e.stopPropagation()}>
-        {PROMOTION_PIECES.map((type) => (
-          <button
-            key={type}
-            className="promotion-choice"
-            onClick={() =>
-              makeMove(promotionPending.from, promotionPending.to, type)
-            }
-          >
-            <img
-              src={pieceImage({ type, color: turn })}
-              alt={type}
-              className="promotion-piece-img"
-            />
-          </button>
-        ))}
+      <div
+        className="promotion-dialog"
+        role="dialog"
+        aria-label="Choose a piece to promote to"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="promotion-title">Promote to</span>
+        <div className="promotion-choices">
+          {PROMOTION_PIECES.map((type) => (
+            <button
+              key={type}
+              className="promotion-choice"
+              onClick={() =>
+                makeMove(promotionPending.from, promotionPending.to, type)
+              }
+            >
+              <img
+                src={pieceImage({ type, color: turn })}
+                alt={type}
+                className="promotion-piece-img"
+              />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
