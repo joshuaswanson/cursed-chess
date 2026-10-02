@@ -8,6 +8,8 @@ import { Confetti } from "./Confetti";
 import "./Show.css";
 
 const CLOSE_MS = 450;
+/** When the title clears and the catchphrase comes in */
+const CATCHPHRASE_AT_MS = 1900;
 
 function Letters({ text }: { text: string }) {
   return (
@@ -104,10 +106,18 @@ function ModeCard({ theme, closing }: { theme: ModeTheme; closing: boolean }) {
     >
       <div className="card-band">
         <Flair theme={theme.id} />
-        <h1 className="card-title" aria-label={theme.title}>
-          <Letters text={theme.title} />
-        </h1>
-        <p className="card-tagline">{theme.tagline}</p>
+        <div className="card-beats">
+          <div className="card-beat card-beat-title">
+            <h1 className="card-title" aria-label={theme.title}>
+              <Letters text={theme.title} />
+            </h1>
+          </div>
+          <div className="card-beat card-beat-catch">
+            <p className="card-catch" aria-label={theme.catchphrase}>
+              <Letters text={theme.catchphrase} />
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -190,8 +200,16 @@ export function ShowCards() {
 
   useEffect(() => {
     if (!shown || closing) return;
-    if (shown.type === "mode") sfx.modeSting(shown.step);
-    else sfx[shown.type]();
+    if (shown.type !== "mode") {
+      sfx[shown.type]();
+      return;
+    }
+    sfx.modeSting(shown.step);
+    const catchphrase = setTimeout(
+      () => sfx.modeSting(shown.step + 4),
+      CATCHPHRASE_AT_MS,
+    );
+    return () => clearTimeout(catchphrase);
   }, [shown, closing]);
 
   useEffect(() => {

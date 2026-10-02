@@ -7,14 +7,6 @@ import "./Show.css";
 const NOTICE = "Connection unstable. Reconnecting...";
 const CORRUPTED = "R̷E̶C̵O̸N̷N̵E̶C̷T̸I̵N̶G̷ TO SOMETHING ELSE";
 const GLYPHS = "#$%&@!?*<>/\\|=+~^";
-const LETTER_COLORS = [
-  "#ffd23f",
-  "#ff4fa3",
-  "#3ee6b0",
-  "#7ab8ff",
-  "#ff8a1a",
-  "#c69bff",
-];
 
 /** Text that decays from `from` into `to`, one scrambled character at a time */
 function useCorruptingText(from: string, to: string, ms: number) {
@@ -100,8 +92,7 @@ function CurseBoom() {
               style={
                 {
                   "--i": i,
-                  "--tilt": `${(i % 2 ? 1 : -1) * (6 + (i % 3) * 3)}deg`,
-                  color: LETTER_COLORS[i],
+                  "--tilt": `${(i % 2 ? 1 : -1) * 3}deg`,
                 } as React.CSSProperties
               }
             >

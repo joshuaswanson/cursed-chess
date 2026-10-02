@@ -307,15 +307,25 @@
   line-height: 0.9;
 }
 
+.boom-cursed {
+  transform: skewX(-9deg);
+  filter: drop-shadow(4px 0 0 #1b1033) drop-shadow(-4px 0 0 #1b1033)
+    drop-shadow(0 4px 0 #1b1033) drop-shadow(0 -4px 0 #1b1033)
+    drop-shadow(0.08em 0.08em 0 #1b1033);
+}
+
 .boom-letter {
   display: inline-block;
-  -webkit-text-stroke: 0.05em #1b1033;
-  paint-order: stroke fill;
-  text-shadow:
-    0.03em 0.03em 0 #1b1033,
-    0.06em 0.06em 0 #1b1033,
-    0.09em 0.09em 0 #1b1033,
-    0.12em 0.12em 0 #1b1033;
+  color: transparent;
+  background: linear-gradient(
+    180deg,
+    #ff7ac2 0%,
+    #ff2e88 42%,
+    #b52bff 72%,
+    #6a1fd6 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
   rotate: var(--tilt);
   animation: letter-slam 0.42s cubic-bezier(0.3, 1.6, 0.5, 1) both;
   animation-delay: calc(150ms + var(--i) * 85ms);
@@ -331,6 +341,7 @@
 }
 
 .boom-chess {
+  transform: skewX(-9deg);
   font-family: var(--font-shade);
   font-size: clamp(48px, 10vw, 150px);
   line-height: 1;
@@ -446,28 +457,53 @@
 .card-letter {
   display: inline-block;
   animation: letter-pop 0.4s cubic-bezier(0.3, 1.8, 0.5, 1) both;
-  animation-delay: calc(0.4s + var(--i) * 45ms);
+  animation-delay: calc(var(--beat-start, 0.4s) + var(--i) * 45ms);
+}
+
+/* Two beats share one spot: the title, then the catchphrase in its place */
+.card-beats {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.card-beat {
+  grid-area: 1 / 1;
+}
+
+.card-beat-title {
+  animation: beat-clear 0.35s 1.65s ease-in forwards;
+}
+
+.card-beat-catch {
+  --beat-start: 1.9s;
+}
+
+@keyframes beat-clear {
+  to {
+    opacity: 0;
+    scale: 0.6;
+    translate: 0 -30%;
+    filter: blur(4px);
+  }
+}
+
+.card-catch {
+  position: relative;
+  max-width: 80vw;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 5.2vw, 78px);
+  line-height: 1.05;
+  text-shadow:
+    0.04em 0.04em 0 var(--ink),
+    0.08em 0.08em 0 var(--ink);
 }
 
 @keyframes letter-pop {
   from {
     scale: 0;
     rotate: -30deg;
-  }
-}
-
-.card-tagline {
-  position: relative;
-  margin-top: 1.4vh;
-  font-size: clamp(16px, 1.8vw, 24px);
-  font-weight: 700;
-  animation: tagline-in 0.4s 0.9s ease-out both;
-}
-
-@keyframes tagline-in {
-  from {
-    opacity: 0;
-    translate: 0 12px;
   }
 }
 
@@ -687,19 +723,13 @@
   color: #ffcc00;
 }
 
-[data-card-theme="mines"] .card-title {
+[data-card-theme="mines"] .card-title,
+[data-card-theme="mines"] .card-catch {
   display: inline-block;
   padding: 0 0.3em;
   background: #1b1f0a;
   text-shadow: none;
   letter-spacing: 0.06em;
-}
-
-[data-card-theme="mines"] .card-tagline {
-  display: inline-block;
-  padding: 4px 12px;
-  color: #1b1f0a;
-  background: #ffcc00;
 }
 
 [data-card-theme="mines"] .card-letter {
@@ -826,7 +856,8 @@
   background: linear-gradient(180deg, #2a0845 0%, #ff2e88 140%);
 }
 
-[data-card-theme="hex"] .card-title {
+[data-card-theme="hex"] .card-title,
+[data-card-theme="hex"] .card-catch {
   color: #fff;
   text-shadow:
     0 0 6px #fff,
@@ -888,7 +919,8 @@
   color: #b3202a;
 }
 
-[data-card-theme="stratego"] .card-title {
+[data-card-theme="stratego"] .card-title,
+[data-card-theme="stratego"] .card-catch {
   display: inline-block;
   padding: 0.05em 0.35em;
   border: 0.08em solid #b3202a;
@@ -903,8 +935,8 @@
   animation: none;
 }
 
-[data-card-theme="stratego"] .card-tagline {
-  color: #3d2610;
+[data-card-theme="stratego"] .card-beat-catch .card-catch {
+  animation-delay: 1.9s;
 }
 
 @keyframes stamp {

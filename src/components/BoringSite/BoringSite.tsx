@@ -19,7 +19,7 @@ export function BoringHeader() {
     <header className="boring-header">
       <div className="boring-brand">
         <PawnMark />
-        <span>Chess Online</span>
+        <span>Totally Normal Chess</span>
       </div>
       <nav className="boring-nav" aria-label="Site">
         {NAV_LINKS.map((link) => (
@@ -105,7 +105,7 @@ export function BoringSidebar() {
 export function BoringFooter() {
   return (
     <footer className="boring-footer">
-      <span>&copy; 2026 Chess Online</span>
+      <span>&copy; 2026 Totally Normal Chess</span>
       <span>Terms</span>
       <span>Privacy</span>
       <span>Help</span>

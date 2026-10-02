@@ -44,8 +44,8 @@ const CURSE_BOOM_MS = 2600;
 const CURSE_REVEAL_MS = 3200;
 
 const MODE_ANNOUNCE_MS = 2000;
-/** How long the mode's title card owns the screen */
-const MODE_CARD_MS = 2600;
+/** How long the mode's title card owns the screen: the title, then its catchphrase */
+const MODE_CARD_MS = 4200;
 const INTRO_HOLD_MS = 4700;
 /** Lets the final move animate before the result banner covers the board */
 const GAME_END_DELAY_MS = 600;
@@ -53,9 +53,9 @@ const RESULT_MS = 2500;
 const RESULT_HOLD_MS = 2800;
 
 /** The square board shatters right after the hex title card leaves */
-const HEX_MORPH_OUT_MS = 3000;
-const HEX_MORPH_IN_MS = 3900;
-const HEX_MORPH_DONE_MS = 5300;
+const HEX_MORPH_OUT_MS = 4600;
+const HEX_MORPH_IN_MS = 5500;
+const HEX_MORPH_DONE_MS = 6900;
 
 export interface GameMode {
   name: string;

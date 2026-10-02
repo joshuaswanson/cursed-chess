@@ -17,6 +17,8 @@ export interface ModeTheme {
   id: ThemeId;
   title: string;
   tagline: string;
+  /** The short shout that follows the title on the mode's card */
+  catchphrase: string;
   /** Three stops of the sky behind everything, top to bottom */
   sky: [string, string, string];
   /** Main highlight color for this channel */
@@ -38,6 +40,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "opening",
     title: "Chess",
     tagline: "Play chess online against the computer.",
+    catchphrase: "Good luck.",
     sky: ["#f2f2f2", "#f2f2f2", "#f2f2f2"],
     accent: "#81b64c",
     accent2: "#5d9948",
@@ -51,6 +54,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "portals",
     title: "Portals",
     tagline: "Step into one, burst out of the other.",
+    catchphrase: "Pieces teleport through portals!",
     sky: ["#05031c", "#1b0b4f", "#4a1170"],
     accent: "#ff8a1a",
     accent2: "#2f9bff",
@@ -64,6 +68,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "fog",
     title: "Fog of war",
     tagline: "Their half is lost in the mist. Trust your gut.",
+    catchphrase: "The enemy hides in the fog!",
     sky: ["#0d1720", "#253842", "#51666a"],
     accent: "#bfe8de",
     accent2: "#f2d27a",
@@ -77,6 +82,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "royale",
     title: "Battle royale",
     tagline: "The edge is crumbling. Get to the middle.",
+    catchphrase: "Move away from the edges!",
     sky: ["#140303", "#5c0d06", "#d9480f"],
     accent: "#ff7a1a",
     accent2: "#ffd23f",
@@ -90,6 +96,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "clash",
     title: "Clash royale",
     tagline: "Pieces fight on their own. Drag in backup.",
+    catchphrase: "Drag and drop to deploy!",
     sky: ["#0c2a6b", "#2c55c9", "#e2304a"],
     accent: "#ffd23f",
     accent2: "#e2304a",
@@ -103,6 +110,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "mines",
     title: "Minefield",
     tagline: "Ten mines are buried. Read the warnings.",
+    catchphrase: "Watch your step!",
     sky: ["#1b2210", "#3c4a1f", "#6d7a33"],
     accent: "#ffcc00",
     accent2: "#ff4f2e",
@@ -116,6 +124,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "hill",
     title: "King of the hill",
     tagline: "Hold three of the four center squares for three rounds.",
+    catchphrase: "Control the center!",
     sky: ["#ff9a1f", "#ffcf3f", "#fff2a8"],
     accent: "#c4320a",
     accent2: "#7a3cff",
@@ -129,6 +138,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "gravity",
     title: "Gravity",
     tagline: "Everything falls. The board keeps turning.",
+    catchphrase: "Gravity shifts every few turns!",
     sky: ["#12052e", "#3d1494", "#00b3a7"],
     accent: "#3ee6b0",
     accent2: "#ff4fa3",
@@ -142,6 +152,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "hex",
     title: "Hex chess",
     tagline: "Same armies, six directions.",
+    catchphrase: "Chess on hexagons!",
     sky: ["#0d0221", "#4a0a77", "#ff2e88"],
     accent: "#ff2e88",
     accent2: "#21e6ff",
@@ -156,6 +167,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     title: "Stratego",
     tagline:
       "Their pieces stay masked until they strike. Cross at the bridges.",
+    catchphrase: "Enemy pieces are hidden!",
     sky: ["#1c140b", "#3d2c18", "#6b5232"],
     accent: "#d6342f",
     accent2: "#2f5fa8",

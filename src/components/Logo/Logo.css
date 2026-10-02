@@ -1,31 +1,75 @@
-/* --- Logo: every letter is its own wobbling sticker --- */
-
 .logo {
   display: flex;
   align-items: baseline;
-  gap: 0.35em;
+  gap: 0.3em;
   font-family: var(--font-display);
   font-size: clamp(28px, 4.2vw, 54px);
   line-height: 1;
   user-select: none;
+  transform: skewX(-9deg);
 }
 
-.logo-word {
-  display: inline-flex;
+.logo-cursed {
+  position: relative;
+  letter-spacing: -0.02em;
+  color: transparent;
+  background: linear-gradient(
+    180deg,
+    #ff7ac2 0%,
+    #ff2e88 42%,
+    #b52bff 72%,
+    #6a1fd6 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(2px 0 0 var(--plum-ink))
+    drop-shadow(-2px 0 0 var(--plum-ink)) drop-shadow(0 2px 0 var(--plum-ink))
+    drop-shadow(0 -2px 0 var(--plum-ink))
+    drop-shadow(0.07em 0.07em 0 var(--plum-ink));
 }
 
-.logo-letter {
-  display: inline-block;
-  color: var(--letter-color);
-  -webkit-text-stroke: 0.06em var(--plum-ink);
-  paint-order: stroke fill;
-  text-shadow:
-    0.03em 0.03em 0 var(--plum-ink),
-    0.06em 0.06em 0 var(--plum-ink),
-    0.09em 0.09em 0 var(--plum-ink);
-  rotate: var(--tilt);
-  animation: logo-wobble 2.8s ease-in-out infinite;
-  animation-delay: var(--delay);
+/* Misprinted copies that tear across the word every few seconds */
+.logo-cursed::before,
+.logo-cursed::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  -webkit-background-clip: border-box;
+  background: none;
+  clip-path: inset(0 0 100% 0);
+  animation: logo-glitch 4.5s steps(1) infinite;
+}
+
+.logo-cursed::before {
+  color: #21e6ff;
+  --tear: -0.06em;
+}
+
+.logo-cursed::after {
+  color: #ff2e88;
+  --tear: 0.06em;
+  animation-delay: 0.05s;
+}
+
+@keyframes logo-glitch {
+  0%,
+  90%,
+  100% {
+    clip-path: inset(0 0 100% 0);
+    translate: 0 0;
+  }
+  91% {
+    clip-path: inset(15% 0 58% 0);
+    translate: var(--tear) 0;
+  }
+  93% {
+    clip-path: inset(62% 0 8% 0);
+    translate: calc(var(--tear) * -1.5) 0;
+  }
+  95% {
+    clip-path: inset(38% 0 40% 0);
+    translate: calc(var(--tear) * 2) 0;
+  }
 }
 
 .logo-chess {
@@ -33,16 +77,4 @@
   color: var(--paper);
   letter-spacing: 0.02em;
   text-shadow: 0.05em 0.05em 0 var(--plum-ink);
-}
-
-@keyframes logo-wobble {
-  0%,
-  100% {
-    translate: 0 0;
-    rotate: var(--tilt);
-  }
-  50% {
-    translate: 0 -0.08em;
-    rotate: calc(var(--tilt) * -1);
-  }
 }

@@ -31,7 +31,7 @@ function App() {
   const hexTransition = useGameStore((s) => s.hexTransition);
 
   useEffect(() => {
-    document.title = cursed ? "CURSED CHESS" : "Play Chess Online";
+    document.title = cursed ? "CURSED CHESS" : "Totally Normal Chess";
   }, [cursed]);
 
   const board = isHexMode ? (
