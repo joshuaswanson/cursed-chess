@@ -71,9 +71,9 @@ void main() {
   // Deep down the middle, shallow toward the banks
   float inner = clamp((uv.y - uPad) / (1.0 - 2.0 * uPad), 0.0, 1.0);
   float depth = sin(inner * 3.14159);
-  vec3 shallow = vec3(0.52, 0.80, 0.78);
-  vec3 mid = vec3(0.30, 0.64, 0.72);
-  vec3 deep = vec3(0.16, 0.45, 0.58);
+  vec3 shallow = vec3(0.58, 0.77, 0.76);
+  vec3 mid = vec3(0.38, 0.61, 0.67);
+  vec3 deep = vec3(0.23, 0.43, 0.52);
   vec3 col = mix(shallow, mix(mid, deep, depth), smoothstep(0.0, 0.7, depth));
   col = mix(col, col * 1.45 + vec3(0.02, 0.05, 0.05), surface * 0.75);
 
@@ -87,6 +87,10 @@ void main() {
   float edge = min(inner, 1.0 - inner);
   float froth = smoothstep(0.14, 0.0, edge) * smoothstep(0.45, 0.75, fbm(px * 0.05 - vec2(t * 0.8, 0.0)));
   col = mix(col, vec3(0.88, 0.96, 0.95), froth * 0.55);
+
+  // Pull the whole color a quarter of the way toward gray
+  float gray = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(vec3(gray), col, 0.75);
 
   gl_FragColor = vec4(col, 1.0);
 }

@@ -564,6 +564,18 @@ export function Battlefield({
 }
 
 const WORLD_WIDTH = 4000;
+/** Half the width of the stretch behind the board, in world units, where the river stays straight */
+const STRAIGHT_HALF = 420;
+const MEANDER_RAMP = 260;
+
+/** How far the river bends up or down at world position `x`: none behind the board, then curving away */
+function meander(x: number): number {
+  const away = Math.abs(x - WORLD_WIDTH / 2) - STRAIGHT_HALF;
+  if (away <= 0) return 0;
+  const t = Math.min(1, away / MEANDER_RAMP);
+  const ease = t * t * (3 - 2 * t);
+  return ease * (85 * Math.sin(x / 210 + 0.6) + 30 * Math.sin(x / 110 + 1));
+}
 
 /**
  * The river continuing off both sides of the board, behind its frame, so the
@@ -571,25 +583,29 @@ const WORLD_WIDTH = 4000;
  */
 export function WorldRiver({ rows }: { rows: number }) {
   const height = rows * SQ;
-  const pad = 40;
+  // Room above and below for the river to meander into
+  const pad = 200;
   const top = bank(pad, 41);
   const bottom = bank(pad + height, 57);
   const scaleX = WORLD_WIDTH / (BOARD + 80);
   const stretch = (d: string) =>
-    d.replace(
-      /(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g,
-      (_, x, y) => `${(+x + 20) * scaleX} ${y}`,
-    );
+    d.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g, (_, x, y) => {
+      const wx = (+x + 20) * scaleX;
+      return `${wx} ${+y + meander(wx)}`;
+    });
   const shape = stretch(traceForward(top) + traceBackward(bottom)) + " Z";
-  const stretchPoint = (p: Point): Point => ({
-    x: (p.x + 20) * scaleX,
-    y: p.y,
-  });
+  const stretchPoint = (p: Point): Point => {
+    const wx = (p.x + 20) * scaleX;
+    return { x: wx, y: p.y + meander(wx) };
+  };
   const worldRoughId = `wr-rough-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   const total = height + pad * 2;
   const viewBox = `0 0 ${WORLD_WIDTH} ${total}`;
-  const style = { "--river-rows": rows } as React.CSSProperties;
+  const style = {
+    "--river-rows": rows,
+    "--river-pad": pad / SQ,
+  } as React.CSSProperties;
   return (
     <>
       <svg

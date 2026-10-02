@@ -444,8 +444,8 @@
   z-index: -1;
   left: -100vw;
   width: calc(200vw + 100%);
-  top: calc(var(--square-size) * (3 - 0.4));
-  height: calc(var(--square-size) * (var(--river-rows) + 0.8));
+  top: calc(var(--square-size) * (3 - var(--river-pad)));
+  height: calc(var(--square-size) * (var(--river-rows) + 2 * var(--river-pad)));
   pointer-events: none;
 }
 
