@@ -98,6 +98,11 @@ export function usePortalTravel({
   onPhase?: (phase: PortalPhase) => void;
 }) {
   const [travel, setTravel] = useState<PortalTravel | null>(null);
+  /** The latest portal move to finish arriving, numbered so each landing is distinct */
+  const [landing, setLanding] = useState<{
+    info: PortalMoveInfo;
+    seq: number;
+  } | null>(null);
   const [closingPortals, setClosingPortals] = useState<
     Map<SquareIndex, PortalColor>
   >(new Map());
@@ -131,11 +136,15 @@ export function usePortalTravel({
     onPhaseRef.current?.(currentPhase);
     const timer = setTimeout(() => {
       const nextIndex = travel.phaseIndex + 1;
-      setTravel(
-        nextIndex < travel.phases.length
-          ? { ...travel, phaseIndex: nextIndex }
-          : null,
-      );
+      if (nextIndex < travel.phases.length) {
+        setTravel({ ...travel, phaseIndex: nextIndex });
+      } else {
+        setTravel(null);
+        setLanding((prev) => ({
+          info: travel.info,
+          seq: (prev?.seq ?? 0) + 1,
+        }));
+      }
     }, phaseDurationMs(currentPhase));
     return () => clearTimeout(timer);
   }, [travel, currentPhase]);
@@ -210,6 +219,7 @@ export function usePortalTravel({
 
   return {
     travel,
+    landing,
     currentPhase,
     closingPortals,
     openingPortals,

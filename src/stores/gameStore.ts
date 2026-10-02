@@ -589,7 +589,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const lastPortalMove = isPortalMove
       ? (pluginManager
           .find<PortalChessPlugin>("portal-chess")
-          ?.traceMove(piece, from, to, processedMove.to) ?? null)
+          ?.traceMove(
+            piece,
+            from,
+            to,
+            processedMove.to,
+            !!processedMove.captured,
+          ) ?? null)
       : null;
 
     pluginManager.invokeOnAfterMove(processedMove);

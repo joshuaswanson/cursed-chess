@@ -49,6 +49,8 @@ export interface PortalMoveInfo {
   from: SquareIndex;
   transits: PortalTransit[];
   landing: SquareIndex;
+  /** The piece takes whatever stands where it lands */
+  capture: boolean;
 }
 
 export interface PortalPair {
@@ -231,6 +233,7 @@ export class PortalChessPlugin implements ModePlugin {
     from: SquareIndex,
     clickedTo: SquareIndex,
     landing: SquareIndex,
+    capture: boolean,
   ): PortalMoveInfo | null {
     const natural = slidingDirection(from, clickedTo);
     const directions = [
@@ -239,7 +242,7 @@ export class PortalChessPlugin implements ModePlugin {
     ];
     for (const dir of directions) {
       const transits = this.walk(from, dir, landing);
-      if (transits) return { piece, from, transits, landing };
+      if (transits) return { piece, from, transits, landing, capture };
     }
 
     // Knights, kings and pawns hop through the clicked portal directly
@@ -250,7 +253,7 @@ export class PortalChessPlugin implements ModePlugin {
       exit,
       color: this.getPortalColor(clickedTo),
     };
-    return { piece, from, transits: [transit], landing };
+    return { piece, from, transits: [transit], landing, capture };
   }
 
   private walk(

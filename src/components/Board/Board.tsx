@@ -123,6 +123,7 @@ export function Board() {
 
   const {
     travel,
+    landing,
     closingPortals,
     openingPortals,
     surgingPortal,
@@ -157,9 +158,18 @@ export function Board() {
     gravityShift?.falls ?? new Map<SquareIndex, GravityFall>();
   const lastRecord = moveHistory[moveHistory.length - 1];
   const capture = useCaptureBurst(
-    cursed && lastRecord?.move.captured ? lastRecord.move.to : null,
+    cursed && lastPortalMove === null && lastRecord?.move.captured
+      ? lastRecord.move.to
+      : null,
     moveHistory.length,
   );
+  // A capture through a portal bursts once the piece has flown out and landed
+  const portalCapture = useCaptureBurst(
+    cursed && landing?.info.capture ? landing.info.landing : null,
+    landing?.seq ?? 0,
+  );
+  const bursts = [capture, portalCapture].filter((b) => b !== null);
+
   const { armed: minesArmed, blasting: minesBlasting } = useMineExplosions(
     overlays.pendingExplosions,
     resolveExplosion,
@@ -395,20 +405,26 @@ export function Board() {
               aria-hidden
             />
           )}
-          {capture?.sq === sq && (
-            <div className="capture-burst" key={capture.id} aria-hidden>
-              <span
-                className="capture-word"
-                style={
-                  {
-                    "--tilt": `${(capture.id % 2 ? 1 : -1) * 10}deg`,
-                  } as React.CSSProperties
-                }
+          {bursts
+            .filter((burst) => burst.sq === sq)
+            .map((burst, i) => (
+              <div
+                className="capture-burst"
+                key={`${i}-${burst.id}`}
+                aria-hidden
               >
-                {capture.word}
-              </span>
-            </div>
-          )}
+                <span
+                  className="capture-word"
+                  style={
+                    {
+                      "--tilt": `${(burst.id % 2 ? 1 : -1) * 10}deg`,
+                    } as React.CSSProperties
+                  }
+                >
+                  {burst.word}
+                </span>
+              </div>
+            ))}
           {isCheck && cursed && (
             <span className="square-anchor">
               <span className="check-sticker">Check!</span>
@@ -440,7 +456,7 @@ export function Board() {
     (battleRoyale ? " battle-royale" : "") +
     (collapse ? " br-quake" : "") +
     (minesBlasting.size > 0 ? " mine-quake" : "") +
-    (capture ? " capture-jolt" : "") +
+    (bursts.length > 0 ? " capture-jolt" : "") +
     (dangerProgress >= 0.6 ? " br-trembling" : "");
 
   const { gravityAngle } = overlays;
