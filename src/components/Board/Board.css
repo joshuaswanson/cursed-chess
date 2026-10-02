@@ -227,37 +227,40 @@
 
 /* --- King of the hill: gold throne squares --- */
 
-.square.hill-square {
-  background-image: linear-gradient(
-    135deg,
-    #fff3a8 0%,
-    #ffd23f 45%,
-    #d99a06 100%
-  ) !important;
-  box-shadow: inset 0 0 0 3px #8a4b00;
+/* The four center squares drawn as one throne, under the pieces and move hints */
+.hill-throne {
+  position: absolute;
+  width: 25%;
+  height: 25%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(135deg, #fff3a8 0%, #ffd23f 45%, #d99a06 100%);
+  box-shadow: inset 0 0 0 4px #8a4b00;
 }
 
-.square.hill-square::after {
+.hill-throne::after {
   content: "";
   position: absolute;
   inset: 22%;
   background: rgba(138, 75, 0, 0.28);
   mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 70'><path d='M8 60 L14 18 L34 40 L50 6 L66 40 L86 18 L92 60 Z'/></svg>")
     center / contain no-repeat;
-  pointer-events: none;
 }
 
-.square.hill-white {
+/* Glows in the color of whoever holds more of the hill, and pulses once they hold enough to win */
+.hill-throne.held-white {
   box-shadow:
-    inset 0 0 0 4px #2c6bff,
-    inset 0 0 22px rgba(44, 107, 255, 0.7);
-  animation: hill-held 1s ease-in-out infinite alternate;
+    inset 0 0 0 5px #2c6bff,
+    inset 0 0 40px rgba(44, 107, 255, 0.6);
 }
 
-.square.hill-black {
+.hill-throne.held-black {
   box-shadow:
-    inset 0 0 0 4px #e2304a,
-    inset 0 0 22px rgba(226, 48, 74, 0.7);
+    inset 0 0 0 5px #e2304a,
+    inset 0 0 40px rgba(226, 48, 74, 0.6);
+}
+
+.hill-throne.dominated {
   animation: hill-held 1s ease-in-out infinite alternate;
 }
 

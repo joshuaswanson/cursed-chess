@@ -190,6 +190,12 @@ export function Board() {
   );
 
   const battle = overlays.rallyBattle;
+  const hill = overlays.hillSquares;
+  const hillHolders = hill.map((sq) => game.board.get(sq)?.color);
+  const hillWhite = hillHolders.filter((c) => c === Color.White).length;
+  const hillBlack = hillHolders.filter((c) => c === Color.Black).length;
+  const hillLeader =
+    hillWhite > hillBlack ? "white" : hillBlack > hillWhite ? "black" : null;
   const arrivals = new Map(reinforcements.map((r) => [r.sq, r]));
   const football = overlays.football;
   const footballRules = pluginManager.find<FootballPlugin>("football");
@@ -522,6 +528,16 @@ export function Board() {
             />
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
+          {hill.length > 0 && (
+            <div
+              className={`hill-throne${hillLeader ? ` held-${hillLeader}` : ""}${Math.max(hillWhite, hillBlack) >= 3 ? " dominated" : ""}`}
+              style={{
+                left: `${Math.min(...hill.map((sq) => colOnScreen(sq, flipped))) * 12.5}%`,
+                top: `${Math.min(...hill.map((sq) => rowOnScreen(sq, flipped))) * 12.5}%`,
+              }}
+              aria-hidden
+            />
+          )}
           {rows}
           {reinforcements.length > 0 && (
             <ReinforcementBanner

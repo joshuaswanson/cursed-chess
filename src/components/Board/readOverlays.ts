@@ -18,6 +18,7 @@ export interface BoardOverlays {
   hasRally: boolean;
   rallyBattle: BattleView | null;
   football: FootballView | null;
+  hillSquares: SquareIndex[];
   battleRoyale: BattleRoyaleOverlay | null;
   gravityDirection: string | null;
   gravityAngle: number | null;
@@ -36,6 +37,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     hasRally: false,
     rallyBattle: null,
     football: null,
+    hillSquares: [],
     battleRoyale: null,
     gravityDirection: null,
     gravityAngle: null,
@@ -62,6 +64,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
         break;
       case "rally-resources":
         result.hasRally = true;
+        break;
+      case "king-of-hill":
+        result.hillSquares = overlay.squares;
         break;
       case "football":
         result.football = overlay.data as FootballView;
