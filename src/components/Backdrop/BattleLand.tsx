@@ -16,8 +16,8 @@ const inBands = (rand: () => number) =>
 /** A zigzag trench across the field at height `y` */
 function trench(rand: () => number, y: number): string {
   let d = `M-40 ${y}`;
-  for (let x = 40; x <= W + 80; x += 80) {
-    d += ` L${x - 40} ${y + (rand() - 0.5) * 30} L${x} ${y + (rand() < 0.5 ? -26 : 26)}`;
+  for (let x = 60; x <= W + 120; x += 120) {
+    d += ` L${x - 60} ${y + (rand() - 0.5) * 45} L${x} ${y + (rand() < 0.5 ? -40 : 40)}`;
   }
   return d;
 }
@@ -27,14 +27,14 @@ function wire(rand: () => number, y: number) {
   const coils: { x: number; y: number; tilt: number }[] = [];
   const barbs: { x: number; y: number; a: number }[] = [];
   const stakes: number[] = [];
-  for (let x = -20; x <= W + 20; x += 11) {
-    const cy = y + Math.sin(x / 90) * 4;
+  for (let x = -20; x <= W + 20; x += 17) {
+    const cy = y + Math.sin(x / 120) * 6;
     coils.push({ x, y: cy, tilt: (rand() - 0.5) * 20 });
     // Barbs bristle off the top and bottom of each loop
     for (const side of [-1, 1]) {
       barbs.push({
-        x: x + (rand() - 0.5) * 6,
-        y: cy + side * (6 + rand() * 2),
+        x: x + (rand() - 0.5) * 9,
+        y: cy + side * (10 + rand() * 3),
         a: rand() * 180,
       });
     }
@@ -87,8 +87,8 @@ export function BattleLand() {
       tone: Math.floor(rand() * 3),
     };
   });
-  const trenches = [trench(rand, 170), trench(rand, 740)];
-  const wires = [wire(rand, 325), wire(rand, 585)];
+  const trenches = [trench(rand, 115), trench(rand, 795)];
+  const wires = [wire(rand, 228), wire(rand, 678)];
 
   return (
     <svg
@@ -132,7 +132,7 @@ export function BattleLand() {
         <filter id="land-shadow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="6" />
         </filter>
-        <filter id="land-rough" x="-5%" y="-20%" width="110%" height="140%">
+        <filter id="land-rough" x="-5%" y="-150%" width="110%" height="400%">
           <feTurbulence
             type="fractalNoise"
             baseFrequency="0.06"
@@ -221,7 +221,7 @@ export function BattleLand() {
           <path d={d} className="trench-bags" />
           <path d={d} className="trench-bags trench-bags-top" />
           <path d={d} className="trench-cut" />
-          <path d={d} className="trench-wall" transform="translate(-2 -3)" />
+          <path d={d} className="trench-wall" transform="translate(-3 -4)" />
           <path d={d} className="trench-floor" />
           <path d={d} className="trench-boards" />
         </g>
@@ -246,7 +246,7 @@ export function BattleLand() {
           {w.stakes.map((x) => (
             <g key={x} className="wire-stake">
               <path
-                d={`M${x - 9} ${w.y - 12} L${x + 9} ${w.y + 12} M${x + 9} ${w.y - 12} L${x - 9} ${w.y + 12}`}
+                d={`M${x - 14} ${w.y - 18} L${x + 14} ${w.y + 18} M${x + 14} ${w.y - 18} L${x - 14} ${w.y + 18}`}
               />
             </g>
           ))}
@@ -256,8 +256,8 @@ export function BattleLand() {
                 key={k}
                 cx={c.x}
                 cy={c.y}
-                rx="8"
-                ry="6.5"
+                rx="13"
+                ry="10"
                 transform={`rotate(${c.tilt} ${c.x} ${c.y})`}
               />
             ))}
@@ -267,8 +267,8 @@ export function BattleLand() {
               key={k}
               cx={c.x}
               cy={c.y}
-              rx="8"
-              ry="6.5"
+              rx="13"
+              ry="10"
               transform={`rotate(${c.tilt} ${c.x} ${c.y})`}
             />
           ))}
@@ -276,7 +276,7 @@ export function BattleLand() {
             <path
               key={`b${k}`}
               className="wire-barb"
-              d={`M${b.x - 2.6} ${b.y} L${b.x + 2.6} ${b.y} M${b.x} ${b.y - 2.6} L${b.x} ${b.y + 2.6}`}
+              d={`M${b.x - 4} ${b.y} L${b.x + 4} ${b.y} M${b.x} ${b.y - 4} L${b.x} ${b.y + 4}`}
               transform={`rotate(${b.a} ${b.x} ${b.y})`}
             />
           ))}
