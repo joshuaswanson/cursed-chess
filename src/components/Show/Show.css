@@ -545,8 +545,17 @@
   animation: beat-clear 0.35s 1.65s ease-in forwards;
 }
 
+/* The catchphrase, box and all, stays hidden until the title clears */
 .card-beat-catch {
   --beat-start: 1.9s;
+  visibility: hidden;
+  animation: beat-show 0s var(--beat-start) forwards;
+}
+
+@keyframes beat-show {
+  to {
+    visibility: visible;
+  }
 }
 
 @keyframes beat-clear {
