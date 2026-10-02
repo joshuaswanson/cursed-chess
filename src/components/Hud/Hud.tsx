@@ -5,7 +5,6 @@ import { THEMES } from "../../theme/themes";
 import { useTheme } from "../../theme/useTheme";
 import { pieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
-import { RallyPanel } from "../RallyPanel/RallyPanel";
 import {
   MuteIcon,
   PauseIcon,
@@ -322,7 +321,6 @@ export function Hud() {
       <Scoreboard />
       <NowPlaying />
       <MoveClock />
-      <RallyPanel />
       <Lineup />
       <Toolbar />
       {devMode && <DevPanel />}

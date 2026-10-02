@@ -1,126 +1,172 @@
-.rally-panel {
+/* Clash royale: each side's elixir sits on its own end of the arena */
+
+.rally-bar {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background:
-    linear-gradient(90deg, rgba(29, 92, 255, 0.35), rgba(226, 48, 74, 0.35)),
-    color-mix(in srgb, var(--frame) 70%, #000);
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 10px 14px;
+  color: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 5px 6px 0 var(--ink);
 }
 
-.rally-resources {
+.rally-bar-foe {
+  margin-bottom: 14px;
+  background: linear-gradient(90deg, #8a1424, #e2304a);
+}
+
+.rally-bar-you {
+  margin-top: 14px;
+  background: linear-gradient(90deg, #163a9e, #2c6bff);
+}
+
+.rally-crest {
+  width: 40px;
+  height: 40px;
+  padding: 3px;
+  background: #2a174f;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+}
+
+/* --- Elixir --- */
+
+.elixir {
+  flex: 1;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
 }
 
-.resource-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.resource-label {
+.elixir-drop {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
   width: 34px;
-  font-weight: 800;
-  font-size: 14px;
+  height: 40px;
+  background: radial-gradient(circle at 35% 35%, #ffb3f4, #d63cff 45%, #7a12b8);
+  border: 3px solid var(--ink);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  clip-path: none;
 }
 
-.resource-bar {
+.elixir-count {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: #fff;
+  text-shadow: 2px 2px 0 var(--ink);
+}
+
+.elixir-bar {
+  flex: 1;
   display: flex;
   gap: 3px;
-  flex: 1;
+  padding: 3px;
+  background: var(--ink);
+  border-radius: 10px;
 }
 
-.resource-pip {
+.elixir-cell {
   flex: 1;
   height: 16px;
-  background: var(--ink);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 4px;
-  transition: background-color 0.2s;
 }
 
-.resource-pip.filled {
-  background: linear-gradient(180deg, #8fc0ff, #2c6bff);
+.elixir-cell.filled {
+  background: linear-gradient(180deg, #f6a3ff, #c42cf2 60%, #8a17c4);
   box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
-  animation: pip-fill 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
+  animation: elixir-fill 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
 }
 
-.resource-pip.enemy.filled {
-  background: linear-gradient(180deg, #ff9aa8, #e2304a);
+.elixir-foe .elixir-cell.filled {
+  background: linear-gradient(180deg, #ffb0b8, #ff3b5c 60%, #b3122e);
 }
 
-@keyframes pip-fill {
+@keyframes elixir-fill {
   from {
     scale: 1 0.2;
   }
 }
 
-.resource-count {
-  width: 24px;
-  font-family: var(--font-display);
-  font-size: 18px;
-  text-align: right;
+/* --- The foe's face-down hand --- */
+
+.foe-hand {
+  display: flex;
+  gap: 5px;
 }
 
-.deploy-label {
-  font-size: 13px;
-  font-weight: 700;
-  opacity: 0.85;
+.foe-card {
+  width: 26px;
+  height: 34px;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.15) 0 3px,
+      transparent 3px 7px
+    ),
+    #5a0d18;
+  border: 2px solid var(--ink);
+  border-radius: 5px;
 }
 
-.deploy-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+/* --- Your deploy cards --- */
+
+.deploy-hand {
+  display: flex;
   gap: 8px;
 }
 
-.deploy-btn {
+.deploy-card {
   position: relative;
   display: grid;
   place-items: center;
-  aspect-ratio: 1;
-  background: var(--paper);
+  width: 54px;
+  height: 66px;
+  background: linear-gradient(180deg, #fff4e0, #ffd9a6);
   border: 3px solid var(--ink);
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 3px 4px 0 var(--ink);
   cursor: grab;
   touch-action: none;
   transition:
-    translate 0.1s,
+    translate 0.12s cubic-bezier(0.3, 1.6, 0.5, 1),
     opacity 0.2s;
 }
 
-.deploy-btn:not(.disabled):hover {
-  translate: 0 -3px;
-  background: var(--accent);
+.deploy-card:not(.disabled):hover {
+  translate: 0 -6px;
 }
 
-.deploy-btn.disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+.deploy-card.disabled {
+  opacity: 0.4;
   filter: grayscale(1);
+  cursor: not-allowed;
 }
 
-.deploy-piece-img {
-  width: 82%;
-  height: 82%;
+.deploy-card img {
+  width: 80%;
   pointer-events: none;
 }
 
 .deploy-cost {
   position: absolute;
-  right: -8px;
-  bottom: -8px;
+  left: -9px;
+  top: -9px;
   display: grid;
   place-items: center;
   width: 24px;
-  height: 24px;
+  height: 26px;
   font-family: var(--font-display);
   font-size: 13px;
-  color: var(--ink);
-  background: var(--accent);
+  color: #fff;
+  text-shadow: 1px 1px 0 var(--ink);
+  background: radial-gradient(circle at 35% 35%, #ffb3f4, #d63cff 45%, #7a12b8);
   border: 2px solid var(--ink);
-  border-radius: 50%;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
 }
 
 .deploy-floating-piece {
@@ -130,4 +176,9 @@
   pointer-events: none;
   z-index: 1000;
   filter: drop-shadow(4px 8px 4px rgba(0, 0, 0, 0.45));
+}
+
+/* The arena bars take vertical room, so the board shrinks to keep everything on screen */
+.app[data-theme="clash"] {
+  --square-size: clamp(34px, min(7.2vh, 6.6vw), 78px);
 }

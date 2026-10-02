@@ -4,6 +4,7 @@ import { HexBoard } from "./components/HexBoard/HexBoard";
 import { PromotionDialog } from "./components/PromotionDialog/PromotionDialog";
 import { Announcement } from "./components/Announcement/Announcement";
 import { Hud } from "./components/Hud/Hud";
+import { FoeRallyBar, YourRallyBar } from "./components/RallyPanel/RallyPanel";
 import { Backdrop } from "./components/Backdrop/Backdrop";
 import { PageFog } from "./components/Fog/Fog";
 import { Logo, OnAir } from "./components/Logo/Logo";
@@ -57,7 +58,11 @@ function App() {
         <BoringHeader />
       )}
       <main className="stage">
-        <div className="board-container">{board}</div>
+        <div className="board-container">
+          {cursed && <FoeRallyBar />}
+          {board}
+          {cursed && <YourRallyBar />}
+        </div>
         {cursed ? <Hud /> : <BoringSidebar />}
       </main>
       {!cursed && <BoringFooter />}
