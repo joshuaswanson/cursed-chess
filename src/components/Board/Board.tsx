@@ -10,6 +10,7 @@ import { BoardShatter } from "../HexWarp/HexWarp";
 import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
 import { FootballLayer, Goal, PassMarker, Pitch } from "./Football";
+import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import { BattleEffects, BattleUnit } from "./Battle";
 import {
@@ -85,6 +86,8 @@ export function Board() {
     cursed,
     kickOptions,
     kick,
+    reinforcements,
+    arrivalStyle,
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -158,6 +161,7 @@ export function Board() {
   );
 
   const battle = overlays.rallyBattle;
+  const arrivals = new Map(reinforcements.map((r) => [r.sq, r]));
   const football = overlays.football;
   const footballRules = pluginManager.find<FootballPlugin>("football");
   const ourBall =
@@ -348,7 +352,15 @@ export function Board() {
               squareSize={squareSize}
             />
           )}
-          {piece && !battle && !isLifted && !isDead && (
+          {piece && arrivals.has(sq) && (
+            <ArrivingPiece
+              arrival={arrivals.get(sq)!}
+              style={arrivalStyle}
+              flipped={flipped}
+              squareSize={squareSize}
+            />
+          )}
+          {piece && !battle && !arrivals.has(sq) && !isLifted && !isDead && (
             <>
               <img
                 src={pieceImage(piece)}
@@ -476,6 +488,13 @@ export function Board() {
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
           {rows}
+          {reinforcements.length > 0 && (
+            <ReinforcementBanner
+              key={reinforcements.map((r) => r.sq).join()}
+              arrivals={reinforcements}
+              style={arrivalStyle}
+            />
+          )}
           {football && <Pitch />}
           {football &&
             [Color.Black, Color.White].map((defender) => (

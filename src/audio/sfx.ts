@@ -845,4 +845,24 @@ export const sfx = {
       for (let i = 0; i < 14; i++) crackle(c, out, 0.25);
     }
   },
+
+  /** A bugle sounding the charge as reinforcements arrive */
+  bugle(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const notes: [number, number, number][] = [
+      [392, 0, 0.12],
+      [523, 0.14, 0.12],
+      [659, 0.28, 0.12],
+      [784, 0.42, 0.22],
+      [659, 0.68, 0.12],
+      [784, 0.82, 0.55],
+    ];
+    for (const [freq, at, length] of notes) {
+      chord(c, out, t + at, [freq, freq * 2], length, "sawtooth", 0.035);
+      chord(c, out, t + at, [freq], length, "square", 0.025);
+    }
+  },
 };

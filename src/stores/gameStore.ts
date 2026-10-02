@@ -23,6 +23,8 @@ import { GravityPlugin } from "../plugins/gravity";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
 import type { KickTarget } from "../plugins/football";
+import { reinforce } from "./reinforcements";
+import type { ArrivalStyle, Reinforcement } from "./reinforcements";
 import { HexGame } from "../engine/hex/game";
 import { chooseMove, PIECE_VALUE } from "../ai/chooseMove";
 import type { ThemeId } from "../theme/themes";
@@ -62,6 +64,12 @@ const HEX_MORPH_OUT_MS = 4600;
 const HEX_MORPH_IN_MS = 5500;
 const HEX_MORPH_DONE_MS = 6900;
 
+/** Reinforcements start arriving as the mode's title card clears */
+const REINFORCE_START_MS = 4300;
+const REINFORCE_STAGGER_MS = 160;
+/** How long one newcomer takes to land */
+export const ARRIVAL_MS = 1700;
+
 export interface GameMode {
   name: string;
   theme: ThemeId;
@@ -70,6 +78,8 @@ export interface GameMode {
   /** How long play stays paused after the mode starts */
   introHoldMs?: number;
   isHex?: boolean;
+  /** Modes with their own way to add pieces skip the top-up */
+  noReinforcements?: boolean;
 }
 
 export const GAME_MODES: GameMode[] = [
@@ -94,6 +104,7 @@ export const GAME_MODES: GameMode[] = [
     name: "CLASH ROYALE",
     theme: "clash",
     create: () => [new RallyPlugin()],
+    noReinforcements: true,
     durationSeconds: 75,
   },
   {
@@ -187,6 +198,9 @@ export interface GameStore {
   hexTransition: "morph-out" | "morph-in" | null;
   /** Pieces flying from their old square to their new hex cell as the hex board forms */
   hexArrivals: { from: SquareIndex; to: HexCoord; piece: Piece }[];
+  /** Pieces dropping in to top up a side that ran short */
+  reinforcements: Reinforcement[];
+  arrivalStyle: ArrivalStyle;
 
   selectHex: (coord: HexCoord) => void;
   makeHexMove: (from: HexCoord, to: HexCoord, promotion?: PieceType) => void;
@@ -239,6 +253,8 @@ const CLEARED_HEX = {
   hexPromotionPending: null,
   hexTransition: null,
   hexArrivals: [],
+  reinforcements: [],
+  arrivalStyle: "parachute",
 } satisfies Partial<GameStore>;
 
 const FRESH_BOARD = {
@@ -316,6 +332,13 @@ function startCursedIntro(): void {
     useGameStore.setState({ curseStage: null });
     useGameStore.getState().switchMode();
   }, CURSE_BOOM_MS + CURSE_REVEAL_MS);
+}
+
+/** Alternates two lists, so both sides' reinforcements arrive together */
+function interleave<T>(a: T[], b: T[]): T[] {
+  return Array.from({ length: Math.max(a.length, b.length) }, (_, i) =>
+    [a[i], b[i]].filter((x): x is T => x !== undefined),
+  ).flat();
 }
 
 /** How the current mode's square markings make a square better or worse to stand on */
@@ -828,6 +851,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       lastPortalMove: null,
       promotionPending: null,
       deployPieceType: null,
+      reinforcements: [],
       ...FRESH_CLOCKS,
     });
 
@@ -876,9 +900,29 @@ export const useGameStore = create<GameStore>((set, get) => ({
       : game;
     // A turned board's pawn rules end with the mode that turned it
     nextGame.pawnRules = null;
+
+    // Newcomers land before the mode's rules are set up, so they count for them
+    const reinforcements = mode.noReinforcements
+      ? []
+      : interleave(
+          reinforce(nextGame.board, Color.White),
+          reinforce(nextGame.board, Color.Black),
+        ).map((r, i) => ({
+          ...r,
+          delayMs: REINFORCE_START_MS + i * REINFORCE_STAGGER_MS,
+        }));
+    if (reinforcements.length > 0) {
+      const landedMs =
+        reinforcements[reinforcements.length - 1].delayMs + ARRIVAL_MS;
+      holdPause(landedMs + 250);
+      schedule(() => set({ reinforcements: [] }), landedMs + 250);
+    }
+
     set({
       ...CLEARED_HEX,
       game: nextGame,
+      reinforcements,
+      arrivalStyle: Math.random() < 0.5 ? "parachute" : "sprint",
       pluginManager: freshPluginManager(nextGame, mode.create()),
       turn: nextGame.turn,
       moveHistory: [...nextGame.history],
