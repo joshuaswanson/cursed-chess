@@ -112,7 +112,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     title: "FIFA",
     tagline:
       "Click your ball carrier, then a teammate to pass or the goal to shoot. Take the carrier to steal the ball.",
-    catchphrase: "First goal wins!",
+    catchphrase: "Play ball!",
     sky: ["#030a12", "#0b2a1c", "#1d6b35"],
     accent: "#c8ff3d",
     accent2: "#18d4ff",
