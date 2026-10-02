@@ -1,7 +1,7 @@
 import { Color, PieceType, MoveFlag } from "./types";
 import type { Piece, SquareIndex, Move, PawnRule, PawnRules } from "./types";
 import type { Board } from "./board";
-import { toIndex, rankOf, isValidSquare } from "../utils/squareUtils";
+import { toIndex, rankOf } from "../utils/squareUtils";
 
 // Direction offsets in 0x88
 const NORTH = 16;
@@ -57,7 +57,7 @@ function generatePawnMoves(
 
   // Single push
   const oneStep = sq + direction;
-  if (isValidSquare(oneStep) && !board.get(oneStep)) {
+  if (board.passable(oneStep) && !board.get(oneStep)) {
     if (rankOf(oneStep) === promoRank) {
       // Promotion
       for (const promo of [
@@ -77,7 +77,7 @@ function generatePawnMoves(
     // Double push from starting rank
     if (rankOf(sq) === startRank) {
       const twoStep = sq + direction * 2;
-      if (isValidSquare(twoStep) && !board.get(twoStep)) {
+      if (board.passable(twoStep) && !board.get(twoStep)) {
         moves.push(makeMove(sq, twoStep, piece, MoveFlag.DoublePawnPush));
       }
     }
@@ -87,7 +87,7 @@ function generatePawnMoves(
   const captureOffsets = color === Color.White ? [NE, NW] : [SE, SW];
   for (const offset of captureOffsets) {
     const target = sq + offset;
-    if (!isValidSquare(target)) continue;
+    if (!board.passable(target)) continue;
 
     const targetPiece = board.get(target);
 
@@ -156,7 +156,7 @@ function generateTurnedPawnMoves(
 ): Move[] {
   const moves: Move[] = [];
   const add = (to: SquareIndex, flags: number, captured?: Piece) => {
-    if (isValidSquare(to + rule.forward)) {
+    if (board.passable(to + rule.forward)) {
       moves.push(makeMove(sq, to, piece, flags, captured));
       return;
     }
@@ -167,10 +167,10 @@ function generateTurnedPawnMoves(
     }
   };
   const ahead = sq + rule.forward;
-  if (isValidSquare(ahead) && !board.get(ahead)) add(ahead, MoveFlag.Normal);
+  if (board.passable(ahead) && !board.get(ahead)) add(ahead, MoveFlag.Normal);
   for (const dir of rule.captures) {
     const target = sq + dir;
-    if (!isValidSquare(target)) continue;
+    if (!board.passable(target)) continue;
     const victim = board.get(target);
     if (victim && victim.color !== piece.color) {
       add(target, MoveFlag.Capture, victim);
@@ -190,7 +190,7 @@ function generateSlidingMoves(
 
   for (const dir of directions) {
     let target = sq + dir;
-    while (isValidSquare(target)) {
+    while (board.passable(target)) {
       const targetPiece = board.get(target);
       if (targetPiece) {
         if (targetPiece.color !== color) {
@@ -208,6 +208,26 @@ function generateSlidingMoves(
   return moves;
 }
 
+/**
+ * A knight cannot leap a wall: it is stopped when both squares beside it along
+ * the long leg of its jump are walled, and gets through a gap in the wall.
+ */
+function knightBlocked(
+  board: Board,
+  from: SquareIndex,
+  to: SquareIndex,
+): boolean {
+  if (board.walls.size === 0) return false;
+  const offset = to - from;
+  const dr = Math.round(offset / 16);
+  const df = offset - dr * 16;
+  const first =
+    Math.abs(df) === 2 ? from + Math.sign(df) : from + Math.sign(dr) * 16;
+  const second =
+    Math.abs(df) === 2 ? first + Math.sign(dr) * 16 : first + Math.sign(df);
+  return board.walls.has(first) && board.walls.has(second);
+}
+
 function generateKnightMoves(
   board: Board,
   sq: SquareIndex,
@@ -218,7 +238,7 @@ function generateKnightMoves(
 
   for (const offset of KNIGHT_OFFSETS) {
     const target = sq + offset;
-    if (!isValidSquare(target)) continue;
+    if (!board.passable(target) || knightBlocked(board, sq, target)) continue;
 
     const targetPiece = board.get(target);
     if (targetPiece) {
@@ -243,7 +263,7 @@ function generateKingMoves(
 
   for (const offset of KING_OFFSETS) {
     const target = sq + offset;
-    if (!isValidSquare(target)) continue;
+    if (!board.passable(target)) continue;
 
     const targetPiece = board.get(target);
     if (targetPiece) {
@@ -319,7 +339,7 @@ export function isSquareAttacked(
   // Knight attacks
   for (const offset of KNIGHT_OFFSETS) {
     const target = sq + offset;
-    if (!isValidSquare(target)) continue;
+    if (!board.passable(target) || knightBlocked(board, target, sq)) continue;
     const piece = board.get(target);
     if (piece && piece.color === byColor && piece.type === PieceType.Knight) {
       return true;
@@ -329,7 +349,7 @@ export function isSquareAttacked(
   // Sliding attacks (bishop/rook/queen)
   for (const dir of BISHOP_DIRECTIONS) {
     let target = sq + dir;
-    while (isValidSquare(target)) {
+    while (board.passable(target)) {
       const piece = board.get(target);
       if (piece) {
         if (
@@ -346,7 +366,7 @@ export function isSquareAttacked(
 
   for (const dir of ROOK_DIRECTIONS) {
     let target = sq + dir;
-    while (isValidSquare(target)) {
+    while (board.passable(target)) {
       const piece = board.get(target);
       if (piece) {
         if (
@@ -367,7 +387,7 @@ export function isSquareAttacked(
     ? pawnRules[byColor].captures.map((dir) => sq - dir)
     : [sq + pawnDir + EAST, sq + pawnDir + WEST];
   for (const target of pawnAttacks) {
-    if (!isValidSquare(target)) continue;
+    if (!board.passable(target)) continue;
     const piece = board.get(target);
     if (piece && piece.color === byColor && piece.type === PieceType.Pawn) {
       return true;
@@ -377,7 +397,7 @@ export function isSquareAttacked(
   // King attacks
   for (const offset of KING_OFFSETS) {
     const target = sq + offset;
-    if (!isValidSquare(target)) continue;
+    if (!board.passable(target)) continue;
     const piece = board.get(target);
     if (piece && piece.color === byColor && piece.type === PieceType.King) {
       return true;
