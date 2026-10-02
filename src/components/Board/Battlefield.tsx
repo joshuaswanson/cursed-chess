@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { RiverWater } from "./RiverWater";
 
 const SQ = 100;
 const BOARD = SQ * 8;
@@ -59,113 +60,6 @@ function runs(cols: number[]): [number, number][] {
     else result.push([c, c]);
   }
   return result;
-}
-
-/**
- * Water flowing left to right: a depth gradient, ripples carried downstream
- * through fixed eddies, and foam streaks drifting at different speeds.
- */
-function FlowingWater({
-  x,
-  y,
-  width,
-  height,
-  seed,
-}: {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  seed: number;
-}) {
-  const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
-  const rand = seeded(seed);
-  const streaks = Array.from({ length: Math.round(width / 120) }, () => {
-    const sy = y + height * (0.12 + 0.76 * rand());
-    const dash = 30 + rand() * 60;
-    const gap = 120 + rand() * 160;
-    return {
-      d: `M${x} ${sy} Q${x + width / 2} ${sy + (rand() - 0.5) * 16} ${x + width} ${sy}`,
-      dash,
-      period: dash + gap,
-      seconds: 2.2 + rand() * 2.4,
-      offset: rand() * (dash + gap),
-      opacity: 0.18 + rand() * 0.25,
-    };
-  });
-
-  return (
-    <g>
-      <defs>
-        <linearGradient id={`water-${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#2f7180" />
-          <stop offset="0.5" stopColor="#163c4f" />
-          <stop offset="1" stopColor="#2b6676" />
-        </linearGradient>
-        <filter id={`eddies-${id}`} x="-5%" y="-20%" width="110%" height="140%">
-          <feTurbulence
-            type="turbulence"
-            baseFrequency="0.01 0.05"
-            numOctaves="2"
-            seed={seed}
-          />
-          <feDisplacementMap in="SourceGraphic" scale="12" />
-        </filter>
-        <pattern
-          id={`ripples-${id}`}
-          width="90"
-          height="26"
-          patternUnits="userSpaceOnUse"
-        >
-          <path
-            d="M0 13 Q22 7 45 13 T90 13"
-            fill="none"
-            stroke="rgba(190,235,240,0.3)"
-            strokeWidth="2"
-          />
-          <animateTransform
-            attributeName="patternTransform"
-            type="translate"
-            from="0 0"
-            to="90 0"
-            dur="2.6s"
-            repeatCount="indefinite"
-          />
-        </pattern>
-      </defs>
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        fill={`url(#water-${id})`}
-      />
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        fill={`url(#ripples-${id})`}
-        filter={`url(#eddies-${id})`}
-      />
-      {streaks.map((st, i) => (
-        <path
-          key={i}
-          d={st.d}
-          className="river-streak"
-          strokeDasharray={`${st.dash} ${st.period - st.dash}`}
-          style={
-            {
-              "--period": `${-st.period}`,
-              "--start": `${-st.offset}`,
-              animationDuration: `${st.seconds}s`,
-              opacity: st.opacity,
-            } as React.CSSProperties
-          }
-        />
-      ))}
-    </g>
-  );
 }
 
 function Bridge({
@@ -309,6 +203,10 @@ export function Battlefield({
     Array.from({ length: 8 }, (_, c) => c).filter((c) => !lakeCols.includes(c)),
   );
 
+  const bandTop = y0 - 40;
+  const bandHeight = y1 - y0 + 80;
+  const pct = (units: number) => `${(units / BOARD) * 100}%`;
+
   const craters = [
     [140, 120, 26],
     [560, 70, 18],
@@ -319,137 +217,148 @@ export function Battlefield({
   ];
 
   return (
-    <svg
-      className="battlefield"
-      viewBox={`0 0 ${BOARD} ${BOARD}`}
-      preserveAspectRatio="none"
-      aria-hidden
-    >
-      <defs>
-        <filter id={grassId} x="0" y="0" width="100%" height="100%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.018"
-            numOctaves="3"
-            seed="4"
-          />
-          <feColorMatrix
-            values="0 0 0 0 0.20
-                    0 0 0 0 0.28
-                    0 0 0 0 0.05
-                    0 0 0 -1.6 1.05"
-          />
-        </filter>
-        <filter id={`${grassId}-fine`} x="0" y="0" width="100%" height="100%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.9"
-            numOctaves="1"
-            seed="9"
-          />
-          <feColorMatrix
-            values="0 0 0 0 0.1
-                    0 0 0 0 0.12
-                    0 0 0 0 0.02
-                    0 0 0 -2.2 1.25"
-          />
-        </filter>
-        <filter id={grainId} x="0" y="0" width="100%" height="100%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.012 0.45"
-            numOctaves="3"
-            seed="7"
-          />
-          <feColorMatrix
-            values="0 0 0 0 0.16
-                    0 0 0 0 0.08
-                    0 0 0 0 0.02
-                    0 0 0 -1.4 0.9"
-          />
-        </filter>
-        <filter id="bf-soft" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="6" />
-        </filter>
-        <clipPath id={riverClipId}>
-          <path d={riverShape} />
-        </clipPath>
-      </defs>
-
-      <rect width={BOARD} height={BOARD} fill="#7a8f3e" />
-      <rect width={BOARD} height={BOARD} filter={`url(#${grassId})`} />
-      <rect width={BOARD} height={BOARD} filter={`url(#${grassId}-fine)`} />
-
-      {bridgeCols.map(([a, b], i) => {
-        const x = ((a + b + 1) / 2) * SQ;
-        return (
-          <g key={i} className="bf-road">
-            <path
-              d={`M${x - 10} -10 C${x + 30} ${y0 * 0.4} ${x - 30} ${y0 * 0.7} ${x} ${y0}`}
+    <>
+      <svg
+        className="battlefield"
+        viewBox={`0 0 ${BOARD} ${BOARD}`}
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        <defs>
+          <filter id={grassId} x="0" y="0" width="100%" height="100%">
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.018"
+              numOctaves="3"
+              seed="4"
             />
-            <path
-              d={`M${x} ${y1} C${x + 25} ${y1 + 90} ${x - 35} ${y1 + 200} ${x + 10} ${BOARD + 10}`}
+            <feColorMatrix
+              values="0 0 0 0 0.20
+                      0 0 0 0 0.28
+                      0 0 0 0 0.05
+                      0 0 0 -1.6 1.05"
+            />
+          </filter>
+          <filter id={`${grassId}-fine`} x="0" y="0" width="100%" height="100%">
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.9"
+              numOctaves="1"
+              seed="9"
+            />
+            <feColorMatrix
+              values="0 0 0 0 0.1
+                      0 0 0 0 0.12
+                      0 0 0 0 0.02
+                      0 0 0 -2.2 1.25"
+            />
+          </filter>
+          <filter id={grainId} x="0" y="0" width="100%" height="100%">
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.012 0.45"
+              numOctaves="3"
+              seed="7"
+            />
+            <feColorMatrix
+              values="0 0 0 0 0.16
+                      0 0 0 0 0.08
+                      0 0 0 0 0.02
+                      0 0 0 -1.4 0.9"
+            />
+          </filter>
+          <filter id="bf-soft" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" />
+          </filter>
+        </defs>
+
+        <rect width={BOARD} height={BOARD} fill="#7a8f3e" />
+        <rect width={BOARD} height={BOARD} filter={`url(#${grassId})`} />
+        <rect width={BOARD} height={BOARD} filter={`url(#${grassId}-fine)`} />
+
+        {bridgeCols.map(([a, b], i) => {
+          const x = ((a + b + 1) / 2) * SQ;
+          return (
+            <g key={i} className="bf-road">
+              <path
+                d={`M${x - 10} -10 C${x + 30} ${y0 * 0.4} ${x - 30} ${y0 * 0.7} ${x} ${y0}`}
+              />
+              <path
+                d={`M${x} ${y1} C${x + 25} ${y1 + 90} ${x - 35} ${y1 + 200} ${x + 10} ${BOARD + 10}`}
+              />
+            </g>
+          );
+        })}
+
+        {craters.map(([cx, cy, r], i) => (
+          <g key={i}>
+            <circle
+              cx={cx}
+              cy={cy}
+              r={r + 7}
+              fill="rgba(70,55,30,0.35)"
+              filter="url(#bf-soft)"
+            />
+            <circle cx={cx} cy={cy} r={r} fill="rgba(40,30,15,0.55)" />
+            <circle
+              cx={cx - r * 0.2}
+              cy={cy - r * 0.2}
+              r={r * 0.55}
+              fill="rgba(20,14,6,0.45)"
             />
           </g>
-        );
-      })}
+        ))}
 
-      {craters.map(([cx, cy, r], i) => (
-        <g key={i}>
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r + 7}
-            fill="rgba(70,55,30,0.35)"
-            filter="url(#bf-soft)"
-          />
-          <circle cx={cx} cy={cy} r={r} fill="rgba(40,30,15,0.55)" />
-          <circle
-            cx={cx - r * 0.2}
-            cy={cy - r * 0.2}
-            r={r * 0.55}
-            fill="rgba(20,14,6,0.45)"
-          />
-        </g>
-      ))}
-
-      <path
-        d={riverShape}
-        fill="#4b3a1f"
-        transform="translate(0 4)"
-        filter="url(#bf-soft)"
-      />
-      <g clipPath={`url(#${riverClipId})`}>
-        <FlowingWater
-          x={0}
-          y={y0 - 40}
-          width={BOARD}
-          height={y1 - y0 + 80}
-          seed={5}
-        />
-        <rect
-          y={y0 - 40}
-          width={BOARD}
-          height={30 + 40}
-          fill="rgba(10,30,30,0.35)"
+        <path
+          d={riverShape}
+          fill="#4b3a1f"
+          transform="translate(0 4)"
           filter="url(#bf-soft)"
         />
-      </g>
-      <path d={topBank} className="bf-bank" />
-      <path d={bottomBank} className="bf-bank" />
+      </svg>
 
-      {bridgeCols.map(([a, b], i) => (
-        <Bridge
-          key={i}
-          x0={a * SQ}
-          x1={(b + 1) * SQ}
-          y0={y0}
-          y1={y1}
-          grainId={grainId}
-          seed={31 + i * 17}
+      <RiverWater
+        className="battlefield-water"
+        style={{ top: pct(bandTop), height: pct(bandHeight) }}
+        viewBox={`0 ${bandTop} ${BOARD} ${bandHeight}`}
+        outline={riverShape}
+        pad={40 / bandHeight}
+      />
+
+      <svg
+        className="battlefield"
+        viewBox={`0 0 ${BOARD} ${BOARD}`}
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        <defs>
+          <clipPath id={riverClipId}>
+            <path d={riverShape} />
+          </clipPath>
+        </defs>
+        <rect
+          y={bandTop}
+          width={BOARD}
+          height={70}
+          fill="rgba(10,30,30,0.35)"
+          filter="url(#bf-soft)"
+          clipPath={`url(#${riverClipId})`}
         />
-      ))}
-    </svg>
+        <path d={topBank} className="bf-bank" />
+        <path d={bottomBank} className="bf-bank" />
+        {bridgeCols.map(([a, b], i) => (
+          <Bridge
+            key={i}
+            x0={a * SQ}
+            x1={(b + 1) * SQ}
+            y0={y0}
+            y1={y1}
+            grainId={grainId}
+            seed={31 + i * 17}
+          />
+        ))}
+      </svg>
+    </>
   );
 }
 
@@ -460,7 +369,6 @@ const WORLD_WIDTH = 4000;
  * board sits on one stretch of a longer river.
  */
 export function WorldRiver({ rows }: { rows: number }) {
-  const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const height = rows * SQ;
   const pad = 40;
   const top = bank(pad, 41);
@@ -473,31 +381,42 @@ export function WorldRiver({ rows }: { rows: number }) {
     );
   const shape = stretch(traceForward(top) + traceBackward(bottom)) + " Z";
 
+  const total = height + pad * 2;
+  const viewBox = `0 0 ${WORLD_WIDTH} ${total}`;
+  const style = { "--river-rows": rows } as React.CSSProperties;
   return (
-    <svg
-      className="world-river"
-      viewBox={`0 0 ${WORLD_WIDTH} ${height + pad * 2}`}
-      preserveAspectRatio="none"
-      style={{ "--river-rows": rows } as React.CSSProperties}
-      aria-hidden
-    >
-      <defs>
-        <clipPath id={`wr-clip-${id}`}>
-          <path d={shape} />
-        </clipPath>
-      </defs>
-      <path d={shape} fill="#4b3a1f" transform="translate(0 6)" opacity="0.8" />
-      <g clipPath={`url(#wr-clip-${id})`}>
-        <FlowingWater
-          x={0}
-          y={0}
-          width={WORLD_WIDTH}
-          height={height + pad * 2}
-          seed={8}
+    <>
+      <svg
+        className="world-river"
+        viewBox={viewBox}
+        preserveAspectRatio="none"
+        style={style}
+        aria-hidden
+      >
+        <path
+          d={shape}
+          fill="#4b3a1f"
+          transform="translate(0 6)"
+          opacity="0.8"
         />
-      </g>
-      <path d={stretch(traceForward(top))} className="bf-bank" />
-      <path d={stretch(traceForward(bottom))} className="bf-bank" />
-    </svg>
+      </svg>
+      <RiverWater
+        className="world-river"
+        style={style}
+        viewBox={viewBox}
+        outline={shape}
+        pad={pad / total}
+      />
+      <svg
+        className="world-river"
+        viewBox={viewBox}
+        preserveAspectRatio="none"
+        style={style}
+        aria-hidden
+      >
+        <path d={stretch(traceForward(top))} className="bf-bank" />
+        <path d={stretch(traceForward(bottom))} className="bf-bank" />
+      </svg>
+    </>
   );
 }

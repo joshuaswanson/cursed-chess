@@ -351,6 +351,11 @@
   background-image: none;
 }
 
+/* Open water shows the river untinted */
+[data-theme="stratego"] .square.stratego-lake {
+  background-color: transparent;
+}
+
 [data-theme="stratego"] .square.last-move {
   background-color: rgba(255, 214, 63, 0.42);
 }
@@ -380,18 +385,10 @@
   pointer-events: none;
 }
 
-/* Foam streaks drift downstream, left to right */
-.river-streak {
-  fill: none;
-  stroke: #e6fbff;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-dashoffset: var(--start);
-  animation: river-streak linear infinite;
-}
-
-@keyframes river-streak {
-  to {
-    stroke-dashoffset: calc(var(--start) + var(--period));
-  }
+/* The animated water sits between the painted ground and the bridges */
+.battlefield-water {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
 }
