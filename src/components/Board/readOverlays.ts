@@ -2,6 +2,7 @@ import type { SquareIndex } from "../../engine";
 import type { BoardOverlay } from "../../plugins/types";
 import type { PortalColor } from "../../plugins/portalChess";
 import type { BattleRoyaleOverlay } from "../../plugins/battleRoyale";
+import type { BattleView } from "../../plugins/clashRoyale";
 
 export interface PortalPair {
   a: SquareIndex;
@@ -14,7 +15,7 @@ export interface BoardOverlays {
   portalPairs: PortalPair[];
   hasFog: boolean;
   hasRally: boolean;
-  rallyCooldowns: Record<number, { total: number; gen: number }>;
+  rallyBattle: BattleView | null;
   battleRoyale: BattleRoyaleOverlay | null;
   gravityDirection: string | null;
   gravityAngle: number | null;
@@ -31,7 +32,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     portalPairs: [],
     hasFog: false,
     hasRally: false,
-    rallyCooldowns: {},
+    rallyBattle: null,
     battleRoyale: null,
     gravityDirection: null,
     gravityAngle: null,
@@ -59,8 +60,8 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
       case "rally-resources":
         result.hasRally = true;
         break;
-      case "rally-cooldowns":
-        result.rallyCooldowns = overlay.data as BoardOverlays["rallyCooldowns"];
+      case "rally-battle":
+        result.rallyBattle = overlay.data as BattleView;
         break;
       case "gravity": {
         const data = overlay.data as {

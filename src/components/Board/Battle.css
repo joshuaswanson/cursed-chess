@@ -1,0 +1,486 @@
+.side-blue {
+  --team: #2f8cff;
+  --team-light: #9fd0ff;
+  --team-glow: rgba(47, 140, 255, 0.7);
+}
+
+.side-red {
+  --team: #ff3b4e;
+  --team-light: #ffb0b8;
+  --team-glow: rgba(255, 59, 78, 0.7);
+}
+
+/* --- Units --- */
+
+.battle-unit {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.unit-base {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 4%;
+  height: 20%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--team-glow), transparent);
+}
+
+.is-tower .unit-base {
+  left: 4%;
+  right: 4%;
+  bottom: 0;
+  height: 30%;
+  background:
+    radial-gradient(closest-side, var(--team-glow), transparent 80%),
+    radial-gradient(closest-side, #6d6a73 70%, #3d3a44 71% 100%);
+  box-shadow: 0 0 0 2px var(--team);
+}
+
+.unit-body {
+  position: relative;
+  width: 90%;
+  height: 90%;
+  z-index: 1;
+}
+
+.unit-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-size: var(--square-size, 72px);
+  filter: drop-shadow(0.06em 0.09em 0 rgba(20, 8, 40, 0.45));
+}
+
+/* Hops along the way, tilting into each step */
+@keyframes unit-march {
+  0% {
+    translate: var(--from-x) var(--from-y);
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.3, 0.6, 0.5, 1);
+  }
+  50% {
+    translate: calc(var(--from-x) * 0.5) calc(var(--from-y) * 0.5 - var(--hop));
+    rotate: var(--tilt);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.7, 0.4);
+  }
+  90% {
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 1.12 0.86;
+  }
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes unit-drop {
+  0% {
+    translate: 0 calc(var(--drop-h) * -1);
+    scale: 0.7 1.3;
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  12% {
+    opacity: 1;
+  }
+  78% {
+    translate: 0 0;
+    scale: 0.85 1.2;
+    animation-timing-function: ease-out;
+  }
+  88% {
+    scale: 1.3 0.72;
+  }
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes unit-lunge {
+  0% {
+    translate: 0 0;
+  }
+  30% {
+    translate: calc(var(--lunge-x) * -0.25) calc(var(--lunge-y) * -0.25);
+    scale: 0.92 1.08;
+  }
+  50% {
+    translate: var(--lunge-x) var(--lunge-y);
+    scale: 1.14;
+  }
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes unit-recoil {
+  0% {
+    scale: 1;
+  }
+  20% {
+    translate: var(--kick-x) var(--kick-y);
+    scale: 1.14 0.88;
+    filter: brightness(1.6);
+  }
+  100% {
+    translate: 0 0;
+    scale: 1;
+    filter: none;
+  }
+}
+
+/* Flashes white, then red, and rocks back from the blow */
+@keyframes unit-flinch {
+  0% {
+    translate: 0 0;
+    filter: none;
+  }
+  8% {
+    translate: var(--knock-x) var(--knock-y);
+    scale: 1.12 0.88;
+    filter: brightness(3) saturate(0);
+  }
+  30% {
+    translate: calc(var(--knock-x) * -0.4) calc(var(--knock-y) * -0.4);
+    scale: 1;
+    filter: brightness(1.2) sepia(1) saturate(6) hue-rotate(-40deg);
+  }
+  55% {
+    translate: calc(var(--knock-x) * 0.2) calc(var(--knock-y) * 0.2);
+  }
+  100% {
+    translate: 0 0;
+    filter: none;
+  }
+}
+
+/* --- Health bars --- */
+
+.unit-hp {
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  top: 0;
+  height: 9%;
+  min-height: 4px;
+  z-index: 3;
+}
+
+.is-tower .unit-hp {
+  left: 22%;
+  right: 2%;
+  top: -10%;
+  height: 13%;
+}
+
+.unit-hp-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 99px;
+  overflow: hidden;
+  background: rgba(14, 10, 24, 0.8);
+  box-shadow: 0 0 0 1.5px rgba(14, 10, 24, 0.6);
+}
+
+.unit-hp-track > span {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+}
+
+.unit-hp-lag {
+  background: #fff1b8;
+  transition: scale 0.5s 0.45s ease-out;
+}
+
+.unit-hp-fill {
+  background: linear-gradient(var(--team-light), var(--team) 60%);
+  transition: scale 0.15s 0.15s ease-out;
+}
+
+.unit-hp-num {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  translate: -2px -50%;
+  min-width: 1.6em;
+  padding: 0.1em 0.3em;
+  border-radius: 6px;
+  background: var(--team);
+  color: #fff;
+  font:
+    900 calc(var(--square-size, 72px) * 0.2) / 1 system-ui,
+    sans-serif;
+  text-align: center;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* --- Effects above the board --- */
+
+.battle-effects {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.battle-effects > * {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+}
+
+/* A glowing shot flying from shooter to target */
+.bolt {
+  animation: bolt-fly linear both;
+}
+
+.bolt::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 55%;
+  height: 12%;
+  translate: -70% -50%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, var(--team-light) 60%, #fff);
+  box-shadow: 0 0 10px 3px var(--team-glow);
+}
+
+@keyframes bolt-fly {
+  from {
+    translate: 0 0;
+  }
+  92% {
+    opacity: 1;
+  }
+  to {
+    translate: var(--dx) var(--dy);
+    opacity: 0;
+  }
+}
+
+.hit-spark {
+  animation: spark-pop 0.42s ease-out both;
+}
+
+.hit-spark::before,
+.hit-spark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.hit-spark::before {
+  background: repeating-conic-gradient(
+    from 10deg,
+    #fff6c2 0 7deg,
+    transparent 7deg 40deg
+  );
+  mask: radial-gradient(
+    closest-side,
+    transparent 25%,
+    #000 30% 75%,
+    transparent 80%
+  );
+}
+
+.hit-spark::after {
+  inset: 28%;
+  background: radial-gradient(closest-side, #fff, rgba(255, 220, 120, 0));
+}
+
+@keyframes spark-pop {
+  0% {
+    opacity: 0;
+    scale: 0.2;
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.5;
+    rotate: 25deg;
+  }
+}
+
+.hit-number {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  color: #fff;
+  font:
+    900 calc(var(--sq) * 0.36) / 1 system-ui,
+    sans-serif;
+  -webkit-text-stroke: calc(var(--sq) * 0.03) #2a0f1c;
+  paint-order: stroke fill;
+  animation: number-float 0.9s ease-out both;
+}
+
+.hit-number.is-kill {
+  color: #ffd23f;
+  font-size: calc(var(--sq) * 0.46);
+}
+
+@keyframes number-float {
+  0% {
+    opacity: 0;
+    translate: 0 0;
+    scale: 0.4;
+  }
+  1% {
+    opacity: 1;
+  }
+  15% {
+    scale: 1.35;
+  }
+  30% {
+    scale: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: var(--drift) calc(var(--sq) * -0.85);
+  }
+}
+
+/* The defeated piece stands until the blow lands, then gets knocked away */
+.unit-ghost {
+  padding: 0.6%;
+  box-sizing: border-box;
+  animation: ghost-knockout 0.75s both;
+}
+
+@keyframes ghost-knockout {
+  0% {
+    translate: 0 0;
+    rotate: 0turn;
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
+  }
+  6% {
+    scale: 1.15 0.85;
+    filter: brightness(3) saturate(0);
+  }
+  45% {
+    translate: calc(var(--kx) * 0.6) calc(var(--sq) * -1.1);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.5);
+  }
+  100% {
+    translate: var(--kx) calc(var(--sq) * -0.2);
+    rotate: var(--spin);
+    scale: 0.6;
+    opacity: 0;
+    filter: brightness(3) saturate(0);
+  }
+}
+
+.ko-puff {
+  animation: puff 0.7s ease-out both;
+}
+
+.ko-puff::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 34%;
+  height: 34%;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: rgba(250, 248, 255, 0.95);
+  box-shadow:
+    calc(var(--sq) * 0.2) calc(var(--sq) * 0.04) 0 calc(var(--sq) * -0.02)
+      rgba(236, 232, 248, 0.9),
+    calc(var(--sq) * -0.2) calc(var(--sq) * 0.06) 0 calc(var(--sq) * -0.03)
+      rgba(236, 232, 248, 0.9),
+    calc(var(--sq) * 0.06) calc(var(--sq) * -0.18) 0 calc(var(--sq) * -0.03)
+      rgba(244, 240, 255, 0.9),
+    calc(var(--sq) * -0.1) calc(var(--sq) * 0.18) 0 calc(var(--sq) * -0.04)
+      rgba(226, 222, 240, 0.9);
+}
+
+@keyframes puff {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.9;
+  }
+}
+
+/* A shadow grows under a falling reinforcement, then a ring bursts where it lands */
+.drop-shadow {
+  animation: drop-shadow ease-in both;
+}
+
+.drop-shadow::before {
+  content: "";
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: 4%;
+  height: 22%;
+  border-radius: 50%;
+  background: rgba(10, 6, 20, 0.45);
+}
+
+@keyframes drop-shadow {
+  0% {
+    opacity: 0;
+    scale: 0.2;
+  }
+  95% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.drop-ring {
+  border-radius: 50%;
+  border: calc(var(--sq) * 0.06) solid var(--team-light);
+  box-shadow:
+    0 0 14px var(--team-glow),
+    inset 0 0 14px var(--team-glow);
+  animation: drop-ring 0.55s ease-out both;
+}
+
+@keyframes drop-ring {
+  0% {
+    opacity: 0;
+    scale: 0.3 0.15;
+    translate: 0 30%;
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 2.2 1.1;
+    translate: 0 30%;
+  }
+}

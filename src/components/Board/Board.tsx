@@ -8,6 +8,7 @@ import { Portal } from "./Portal";
 import { Battlefield, WorldRiver } from "./Battlefield";
 import { BoardShatter } from "../HexWarp/HexWarp";
 import { MineBlast } from "./MineBlast";
+import { BattleEffects, BattleUnit } from "./Battle";
 import {
   visualCol as colOnScreen,
   visualRow as rowOnScreen,
@@ -61,28 +62,6 @@ function playPortalPhase(phase: PortalPhase): void {
   }
 }
 
-function CooldownPie({ total, gen }: { total: number; gen: number }) {
-  return (
-    <svg key={gen} className="cooldown-pie" viewBox="0 0 36 36">
-      <circle
-        cx="18"
-        cy="18"
-        r="16"
-        fill="none"
-        stroke="rgba(255,255,255,0.4)"
-        strokeWidth="3"
-        strokeDasharray="100.53"
-        style={{
-          animationName: "cooldown-fill",
-          animationDuration: `${total}ms`,
-          animationTimingFunction: "linear",
-          animationFillMode: "forwards",
-        }}
-      />
-    </svg>
-  );
-}
-
 export function Board() {
   const {
     selectedSquare,
@@ -90,7 +69,6 @@ export function Board() {
     hasPortalMoves,
     portalEntrance,
     lastMove,
-    lastAutonomousMoves,
     lastPortalMove,
     flipped,
     status,
@@ -151,7 +129,6 @@ export function Board() {
 
   const slides = useSlideAnimation({
     lastMove,
-    lastAutonomousMoves,
     isPortalMove: lastPortalMove !== null,
     wasDropRef,
     flipped,
@@ -165,12 +142,9 @@ export function Board() {
   );
   const gravityFalls =
     gravityShift?.falls ?? new Map<SquareIndex, GravityFall>();
-  // Autonomous battles capture constantly, so only turn-based captures burst
   const lastRecord = moveHistory[moveHistory.length - 1];
   const capture = useCaptureBurst(
-    cursed && lastRecord?.move.captured && lastAutonomousMoves.length === 0
-      ? lastRecord.move.to
-      : null,
+    cursed && lastRecord?.move.captured ? lastRecord.move.to : null,
     moveHistory.length,
   );
   const { armed: minesArmed, blasting: minesBlasting } = useMineExplosions(
@@ -178,6 +152,7 @@ export function Board() {
     resolveExplosion,
   );
 
+  const battle = overlays.rallyBattle;
   const battleRoyale = overlays.battleRoyale;
   const dangerProgress = battleRoyale?.dangerProgress ?? 0;
   const collapse = useRingCollapse(
@@ -229,7 +204,7 @@ export function Board() {
       const isDead = squareMods.some((m) => m.className === "dead-square");
       const isLegalTarget = legalMoveSquares.includes(sq);
       const isLastMove =
-        lastMove && (sq === lastMove.from || sq === lastMove.to);
+        !battle && lastMove && (sq === lastMove.from || sq === lastMove.to);
       const isCheck =
         gravityFalls.size === 0 &&
         piece?.type === PieceType.King &&
@@ -302,7 +277,6 @@ export function Board() {
       const portalColor = overlays.portalSquares.get(sq);
       const closingColor = closingPortals.get(sq);
       const isHidden = overlays.strategoHidden.has(sq);
-      const cooldown = overlays.rallyCooldowns[sq];
 
       cols.push(
         <div
@@ -334,7 +308,17 @@ export function Board() {
 
           {doomed.has(sq) && <DoomedTile sq={sq} progress={dangerProgress} />}
 
-          {piece && !isLifted && !isDead && (
+          {piece && battle && !isDead && (
+            <BattleUnit
+              key={battle.units[sq]?.id}
+              sq={sq}
+              piece={piece}
+              view={battle}
+              flipped={flipped}
+              squareSize={squareSize}
+            />
+          )}
+          {piece && !battle && !isLifted && !isDead && (
             <>
               <img
                 src={pieceImage(piece)}
@@ -348,9 +332,6 @@ export function Board() {
                 <div className="stratego-mask" style={pieceStyle}>
                   ?
                 </div>
-              )}
-              {cooldown && (
-                <CooldownPie total={cooldown.total} gen={cooldown.gen} />
               )}
             </>
           )}
@@ -461,6 +442,13 @@ export function Board() {
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
           {rows}
+          {battle && (
+            <BattleEffects
+              view={battle}
+              flipped={flipped}
+              squareSize={squareSize}
+            />
+          )}
           {[...minesBlasting].map((sq) => {
             const piece = game.board.get(sq);
             const col = colOnScreen(sq, flipped);

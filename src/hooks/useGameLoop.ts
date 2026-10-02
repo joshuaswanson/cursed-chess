@@ -1,9 +1,8 @@
 import { useEffect } from "react";
-import { useGameStore } from "../stores/gameStore";
+import { AUTONOMOUS_TICK_MS, useGameStore } from "../stores/gameStore";
 import { isGameOver } from "../engine";
 
 const MOVE_TICK_MS = 100;
-const AUTONOMOUS_TICK_MS = 200;
 const MODE_TICK_MS = 1000;
 
 /** Drives the move clock, the autonomous-mode tick, and the mode countdown */

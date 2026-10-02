@@ -34,11 +34,8 @@ export interface ModePlugin {
   onTurnEnd?(ctx: PluginContext, color: Color): void;
   onGameEnd?(ctx: PluginContext, status: GameStatus): void;
 
-  /** Called periodically in autonomous mode to get moves (simultaneous for both colors) */
-  tickAutonomous?(
-    ctx: PluginContext,
-    tickMs: number,
-  ): { from: SquareIndex; to: SquareIndex }[];
+  /** Advances a real-time mode by `tickMs`. Returns the winner once the mode decides one. */
+  tickAutonomous?(ctx: PluginContext, tickMs: number): Color | null;
 
   modifyLegalMoves?(ctx: PluginContext, moves: Move[], color: Color): Move[];
   modifyBoard?(ctx: PluginContext): void;

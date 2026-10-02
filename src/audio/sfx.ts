@@ -617,4 +617,121 @@ export const sfx = {
     osc.stop(t + 0.18);
     creak(c, out, t, 0.4);
   },
+
+  /** A melee swing: a short whoosh of filtered noise */
+  swing(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const src = noiseSource(c);
+    const band = c.createBiquadFilter();
+    band.type = "bandpass";
+    band.Q.value = 2;
+    band.frequency.setValueAtTime(600, t);
+    band.frequency.exponentialRampToValueAtTime(2400, t + 0.14);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.12, t + 0.06);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    src.connect(band).connect(gain).connect(out);
+    src.start(t, Math.random() * 0.8);
+    src.stop(t + 0.18);
+  },
+
+  /** A ranged shot: a quick falling pew */
+  zap(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const osc = c.createOscillator();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(1400 + Math.random() * 400, t);
+    osc.frequency.exponentialRampToValueAtTime(320, t + 0.12);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.04, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+    osc.connect(gain).connect(out);
+    osc.start(t);
+    osc.stop(t + 0.15);
+  },
+
+  /** A blow lands. A finishing blow hits harder. */
+  hit(finishing: boolean): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const osc = c.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(finishing ? 240 : 320 + Math.random() * 80, t);
+    osc.frequency.exponentialRampToValueAtTime(70, t + 0.1);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(finishing ? 0.3 : 0.16, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(gain).connect(out);
+    osc.start(t);
+    osc.stop(t + 0.14);
+    crackle(c, out, finishing ? 0.9 : 0.5);
+  },
+
+  /** A unit is knocked out: a pop and a falling boing */
+  knockout(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const osc = c.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(700, t);
+    osc.frequency.exponentialRampToValueAtTime(140, t + 0.35);
+    const wobble = c.createOscillator();
+    wobble.frequency.value = 18;
+    const depth = c.createGain();
+    depth.gain.value = 30;
+    wobble.connect(depth).connect(osc.frequency);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.14, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+    osc.connect(gain).connect(out);
+    osc.start(t);
+    wobble.start(t);
+    osc.stop(t + 0.4);
+    wobble.stop(t + 0.4);
+    creak(c, out, t, 0.35);
+  },
+
+  /** A reinforcement whistles down and lands after `fallSeconds` */
+  drop(fallSeconds: number): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const whistle = c.createOscillator();
+    whistle.type = "sine";
+    whistle.frequency.setValueAtTime(1800, t);
+    whistle.frequency.exponentialRampToValueAtTime(500, t + fallSeconds);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.07, t + fallSeconds * 0.6);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + fallSeconds);
+    whistle.connect(gain).connect(out);
+    whistle.start(t);
+    whistle.stop(t + fallSeconds + 0.02);
+
+    const land = t + fallSeconds;
+    const thump = c.createOscillator();
+    thump.type = "sine";
+    thump.frequency.setValueAtTime(200, land);
+    thump.frequency.exponentialRampToValueAtTime(50, land + 0.15);
+    const thumpGain = c.createGain();
+    thumpGain.gain.setValueAtTime(0.0001, t);
+    thumpGain.gain.setValueAtTime(0.4, land);
+    thumpGain.gain.exponentialRampToValueAtTime(0.001, land + 0.2);
+    thump.connect(thumpGain).connect(out);
+    thump.start(land);
+    thump.stop(land + 0.22);
+    creak(c, out, land, 0.5);
+  },
 };

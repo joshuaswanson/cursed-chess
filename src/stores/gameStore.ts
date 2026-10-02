@@ -16,7 +16,7 @@ import { PortalChessPlugin } from "../plugins/portalChess";
 import type { PortalMoveInfo } from "../plugins/portalChess";
 import { FogOfWarPlugin } from "../plugins/fogOfWar";
 import { BattleRoyalePlugin } from "../plugins/battleRoyale";
-import { RallyPlugin, PIECE_COST } from "../plugins/clashRoyale";
+import { RallyPlugin } from "../plugins/clashRoyale";
 import { MinefieldPlugin } from "../plugins/minefield";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GravityPlugin } from "../plugins/gravity";
@@ -30,6 +30,7 @@ import type { HexCoord, HexMove } from "../engine/hex";
 export type { PortalMoveInfo };
 
 export const MODE_SECONDS = 45;
+export const AUTONOMOUS_TICK_MS = 100;
 const PLAYER_MOVE_SECONDS = 10;
 const AI_MOVE_SECONDS = 1;
 /** Clock value for the opening normal-chess phase, which has no time limit */
@@ -135,7 +136,6 @@ export interface GameStore {
   hasPortalMoves: boolean;
   portalEntrance: SquareIndex | null;
   lastMove: { from: SquareIndex; to: SquareIndex } | null;
-  lastAutonomousMoves: { from: SquareIndex; to: SquareIndex }[];
   lastPortalMove: PortalMoveInfo | null;
   promotionPending: { from: SquareIndex; to: SquareIndex } | null;
   flipped: boolean;
@@ -233,7 +233,6 @@ const FRESH_BOARD = {
   turn: Color.White,
   moveHistory: [],
   lastMove: null,
-  lastAutonomousMoves: [],
   lastPortalMove: null,
   promotionPending: null,
   deployPieceType: null,
@@ -495,7 +494,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const moveState = {
       ...CLEARED_SELECTION,
       lastMove: { from, to: processedMove.to },
-      lastAutonomousMoves: [],
       promotionPending: null,
       turn: game.turn,
       moveHistory: [...game.history],
@@ -633,16 +631,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const rally = pluginManager.find<RallyPlugin>("rally");
     if (!rally) return false;
 
-    const cost = PIECE_COST[deployPieceType];
-    if (cost === undefined || rally.resourceWhite < cost) return false;
-
     // White deploys on its own half only
-    if (rankOf(square) > 3 || game.board.get(square)) return false;
-
-    game.board.put(square, { type: deployPieceType, color: Color.White });
-    rally.resourceWhite -= cost;
-    rally.setCooldown(square, deployPieceType);
-
+    if (rankOf(square) > 3) return false;
+    if (!rally.deploy(game.board, square, deployPieceType, Color.White)) {
+      return false;
+    }
     set({ deployPieceType: null });
     return true;
   },
@@ -700,50 +693,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   tickAutonomous: () => {
-    const { pluginManager, paused, game } = get();
-    if (paused || !pluginManager.isAutonomous()) return;
+    const { pluginManager, paused, status } = get();
+    if (paused || isGameOver(status) || !pluginManager.isAutonomous()) return;
 
-    const moves = pluginManager.invokeTickAutonomous(200);
+    const winner = pluginManager.invokeTickAutonomous(AUTONOMOUS_TICK_MS);
     set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
-    if (moves.length === 0) return;
-
-    // Both colors move at once, so moves bypass makeMove's turn handling
-    let kingCapturedBy: Color | null = null;
-    const executedMoves: { from: SquareIndex; to: SquareIndex }[] = [];
-
-    for (const { from, to } of moves) {
-      if (kingCapturedBy !== null) break;
-      const piece = game.board.get(from);
-      if (!piece) continue;
-
-      game.turn = piece.color;
-      const legalMove = game
-        .getLegalMoves(from)
-        .find(
-          (m) =>
-            m.to === to && (!m.promotion || m.promotion === PieceType.Queen),
-        );
-      if (!legalMove) continue;
-
-      if (legalMove.captured?.type === PieceType.King) {
-        kingCapturedBy = piece.color;
-      }
-      game.executeTrustedMove(legalMove);
-      executedMoves.push({ from, to: legalMove.to });
-    }
-
-    if (executedMoves.length === 0) return;
-    set({
-      lastMove: executedMoves[executedMoves.length - 1],
-      lastAutonomousMoves: executedMoves,
-      lastPortalMove: null,
-      turn: game.turn,
-      moveHistory: [...game.history],
-      ...(kingCapturedBy !== null ? { status: GameStatus.Checkmate } : {}),
-    });
-    if (kingCapturedBy !== null) {
-      endGameSoon(kingCapturedBy);
-    }
+    if (winner === null) return;
+    set({ status: GameStatus.Checkmate });
+    endGameSoon(winner);
   },
 
   tickModeTimer: () => {
@@ -781,7 +738,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       modeTimeRemaining: mode.durationSeconds ?? MODE_SECONDS,
       status: GameStatus.Active,
       ...CLEARED_SELECTION,
-      lastAutonomousMoves: [],
       lastPortalMove: null,
       promotionPending: null,
       deployPieceType: null,

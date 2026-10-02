@@ -13,17 +13,15 @@ const EXPLOSION_MS = 1300;
 /** The mine pops up and beeps before it goes off */
 const MINE_ARMED_MS = 620;
 
-/** Pieces slide in from where they came from after a click or autonomous move */
+/** The moved piece slides in from where it came from */
 export function useSlideAnimation({
   lastMove,
-  lastAutonomousMoves,
   isPortalMove,
   wasDropRef,
   flipped,
   squareSize,
 }: {
   lastMove: Move | null;
-  lastAutonomousMoves: Move[];
   isPortalMove: boolean;
   wasDropRef: RefObject<boolean>;
   flipped: boolean;
@@ -43,26 +41,17 @@ export function useSlideAnimation({
     }
     if (isPortalMove) return;
 
-    const moves =
-      lastAutonomousMoves.length > 0 ? lastAutonomousMoves : [lastMove];
     setSlides(
-      new Map(
-        moves.map((m) => [
-          m.to,
-          offsetBetween(m.from, m.to, flipped, squareSize),
-        ]),
-      ),
+      new Map([
+        [
+          lastMove.to,
+          offsetBetween(lastMove.from, lastMove.to, flipped, squareSize),
+        ],
+      ]),
     );
     const timer = setTimeout(() => setSlides(new Map()), SLIDE_CLEAR_MS);
     return () => clearTimeout(timer);
-  }, [
-    lastMove,
-    lastAutonomousMoves,
-    isPortalMove,
-    wasDropRef,
-    flipped,
-    squareSize,
-  ]);
+  }, [lastMove, isPortalMove, wasDropRef, flipped, squareSize]);
 
   return slides;
 }

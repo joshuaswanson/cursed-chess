@@ -127,15 +127,11 @@ export class PluginManager {
     return this.plugins.some((p) => p.isAutonomous);
   }
 
-  invokeTickAutonomous(
-    tickMs: number,
-  ): { from: SquareIndex; to: SquareIndex }[] {
-    const moves: { from: SquareIndex; to: SquareIndex }[] = [];
+  invokeTickAutonomous(tickMs: number): Color | null {
+    let winner: Color | null = null;
     for (const p of this.plugins) {
-      if (p.tickAutonomous) {
-        moves.push(...p.tickAutonomous(this.ctx, tickMs));
-      }
+      winner = p.tickAutonomous?.(this.ctx, tickMs) ?? winner;
     }
-    return moves;
+    return winner;
   }
 }
