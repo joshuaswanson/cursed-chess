@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { rankOf, toIndex } from "../../utils/squareUtils";
-import { GameStatus, PieceType } from "../../engine";
+import { Color, GameStatus, PieceType } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import { Portal } from "./Portal";
@@ -397,6 +397,9 @@ export function Board() {
 
   const { gravityAngle } = overlays;
   const boardStyle = {
+    ...(deployPieceType && {
+      "--deploy-preview": `url(${pieceImage({ type: deployPieceType, color: Color.White })})`,
+    }),
     ...(battleRoyale && {
       "--shrink-ring": battleRoyale.shrinkRing,
     }),

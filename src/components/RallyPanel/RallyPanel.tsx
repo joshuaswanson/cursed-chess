@@ -18,11 +18,18 @@ const DEPLOYABLE: { type: PieceType; label: string }[] = [
   { type: PieceType.Queen, label: "Queen" },
 ];
 
+/** Pointer travel that turns a press on a card into a drag */
+const DRAG_THRESHOLD_PX = 6;
+
 interface DeployDrag {
   type: PieceType;
   img: string;
   x: number;
   y: number;
+  startX: number;
+  startY: number;
+  moved: boolean;
+  wasSelected: boolean;
 }
 
 function useRallyPlugin() {
@@ -85,9 +92,13 @@ export function FoeRallyBar() {
   );
 }
 
-/** Your side of the arena: elixir and the cards you drag onto the board */
+/**
+ * Your side of the arena: elixir and your cards. Drag a card onto your half,
+ * or click a card and then click a square.
+ */
 export function YourRallyBar() {
   const rally = useRallyPlugin();
+  const selected = useGameStore((s) => s.deployPieceType);
   const { deployPiece, setDeployPieceType } = useGameStore.getState();
   const [drag, setDrag] = useState<DeployDrag | null>(null);
 
@@ -95,7 +106,17 @@ export function YourRallyBar() {
     (e: PointerEvent) => {
       if (!drag) return;
       setDrag((prev) =>
-        prev ? { ...prev, x: e.clientX, y: e.clientY } : null,
+        prev
+          ? {
+              ...prev,
+              x: e.clientX,
+              y: e.clientY,
+              moved:
+                prev.moved ||
+                Math.hypot(e.clientX - prev.startX, e.clientY - prev.startY) >
+                  DRAG_THRESHOLD_PX,
+            }
+          : null,
       );
     },
     [drag],
@@ -104,18 +125,30 @@ export function YourRallyBar() {
   const handlePointerUp = useCallback(
     (e: PointerEvent) => {
       if (!drag) return;
+      setDrag(null);
+      if (!drag.moved) {
+        setDeployPieceType(drag.wasSelected ? null : drag.type);
+        return;
+      }
       const sqEl = document
         .elementFromPoint(e.clientX, e.clientY)
         ?.closest("[data-sq]");
       if (sqEl) {
-        setDeployPieceType(drag.type);
         deployPiece(Number(sqEl.getAttribute("data-sq")) as SquareIndex);
       }
-      setDrag(null);
       setDeployPieceType(null);
     },
     [drag, deployPiece, setDeployPieceType],
   );
+
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDeployPieceType(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected, setDeployPieceType]);
 
   useEffect(() => {
     if (!drag) return;
@@ -144,13 +177,23 @@ export function YourRallyBar() {
           return (
             <div
               key={type}
-              title={`Drag onto your half to deploy a ${label.toLowerCase()} for ${cost} elixir`}
-              className={`deploy-card${canAfford ? "" : " disabled"}`}
+              title={`Click or drag onto your half to deploy a ${label.toLowerCase()} for ${cost} elixir`}
+              className={`deploy-card${canAfford ? "" : " disabled"}${selected === type ? " selected" : ""}`}
+              aria-pressed={selected === type}
               onPointerDown={(e) => {
                 if (!canAfford) return;
                 e.preventDefault();
                 setDeployPieceType(type);
-                setDrag({ type, img, x: e.clientX, y: e.clientY });
+                setDrag({
+                  type,
+                  img,
+                  x: e.clientX,
+                  y: e.clientY,
+                  startX: e.clientX,
+                  startY: e.clientY,
+                  moved: false,
+                  wasSelected: selected === type,
+                });
               }}
             >
               <img src={img} alt={label} draggable={false} />
@@ -159,7 +202,7 @@ export function YourRallyBar() {
           );
         })}
       </div>
-      {drag && (
+      {drag?.moved && (
         <img
           src={drag.img}
           className="deploy-floating-piece"

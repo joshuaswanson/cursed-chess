@@ -141,6 +141,22 @@
   translate: 0 -6px;
 }
 
+.deploy-card.selected {
+  translate: 0 -10px;
+  background: linear-gradient(180deg, #fffbe8, #ffe27a);
+  box-shadow:
+    3px 4px 0 var(--ink),
+    0 0 0 3px #66ff33,
+    0 0 18px 4px rgba(102, 255, 51, 0.7);
+  animation: card-ready 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes card-ready {
+  to {
+    translate: 0 -14px;
+  }
+}
+
 .deploy-card.disabled {
   opacity: 0.4;
   filter: grayscale(1);
