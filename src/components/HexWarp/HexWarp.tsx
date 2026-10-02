@@ -75,19 +75,16 @@ export function HexWarp() {
     const next: Flight[] = [];
     arrivals.forEach(({ from, to, piece }, i) => {
       const fromRect = origins.current.get(from);
-      const cell = document.querySelector(`[data-hex="${coordKey(to)}"]`);
-      if (!fromRect || !cell) return;
-      const toRect = cell.getBoundingClientRect();
+      // The real piece already sits at its final spot and size, hidden until the flight lands
+      const target = document.querySelector(
+        `[data-hex-piece="${coordKey(to)}"]`,
+      );
+      if (!fromRect || !target) return;
       next.push({
         key: `${from}-${coordKey(to)}`,
         src: pieceImage(piece),
         from: fromRect,
-        to: new DOMRect(
-          toRect.x + toRect.width * 0.1,
-          toRect.y + toRect.height * 0.1,
-          toRect.width * 0.8,
-          toRect.height * 0.8,
-        ),
+        to: target.getBoundingClientRect(),
         delay: 120 + i * 18,
       });
     });
@@ -110,8 +107,9 @@ function FlyingPiece({ flight }: { flight: Flight }) {
     const el = ref.current;
     if (!el) return;
     const { from, to } = flight;
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
+    // Measured center to center, since the piece scales about its center
+    const dx = to.x + to.width / 2 - (from.x + from.width / 2);
+    const dy = to.y + to.height / 2 - (from.y + from.height / 2);
     const scaleEnd = to.width / from.width;
     const lift = -Math.max(80, Math.abs(dx) * 0.3);
     el.animate(

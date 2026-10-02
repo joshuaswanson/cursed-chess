@@ -322,6 +322,7 @@ export function HexBoard() {
           return (
             <img
               key={arriving ? `${key}-${lastHexMove.id}` : key}
+              data-hex-piece={key}
               className={`hex-piece${hovered === key ? " hovered" : ""}${draggingKey === key ? " lifted" : ""}`}
               src={pieceImage(piece)}
               alt={piece.color + piece.type}
