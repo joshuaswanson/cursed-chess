@@ -43,6 +43,15 @@ export interface Move {
   flags: number;
 }
 
+/** How pawns of one color move when a mode turns the board: 0x88 offsets */
+export interface PawnRule {
+  forward: number;
+  captures: [number, number];
+}
+
+/** Overrides for pawn movement; null means standard chess pawns */
+export type PawnRules = Record<Color, PawnRule> | null;
+
 export interface CastlingRights {
   [Color.White]: { kingSide: boolean; queenSide: boolean };
   [Color.Black]: { kingSide: boolean; queenSide: boolean };

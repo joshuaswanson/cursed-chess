@@ -380,7 +380,11 @@ export function Board() {
               </span>
             </div>
           )}
-          {isCheck && cursed && <span className="check-sticker">Check!</span>}
+          {isCheck && cursed && (
+            <span className="square-anchor">
+              <span className="check-sticker">Check!</span>
+            </span>
+          )}
 
           {visualCol === 0 && (
             <span className="coord coord-rank">{rank + 1}</span>

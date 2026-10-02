@@ -7,7 +7,14 @@ import {
   isSquareAttacked,
   opponent,
 } from "../engine";
-import type { Board, Color, Move, Piece, SquareIndex } from "../engine";
+import type {
+  Board,
+  Color,
+  Move,
+  PawnRules,
+  Piece,
+  SquareIndex,
+} from "../engine";
 import { fileOf, rankOf } from "../utils/squareUtils";
 
 export const PIECE_VALUE: Record<PieceType, number> = {
@@ -58,6 +65,7 @@ function scoreMove(game: Game, move: Move, squareBonus: SquareBonus): number {
   if (move.flags & MoveFlag.Portal) return captured + PORTAL_BONUS;
 
   const after = new Game(game.toFen());
+  after.pawnRules = game.pawnRules;
   if (!after.makeMove(move)) return -Infinity;
 
   const status = after.getStatus();
@@ -73,7 +81,12 @@ function scoreMove(game: Game, move: Move, squareBonus: SquareBonus): number {
     score -= DRAW_PENALTY;
   }
 
-  score -= bestReplyGain(after.board, move.piece.color, after.enPassant);
+  score -= bestReplyGain(
+    after.board,
+    move.piece.color,
+    after.enPassant,
+    after.pawnRules,
+  );
   score += centerBonus(move.to, landed) + squareBonus(move.to, landed);
   return score;
 }
@@ -83,16 +96,18 @@ function bestReplyGain(
   board: Board,
   me: Color,
   enPassant: SquareIndex | null,
+  pawnRules: PawnRules,
 ): number {
   let best = 0;
   for (const reply of generatePseudoLegalMoves(
     board,
     opponent(me),
     enPassant,
+    pawnRules,
   )) {
     if (!reply.captured) continue;
     const victim = PIECE_VALUE[reply.captured.type];
-    const recapture = isSquareAttacked(board, reply.to, me)
+    const recapture = isSquareAttacked(board, reply.to, me, pawnRules)
       ? PIECE_VALUE[reply.piece.type]
       : 0;
     best = Math.max(best, victim - recapture);

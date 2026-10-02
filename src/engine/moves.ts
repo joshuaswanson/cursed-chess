@@ -1,5 +1,5 @@
 import { Color, PieceType, MoveFlag } from "./types";
-import type { Piece, SquareIndex, Move } from "./types";
+import type { Piece, SquareIndex, Move, PawnRule, PawnRules } from "./types";
 import type { Board } from "./board";
 import { toIndex, rankOf, isValidSquare } from "../utils/squareUtils";
 
@@ -136,6 +136,49 @@ function generatePawnMoves(
   return moves;
 }
 
+const PROMOTION_TYPES = [
+  PieceType.Queen,
+  PieceType.Rook,
+  PieceType.Bishop,
+  PieceType.Knight,
+];
+
+/**
+ * Pawns on a turned board: one step toward their forward direction and
+ * captures on the two directions beside it. They promote on reaching the edge
+ * they are heading for; double steps and en passant do not apply.
+ */
+function generateTurnedPawnMoves(
+  board: Board,
+  sq: SquareIndex,
+  piece: Piece,
+  rule: PawnRule,
+): Move[] {
+  const moves: Move[] = [];
+  const add = (to: SquareIndex, flags: number, captured?: Piece) => {
+    if (isValidSquare(to + rule.forward)) {
+      moves.push(makeMove(sq, to, piece, flags, captured));
+      return;
+    }
+    for (const promo of PROMOTION_TYPES) {
+      moves.push(
+        makeMove(sq, to, piece, flags | MoveFlag.Promotion, captured, promo),
+      );
+    }
+  };
+  const ahead = sq + rule.forward;
+  if (isValidSquare(ahead) && !board.get(ahead)) add(ahead, MoveFlag.Normal);
+  for (const dir of rule.captures) {
+    const target = sq + dir;
+    if (!isValidSquare(target)) continue;
+    const victim = board.get(target);
+    if (victim && victim.color !== piece.color) {
+      add(target, MoveFlag.Capture, victim);
+    }
+  }
+  return moves;
+}
+
 function generateSlidingMoves(
   board: Board,
   sq: SquareIndex,
@@ -220,6 +263,7 @@ export function generatePseudoLegalMoves(
   board: Board,
   color: Color,
   enPassant: SquareIndex | null,
+  pawnRules: PawnRules = null,
 ): Move[] {
   const moves: Move[] = [];
 
@@ -231,7 +275,11 @@ export function generatePseudoLegalMoves(
 
       switch (piece.type) {
         case PieceType.Pawn:
-          moves.push(...generatePawnMoves(board, sq, piece, enPassant));
+          moves.push(
+            ...(pawnRules
+              ? generateTurnedPawnMoves(board, sq, piece, pawnRules[color])
+              : generatePawnMoves(board, sq, piece, enPassant)),
+          );
           break;
         case PieceType.Knight:
           moves.push(...generateKnightMoves(board, sq, piece));
@@ -266,6 +314,7 @@ export function isSquareAttacked(
   board: Board,
   sq: SquareIndex,
   byColor: Color,
+  pawnRules: PawnRules = null,
 ): boolean {
   // Knight attacks
   for (const offset of KNIGHT_OFFSETS) {
@@ -312,9 +361,11 @@ export function isSquareAttacked(
     }
   }
 
-  // Pawn attacks
+  // Pawn attacks: an attacking pawn sits one capture step behind the square
   const pawnDir = byColor === Color.White ? SOUTH : NORTH;
-  const pawnAttacks = [sq + pawnDir + EAST, sq + pawnDir + WEST];
+  const pawnAttacks = pawnRules
+    ? pawnRules[byColor].captures.map((dir) => sq - dir)
+    : [sq + pawnDir + EAST, sq + pawnDir + WEST];
   for (const target of pawnAttacks) {
     if (!isValidSquare(target)) continue;
     const piece = board.get(target);

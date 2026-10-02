@@ -11,4 +11,6 @@ export type {
   CastlingRights,
   GameState,
   MoveRecord,
+  PawnRule,
+  PawnRules,
 } from "./types";

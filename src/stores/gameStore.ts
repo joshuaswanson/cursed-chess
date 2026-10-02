@@ -831,6 +831,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const nextGame = isHexMode
       ? Game.fromArmies(armies[Color.White], armies[Color.Black])
       : game;
+    // A turned board's pawn rules end with the mode that turned it
+    nextGame.pawnRules = null;
     set({
       ...CLEARED_HEX,
       game: nextGame,

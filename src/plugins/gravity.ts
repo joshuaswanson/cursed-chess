@@ -1,13 +1,7 @@
-import { Color, PieceType } from "../engine/types";
-import type { SquareIndex } from "../engine/types";
+import { Color } from "../engine/types";
+import type { PawnRules, SquareIndex } from "../engine/types";
 import type { ModePlugin, PluginContext, BoardOverlay } from "./types";
-import {
-  fileOf,
-  rankOf,
-  toIndex,
-  promotionRank,
-  ALL_SQUARES,
-} from "../utils/squareUtils";
+import { fileOf, rankOf, toIndex, ALL_SQUARES } from "../utils/squareUtils";
 
 type GravityDirection =
   "south" | "north" | "east" | "west" | "se" | "sw" | "ne" | "nw";
@@ -48,6 +42,35 @@ const ANGLE_TO_DIR: Record<number, GravityDirection> = {
   315: "sw",
 };
 
+/**
+ * Pawns keep heading up the screen whichever way the board is turned: White
+ * moves toward the top of the screen and Black toward the bottom, capturing on
+ * the directions 45 degrees either side.
+ */
+function pawnRulesForAngle(angle: number): PawnRules {
+  const turned = ((angle % 360) + 360) % 360;
+  if (turned === 0) return null;
+  const t = (turned * Math.PI) / 180;
+  // A screen direction (x right, y down) as a 0x88 offset on the turned board
+  const boardDir = (x: number, y: number) => {
+    const vx = x * Math.cos(t) + y * Math.sin(t);
+    const vy = -x * Math.sin(t) + y * Math.cos(t);
+    const df = Math.abs(vx) < 0.3 ? 0 : Math.sign(vx);
+    const dr = Math.abs(vy) < 0.3 ? 0 : -Math.sign(vy);
+    return dr * 16 + df;
+  };
+  return {
+    [Color.White]: {
+      forward: boardDir(0, -1),
+      captures: [boardDir(-1, -1), boardDir(1, -1)],
+    },
+    [Color.Black]: {
+      forward: boardDir(0, 1),
+      captures: [boardDir(-1, 1), boardDir(1, 1)],
+    },
+  };
+}
+
 export class GravityPlugin implements ModePlugin {
   id = "gravity";
   name = "Gravity";
@@ -66,7 +89,8 @@ export class GravityPlugin implements ModePlugin {
     return ANGLE_TO_DIR[normalized] ?? "south";
   }
 
-  onGameStart(): void {
+  onGameStart(ctx: PluginContext): void {
+    ctx.game.pawnRules = null;
     this.direction = "south";
     this.angle = 0;
     this.turnCount = 0;
@@ -91,6 +115,7 @@ export class GravityPlugin implements ModePlugin {
         this.shiftCount++;
         this.angle += step * sign;
         this.direction = this.angleToDirection(this.angle);
+        ctx.game.pawnRules = pawnRulesForAngle(this.angle);
         this.applyGravity(ctx);
       }
     }
@@ -133,14 +158,8 @@ export class GravityPlugin implements ModePlugin {
       }
       if (current === sq) continue;
 
-      const promotes =
-        piece.type === PieceType.Pawn &&
-        rankOf(current) === promotionRank(piece.color);
       ctx.board.remove(sq);
-      ctx.board.put(
-        current,
-        promotes ? { type: PieceType.Queen, color: piece.color } : piece,
-      );
+      ctx.board.put(current, piece);
       this.lastGravityMoves.push({ from: sq, to: current });
     }
   }

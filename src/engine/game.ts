@@ -1,5 +1,6 @@
 import { Color, PieceType, MoveFlag, GameStatus } from "./types";
 import type {
+  PawnRules,
   Piece,
   SquareIndex,
   Move,
@@ -29,6 +30,8 @@ export class Game {
   halfMoveClock: number;
   fullMoveNumber: number;
   history: MoveRecord[];
+  /** Set by modes that turn the board, so pawns keep heading up the screen */
+  pawnRules: PawnRules = null;
 
   constructor(fen?: string) {
     this.board = new Board();
@@ -66,6 +69,7 @@ export class Game {
       this.board,
       this.turn,
       this.enPassant,
+      this.pawnRules,
     );
     const legal: Move[] = [];
 
@@ -112,7 +116,12 @@ export class Game {
         : boardClone.findKing(this.turn);
     if (kingSq === null) return true;
 
-    return !isSquareAttacked(boardClone, kingSq, opponent(this.turn));
+    return !isSquareAttacked(
+      boardClone,
+      kingSq,
+      opponent(this.turn),
+      this.pawnRules,
+    );
   }
 
   /** Generate castling moves if legal */
@@ -127,7 +136,8 @@ export class Game {
       return moves;
 
     // Can't castle while in check
-    if (isSquareAttacked(this.board, kingSq, opponent(color))) return moves;
+    if (isSquareAttacked(this.board, kingSq, opponent(color), this.pawnRules))
+      return moves;
 
     // Kingside
     if (this.castling[color].kingSide) {
@@ -142,8 +152,8 @@ export class Game {
         rook.color === color &&
         !this.board.get(f1) &&
         !this.board.get(g1) &&
-        !isSquareAttacked(this.board, f1, opponent(color)) &&
-        !isSquareAttacked(this.board, g1, opponent(color))
+        !isSquareAttacked(this.board, f1, opponent(color), this.pawnRules) &&
+        !isSquareAttacked(this.board, g1, opponent(color), this.pawnRules)
       ) {
         moves.push({
           from: kingSq,
@@ -169,8 +179,8 @@ export class Game {
         !this.board.get(d1) &&
         !this.board.get(c1) &&
         !this.board.get(b1) &&
-        !isSquareAttacked(this.board, d1, opponent(color)) &&
-        !isSquareAttacked(this.board, c1, opponent(color))
+        !isSquareAttacked(this.board, d1, opponent(color), this.pawnRules) &&
+        !isSquareAttacked(this.board, c1, opponent(color), this.pawnRules)
       ) {
         moves.push({
           from: kingSq,
@@ -396,7 +406,12 @@ export class Game {
   isInCheck(): boolean {
     const kingSq = this.board.findKing(this.turn);
     if (kingSq === null) return false;
-    return isSquareAttacked(this.board, kingSq, opponent(this.turn));
+    return isSquareAttacked(
+      this.board,
+      kingSq,
+      opponent(this.turn),
+      this.pawnRules,
+    );
   }
 
   /** Check for insufficient material */
