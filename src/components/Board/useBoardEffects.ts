@@ -159,14 +159,14 @@ const CAPTURE_WORDS = ["POW!", "BAM!", "KO!", "WHAM!", "CRUNCH!", "BONK!"];
 const CAPTURE_BURST_MS = 700;
 
 /** A comic burst on the square where a piece was just taken */
-export function useCaptureBurst(
-  captureSquare: SquareIndex | null,
+export function useCaptureBurst<Sq extends string | number = SquareIndex>(
+  captureSquare: Sq | null,
   moveCount: number,
   /** Waits for the capturing piece to finish arriving */
   delayMs: number = 0,
-): { sq: SquareIndex; word: string; id: number } | null {
+): { sq: Sq; word: string; id: number } | null {
   const [burst, setBurst] = useState<{
-    sq: SquareIndex;
+    sq: Sq;
     word: string;
     id: number;
   } | null>(null);

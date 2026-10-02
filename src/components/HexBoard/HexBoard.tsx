@@ -1,9 +1,10 @@
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import { isValidHex, hexColor, coordKey } from "../../engine/hex";
 import type { HexCoord } from "../../engine/hex";
+import { SLIDE_MS, useCaptureBurst } from "../Board/useBoardEffects";
 import "./HexBoard.css";
 
 /** Generate all 91 valid hex coordinates */
@@ -37,6 +38,29 @@ const OFFSET_X = BOARD_WIDTH / 2;
 const OFFSET_Y = BOARD_HEIGHT / 2;
 const HEX_W = HEX_SIZE * 2;
 const HEX_H = HEX_SIZE * SQRT3;
+const PIECE_SIZE = HEX_H * 0.82;
+/** Pointer travel that turns a press on a piece into a drag */
+const DRAG_THRESHOLD_PX = 6;
+
+interface HexDrag {
+  from: HexCoord;
+  piece: { type: PieceType; color: Color };
+  startX: number;
+  startY: number;
+  x: number;
+  y: number;
+  moving: boolean;
+}
+
+function hexUnder(x: number, y: number): HexCoord | null {
+  const key = document
+    .elementFromPoint(x, y)
+    ?.closest("[data-hex]")
+    ?.getAttribute("data-hex");
+  if (!key) return null;
+  const [q, r] = key.split(",").map(Number);
+  return { q, r };
+}
 
 export function HexBoard() {
   const hexGame = useGameStore((s) => s.hexGame);
@@ -49,52 +73,17 @@ export function HexBoard() {
   const status = useGameStore((s) => s.status);
   const turn = useGameStore((s) => s.turn);
 
-  // Animate piece movement via direct DOM manipulation
-  const prevMoveRef = useRef(lastHexMove);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [drag, setDrag] = useState<HexDrag | null>(null);
+  /** The move that was made by dropping a piece, which is already where it landed */
+  const [droppedId, setDroppedId] = useState<number | null>(null);
+  const dropped = lastHexMove !== null && droppedId === lastHexMove.id;
 
-  useLayoutEffect(() => {
-    const prev = prevMoveRef.current;
-    prevMoveRef.current = lastHexMove;
-
-    if (
-      !lastHexMove ||
-      (prev &&
-        prev.from.q === lastHexMove.from.q &&
-        prev.from.r === lastHexMove.from.r &&
-        prev.to.q === lastHexMove.to.q &&
-        prev.to.r === lastHexMove.to.r)
-    ) {
-      return;
-    }
-
-    const destKey = coordKey(lastHexMove.to);
-    const el = document.querySelector(
-      `[data-hex="${destKey}"] .hex-piece`,
-    ) as HTMLElement | null;
-    if (!el) return;
-
-    const fromPx = hexToPixel(lastHexMove.from.q, lastHexMove.from.r);
-    const toPx = hexToPixel(lastHexMove.to.q, lastHexMove.to.r);
-    const dx = fromPx.x - toPx.x;
-    const dy = fromPx.y - toPx.y;
-
-    // Snap to old position without transition
-    el.style.transition = "none";
-    el.style.transform = `translate(${dx}px, ${dy}px)`;
-
-    // Force reflow so the browser registers the initial position
-    el.getBoundingClientRect();
-
-    // Animate to final position
-    el.style.transition = "transform 0.2s ease-out";
-    el.style.transform = "translate(0, 0)";
-
-    const timer = setTimeout(() => {
-      el.style.transition = "";
-      el.style.transform = "";
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [lastHexMove]);
+  const capture = useCaptureBurst(
+    lastHexMove?.captured ? coordKey(lastHexMove.to) : null,
+    lastHexMove?.id ?? 0,
+    dropped ? 0 : SLIDE_MS,
+  );
 
   // Build sets for quick lookups
   const legalMoveKeys = useMemo(() => {
@@ -171,13 +160,99 @@ export function HexBoard() {
     [hexPromotionPending, makeHexMove],
   );
 
+  const tryMove = useCallback(
+    (from: HexCoord, to: HexCoord) => {
+      const moves = hexGame?.getLegalMoves(from) ?? [];
+      const options = moves.filter((m) => m.to.q === to.q && m.to.r === to.r);
+      if (options.length === 0) return false;
+      if (options.some((m) => m.promotion)) {
+        useGameStore.setState({ hexPromotionPending: { from, to } });
+        return true;
+      }
+      makeHexMove(from, to);
+      return true;
+    },
+    [hexGame, makeHexMove],
+  );
+
+  useEffect(() => {
+    if (!drag) return;
+    const onMove = (e: PointerEvent) => {
+      setDrag((d) =>
+        d
+          ? {
+              ...d,
+              x: e.clientX,
+              y: e.clientY,
+              moving:
+                d.moving ||
+                Math.hypot(e.clientX - d.startX, e.clientY - d.startY) >
+                  DRAG_THRESHOLD_PX,
+            }
+          : null,
+      );
+    };
+    const onUp = (e: PointerEvent) => {
+      setDrag(null);
+      const target = hexUnder(e.clientX, e.clientY);
+      if (!drag.moving) {
+        if (target && coordKey(target) !== coordKey(drag.from)) {
+          handleHexClick(target);
+        }
+        return;
+      }
+      if (!target) return;
+      const next = (useGameStore.getState().lastHexMove?.id ?? 0) + 1;
+      if (tryMove(drag.from, target)) setDroppedId(next);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [drag, handleHexClick, tryMove]);
+
+  const onCellPointerDown = (e: React.PointerEvent, coord: HexCoord) => {
+    if (!hexGame || hexPromotionPending) return;
+    const piece = hexGame.board.getCoord(coord);
+    const isLegalTarget = legalMoveKeys.has(coordKey(coord));
+    const ownPiece =
+      piece && piece.color === hexGame.turn && turn === Color.White;
+    if (!ownPiece || isLegalTarget) {
+      handleHexClick(coord);
+      return;
+    }
+    e.preventDefault();
+    if (!selectedHex || coordKey(selectedHex) !== coordKey(coord)) {
+      selectHex(coord);
+    }
+    setDrag({
+      from: coord,
+      piece,
+      startX: e.clientX,
+      startY: e.clientY,
+      x: e.clientX,
+      y: e.clientY,
+      moving: false,
+    });
+  };
+
   if (!hexGame) return null;
+  const draggingKey = drag?.moving ? coordKey(drag.from) : null;
+  const burstAt = capture ? capture.sq.split(",").map(Number) : null;
 
   return (
     <div className="hex-board-wrapper">
       <div
-        className="hex-board"
-        style={{ width: BOARD_WIDTH, height: BOARD_HEIGHT }}
+        className={`hex-board${capture ? " capture-jolt" : ""}`}
+        style={
+          {
+            width: BOARD_WIDTH,
+            height: BOARD_HEIGHT,
+            "--square-size": `${HEX_H}px`,
+          } as React.CSSProperties
+        }
       >
         {ALL_HEXES.map((coord) => {
           const { x, y } = hexToPixel(coord.q, coord.r);
@@ -220,23 +295,94 @@ export function HexBoard() {
                     Math.abs(coord.q + coord.r)) /
                   2,
               }}
-              onClick={() => handleHexClick(coord)}
+              onPointerDown={(e) => onCellPointerDown(e, coord)}
+              onPointerEnter={() => setHovered(key)}
+              onPointerLeave={() => setHovered((h) => (h === key ? null : h))}
             >
-              {piece && (
-                <img
-                  className="hex-piece"
-                  src={pieceImage(piece)}
-                  alt={piece.color + piece.type}
-                  draggable={false}
-                />
-              )}
               {isLegalTarget && !isCapture && !piece && (
                 <div className="hex-move-dot" />
               )}
             </div>
           );
         })}
+
+        {/* Pieces sit above the tiles, so a moving piece is never clipped to one hexagon */}
+        {ALL_HEXES.map((coord) => {
+          const piece = hexGame.board.getCoord(coord);
+          if (!piece) return null;
+          const key = coordKey(coord);
+          const { x, y } = hexToPixel(coord.q, coord.r);
+          const arriving =
+            lastHexMove !== null &&
+            coordKey(lastHexMove.to) === key &&
+            !dropped;
+          const from = arriving
+            ? hexToPixel(lastHexMove.from.q, lastHexMove.from.r)
+            : null;
+          return (
+            <img
+              key={arriving ? `${key}-${lastHexMove.id}` : key}
+              className={`hex-piece${hovered === key ? " hovered" : ""}${draggingKey === key ? " lifted" : ""}`}
+              src={pieceImage(piece)}
+              alt={piece.color + piece.type}
+              draggable={false}
+              style={
+                {
+                  left: OFFSET_X + x - PIECE_SIZE / 2,
+                  top: OFFSET_Y + y - PIECE_SIZE / 2,
+                  width: PIECE_SIZE,
+                  height: PIECE_SIZE,
+                  ...(from && {
+                    "--slide-from-x": `${from.x - x}px`,
+                    "--slide-from-y": `${from.y - y}px`,
+                    animation: `slide-in ${SLIDE_MS}ms ease-out`,
+                  }),
+                } as React.CSSProperties
+              }
+            />
+          );
+        })}
+
+        {capture && burstAt && (
+          <div
+            className="hex-burst-anchor"
+            style={{
+              left: OFFSET_X + hexToPixel(burstAt[0], burstAt[1]).x - HEX_W / 2,
+              top: OFFSET_Y + hexToPixel(burstAt[0], burstAt[1]).y - HEX_H / 2,
+              width: HEX_W,
+              height: HEX_H,
+            }}
+          >
+            <div className="capture-burst" key={capture.id} aria-hidden>
+              <span
+                className="capture-word"
+                style={
+                  {
+                    "--tilt": `${(capture.id % 2 ? 1 : -1) * 10}deg`,
+                  } as React.CSSProperties
+                }
+              >
+                {capture.word}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
+
+      {drag?.moving && (
+        <img
+          className="hex-piece-dragging"
+          src={pieceImage(drag.piece)}
+          alt=""
+          draggable={false}
+          style={{
+            left: drag.x - PIECE_SIZE * 0.65,
+            top: drag.y - PIECE_SIZE * 0.65,
+            width: PIECE_SIZE * 1.3,
+            height: PIECE_SIZE * 1.3,
+          }}
+        />
+      )}
 
       {/* Promotion dialog */}
       {hexPromotionPending && (

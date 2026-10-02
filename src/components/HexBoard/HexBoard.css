@@ -136,23 +136,44 @@
   pointer-events: none;
 }
 
-/* Piece image */
+/* Pieces live in their own layer above the tiles */
 .hex-piece {
-  width: 80%;
-  height: 80%;
+  position: absolute;
+  z-index: 4;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
-  z-index: 2;
   filter: drop-shadow(2px 3px 0 rgba(13, 2, 33, 0.5));
+  transition: scale 0.15s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
-/* Move animation */
-.hex-piece.hex-piece-anim {
-  transition:
-    transform 0.2s ease-out,
-    opacity 0.2s;
+.hex-piece.hovered {
+  scale: 1.1;
+}
+
+/* The piece being dragged leaves only a faint ghost on its tile */
+.hex-piece.lifted {
+  opacity: 0.25;
+  scale: 1;
+}
+
+.hex-piece-dragging {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  filter: drop-shadow(4px 10px 6px rgba(0, 0, 0, 0.45));
+  rotate: -6deg;
+}
+
+.hex-burst-anchor {
+  position: absolute;
+  z-index: 12;
+  pointer-events: none;
+}
+
+.hex-board.capture-jolt {
+  animation: capture-jolt 0.3s ease-out;
 }
 
 /* Promotion dialog overlay */

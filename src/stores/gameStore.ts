@@ -210,7 +210,13 @@ export interface GameStore {
   isHexMode: boolean;
   selectedHex: HexCoord | null;
   legalHexMoves: HexMove[];
-  lastHexMove: { from: HexCoord; to: HexCoord } | null;
+  lastHexMove: {
+    from: HexCoord;
+    to: HexCoord;
+    captured: boolean;
+    /** Counts up with every hex move, so each one is distinct */
+    id: number;
+  } | null;
   hexPromotionPending: { from: HexCoord; to: HexCoord } | null;
   hexTransition: "morph-out" | "morph-in" | null;
   /** Pieces flying from their old square to their new hex cell as the hex board forms */
@@ -463,7 +469,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       selectedHex: null,
       legalHexMoves: [],
-      lastHexMove: { from, to },
+      lastHexMove: {
+        from,
+        to,
+        captured: !!move.captured,
+        id: (get().lastHexMove?.id ?? 0) + 1,
+      },
       hexPromotionPending: null,
       turn: hexGame.turn,
       status,
