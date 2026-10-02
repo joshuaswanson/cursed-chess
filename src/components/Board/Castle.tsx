@@ -480,6 +480,13 @@ export function Castle({
         return `${col},${row}`;
       }),
   );
+  /** Squares where masonry still stands for a fallen section to break away from */
+  const standingAt = new Set(
+    [...walls, ...GATES].map((sq) => {
+      const { col, row } = at(sq);
+      return `${col},${row}`;
+    }),
+  );
   const towerFallen = new Set(
     rubble
       .filter((sq) => TOWERS.includes(sq))
@@ -672,13 +679,20 @@ export function Castle({
         const stubs = [
           { from: start, to: 30, edge: jag(12, 1), dir: 1 },
           { from: 70, to: end, edge: jag(88, -1), dir: -1 },
-        ].map((stub) => {
-          const base = stub.dir > 0 ? start : end;
-          return {
-            ...stub,
-            outline: `M${base} ${OUTER - 2} L${stub.edge} L${base} ${INNER + 2} Z`,
-          };
-        });
+        ]
+          .filter((stub) => {
+            const [dc, dr] = along(angle);
+            return standingAt.has(
+              `${col - dc * stub.dir},${row - dr * stub.dir}`,
+            );
+          })
+          .map((stub) => {
+            const base = stub.dir > 0 ? start : end;
+            return {
+              ...stub,
+              outline: `M${base} ${OUTER - 2} L${stub.edge} L${base} ${INNER + 2} Z`,
+            };
+          });
         const ruin = [
           [2.3, 3.7],
           [5.1, 5.9],
