@@ -23,7 +23,7 @@ export interface PortalTravel {
   info: PortalMoveInfo;
 }
 
-const PORTAL_ENTER_MS = 400;
+const PORTAL_ENTER_MS = 560;
 const PORTAL_EXIT_MS = 450;
 const PORTAL_LIFECYCLE_MS = 600;
 

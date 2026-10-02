@@ -41,6 +41,18 @@ export function PortalTravelPiece({
     style["--slide-from-x"] = `${offset.x}px`;
     style["--slide-from-y"] = `${offset.y}px`;
   }
+  if (phase.type === "shrink") {
+    // The piece stretches back along the way it came, so find where that was
+    const before = travel.phases[travel.phaseIndex - 1];
+    const cameFrom = before?.slideFrom ?? travel.info.from;
+    const back = offsetBetween(cameFrom, phase.sq, flipped, 1);
+    const angle =
+      back.x === 0 && back.y === 0
+        ? 90
+        : (Math.atan2(-back.y, -back.x) * 180) / Math.PI;
+    style["--pull"] = `${angle}deg`;
+    style.animationDuration = `${durationMs}ms`;
+  }
   if (phase.type === "approach") {
     style.animation = `slide-in ${durationMs}ms ease-in forwards`;
   } else if (phase.type === "fly") {
