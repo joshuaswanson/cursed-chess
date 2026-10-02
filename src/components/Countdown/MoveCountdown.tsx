@@ -3,6 +3,7 @@ import { useGameStore } from "../../stores/gameStore";
 import { Color } from "../../engine";
 import { useTheme } from "../../theme/useTheme";
 import { sfx } from "../../audio/sfx";
+import { Portal } from "../Board/Portal";
 import "./MoveCountdown.css";
 
 const COUNTDOWN_FROM = 5;
@@ -34,7 +35,11 @@ export function MoveCountdown() {
       aria-label={`${seconds} seconds left to move`}
     >
       <div className="countdown-stage" key={seconds}>
-        <span className="countdown-prop" aria-hidden />
+        <span className="countdown-prop" aria-hidden>
+          {theme.id === "portals" && (
+            <Portal color={seconds % 2 ? "orange" : "blue"} state="spawn" />
+          )}
+        </span>
         <span className="countdown-digit">{seconds}</span>
       </div>
     </div>

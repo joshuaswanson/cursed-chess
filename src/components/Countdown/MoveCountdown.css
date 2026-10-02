@@ -16,6 +16,8 @@
 
 .countdown-digit {
   position: relative;
+  /* Above whatever prop sits behind it, which may carry its own stacking */
+  z-index: 2;
   font-family: var(--font-display);
   font-size: calc(var(--square-size) * 2.6);
   line-height: 1;
@@ -51,26 +53,14 @@
 
 /* --- Portals: the digit spins out of a portal --- */
 
+/* The board's own portal tears open behind each second */
 [data-countdown="portals"] .countdown-prop {
-  width: calc(var(--square-size) * 3);
-  height: calc(var(--square-size) * 3);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle, #000 0 32%, transparent 33%),
-    repeating-conic-gradient(#ff8a1a 0deg 18deg, #2f9bff 18deg 36deg);
-  box-shadow: 0 0 40px #ff8a1a;
-  animation: count-spin 1s linear;
-  opacity: 0.85;
+  width: calc(var(--square-size) * 2.4);
+  height: calc(var(--square-size) * 2.4);
 }
 
 [data-countdown="portals"] .countdown-digit {
   animation: count-warp 0.45s ease-out;
-}
-
-@keyframes count-spin {
-  to {
-    rotate: 360deg;
-  }
 }
 
 @keyframes count-warp {
