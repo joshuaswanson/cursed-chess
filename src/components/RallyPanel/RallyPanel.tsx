@@ -48,7 +48,9 @@ function ElixirMeter({
 }) {
   const full = Math.floor(amount);
   return (
-    <div className={`elixir elixir-${side}`}>
+    <div
+      className={`elixir elixir-${side}${full >= MAX_ELIXIR ? " full" : ""}`}
+    >
       <span className="elixir-drop" aria-hidden>
         <span className="elixir-count">{full}</span>
       </span>
@@ -169,7 +171,7 @@ export function YourRallyBar() {
       aria-label="Your reinforcements"
     >
       <ElixirMeter amount={elixir} side="you" />
-      <div className="deploy-hand">
+      <div className={`deploy-hand${elixir >= MAX_ELIXIR ? " eager" : ""}`}>
         {DEPLOYABLE.map(({ type, label }) => {
           const img = pieceImage({ type, color: Color.White });
           const cost = PIECE_COST[type];

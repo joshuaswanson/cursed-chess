@@ -92,6 +92,40 @@
   }
 }
 
+/* A full bar throbs, urging you to spend */
+.elixir.full .elixir-bar {
+  animation: elixir-full 0.8s ease-in-out infinite;
+}
+
+.elixir.full .elixir-drop {
+  animation: elixir-drop-full 0.8s ease-in-out infinite;
+}
+
+@keyframes elixir-full {
+  50% {
+    filter: brightness(1.35);
+    box-shadow: 0 0 14px 3px #e15bff;
+  }
+}
+
+@keyframes elixir-drop-full {
+  50% {
+    scale: 1.18;
+    filter: brightness(1.25) drop-shadow(0 0 8px #e15bff);
+  }
+}
+
+.elixir-foe.full .elixir-bar {
+  animation-name: elixir-full-foe;
+}
+
+@keyframes elixir-full-foe {
+  50% {
+    filter: brightness(1.35);
+    box-shadow: 0 0 14px 3px #ff3b5c;
+  }
+}
+
 /* --- The foe's face-down hand --- */
 
 .foe-hand {
@@ -154,6 +188,45 @@
 @keyframes card-ready {
   to {
     translate: 0 -14px;
+  }
+}
+
+/* With a full bar, the cards fidget to be played */
+.deploy-hand.eager .deploy-card:not(.selected):not(.disabled) {
+  animation: card-wiggle var(--wiggle-speed, 0.55s) var(--wiggle-delay, 0s)
+    ease-in-out infinite;
+}
+
+.deploy-card:nth-child(2) {
+  --wiggle-delay: -0.15s;
+  --wiggle-speed: 0.62s;
+}
+
+.deploy-card:nth-child(3) {
+  --wiggle-delay: -0.3s;
+  --wiggle-speed: 0.49s;
+}
+
+.deploy-card:nth-child(4) {
+  --wiggle-delay: -0.1s;
+  --wiggle-speed: 0.58s;
+}
+
+.deploy-card:nth-child(5) {
+  --wiggle-delay: -0.4s;
+  --wiggle-speed: 0.67s;
+}
+
+@keyframes card-wiggle {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  25% {
+    rotate: -5deg;
+  }
+  75% {
+    rotate: 5deg;
   }
 }
 
