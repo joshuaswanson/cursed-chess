@@ -205,8 +205,8 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     accent2: "#d8c39a",
     ink: "#120c08",
     frame: "#4d453c",
-    light: "#a89478",
-    dark: "#7a6650",
+    light: "#7f8f52",
+    dark: "#62703c",
     text: "#fdf1dc",
   },
 };
