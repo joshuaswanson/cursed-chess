@@ -8,6 +8,7 @@ import { Portal } from "./Portal";
 import { Battlefield, WorldRiver } from "./Battlefield";
 import { BoardShatter } from "../HexWarp/HexWarp";
 import { MineBlast } from "./MineBlast";
+import { Crater } from "./Crater";
 import { BattleEffects, BattleUnit } from "./Battle";
 import {
   visualCol as colOnScreen,
@@ -202,6 +203,10 @@ export function Board() {
       const piece = game.board.get(sq);
       const squareMods = pluginManager.getSquareModifiers(sq);
       const isDead = squareMods.some((m) => m.className === "dead-square");
+      // A mine marks its square the moment it is stepped on; the crater waits for the blast
+      const hasCrater =
+        squareMods.some((m) => m.className === "mine-exploded") &&
+        (minesBlasting.has(sq) || !overlays.pendingExplosions.includes(sq));
       const isLegalTarget = legalMoveSquares.includes(sq);
       const isLastMove =
         !battle && lastMove && (sq === lastMove.from || sq === lastMove.to);
@@ -307,6 +312,7 @@ export function Board() {
           )}
 
           {doomed.has(sq) && <DoomedTile sq={sq} progress={dangerProgress} />}
+          {hasCrater && <Crater sq={sq} />}
 
           {piece && battle && !isDead && (
             <BattleUnit
