@@ -22,7 +22,7 @@ import { PortalArrows } from "./PortalArrows";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
 import { BoardFog } from "../Fog/Fog";
-import { CollapsingRing, DoomedTile, Fissure } from "./BattleRoyale";
+import { BrokenRim, CollapsingRing, DoomedTile, Fissure } from "./BattleRoyale";
 import { useRingCollapse } from "./useRingCollapse";
 import { offsetBetween } from "./boardGeometry";
 import { readOverlays } from "./readOverlays";
@@ -476,6 +476,7 @@ export function Board() {
     (overlays.gravityDirection ? " gravity-active" : "") +
     (gravityShift ? " gravity-shifting" : "") +
     (battleRoyale ? " battle-royale" : "") +
+    (battleRoyale && battleRoyale.shrinkRing > 0 ? " br-broken" : "") +
     (collapse ? " br-quake" : "") +
     (minesBlasting.size > 0 ? " mine-quake" : "") +
     (bursts.length > 0 ? " capture-jolt" : "") +
@@ -508,7 +509,7 @@ export function Board() {
   return (
     <>
       <div
-        className={`board-shell${overlays.gravityDirection ? " gravity-active" : ""}`}
+        className={`board-shell${overlays.gravityDirection ? " gravity-active" : ""}${battleRoyale && battleRoyale.shrinkRing > 0 ? " br-broken" : ""}`}
         style={shellStyle}
       >
         <div
@@ -625,13 +626,12 @@ export function Board() {
                 flipped={flipped}
               />
             )}
-          {battleRoyale && (
-            <Fissure
-              ring={Math.max(1, battleRoyale.shrinkRing)}
-              progress={dangerProgress}
-              collapsed={battleRoyale.shrinkRing > 0}
-            />
-          )}
+          {battleRoyale &&
+            (battleRoyale.shrinkRing > 0 ? (
+              <BrokenRim ring={battleRoyale.shrinkRing} />
+            ) : (
+              <Fissure ring={1} progress={dangerProgress} />
+            ))}
           {collapse && <CollapsingRing collapse={collapse} flipped={flipped} />}
           {travel && (
             <PortalTravelPiece
