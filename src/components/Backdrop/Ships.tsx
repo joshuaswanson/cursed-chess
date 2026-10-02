@@ -27,15 +27,11 @@ export function Ufo() {
           <stop offset="0.4" stopColor="#ffd23f" stopOpacity="0.8" />
           <stop offset="1" stopColor="#ffd23f" stopOpacity="0" />
         </radialGradient>
-        <filter id="ufo-soft" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="2.5" />
-        </filter>
       </defs>
       <path
         className="ufo-beam"
         d="M46 42 L74 42 L100 92 L20 92 Z"
         fill="url(#ufo-beam)"
-        filter="url(#ufo-soft)"
       />
       <ellipse cx="60" cy="42" rx="34" ry="8" fill="url(#ufo-belly)" />
       <ellipse cx="60" cy="36" rx="58" ry="12" fill="url(#ufo-hull)" />
@@ -96,15 +92,12 @@ export function Rocket() {
           <stop offset="0.7" stopColor="#ff7a1a" />
           <stop offset="1" stopColor="#ff3d00" stopOpacity="0" />
         </linearGradient>
-        <filter id="rocket-soft" x="-80%" y="-30%" width="260%" height="160%">
-          <feGaussianBlur stdDeviation="2.2" />
-        </filter>
       </defs>
       <path
         className="rocket-flame"
         d="M10 76 Q20 124 30 76 Z"
         fill="url(#rocket-fire)"
-        filter="url(#rocket-soft)"
+        opacity="0.6"
       />
       <path
         className="rocket-flame"
@@ -130,31 +123,50 @@ export function Rocket() {
 }
 
 /** A sleek fighter facing left, with a glass canopy, glowing thrusters, and lasers */
-export function Fighter() {
+const FIGHTER_COLORS = {
+  blue: {
+    hi: "#f4f7ff",
+    mid: "#a9b4d0",
+    low: "#353d5c",
+    wing: "#98a5c6",
+    stripe: "#ffc06a",
+  },
+  red: {
+    hi: "#ffeef0",
+    mid: "#e38a99",
+    low: "#5c1f2c",
+    wing: "#d07385",
+    stripe: "#7df2ff",
+  },
+};
+
+export function Fighter({ variant = "blue" }: { variant?: "blue" | "red" }) {
+  const c = FIGHTER_COLORS[variant];
+  const id = (name: string) => `fighter-${name}-${variant}`;
   return (
     <svg viewBox="0 0 140 50" className="ship-art">
       <defs>
-        <linearGradient id="fighter-hull" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f4f7ff" />
-          <stop offset="0.45" stopColor="#a9b4d0" />
-          <stop offset="1" stopColor="#353d5c" />
+        <linearGradient id={id("hull")} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={c.hi} />
+          <stop offset="0.45" stopColor={c.mid} />
+          <stop offset="1" stopColor={c.low} />
         </linearGradient>
-        <linearGradient id="fighter-wing" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#98a5c6" />
+        <linearGradient id={id("wing")} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={c.wing} />
           <stop offset="1" stopColor="#2a3150" />
         </linearGradient>
-        <linearGradient id="fighter-glass" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={id("glass")} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#e8fdff" />
           <stop offset="0.5" stopColor="#3ccfff" />
           <stop offset="1" stopColor="#0a3d6e" />
         </linearGradient>
-        <radialGradient id="fighter-thrust">
+        <radialGradient id={id("thrust")}>
           <stop offset="0" stopColor="#ffffff" />
           <stop offset="0.35" stopColor="#7df2ff" />
           <stop offset="1" stopColor="#18d4ff" stopOpacity="0" />
         </radialGradient>
-        <linearGradient id="fighter-stripe" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#ffc06a" />
+        <linearGradient id={id("stripe")} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={c.stripe} />
           <stop offset="1" stopColor="#d9530f" />
         </linearGradient>
       </defs>
@@ -166,14 +178,14 @@ export function Fighter() {
         cy="25"
         rx="20"
         ry="9"
-        fill="url(#fighter-thrust)"
+        fill={`url(#${id("thrust")})`}
       />
-      <path d="M60 14 L92 0 L102 1 L86 17 Z" fill="url(#fighter-wing)" />
+      <path d="M60 14 L92 0 L102 1 L86 17 Z" fill={`url(#${id("wing")})`} />
       <path
         d="M2 25 L50 11 L104 14 L115 20 L115 30 L104 36 L50 39 Z"
-        fill="url(#fighter-hull)"
+        fill={`url(#${id("hull")})`}
       />
-      <path d="M60 36 L92 50 L102 49 L86 33 Z" fill="url(#fighter-wing)" />
+      <path d="M60 36 L92 50 L102 49 L86 33 Z" fill={`url(#${id("wing")})`} />
       <path
         d="M8 25 L50 13 L104 16 L104 19 L50 17 Z"
         fill="#ffffff"
@@ -181,7 +193,7 @@ export function Fighter() {
       />
       <path
         d="M28 21 Q40 13 58 16 L58 25 L26 25 Z"
-        fill="url(#fighter-glass)"
+        fill={`url(#${id("glass")})`}
       />
       <path
         d="M34 19 Q42 15 52 16"
@@ -196,68 +208,8 @@ export function Fighter() {
         width="34"
         height="3.5"
         rx="1.5"
-        fill="url(#fighter-stripe)"
+        fill={`url(#${id("stripe")})`}
       />
-    </svg>
-  );
-}
-
-/** A huge battle cruiser that sweeps across the whole screen */
-export function Mothership() {
-  return (
-    <svg viewBox="0 0 600 140" className="ship-art">
-      <defs>
-        <linearGradient id="mother-hull" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#c3cce4" />
-          <stop offset="0.25" stopColor="#6a7598" />
-          <stop offset="0.6" stopColor="#2b3150" />
-          <stop offset="1" stopColor="#0b0d1e" />
-        </linearGradient>
-        <linearGradient id="mother-tower" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#d6dcef" />
-          <stop offset="1" stopColor="#424b70" />
-        </linearGradient>
-        <radialGradient id="mother-engine">
-          <stop offset="0" stopColor="#ffffff" />
-          <stop offset="0.3" stopColor="#8ff5ff" />
-          <stop offset="1" stopColor="#18d4ff" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id="mother-window">
-          <stop offset="0" stopColor="#fffbe6" />
-          <stop offset="0.5" stopColor="#ffd56b" stopOpacity="0.8" />
-          <stop offset="1" stopColor="#ffd56b" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <ellipse
-        className="mother-engine"
-        cx="586"
-        cy="70"
-        rx="44"
-        ry="40"
-        fill="url(#mother-engine)"
-      />
-      <path d="M200 24 L240 5 L330 5 L352 26 Z" fill="url(#mother-tower)" />
-      <path
-        d="M0 70 L80 34 L260 22 L420 26 L560 36 L572 70 L560 104 L420 114 L260 118 L80 106 Z"
-        fill="url(#mother-hull)"
-      />
-      <path
-        d="M20 66 L84 38 L260 27 L420 31 L556 40 L560 46 L420 37 L260 33 L86 44 Z"
-        fill="#ffffff"
-        opacity="0.18"
-      />
-      <path d="M90 82 L540 80 L540 86 L90 90 Z" fill="#000000" opacity="0.25" />
-      {Array.from({ length: 14 }, (_, i) => (
-        <circle
-          key={i}
-          cx={120 + i * 30}
-          cy={i % 2 ? 54 : 92}
-          r="7"
-          fill="url(#mother-window)"
-          className="mother-window"
-          style={{ animationDelay: `${(i % 5) * 0.3}s` }}
-        />
-      ))}
     </svg>
   );
 }

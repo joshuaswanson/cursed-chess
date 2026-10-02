@@ -143,15 +143,6 @@
   box-shadow:
     0 0 8vmin 2vmin rgba(177, 107, 255, 0.45),
     inset 4vmin 3vmin 6vmin rgba(255, 255, 255, 0.12);
-  animation: giant-spin 120s linear infinite;
-}
-
-@keyframes giant-spin {
-  to {
-    background-position:
-      40vmin 0,
-      0 0;
-  }
 }
 
 .planet-blue {
@@ -212,11 +203,12 @@
   animation: scene-in 1.2s ease-out both;
 }
 
+/* Each ship moves on its own layer, so flying never repaints the page */
 .ship {
   position: absolute;
   left: 0;
   top: 0;
-  filter: drop-shadow(0 1.2vmin 1.4vmin rgba(0, 0, 0, 0.5));
+  will-change: translate;
 }
 
 .ship-art {
@@ -367,36 +359,6 @@
 
 .ship-chaser {
   animation-delay: -1.55s;
-  filter: hue-rotate(150deg) saturate(1.6)
-    drop-shadow(0 1.2vmin 1.4vmin rgba(0, 0, 0, 0.5));
-}
-
-.ship-mothership {
-  width: 70vw;
-  height: 16.3vw;
-  animation: mothership-path 34s -20s linear infinite;
-}
-
-@keyframes mothership-path {
-  0% {
-    translate: 105vw -2vh;
-  }
-  32% {
-    translate: -75vw -10vh;
-  }
-  32.01%,
-  100% {
-    translate: -80vw -10vh;
-  }
-}
-
-.mother-engine {
-  animation: rocket-flame 0.1s steps(2) infinite alternate;
-  transform-origin: 560px 70px;
-}
-
-.mother-window {
-  animation: light-blink 1.6s steps(2) infinite;
 }
 
 .fighter-thrust {
