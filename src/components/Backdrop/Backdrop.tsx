@@ -2,6 +2,7 @@ import type { ThemeId } from "../../theme/themes";
 import { PRESETS } from "./particles";
 import { useParticleCanvas } from "./useParticleCanvas";
 import { BattleLand } from "./BattleLand";
+import { SiegeCamp } from "./SiegeCamp";
 import "./Backdrop.css";
 
 /** Hand-drawn scenery for each channel, layered under the particles */
@@ -121,6 +122,8 @@ function Scene({ theme }: { theme: ThemeId }) {
       );
     case "stratego":
       return <BattleLand />;
+    case "siege":
+      return <SiegeCamp />;
     default:
       return null;
   }

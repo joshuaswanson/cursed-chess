@@ -4,6 +4,7 @@ import type { PortalColor } from "../../plugins/portalChess";
 import type { BattleRoyaleOverlay } from "../../plugins/battleRoyale";
 import type { BattleView } from "../../plugins/clashRoyale";
 import type { FootballView } from "../../plugins/football";
+import type { SiegeView } from "../../plugins/siege";
 
 export interface PortalPair {
   a: SquareIndex;
@@ -19,6 +20,7 @@ export interface BoardOverlays {
   rallyBattle: BattleView | null;
   football: FootballView | null;
   hillSquares: SquareIndex[];
+  siege: SiegeView | null;
   battleRoyale: BattleRoyaleOverlay | null;
   gravityDirection: string | null;
   gravityAngle: number | null;
@@ -38,6 +40,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     rallyBattle: null,
     football: null,
     hillSquares: [],
+    siege: null,
     battleRoyale: null,
     gravityDirection: null,
     gravityAngle: null,
@@ -64,6 +67,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
         break;
       case "rally-resources":
         result.hasRally = true;
+        break;
+      case "siege":
+        result.siege = overlay.data as SiegeView;
         break;
       case "king-of-hill":
         result.hillSquares = overlay.squares;

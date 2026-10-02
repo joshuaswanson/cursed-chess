@@ -9,7 +9,8 @@ export type ThemeId =
   | "gravity"
   | "fifa"
   | "hex"
-  | "stratego";
+  | "stratego"
+  | "siege";
 
 /** Which animated scene sits behind the board */
 export type BackdropKind = ThemeId;
@@ -192,6 +193,21 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#d9cf96",
     dark: "#8f9150",
     text: "#f4ead0",
+  },
+  siege: {
+    id: "siege",
+    title: "Siege",
+    tagline:
+      "One side holds the castle, the other storms it. Batter the walls, or keep the king alive until time runs out.",
+    catchphrase: "Storm the castle!",
+    sky: ["#070812", "#1a1426", "#5a2412"],
+    accent: "#ff9a2e",
+    accent2: "#d8c39a",
+    ink: "#120c08",
+    frame: "#4d453c",
+    light: "#a89478",
+    dark: "#7a6650",
+    text: "#fdf1dc",
   },
 };
 

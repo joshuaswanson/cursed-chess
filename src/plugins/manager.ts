@@ -36,6 +36,14 @@ export class PluginManager {
     for (const p of this.plugins) p.onGameStart?.(this.ctx);
   }
 
+  invokeOnTimeUp(): Color | null {
+    for (const p of this.plugins) {
+      const winner = p.onTimeUp?.(this.ctx);
+      if (winner != null) return winner;
+    }
+    return null;
+  }
+
   invokeOnIntroEnd(): void {
     for (const p of this.plugins) p.onIntroEnd?.(this.ctx);
   }

@@ -739,6 +739,84 @@
   stroke-linecap: round;
 }
 
+/* --- Siege: the besieging army's camp by night --- */
+
+.siege-camp {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.fire-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fire-glow 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes fire-glow {
+  to {
+    opacity: 0.7;
+    scale: 0.9;
+  }
+}
+
+.fire-flame {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fire-flame 0.18s steps(2) infinite alternate;
+}
+
+@keyframes fire-flame {
+  to {
+    scale: 1.25 0.9;
+    opacity: 0.85;
+  }
+}
+
+.banner-cloth {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  animation: banner-wave 1.1s ease-in-out infinite alternate;
+}
+
+@keyframes banner-wave {
+  to {
+    scale: 0.8 1.1;
+  }
+}
+
+/* Seen from above, the arm whips over its pivot as the catapult fires */
+.catapult-arm.firing {
+  animation: catapult-fire 0.7s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes catapult-fire {
+  0% {
+    scale: 1;
+  }
+  25% {
+    scale: -1.15 1;
+  }
+  60% {
+    scale: -0.6 1;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+.catapult-arm.firing .catapult-stone {
+  animation: catapult-release 0.7s steps(1);
+}
+
+@keyframes catapult-release {
+  20%,
+  85% {
+    opacity: 0;
+  }
+}
+
 /* --- FIFA: a packed stadium under floodlights --- */
 
 .stand {

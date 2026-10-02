@@ -30,6 +30,8 @@ export interface ModePlugin {
   onGameStart?(ctx: PluginContext): void;
   /** Called once the mode's title cards have cleared and play is about to begin */
   onIntroEnd?(ctx: PluginContext): void;
+  /** Called when the mode's timer runs out. Returns a winner if the mode awards one. */
+  onTimeUp?(ctx: PluginContext): Color | null;
   onTurnStart?(ctx: PluginContext, color: Color): void;
   onBeforeMove?(ctx: PluginContext, move: Move): Move | null;
   onAfterMove?(ctx: PluginContext, move: Move): void;

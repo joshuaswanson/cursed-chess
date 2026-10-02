@@ -6,6 +6,8 @@ import type { ModeTheme, ThemeId } from "../../theme/themes";
 import { sfx } from "../../audio/sfx";
 import { Confetti } from "./Confetti";
 import { Portal } from "../Board/Portal";
+import { Color } from "../../engine";
+import type { SiegePlugin } from "../../plugins/siege";
 import "./Show.css";
 
 const CLOSE_MS = 450;
@@ -113,12 +115,44 @@ function Flair({ theme }: { theme: ThemeId }) {
       );
     case "stratego":
       return <span className="card-stamp-ring" />;
+    case "siege":
+      return (
+        <>
+          <svg
+            className="card-castle"
+            viewBox="0 0 400 120"
+            preserveAspectRatio="xMidYMax meet"
+          >
+            <path
+              d="M20 120 V60 H40 V48 H52 V60 H64 V48 H76 V60 H96 V30 H108 V18 H120 V30 H132 V18 H144 V30 H156 V60 H176 V48 H188 V60 H212 V48 H224 V60 H244 V30 H256 V18 H268 V30 H280 V18 H292 V30 H304 V60 H324 V48 H336 V60 H348 V48 H360 V60 H380 V120 Z M182 120 V92 A18 18 0 0 1 218 92 V120 Z"
+              fillRule="evenodd"
+            />
+            <path d="M126 18 V2 L144 8 L126 14" className="card-castle-flag" />
+            <path d="M274 18 V2 L292 8 L274 14" className="card-castle-flag" />
+          </svg>
+          <span className="card-boulder" />
+        </>
+      );
     default:
       return null;
   }
 }
 
+/** Siege's shout depends on which side you are on */
+function useCatchphrase(theme: ModeTheme): string {
+  const siege = useGameStore((s) =>
+    theme.id === "siege"
+      ? s.pluginManager.find<SiegePlugin>("siege")
+      : undefined,
+  );
+  if (!siege) return theme.catchphrase;
+  return siege.defender === Color.White
+    ? "Hold the castle!"
+    : "Storm the castle!";
+}
+
 function ModeCard({ theme, closing }: { theme: ModeTheme; closing: boolean }) {
+  const catchphrase = useCatchphrase(theme);
   return (
     <div
       className={`show-card mode-card${closing ? " closing" : ""}`}
@@ -134,8 +168,8 @@ function ModeCard({ theme, closing }: { theme: ModeTheme; closing: boolean }) {
             </h1>
           </div>
           <div className="card-beat card-beat-catch">
-            <p className="card-catch" aria-label={theme.catchphrase}>
-              <Letters text={theme.catchphrase} />
+            <p className="card-catch" aria-label={catchphrase}>
+              <Letters text={catchphrase} />
             </p>
           </div>
         </div>

@@ -663,6 +663,7 @@ export const PRESETS: Partial<Record<ThemeId, Preset>> = {
   fifa: flashes,
   hex: neon,
   stratego: smoke,
+  siege: embers,
 };
 
 /** Advance and draw one frame. Returns the particles still alive. */
