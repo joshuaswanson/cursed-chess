@@ -13,7 +13,11 @@ const INNER = 84;
 const TOWER_R = 62;
 const TOWER_RIM = 13;
 const ROOF_R = 36;
-const TURRET_R = 30;
+/** The stretches of wall on either side of a gate's drawbridge */
+const GATE_PIERS = [
+  [0, 18],
+  [82, 100],
+] as const;
 /** The wall's shadow falls this way on screen, away from the light */
 const SHADOW = { x: 6, y: 10 };
 
@@ -412,31 +416,6 @@ function TowerBody({ missing, flag }: { missing: number; flag: string }) {
   );
 }
 
-/** A small round turret flanking a gate */
-function Turret({ cx }: { cx: number }) {
-  const rimInner = TURRET_R - 9;
-  return (
-    <g transform={`translate(${cx - 50} 0)`}>
-      <circle cx="50" cy="50" r={TURRET_R} fill="url(#castle-masonry)" />
-      <circle cx="50" cy="50" r={rimInner} fill="url(#castle-walk)" />
-      <circle cx="50" cy="50" r={rimInner - 1.5} className="tower-rim-shade" />
-      {Array.from({ length: 8 }, (_, i) => (
-        <path
-          key={i}
-          d={sector(
-            rimInner,
-            TURRET_R,
-            (i * Math.PI) / 4 + 0.08,
-            ((i + 0.58) * Math.PI) / 4,
-          )}
-          className="merlon"
-        />
-      ))}
-      <circle cx="50" cy="50" r={TURRET_R} className="wall-face-ring" />
-    </g>
-  );
-}
-
 /** Positions a piece of the castle on its square, turned to face out, rising with the others */
 function Placed({
   col,
@@ -647,27 +626,29 @@ export function Castle({
             </Placed>
           );
         })}
-        {gates.map(({ sq, col, row }) => (
-          <Placed key={sq} col={col} row={row} angle={0} delay={riseDelay(sq)}>
-            {(row === 1 || row === 6
-              ? [
-                  [0, 50],
-                  [100, 50],
-                ]
-              : [
-                  [50, 0],
-                  [50, 100],
-                ]
-            ).map(([x, y]) => (
-              <circle
-                key={`${x}${y}`}
-                cx={x + SHADOW.x}
-                cy={y + SHADOW.y}
-                r={TURRET_R}
-              />
-            ))}
-          </Placed>
-        ))}
+        {gates.map(({ sq, col, row }) => {
+          const angle = facing(col, row);
+          const off = toLocal(SHADOW, angle);
+          return (
+            <Placed
+              key={sq}
+              col={col}
+              row={row}
+              angle={angle}
+              delay={riseDelay(sq)}
+            >
+              {GATE_PIERS.map(([from, to]) => (
+                <rect
+                  key={from}
+                  x={from + off.x}
+                  y={OUTER + off.y}
+                  width={to - from}
+                  height={INNER - OUTER}
+                />
+              ))}
+            </Placed>
+          );
+        })}
       </g>
 
       {rubble.map((sq) => {
@@ -873,8 +854,19 @@ export function Castle({
               className="portcullis-bar"
             />
           ))}
-          <Turret cx={0} />
-          <Turret cx={100} />
+          {GATE_PIERS.map(([from, to]) => (
+            <SegmentBody key={from} start={from} end={to} />
+          ))}
+          {[GATE_PIERS[0][1], GATE_PIERS[1][0]].map((x) => (
+            <line
+              key={x}
+              x1={x}
+              x2={x}
+              y1={OUTER}
+              y2={INNER}
+              className="wall-face"
+            />
+          ))}
         </Placed>
       ))}
 
