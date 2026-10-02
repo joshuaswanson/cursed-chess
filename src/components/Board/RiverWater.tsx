@@ -11,9 +11,11 @@ void main() {
 `;
 
 // Water flowing left to right. Noise is sampled in screen pixels, so every
-// stretch of the river shows one continuous current.
+// stretch of the river shows one continuous current. Apple GPUs run mediump as
+// 16-bit floats, which overflow on pixel-sized values, so this needs highp and
+// a hash that keeps its numbers small.
 const FRAGMENT = `
-precision mediump float;
+precision highp float;
 uniform float uTime;
 uniform vec2 uSize;
 uniform vec2 uOffset;
@@ -21,7 +23,9 @@ uniform float uScale;
 uniform float uPad;
 
 float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
 float noise(vec2 p) {
@@ -121,8 +125,11 @@ export function RiverWater({
     if (!canvas || !gl) return;
 
     const program = gl.createProgram()!;
-    gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERTEX));
-    gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, FRAGMENT));
+    const shaders = [
+      compile(gl, gl.VERTEX_SHADER, VERTEX),
+      compile(gl, gl.FRAGMENT_SHADER, FRAGMENT),
+    ];
+    for (const shader of shaders) gl.attachShader(program, shader);
     gl.linkProgram(program);
     gl.useProgram(program);
 
@@ -166,7 +173,10 @@ export function RiverWater({
     frame = requestAnimationFrame(draw);
     return () => {
       cancelAnimationFrame(frame);
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      // The context itself stays: a remount gets the same one back from the canvas
+      gl.deleteBuffer(buffer);
+      gl.deleteProgram(program);
+      for (const shader of shaders) gl.deleteShader(shader);
     };
   }, [pad]);
 
