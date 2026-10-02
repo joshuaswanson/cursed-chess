@@ -88,6 +88,7 @@ export function Board() {
     kick,
     reinforcements,
     arrivalStyle,
+    introDone,
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -591,7 +592,10 @@ export function Board() {
               squareSize={squareSize}
             />
           )}
-          <BoardFog active={overlays.hasFog} enemyOnTop={!flipped} />
+          <BoardFog
+            active={overlays.hasFog && introDone}
+            enemyOnTop={!flipped}
+          />
           {drag?.isDragging && (
             <DraggedPiece
               drag={drag}

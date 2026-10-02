@@ -30,6 +30,7 @@ function App() {
   const curseStage = useGameStore((s) => s.curseStage);
   const isHexMode = useGameStore((s) => s.isHexMode);
   const hexTransition = useGameStore((s) => s.hexTransition);
+  const introDone = useGameStore((s) => s.introDone);
 
   useEffect(() => {
     document.title = cursed ? "CURSED CHESS" : "Totally Normal Chess";
@@ -72,7 +73,7 @@ function App() {
         {cursed ? <Hud /> : <BoringSidebar />}
       </main>
       {!cursed && <BoringFooter />}
-      <PageFog active={theme.id === "fog"} />
+      <PageFog active={theme.id === "fog" && introDone} />
       {cursed && theme.id === "portals" && <SpaceTraffic />}
       <PromotionDialog />
       <ShowCards />

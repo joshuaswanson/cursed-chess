@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { EdgeFog, FogBank } from "./fogField";
+import { FogBank, SideFog } from "./fogField";
+import type { Rect } from "./fogField";
 import "./Fog.css";
 
 /** Fog is drawn at this fraction of screen resolution and scaled up, which softens it */
@@ -73,11 +74,26 @@ function useFogCanvas(
 
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
-/** Fog banks creeping in from every edge of the window */
+/** Where the board sits on screen, so the side banks know how far to reach */
+function boardRect(w: number, h: number): Rect {
+  const board = document.querySelector(".board")?.getBoundingClientRect();
+  if (!board) return { x: w * 0.25, y: 0, w: w * 0.5, h };
+  return { x: board.left, y: board.top, w: board.width, h: board.height };
+}
+
+/** Fog banks rolling in from the sides over the board, and a ribbon along the bottom */
 export function PageFog({ active }: { active: boolean }) {
-  const fog = useRef(new EdgeFog());
+  const fog = useRef(new SideFog());
   const { canvasRef, visible } = useFogCanvas(active, (ctx, dt, w, h, amount) =>
-    fog.current.step(ctx, dt, w, h, RESOLUTION, easeOut(amount)),
+    fog.current.step(
+      ctx,
+      dt,
+      w,
+      h,
+      boardRect(w, h),
+      RESOLUTION,
+      easeOut(amount),
+    ),
   );
   if (!visible) return null;
   return <canvas ref={canvasRef} className="page-fog" aria-hidden />;

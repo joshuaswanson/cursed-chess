@@ -48,35 +48,66 @@ function drawPuff(
   ctx.fillRect(x - r, y - r, r * 2, r * 2);
 }
 
-/** Thin fog banks that creep in from every edge of an area and dissolve toward its middle */
-export class EdgeFog {
-  private puffs: Puff[] = [];
+type Side = "left" | "right" | "bottom";
 
-  private readonly count = 80;
+interface DriftPuff extends Puff {
+  side: Side;
+  /** Phase of the slow back-and-forth sway */
+  sway: number;
+}
 
-  private spawn(w: number, h: number, scattered: boolean): Puff {
-    const edge = Math.floor(Math.random() * 4);
-    const depth = scattered ? rand(-80, 150) : rand(-160, -40);
-    const along = Math.random();
-    const speed = rand(4, 14);
-    const drift = rand(-8, 8);
+/**
+ * Heavy fog banks that slide in from the left and right of the window and roll
+ * over the edges of `target`, with a low ribbon of fog along the bottom.
+ */
+export class SideFog {
+  private puffs: DriftPuff[] = [];
+  private time = 0;
+  private readonly sideCount = 90;
+  private readonly bottomCount = 40;
+
+  private spawn(
+    side: Side,
+    w: number,
+    h: number,
+    target: Rect,
+    scattered: boolean,
+  ): DriftPuff {
     const base = {
-      r: rand(110, 260),
-      alpha: rand(0.06, 0.15),
-      age: scattered ? rand(0, 10) : 0,
+      age: scattered ? rand(0, 12) : 0,
       life: rand(14, 26),
       tint: Math.random(),
+      sway: rand(0, Math.PI * 2),
     };
-    switch (edge) {
-      case 0:
-        return { ...base, x: along * w, y: depth, vx: drift, vy: speed };
-      case 1:
-        return { ...base, x: w - depth, y: along * h, vx: -speed, vy: drift };
-      case 2:
-        return { ...base, x: along * w, y: h - depth, vx: drift, vy: -speed };
-      default:
-        return { ...base, x: depth, y: along * h, vx: speed, vy: drift };
+    if (side === "bottom") {
+      return {
+        ...base,
+        side,
+        x: rand(-100, w + 100),
+        y: h - Math.pow(Math.random(), 1.4) * h * 0.18 + 30,
+        vx: rand(-14, 14),
+        vy: rand(-2, 1),
+        r: rand(100, 210),
+        alpha: rand(0.2, 0.34),
+      };
     }
+    // Each bank reaches nearly halfway across the board from its side
+    const reach =
+      side === "left"
+        ? target.x + target.w * 0.45
+        : w - (target.x + target.w * 0.55);
+    const depth = Math.pow(Math.random(), 1.1) * reach;
+    const edgeWeight = 1 - depth / Math.max(1, reach);
+    return {
+      ...base,
+      side,
+      x: side === "left" ? depth - 60 : w - depth + 60,
+      y: rand(-80, h + 80),
+      vx: (side === "left" ? 1 : -1) * rand(2, 9),
+      vy: rand(-6, 6),
+      r: rand(130, 300),
+      alpha: 0.14 + 0.26 * edgeWeight + rand(0, 0.08),
+    };
   }
 
   step(
@@ -84,22 +115,55 @@ export class EdgeFog {
     dt: number,
     w: number,
     h: number,
+    target: Rect,
     scale: number,
-    strength: number,
+    amount: number,
   ) {
+    this.time += dt;
     if (this.puffs.length === 0) {
-      for (let i = 0; i < this.count; i++)
-        this.puffs.push(this.spawn(w, h, true));
+      for (let i = 0; i < this.sideCount; i++) {
+        this.puffs.push(
+          this.spawn(i % 2 ? "left" : "right", w, h, target, true),
+        );
+      }
+      for (let i = 0; i < this.bottomCount; i++) {
+        this.puffs.push(this.spawn("bottom", w, h, target, true));
+      }
     }
     this.puffs = this.puffs.filter((p) => {
       p.age += dt;
-      p.x += p.vx * dt;
+      p.x += (p.vx + Math.sin(this.time * 0.25 + p.sway) * 6) * dt;
       p.y += p.vy * dt;
       return p.age < p.life;
     });
-    while (this.puffs.length < this.count)
-      this.puffs.push(this.spawn(w, h, false));
-    for (const p of this.puffs) drawPuff(ctx, p, scale, strength);
+    const count = (side: Side) =>
+      this.puffs.filter((p) => p.side === side).length;
+    for (const side of ["left", "right"] as const) {
+      for (let n = count(side); n < this.sideCount / 2; n++) {
+        this.puffs.push(this.spawn(side, w, h, target, false));
+      }
+    }
+    for (let n = count("bottom"); n < this.bottomCount; n++) {
+      this.puffs.push(this.spawn("bottom", w, h, target, false));
+    }
+
+    // The banks slide in from off screen as the fog arrives
+    const away = 1 - amount;
+    for (const p of this.puffs) {
+      const dx =
+        p.side === "left"
+          ? -away * w * 0.6
+          : p.side === "right"
+            ? away * w * 0.6
+            : 0;
+      const dy = p.side === "bottom" ? away * h * 0.3 : 0;
+      drawPuff(
+        ctx,
+        { ...p, x: p.x + dx, y: p.y + dy },
+        scale,
+        Math.min(1, amount * 1.5),
+      );
+    }
   }
 }
 

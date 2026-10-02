@@ -94,8 +94,8 @@ export const GAME_MODES: GameMode[] = [
     name: "FOG OF WAR",
     theme: "fog",
     create: () => [new FogOfWarPlugin()],
-    // The fog takes 6s to roll in after the title banner
-    introHoldMs: MODE_ANNOUNCE_MS + 6000,
+    // The fog drifts in for 5s once the title cards clear
+    introHoldMs: MODE_CARD_MS + 5200,
   },
   {
     name: "BATTLE ROYALE",
