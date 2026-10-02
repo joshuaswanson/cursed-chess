@@ -127,9 +127,18 @@ export function Pitch() {
   );
 }
 
-/** One goal: posts, crossbar, and a net that bulges when the ball hits it */
+/** The net's outline and back bar, pushed out at `x` by `stretch` */
+const netOutline = (x: number, stretch: number) =>
+  `M0 56 L16 6 Q${x} ${6 - stretch} 384 6 L400 56 Z`;
+const netBackBar = (x: number, stretch: number) =>
+  `M16 6 Q${x} ${6 - stretch} 384 6`;
+/** How far the net balloons and springs back as the ball hits it */
+const NET_STRETCH = [0, 70, 34, 48, 44];
+
+/** One goal: posts, crossbar, and a net that stretches around the ball when it goes in */
 export function Goal({
   atTop,
+  flipped,
   defender,
   attacked,
   shotChance,
@@ -138,6 +147,7 @@ export function Goal({
   onShoot,
 }: {
   atTop: boolean;
+  flipped: boolean;
   defender: Color;
   /** The goal you shoot at */
   attacked: boolean;
@@ -147,11 +157,32 @@ export function Goal({
   onShoot: () => void;
 }) {
   const [nudge, setNudge] = useState(0);
+  const netRef = useRef<SVGAnimateElement>(null);
+  const barRef = useRef<SVGAnimateElement>(null);
   const shootable = shotChance !== null;
   const onClick = () => {
     if (shootable) onShoot();
     else setNudge((n) => n + 1);
   };
+
+  // Where across the mouth the ball goes in, in the goal's 0 to 400 units
+  const entry = scoredKick?.waypoints[scoredKick.waypoints.length - 1];
+  const entryCol = entry ? (flipped ? 7 - entry.file : entry.file) : 3.5;
+  const ballX = Math.min(380, Math.max(20, ((entryCol + 0.5 - 2) / 4) * 400));
+  const arrival = scoredKick ? flightMs(scoredKick) : 0;
+
+  useEffect(() => {
+    if (!scoredKick) return;
+    const hit = setTimeout(() => {
+      netRef.current?.beginElement();
+      barRef.current?.beginElement();
+    }, arrival + 120);
+    return () => clearTimeout(hit);
+  }, [scoredKick, arrival]);
+
+  const flip = atTop ? undefined : "translate(0 62) scale(1 -1)";
+  const stretchValues = (shape: (x: number, s: number) => string) =>
+    NET_STRETCH.map((st) => shape(ballX, st)).join(";");
   return (
     <div
       className={`goal ${atTop ? "goal-top" : "goal-bottom"}${attacked ? " attacked" : ""}${shootable ? " shootable" : ""}`}
@@ -166,6 +197,26 @@ export function Goal({
             : undefined
       }
     >
+      <svg viewBox="0 0 400 62" preserveAspectRatio="none" aria-hidden>
+        <g transform={flip}>
+          <polygon points="-6,58 406,58 384,8 16,8" className="goal-turf" />
+        </g>
+      </svg>
+      {scoredKick && (
+        <span
+          key={scoredKick.id}
+          className="goal-ball"
+          style={
+            {
+              left: `${(ballX / 400) * 100}%`,
+              "--dir": atTop ? 1 : -1,
+              animationDelay: `${arrival}ms`,
+            } as React.CSSProperties
+          }
+        >
+          <SoccerBall className="ball-svg" />
+        </span>
+      )}
       <svg viewBox="0 0 400 62" preserveAspectRatio="none" aria-hidden>
         <defs>
           <pattern
@@ -182,22 +233,30 @@ export function Goal({
             />
           </pattern>
         </defs>
-        <g transform={atTop ? undefined : "translate(0 62) scale(1 -1)"}>
-          <polygon points="-6,58 406,58 384,8 16,8" className="goal-turf" />
-          <g
-            className={`goal-net${scoredKick ? " bulge" : ""}`}
-            key={scoredKick?.id ?? 0}
-            style={
-              scoredKick
-                ? { animationDelay: `${flightMs(scoredKick) - 40}ms` }
-                : undefined
-            }
-          >
-            <polygon
-              points="0,56 400,56 384,6 16,6"
-              fill={`url(#net-${defender})`}
-            />
-            <path d="M16 6 H384" className="goal-backbar" />
+        <g transform={flip}>
+          <g key={scoredKick?.id ?? 0}>
+            <path d={netOutline(ballX, 0)} fill={`url(#net-${defender})`}>
+              <animate
+                ref={netRef}
+                attributeName="d"
+                values={stretchValues(netOutline)}
+                keyTimes="0;0.3;0.6;0.8;1"
+                dur="0.9s"
+                begin="indefinite"
+                fill="freeze"
+              />
+            </path>
+            <path d={netBackBar(ballX, 0)} className="goal-backbar">
+              <animate
+                ref={barRef}
+                attributeName="d"
+                values={stretchValues(netBackBar)}
+                keyTimes="0;0.3;0.6;0.8;1"
+                dur="0.9s"
+                begin="indefinite"
+                fill="freeze"
+              />
+            </path>
             <path d="M0 56 L16 6 M400 56 L384 6" className="goal-sidebar" />
           </g>
           <path d="M0 56 H400" className="goal-crossbar" />
@@ -286,13 +345,12 @@ function BallFlight({
   }, [frames, duration]);
 
   const callout = CALLOUT[kick.outcome];
-  const inNet = kick.outcome === "goal";
   return (
     <>
       <div
         ref={groundRef}
         className="ball-flight"
-        hidden={landed && !inNet}
+        hidden={landed}
         style={{ left: pct(start.x), top: pct(start.y) }}
       >
         <span className="ball-shadow" />
@@ -440,7 +498,7 @@ export function FootballLayer({
       )}
       {recent && (
         <BallFlight
-          key={recent.id}
+          key={`flight-${recent.id}`}
           kick={recent}
           landed={landed}
           flipped={flipped}
@@ -448,7 +506,7 @@ export function FootballLayer({
         />
       )}
       {recent?.outcome === "goal" && (
-        <GoalCelebration key={recent.id} kick={recent} />
+        <GoalCelebration key={`goal-${recent.id}`} kick={recent} />
       )}
     </div>
   );

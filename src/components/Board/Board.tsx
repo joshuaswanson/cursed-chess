@@ -555,6 +555,7 @@ export function Board() {
               <Goal
                 key={defender}
                 atTop={(defender === Color.Black) !== flipped}
+                flipped={flipped}
                 defender={defender}
                 attacked={defender === Color.Black}
                 shotChance={defender === Color.Black ? shotChance : null}

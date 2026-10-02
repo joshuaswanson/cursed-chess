@@ -45,7 +45,10 @@
   top: 100%;
 }
 
+/* The turf below and the net above, with room between them for a ball that goes in */
 .goal svg {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -76,30 +79,41 @@
   stroke-width: 2;
 }
 
-.goal-net {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
+/* The ball crosses the line, buries itself in the net, and comes to rest */
+.goal-ball {
+  position: absolute;
+  top: calc(50% + var(--dir) * 40%);
+  width: 10%;
+  aspect-ratio: 1;
+  opacity: 0;
+  animation: goal-ball 0.9s both;
 }
 
-.goal-net.bulge {
-  animation: net-bulge 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) both;
-}
-
-@keyframes net-bulge {
+@keyframes goal-ball {
   0% {
+    opacity: 0;
+    translate: -50% -50%;
+    rotate: 0deg;
     scale: 1;
   }
-  18% {
-    scale: 1.05 1.45;
+  1% {
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
   }
   40% {
-    scale: 0.98 0.86;
+    translate: -50% calc(-50% - var(--dir) * 150%);
+    rotate: 280deg;
+    scale: 0.85;
   }
-  65% {
-    scale: 1.02 1.12;
+  70% {
+    translate: -50% calc(-50% - var(--dir) * 105%);
+    rotate: 320deg;
   }
   100% {
-    scale: 1;
+    opacity: 1;
+    translate: -50% calc(-50% - var(--dir) * 120%);
+    rotate: 330deg;
+    scale: 0.88;
   }
 }
 
@@ -240,10 +254,6 @@
 
 .ball-rest.carried .ball-svg {
   animation: dribble 0.8s ease-in-out infinite;
-}
-
-.ball-rest.loose .ball-svg {
-  animation: ball-idle 5s linear infinite;
 }
 
 @keyframes dribble {

@@ -82,7 +82,8 @@ const reach = (a: SquareIndex, b: SquareIndex) =>
   Math.max(Math.abs(fileOf(a) - fileOf(b)), Math.abs(rankOf(a) - rankOf(b)));
 /** Which way a color's shots travel up the ranks */
 const attackDirection = (color: Color) => (color === Color.White ? 1 : -1);
-const goalRank = (color: Color) => (color === Color.White ? 8.2 : -1.2);
+/** Just over the goal line, where the goal takes over the ball's flight */
+const goalRank = (color: Color) => (color === Color.White ? 7.6 : -0.6);
 
 function shotAccuracy(distance: number): number {
   return Math.min(1, Math.max(0.6, 1 - (distance - 3) * 0.06));
