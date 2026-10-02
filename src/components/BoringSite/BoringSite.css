@@ -1,0 +1,173 @@
+/* A deliberately unremarkable chess site, until the curse arrives */
+
+.app.is-boring {
+  background: #f2f2f2;
+  color: #312e2b;
+  font-family: Arial, Helvetica, sans-serif;
+  grid-template-rows: auto 1fr auto;
+}
+
+.boring-header {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 10px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #dddddd;
+}
+
+.boring-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #312e2b;
+}
+
+.boring-mark {
+  width: 22px;
+  height: 22px;
+  fill: #769656;
+}
+
+.boring-nav {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: #6b6967;
+}
+
+.boring-nav .current {
+  color: #312e2b;
+  font-weight: bold;
+}
+
+.boring-account {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.boring-btn {
+  padding: 7px 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  font-weight: bold;
+  color: #ffffff;
+  background: #81b64c;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.boring-btn:hover {
+  background: #8fc25a;
+}
+
+.boring-btn-plain {
+  color: #312e2b;
+  background: #e8e8e8;
+}
+
+.boring-btn-plain:hover {
+  background: #dddddd;
+}
+
+.app.is-boring .stage {
+  padding-top: 24px;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.boring-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  width: 300px;
+}
+
+.boring-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.boring-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 3px;
+  background: #c8c8c8;
+}
+
+.boring-player-name {
+  font-weight: bold;
+}
+
+.boring-rating {
+  color: #8b8987;
+}
+
+.boring-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  background: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 4px;
+}
+
+.boring-panel h2 {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: bold;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.boring-moves {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  font-size: 13px;
+}
+
+.boring-moves li {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr;
+  padding: 4px 12px;
+}
+
+.boring-moves li:nth-child(even) {
+  background: #f7f7f7;
+}
+
+.boring-move-no {
+  color: #8b8987;
+}
+
+.boring-empty {
+  color: #8b8987;
+}
+
+.boring-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid #eeeeee;
+}
+
+.boring-footer {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  padding: 14px;
+  font-size: 12px;
+  color: #8b8987;
+}
+
+.boring-moves li.boring-empty {
+  display: block;
+}

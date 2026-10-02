@@ -1,0 +1,615 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.backdrop-sky {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 80% at 50% 110%, var(--sky-3) 0%, transparent 60%),
+    linear-gradient(
+      180deg,
+      var(--sky-1) 0%,
+      var(--sky-2) 65%,
+      var(--sky-3) 130%
+    );
+}
+
+.backdrop-scene {
+  position: absolute;
+  inset: 0;
+  animation: scene-in 1.2s ease-out both;
+}
+
+@keyframes scene-in {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+.backdrop-particles {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Print-like halftone dots tie every channel into one show */
+.backdrop-halftone {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.09) 1.2px,
+    transparent 1.6px
+  );
+  background-size: 9px 9px;
+  mask-image: linear-gradient(180deg, transparent 0%, #000 70%);
+  mix-blend-mode: overlay;
+}
+
+.backdrop-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 75% 70% at 50% 45%,
+    transparent 55%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
+}
+
+/* --- Portals: deep space --- */
+
+.nebula {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.55;
+  animation: nebula-drift 26s ease-in-out infinite alternate;
+}
+
+.nebula-a {
+  width: 60vw;
+  height: 50vh;
+  left: -10vw;
+  top: 10vh;
+  background: radial-gradient(circle, #ff4fd8 0%, #7a2bff 45%, transparent 70%);
+}
+
+.nebula-b {
+  width: 55vw;
+  height: 55vh;
+  right: -12vw;
+  bottom: -5vh;
+  background: radial-gradient(circle, #21e6ff 0%, #2443ff 40%, transparent 70%);
+  animation-delay: -9s;
+}
+
+@keyframes nebula-drift {
+  to {
+    transform: translate(4vw, -3vh) scale(1.15) rotate(12deg);
+  }
+}
+
+.planet {
+  position: absolute;
+  right: 6vw;
+  top: 12vh;
+  width: 13vmin;
+  height: 13vmin;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #ffd9a0 0%,
+    #ff7a59 45%,
+    #6b1f6b 100%
+  );
+  box-shadow:
+    inset -2vmin -1.5vmin 3vmin rgba(0, 0, 0, 0.55),
+    0 0 6vmin rgba(255, 122, 89, 0.35);
+  animation: float 9s ease-in-out infinite;
+}
+
+.planet-ring {
+  position: absolute;
+  inset: 38% -55%;
+  border-radius: 50%;
+  border: 0.9vmin solid rgba(255, 220, 180, 0.65);
+  border-top-color: transparent;
+  rotate: -18deg;
+}
+
+@keyframes float {
+  50% {
+    translate: 0 -1.6vh;
+  }
+}
+
+/* --- Fog of war: a moonlit moor --- */
+
+.moon {
+  position: absolute;
+  left: 9vw;
+  top: 9vh;
+  width: 12vmin;
+  height: 12vmin;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 40% 35%,
+    #fbfff4 0%,
+    #d9e6d6 60%,
+    #a9bdb4 100%
+  );
+  box-shadow:
+    0 0 6vmin rgba(220, 245, 230, 0.5),
+    0 0 18vmin rgba(220, 245, 230, 0.25);
+}
+
+.ridge {
+  position: absolute;
+  left: 0;
+  width: 100%;
+}
+
+.ridge-far {
+  bottom: 12vh;
+  height: 22vh;
+  fill: #1d2c33;
+  opacity: 0.8;
+}
+
+.ridge-near {
+  bottom: 0;
+  height: 20vh;
+  fill: #0d171d;
+}
+
+/* --- Battle royale: volcanic dusk --- */
+
+.heat-glow {
+  position: absolute;
+  inset: 40% -10% -20%;
+  background: radial-gradient(
+    ellipse at 50% 100%,
+    #ff9a1f 0%,
+    #d9300f 35%,
+    transparent 70%
+  );
+  filter: blur(30px);
+  animation: heat 3s ease-in-out infinite alternate;
+}
+
+@keyframes heat {
+  to {
+    opacity: 0.65;
+    transform: scaleY(1.08);
+  }
+}
+
+.volcano {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 34vh;
+}
+
+.volcano path:first-child {
+  fill: #160402;
+}
+
+.lava-vein {
+  fill: none;
+  stroke: #ff6a10;
+  stroke-width: 5;
+  filter: drop-shadow(0 0 6px #ff3b00);
+  animation: lava-pulse 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes lava-pulse {
+  to {
+    stroke: #ffc04a;
+  }
+}
+
+/* --- Clash royale: the arena --- */
+
+.team-half {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  opacity: 0.55;
+}
+
+.team-blue {
+  left: 0;
+  background: linear-gradient(90deg, #0b3fd1 0%, transparent 100%);
+}
+
+.team-red {
+  right: 0;
+  background: linear-gradient(270deg, #e2304a 0%, transparent 100%);
+}
+
+.spotlight {
+  position: absolute;
+  top: -10vh;
+  width: 40vw;
+  height: 130vh;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 250, 220, 0.4) 0%,
+    rgba(255, 250, 220, 0) 85%
+  );
+  clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0;
+  mix-blend-mode: screen;
+}
+
+.spotlight-left {
+  left: 0;
+  animation: sweep-left 7s ease-in-out infinite alternate;
+}
+
+.spotlight-right {
+  right: 0;
+  animation: sweep-right 8s ease-in-out infinite alternate;
+}
+
+@keyframes sweep-left {
+  from {
+    rotate: -25deg;
+  }
+  to {
+    rotate: 20deg;
+  }
+}
+
+@keyframes sweep-right {
+  from {
+    rotate: 25deg;
+  }
+  to {
+    rotate: -20deg;
+  }
+}
+
+.banner {
+  position: absolute;
+  top: 0;
+  width: 9vw;
+  height: 34vh;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%);
+  box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.2);
+  transform-origin: 50% 0;
+  animation: banner-sway 4s ease-in-out infinite alternate;
+}
+
+.banner-left {
+  left: 4vw;
+  background: repeating-linear-gradient(
+    180deg,
+    #1d5cff 0 18px,
+    #ffd23f 18px 24px
+  );
+}
+
+.banner-right {
+  right: 4vw;
+  background: repeating-linear-gradient(
+    180deg,
+    #e2304a 0 18px,
+    #ffd23f 18px 24px
+  );
+  animation-delay: -2s;
+}
+
+@keyframes banner-sway {
+  from {
+    rotate: -3deg;
+  }
+  to {
+    rotate: 3deg;
+  }
+}
+
+/* --- Minefield: radar room --- */
+
+.camo {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 18% 12% at 20% 30%, #4b5a23 60%, transparent 62%),
+    radial-gradient(ellipse 14% 16% at 70% 20%, #2b3414 60%, transparent 62%),
+    radial-gradient(ellipse 22% 10% at 80% 70%, #5c6b2a 60%, transparent 62%),
+    radial-gradient(ellipse 16% 14% at 30% 80%, #2b3414 60%, transparent 62%),
+    radial-gradient(ellipse 12% 9% at 50% 50%, #4b5a23 60%, transparent 62%);
+  opacity: 0.6;
+}
+
+.radar-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(140, 255, 120, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140, 255, 120, 0.08) 1px, transparent 1px),
+    repeating-radial-gradient(
+      circle at 50% 50%,
+      transparent 0 14vmin,
+      rgba(140, 255, 120, 0.12) 14vmin calc(14vmin + 1px)
+    );
+  background-size:
+    48px 48px,
+    48px 48px,
+    100% 100%;
+}
+
+.radar-sweep {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 160vmax;
+  height: 160vmax;
+  translate: -50% -50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(140, 255, 120, 0.32) 0deg,
+    rgba(140, 255, 120, 0) 50deg,
+    transparent 360deg
+  );
+  border-radius: 50%;
+  animation: radar 5s linear infinite;
+}
+
+@keyframes radar {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.hazard-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 26px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #ffcc00 0 22px,
+    #141808 22px 44px
+  );
+  box-shadow: 0 -4px 0 #141808;
+  animation: hazard-scroll 1.5s linear infinite;
+  background-size: 62.2px 26px;
+}
+
+@keyframes hazard-scroll {
+  to {
+    background-position: 62.2px 0;
+  }
+}
+
+/* --- King of the hill: golden hour --- */
+
+.sunburst {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 220vmax;
+  height: 220vmax;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 255, 255, 0.28) 0deg 7deg,
+    transparent 7deg 15deg
+  );
+  animation: radar 60s linear infinite;
+}
+
+.sun-core {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 60vmin;
+  height: 60vmin;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #fffbe0 0%,
+    rgba(255, 230, 120, 0.6) 40%,
+    transparent 70%
+  );
+}
+
+.hills {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 22vh;
+  fill: #c66a12;
+}
+
+/* --- Gravity: the funhouse spiral --- */
+
+.spiral {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200vmax;
+  height: 200vmax;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(62, 230, 176, 0.18) 0deg 10deg,
+    rgba(155, 123, 255, 0.12) 10deg 20deg
+  );
+  mask-image: radial-gradient(circle, #000 0%, transparent 60%);
+  animation: radar 20s linear infinite;
+}
+
+.spiral-inner {
+  width: 90vmax;
+  height: 90vmax;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 79, 163, 0.22) 0deg 8deg,
+    transparent 8deg 16deg
+  );
+  animation-duration: 9s;
+  animation-direction: reverse;
+}
+
+/* --- Hex chess: synthwave sunset --- */
+
+.synth-sun {
+  position: absolute;
+  left: 50%;
+  bottom: 30vh;
+  width: 46vmin;
+  height: 46vmin;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fdf500 0%, #ff8a00 45%, #ff2e88 100%);
+  mask-image: repeating-linear-gradient(
+    180deg,
+    #000 0 62%,
+    transparent 62% 66%,
+    #000 66% 72%,
+    transparent 72% 77%,
+    #000 77% 82%,
+    transparent 82% 88%,
+    #000 88% 92%,
+    transparent 92% 100%
+  );
+  box-shadow: 0 0 80px rgba(255, 46, 136, 0.6);
+  filter: drop-shadow(0 0 30px rgba(255, 46, 136, 0.7));
+}
+
+.synth-floor {
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: 0;
+  height: 32vh;
+  perspective: 300px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2a0845 0%, #0d0221 100%);
+}
+
+.synth-grid {
+  position: absolute;
+  inset: -100% 0 0;
+  background-image:
+    linear-gradient(#ff2e88 2px, transparent 2px),
+    linear-gradient(90deg, #ff2e88 2px, transparent 2px);
+  background-size: 60px 60px;
+  transform: rotateX(70deg);
+  transform-origin: 50% 100%;
+  animation: grid-run 1s linear infinite;
+  filter: drop-shadow(0 0 4px #ff2e88);
+}
+
+@keyframes grid-run {
+  to {
+    background-position: 0 60px;
+  }
+}
+
+/* --- Stratego: tropical lagoon --- */
+
+.caustics {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(
+      ellipse 8% 4% at 20% 30%,
+      rgba(255, 255, 255, 0.18),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 6% 5% at 60% 20%,
+      rgba(255, 255, 255, 0.15),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 10% 4% at 80% 60%,
+      rgba(255, 255, 255, 0.16),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 7% 5% at 35% 70%,
+      rgba(255, 255, 255, 0.14),
+      transparent
+    );
+  background-size: 50% 50%;
+  animation: caustic-drift 12s ease-in-out infinite alternate;
+}
+
+@keyframes caustic-drift {
+  to {
+    transform: translate(5%, 4%) rotate(4deg);
+  }
+}
+
+.island {
+  position: absolute;
+  right: 4vw;
+  bottom: 12vh;
+  width: 24vw;
+  height: 18vh;
+}
+
+.island-sand {
+  fill: #f2d48f;
+}
+
+.palm-trunk {
+  fill: none;
+  stroke: #7a4b22;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.palm-leaf {
+  fill: #1f9a52;
+}
+
+.waves {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 0;
+  height: 16vh;
+  background: radial-gradient(
+      circle at 50% 0,
+      transparent 22px,
+      var(--wave) 23px
+    )
+    0 0 / 60px 100%;
+  animation: wave-roll 6s linear infinite;
+}
+
+.waves-back {
+  --wave: rgba(5, 96, 122, 0.8);
+  bottom: 4vh;
+  animation-duration: 9s;
+  animation-direction: reverse;
+}
+
+.waves-front {
+  --wave: #04404f;
+}
+
+@keyframes wave-roll {
+  to {
+    background-position: 60px 0;
+  }
+}

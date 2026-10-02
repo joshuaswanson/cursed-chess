@@ -1,0 +1,48 @@
+/* --- Logo: every letter is its own wobbling sticker --- */
+
+.logo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35em;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4.2vw, 54px);
+  line-height: 1;
+  user-select: none;
+}
+
+.logo-word {
+  display: inline-flex;
+}
+
+.logo-letter {
+  display: inline-block;
+  color: var(--letter-color);
+  -webkit-text-stroke: 0.06em var(--plum-ink);
+  paint-order: stroke fill;
+  text-shadow:
+    0.03em 0.03em 0 var(--plum-ink),
+    0.06em 0.06em 0 var(--plum-ink),
+    0.09em 0.09em 0 var(--plum-ink);
+  rotate: var(--tilt);
+  animation: logo-wobble 2.8s ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+.logo-chess {
+  font-family: var(--font-shade);
+  color: var(--paper);
+  letter-spacing: 0.02em;
+  text-shadow: 0.05em 0.05em 0 var(--plum-ink);
+}
+
+@keyframes logo-wobble {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: var(--tilt);
+  }
+  50% {
+    translate: 0 -0.08em;
+    rotate: calc(var(--tilt) * -1);
+  }
+}

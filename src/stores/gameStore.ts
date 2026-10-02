@@ -23,6 +23,7 @@ import { GravityPlugin } from "../plugins/gravity";
 import { StrategoPlugin } from "../plugins/stratego";
 import { HexGame } from "../engine/hex/game";
 import { chooseMove, PIECE_VALUE } from "../ai/chooseMove";
+import type { ThemeId } from "../theme/themes";
 import type { SquareBonus } from "../ai/chooseMove";
 import type { HexCoord, HexMove } from "../engine/hex";
 
@@ -37,6 +38,10 @@ const UNLIMITED_SECONDS = 999;
 const BATTLE_ROYALE_FINAL_SECONDS = 5;
 /** Plies of normal chess before the cursed modes begin (white, black, white) */
 const NORMAL_CHESS_PLIES = 3;
+/** When the plain site's glitching gives way to the curse */
+const CURSE_BOOM_MS = 2600;
+/** How long the curse's title card owns the screen */
+const CURSE_REVEAL_MS = 3200;
 
 const MODE_ANNOUNCE_MS = 2000;
 const HINT_DELAY_MS = 2200;
@@ -53,6 +58,7 @@ const HEX_MORPH_DONE_MS = 6400;
 
 export interface GameMode {
   name: string;
+  theme: ThemeId;
   hint: string;
   create: () => ModePlugin[];
   durationSeconds?: number;
@@ -64,11 +70,13 @@ export interface GameMode {
 export const GAME_MODES: GameMode[] = [
   {
     name: "PORTALS",
+    theme: "portals",
     hint: "PIECES TELEPORT THROUGH PORTALS!",
     create: () => [new PortalChessPlugin()],
   },
   {
     name: "FOG OF WAR",
+    theme: "fog",
     hint: "THE ENEMY HIDES IN THE FOG!",
     create: () => [new FogOfWarPlugin()],
     // The fog takes 6s to roll in after the title banner
@@ -76,32 +84,38 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     name: "BATTLE ROYALE",
+    theme: "royale",
     hint: "MOVE AWAY FROM EDGES!",
     create: () => [new BattleRoyalePlugin()],
   },
   {
     name: "CLASH ROYALE",
+    theme: "clash",
     hint: "DRAG AND DROP TO DEPLOY!",
     create: () => [new RallyPlugin()],
     durationSeconds: 75,
   },
   {
     name: "MINEFIELD",
+    theme: "mines",
     hint: "WATCH YOUR STEP!",
     create: () => [new MinefieldPlugin()],
   },
   {
     name: "KING OF THE HILL",
+    theme: "hill",
     hint: "CONTROL THE CENTER!",
     create: () => [new KingOfTheHillPlugin()],
   },
   {
     name: "GRAVITY",
+    theme: "gravity",
     hint: "GRAVITY SHIFTS EVERY FEW TURNS!",
     create: () => [new GravityPlugin()],
   },
   {
     name: "HEX CHESS",
+    theme: "hex",
     hint: "CHESS ON HEXAGONS!",
     create: () => [],
     durationSeconds: 60,
@@ -110,6 +124,7 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     name: "STRATEGO",
+    theme: "stratego",
     hint: "ENEMY PIECES ARE HIDDEN!",
     create: () => [new StrategoPlugin()],
   },
@@ -152,6 +167,9 @@ export interface GameStore {
   modeTimeRemaining: number;
 
   devMode: boolean;
+  /** False while the game still poses as a plain chess website */
+  cursed: boolean;
+  curseStage: "glitch" | "boom" | null;
 
   deployPieceType: PieceType | null;
   /** Bumped every autonomous tick, since plugins change resources and the board in place */
@@ -275,12 +293,21 @@ function endGameSoon(winner: Color | null): void {
   );
 }
 
+/** The plain chess site starts glitching, then the curse bursts through */
 function startCursedIntro(): void {
-  const { showAnnouncement, switchMode } = useGameStore.getState();
-  holdPause(4400);
-  schedule(() => showAnnouncement("GET READY!", 1500, "intro"), 600);
-  schedule(() => showAnnouncement("CURSED CHESS", 2000, "intro"), 2400);
-  schedule(() => switchMode(), 4400);
+  holdPause(CURSE_BOOM_MS + CURSE_REVEAL_MS);
+  schedule(
+    () => useGameStore.setState({ curseStage: "glitch" }),
+    GAME_END_DELAY_MS,
+  );
+  schedule(
+    () => useGameStore.setState({ curseStage: "boom", cursed: true }),
+    CURSE_BOOM_MS,
+  );
+  schedule(() => {
+    useGameStore.setState({ curseStage: null });
+    useGameStore.getState().switchMode();
+  }, CURSE_BOOM_MS + CURSE_REVEAL_MS);
 }
 
 /** How the current mode's square markings make a square better or worse to stand on */
@@ -332,6 +359,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   modeTimeRemaining: UNLIMITED_SECONDS,
 
   devMode: false,
+  cursed: false,
+  curseStage: null,
   autonomousTick: 0,
 
   selectHex: (coord) => {
@@ -548,6 +577,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       announcement: null,
       userPaused: false,
       paused: false,
+      cursed: false,
+      curseStage: null,
     });
   },
 
@@ -747,6 +778,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       currentModeIndex: nextIndex,
+      cursed: true,
+      curseStage: null,
       modeTimeRemaining: mode.durationSeconds ?? MODE_SECONDS,
       status: GameStatus.Active,
       ...CLEARED_SELECTION,

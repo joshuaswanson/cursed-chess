@@ -1,35 +1,15 @@
+.board-shell {
+  position: relative;
+  display: inline-block;
+}
+
 .board {
   display: inline-flex;
   flex-direction: column;
-  border: none;
-  border-radius: 4px;
   user-select: none;
   -webkit-user-select: none;
   position: relative;
   --shrink-ring: 0;
-}
-
-/* Board glow — shrinks with battle royale */
-.board::before {
-  content: "";
-  position: absolute;
-  top: calc(var(--shrink-ring) * 12.5%);
-  left: calc(var(--shrink-ring) * 12.5%);
-  right: calc(var(--shrink-ring) * 12.5%);
-  bottom: calc(var(--shrink-ring) * 12.5%);
-  box-shadow:
-    0 0 50px rgba(187, 102, 255, 0.3),
-    0 0 100px rgba(255, 51, 119, 0.15),
-    0 4px 20px rgba(0, 0, 0, 0.5);
-  border-radius: 4px;
-  pointer-events: none;
-  z-index: -1;
-  transition: all 0.8s ease-in-out;
-}
-
-/* Hide glow during portal mode */
-.board.portal-active::before {
-  box-shadow: none;
 }
 
 .board-row {
@@ -44,15 +24,15 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.1s;
   overflow: visible;
 }
 
 .square.light {
-  background-color: #f0d9b5;
+  background-color: var(--tile-light);
 }
+
 .square.dark {
-  background-color: #b58863;
+  background-color: var(--tile-dark);
 }
 
 /* --- Rally deploy zone border (bottom half = player's ranks 0-3) --- */
@@ -220,7 +200,7 @@
 }
 
 /* --- Gravity --- */
-.board.gravity-active {
+.board-shell.gravity-active {
   transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -841,44 +821,52 @@
   z-index: 8;
 }
 
-/* Selected square stays under fog — only move hints show above */
-
-.square.selected {
-  background-color: #829769 !important;
-  box-shadow: inset 0 0 12px rgba(130, 151, 105, 0.5);
-}
+/* --- Highlights: a plain chess site's yellow until the curse, then the channel accent --- */
 
 .square.last-move.light {
-  background-color: #f6f680;
+  background-color: #f5f682;
 }
 .square.last-move.dark {
   background-color: #b9ca43;
 }
 
+.square.selected.light,
 .square.drag-target.light {
-  background-color: #d4e157;
+  background-color: #f5f682;
 }
+.square.selected.dark,
 .square.drag-target.dark {
-  background-color: #9e9d24;
+  background-color: #b9ca43;
+}
+
+.is-cursed .square.last-move.light {
+  background-color: color-mix(in srgb, var(--accent) 45%, var(--tile-light));
+}
+.is-cursed .square.last-move.dark {
+  background-color: color-mix(in srgb, var(--accent) 45%, var(--tile-dark));
+}
+.is-cursed .square.selected,
+.is-cursed .square.drag-target {
+  background-color: color-mix(in srgb, var(--accent) 70%, var(--tile-light));
+  box-shadow: inset 0 0 0 3px var(--ink);
 }
 
 .square.in-check {
   background: radial-gradient(
     ellipse at center,
-    #e53935 0%,
-    #c62828 30%,
-    rgba(198, 40, 40, 0) 80%
+    #ff3b3b 0%,
+    #d62828 35%,
+    rgba(214, 40, 40, 0) 80%
   ) !important;
-  animation: check-pulse 0.8s ease-in-out infinite;
+}
+
+.is-cursed .square.in-check {
+  animation: check-pulse 0.7s ease-in-out infinite;
 }
 
 @keyframes check-pulse {
-  0%,
-  100% {
-    box-shadow: inset 0 0 10px rgba(229, 57, 53, 0.4);
-  }
   50% {
-    box-shadow: inset 0 0 25px rgba(229, 57, 53, 0.7);
+    box-shadow: inset 0 0 26px rgba(255, 59, 59, 0.85);
   }
 }
 
@@ -889,22 +877,27 @@
   height: 90%;
   pointer-events: auto;
   z-index: 2;
-  filter: drop-shadow(1px 2px 3px rgba(0, 0, 0, 0.5));
   cursor: grab;
   touch-action: none;
 }
 
-.square:hover .piece-img {
-  transform: scale(1.05);
+.is-cursed .piece-img {
+  filter: drop-shadow(0.06em 0.09em 0 rgba(20, 8, 40, 0.45));
+  font-size: var(--square-size);
+  transition: scale 0.15s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
-/* --- Dragging piece (follows cursor) --- */
+.is-cursed .square:hover .piece-img {
+  scale: 1.1;
+}
+
+/* --- Dragging piece (follows cursor, rendered on the body) --- */
 
 .piece-dragging {
   position: fixed;
   pointer-events: none;
   z-index: 1000;
-  filter: drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(4px 10px 6px rgba(0, 0, 0, 0.4));
 }
 
 .piece-returning {
@@ -920,10 +913,7 @@
     height 0.2s ease-in-out;
 }
 
-/* --- Slide-in animation (click-to-move) --- */
-/* Uses `translate` (not `transform`) so it isn't affected by the
-   counter-rotation `rotate` property during gravity mode. */
-
+/* Uses `translate` so it composes with gravity's counter-rotation */
 @keyframes slide-in {
   from {
     translate: var(--slide-from-x) var(--slide-from-y);
@@ -940,49 +930,86 @@
   width: 30%;
   height: 30%;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.14);
   z-index: 1;
 }
 
 .capture-hint {
   position: absolute;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   border-radius: 50%;
-  border: 5px solid rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
+  border: 6px solid rgba(0, 0, 0, 0.14);
   z-index: 1;
 }
 
-/* --- Coordinates --- */
+.is-cursed .move-hint {
+  width: 32%;
+  height: 32%;
+  background: var(--accent);
+  border: 3px solid var(--ink);
+  box-shadow: 2px 3px 0 var(--ink);
+  animation: hint-bob 1.2s ease-in-out infinite;
+}
 
-.coord-rank {
+.is-cursed .capture-hint {
+  inset: 4%;
+  border: 4px dashed var(--accent);
+  box-shadow:
+    0 0 0 3px var(--ink),
+    inset 0 0 0 3px var(--ink);
+  animation: capture-spin 4s linear infinite;
+}
+
+@keyframes hint-bob {
+  50% {
+    translate: 0 -4px;
+    scale: 1.1;
+  }
+}
+
+@keyframes capture-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* --- Coordinates inside the edge squares --- */
+
+.coord {
   position: absolute;
-  top: 2px;
-  left: 4px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: calc(var(--square-size) * 0.17);
+  font-weight: bold;
+  line-height: 1;
   pointer-events: none;
   z-index: 3;
+}
+
+.coord-rank {
+  top: 4%;
+  left: 5%;
 }
 
 .coord-file {
-  position: absolute;
-  bottom: 2px;
-  right: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  pointer-events: none;
-  z-index: 3;
+  bottom: 4%;
+  right: 6%;
 }
 
-.light .coord-rank,
-.light .coord-file {
-  color: #9966dd;
+.square.light .coord {
+  color: var(--tile-dark);
 }
-.dark .coord-rank,
-.dark .coord-file {
-  color: #d8c0ff;
+
+.square.dark .coord {
+  color: var(--tile-light);
+}
+
+.is-cursed .coord {
+  font-family: var(--font-display);
+  font-weight: normal;
+  opacity: 0.8;
+}
+
+.board.fog-active .capture-hint {
+  z-index: 8;
 }
 
 /* --- Portal overlays --- */

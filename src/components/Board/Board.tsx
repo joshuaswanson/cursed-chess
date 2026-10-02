@@ -23,6 +23,9 @@ import {
   useSlideAnimation,
 } from "./useBoardEffects";
 import "./Board.css";
+import "./BoardSkins.css";
+
+const FILES = "abcdefgh";
 
 function playPortalPhase(phase: PortalPhase): void {
   if (phase.type === "shrink") sfx.portalEnter();
@@ -272,6 +275,13 @@ export function Board() {
           )}
 
           {explosions.has(sq) && <div className="mine-explosion" />}
+
+          {visualCol === 0 && (
+            <span className="coord coord-rank">{rank + 1}</span>
+          )}
+          {visualRow === 7 && (
+            <span className="coord coord-file">{FILES[file]}</span>
+          )}
         </div>,
       );
     }
@@ -301,6 +311,9 @@ export function Board() {
     ...(battleRoyale && {
       "--shrink-ring": battleRoyale.shrinkRing,
     }),
+  } as React.CSSProperties;
+  // The frame turns with the board so the board never pokes through it
+  const shellStyle = {
     ...(gravityAngle !== null && {
       "--gravity-rotation": `${gravityAngle}deg`,
       transform: `rotate(${gravityAngle}deg)`,
@@ -309,52 +322,63 @@ export function Board() {
 
   return (
     <div
-      className={boardClass}
-      ref={boardRef}
-      style={boardStyle}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
+      className={`board-shell${overlays.gravityDirection ? " gravity-active" : ""}`}
+      style={shellStyle}
     >
-      {rows}
-      {overlays.hasRally && (
-        <div
-          className={`deploy-zone-border${deployPieceType ? " dragging" : ""}`}
-        />
-      )}
-      {hasPortalMoves && selectedSquare !== null && portalEntrance !== null && (
-        <PortalArrows
-          pairs={overlays.portalPairs}
-          entrance={portalEntrance}
-          flipped={flipped}
-        />
-      )}
-      {battleRoyale && (
-        <Fissure
-          ring={Math.max(1, battleRoyale.shrinkRing)}
-          progress={dangerProgress}
-          collapsed={battleRoyale.shrinkRing > 0}
-        />
-      )}
-      {collapse && <CollapsingRing collapse={collapse} flipped={flipped} />}
-      {travel && (
-        <PortalTravelPiece
-          travel={travel}
-          flipped={flipped}
-          squareSize={squareSize}
-        />
-      )}
-      {showFog && <FogOverlay enemyOnTop={!flipped} exiting={fogExiting} />}
-      {drag?.isDragging && (
-        <DraggedPiece drag={drag} imgRef={dragImgRef} squareSize={squareSize} />
-      )}
-      {returnAnim && (
-        <ReturningPiece anim={returnAnim} squareSize={squareSize} />
-      )}
-      {countdown !== null && (
-        <div className="countdown-overlay" key={countdown}>
-          <span className="countdown-number">{countdown}</span>
-        </div>
-      )}
+      <div
+        className={boardClass}
+        ref={boardRef}
+        style={boardStyle}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+      >
+        {rows}
+        {overlays.hasRally && (
+          <div
+            className={`deploy-zone-border${deployPieceType ? " dragging" : ""}`}
+          />
+        )}
+        {hasPortalMoves &&
+          selectedSquare !== null &&
+          portalEntrance !== null && (
+            <PortalArrows
+              pairs={overlays.portalPairs}
+              entrance={portalEntrance}
+              flipped={flipped}
+            />
+          )}
+        {battleRoyale && (
+          <Fissure
+            ring={Math.max(1, battleRoyale.shrinkRing)}
+            progress={dangerProgress}
+            collapsed={battleRoyale.shrinkRing > 0}
+          />
+        )}
+        {collapse && <CollapsingRing collapse={collapse} flipped={flipped} />}
+        {travel && (
+          <PortalTravelPiece
+            travel={travel}
+            flipped={flipped}
+            squareSize={squareSize}
+          />
+        )}
+        {showFog && <FogOverlay enemyOnTop={!flipped} exiting={fogExiting} />}
+        {drag?.isDragging && (
+          <DraggedPiece
+            drag={drag}
+            imgRef={dragImgRef}
+            squareSize={squareSize}
+          />
+        )}
+        {returnAnim && (
+          <ReturningPiece anim={returnAnim} squareSize={squareSize} />
+        )}
+        {countdown !== null && (
+          <div className="countdown-overlay" key={countdown}>
+            <span className="countdown-number">{countdown}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

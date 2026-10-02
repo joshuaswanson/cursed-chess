@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Board } from "./components/Board/Board";
 import { HexBoard } from "./components/HexBoard/HexBoard";
 import { GameControls } from "./components/GameControls/GameControls";
@@ -6,74 +7,72 @@ import { Announcement } from "./components/Announcement/Announcement";
 import { Timer } from "./components/Timer/Timer";
 import { ModePanel } from "./components/ModePanel/ModePanel";
 import { RallyPanel } from "./components/RallyPanel/RallyPanel";
-import { useGameStore, GAME_MODES } from "./stores/gameStore";
+import { Backdrop } from "./components/Backdrop/Backdrop";
+import { Logo } from "./components/Logo/Logo";
+import {
+  BoringFooter,
+  BoringHeader,
+  BoringSidebar,
+} from "./components/BoringSite/BoringSite";
+import { useGameStore } from "./stores/gameStore";
 import { useGameLoop } from "./hooks/useGameLoop";
+import { useTheme } from "./theme/useTheme";
+import { themeVars } from "./theme/themes";
 import "./styles/global.css";
 
 function App() {
   useGameLoop();
-  const currentModeIndex = useGameStore((s) => s.currentModeIndex);
+  const theme = useTheme();
+  const cursed = useGameStore((s) => s.cursed);
+  const curseStage = useGameStore((s) => s.curseStage);
   const isHexMode = useGameStore((s) => s.isHexMode);
   const hexTransition = useGameStore((s) => s.hexTransition);
-  const isPortalMode =
-    currentModeIndex >= 0 && GAME_MODES[currentModeIndex].name === "PORTALS";
+
+  useEffect(() => {
+    document.title = cursed ? "CURSED CHESS" : "Play Chess Online";
+  }, [cursed]);
+
+  const board = isHexMode ? (
+    <div className={hexTransition === "morph-in" ? "hex-morph-in" : ""}>
+      <HexBoard />
+    </div>
+  ) : (
+    <div className={hexTransition === "morph-out" ? "hex-morph-out" : ""}>
+      <Board />
+    </div>
+  );
+
+  const appClass =
+    "app" +
+    (cursed ? " is-cursed" : " is-boring") +
+    (curseStage ? ` curse-${curseStage}` : "");
 
   return (
-    <div className={isPortalMode ? "space-bg" : ""}>
-      <div className="page-fog">
-        <div className="page-fog-layer page-fog-layer-1" />
-        <div className="page-fog-layer page-fog-layer-2" />
-      </div>
-      <div className="page-fog-bottom">
-        <div className="page-fog-layer page-fog-layer-1" />
-        <div className="page-fog-layer page-fog-layer-2" />
-      </div>
-      <div className="page-fog-left">
-        <div className="page-fog-side-layer page-fog-side-layer-1" />
-        <div className="page-fog-side-layer page-fog-side-layer-2" />
-      </div>
-      <div className="page-fog-right">
-        <div className="page-fog-side-layer page-fog-side-layer-1" />
-        <div className="page-fog-side-layer page-fog-side-layer-2" />
-      </div>
-      <div className="app">
-        <header className="app-header">
-          <h1 className="app-title">
-            <span className="title-unhinged">CURSED</span>
-            <span className="title-chess">CHESS</span>
-          </h1>
-          <p className="app-subtitle">
-            You've never played chess like this before
-          </p>
+    <div className={appClass} style={themeVars(theme)} data-theme={theme.id}>
+      {cursed && <Backdrop theme={theme.id} />}
+      {cursed ? (
+        <header className="topbar">
+          <Logo />
         </header>
-
-        <main className="game-layout">
-          <div className="board-container">
-            {isHexMode ? (
-              <div
-                className={hexTransition === "morph-in" ? "hex-morph-in" : ""}
-              >
-                <HexBoard />
-              </div>
-            ) : (
-              <div
-                className={hexTransition === "morph-out" ? "hex-morph-out" : ""}
-              >
-                <Board />
-              </div>
-            )}
-          </div>
-          <div className="sidebar">
+      ) : (
+        <BoringHeader />
+      )}
+      <main className="stage">
+        <div className="board-container">{board}</div>
+        {cursed ? (
+          <aside className="hud">
             <ModePanel />
             <Timer />
             <RallyPanel />
             <GameControls />
-          </div>
-        </main>
-
-        <PromotionDialog />
-        <Announcement />
-      </div>
+          </aside>
+        ) : (
+          <BoringSidebar />
+        )}
+      </main>
+      {!cursed && <BoringFooter />}
+      <PromotionDialog />
+      <Announcement />
     </div>
   );
 }

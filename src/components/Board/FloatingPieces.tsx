@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import { createPortal } from "react-dom";
 import { pieceImage } from "../../utils/pieceImages";
 import { PIECE_SIZE } from "./usePieceDrag";
 import type { DragState, ReturnAnim } from "./usePieceDrag";
@@ -15,7 +16,8 @@ export function DraggedPiece({
 }) {
   const size = squareSize * PIECE_SIZE;
   const pull = drag.pull;
-  return (
+  // Lives on the body so board transforms never pull it away from the cursor
+  return createPortal(
     <img
       ref={imgRef}
       src={pieceImage(drag.piece)}
@@ -34,7 +36,8 @@ export function DraggedPiece({
         transformOrigin: `${drag.grabX * 100}% ${drag.grabY * 100}%`,
       }}
       draggable={false}
-    />
+    />,
+    document.body,
   );
 }
 
@@ -50,7 +53,7 @@ export function ReturningPiece({
   const x = home ? anim.toX : anim.fromX;
   const y = home ? anim.toY : anim.fromY;
   const size = home ? squareSize * PIECE_SIZE : anim.fromSize;
-  return (
+  return createPortal(
     <img
       src={pieceImage(anim.piece)}
       className="piece-returning"
@@ -62,6 +65,7 @@ export function ReturningPiece({
         transform: `rotate(${home ? 0 : anim.startAngle}deg)`,
       }}
       draggable={false}
-    />
+    />,
+    document.body,
   );
 }
