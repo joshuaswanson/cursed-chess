@@ -651,141 +651,92 @@
   }
 }
 
-/* --- Stratego: a campaign map on an old war table --- */
+/* --- Stratego: the battlefield the board sits on, seen from above --- */
 
-.war-table {
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgba(0, 0, 0, 0.12) 0 2px,
-      transparent 2px 140px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.025) 0 1px,
-      transparent 1px 7px
-    ),
-    linear-gradient(180deg, #3a2814, #24180b);
-}
-
-.war-map {
-  position: absolute;
-  inset: 5vh 3vw;
-  rotate: -1deg;
-  background:
-    radial-gradient(
-      ellipse 40% 30% at 20% 75%,
-      rgba(120, 80, 30, 0.18),
-      transparent 70%
-    ),
-    radial-gradient(
-      ellipse 30% 20% at 80% 20%,
-      rgba(120, 80, 30, 0.15),
-      transparent 70%
-    ),
-    linear-gradient(rgba(70, 50, 20, 0.12) 1px, transparent 1px) 0 0 / 80px 80px,
-    linear-gradient(90deg, rgba(70, 50, 20, 0.12) 1px, transparent 1px) 0 0 /
-      80px 80px,
-    radial-gradient(ellipse at center, #eadbae 0%, #d8c08a 70%, #b8975a 100%);
-  border-radius: 6px;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.6),
-    inset 0 0 80px rgba(90, 60, 20, 0.5);
-  filter: brightness(0.82) saturate(0.85);
-}
-
-.war-map-ink {
+.battle-land {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-.contours ellipse {
+.trench-spoil {
   fill: none;
-  stroke: rgba(110, 75, 35, 0.35);
-  stroke-width: 2;
+  stroke: #7d6440;
+  stroke-width: 58;
+  stroke-linejoin: round;
+  opacity: 0.6;
 }
 
-.map-river {
+/* Sandbags along both lips: the dug-out cut covers the middle of each bag */
+.trench-bags {
   fill: none;
-  stroke: rgba(60, 110, 150, 0.45);
-  stroke-width: 10;
-  stroke-linecap: round;
-}
-
-.troop-arrow {
-  fill: none;
-  stroke-width: 7;
-  stroke-linecap: round;
-  stroke-dasharray: 18 12;
-  animation: troops-advance 2.4s linear infinite;
-}
-
-.troop-head {
-  fill: none;
-  stroke-width: 7;
-  stroke-linecap: round;
+  stroke: #b29b6e;
+  stroke-width: 44;
+  stroke-dasharray: 11 3;
   stroke-linejoin: round;
 }
 
-.troop-red {
-  stroke: rgba(196, 40, 40, 0.75);
+.trench-bags-top {
+  stroke: #d2bf93;
+  stroke-width: 38;
+  stroke-dashoffset: 7;
+  opacity: 0.7;
 }
 
-.troop-blue {
-  stroke: rgba(40, 80, 170, 0.75);
-}
-
-@keyframes troops-advance {
-  to {
-    stroke-dashoffset: -60;
-  }
-}
-
-.compass {
-  position: absolute;
-  left: 3vw;
-  bottom: 4vh;
-  width: 16vmin;
-  height: 16vmin;
-  opacity: 0.6;
-  animation: compass-wobble 9s ease-in-out infinite;
-}
-
-.compass-ring {
+.trench-cut {
   fill: none;
-  stroke: #5a3b17;
-  stroke-width: 2;
+  stroke: #2e2112;
+  stroke-width: 28;
+  stroke-linejoin: round;
 }
 
-.compass-ring-inner {
-  stroke-dasharray: 3 4;
+/* The wall facing the light catches it; the other side stays in shadow */
+.trench-wall {
+  fill: none;
+  stroke: #5e4527;
+  stroke-width: 18;
+  stroke-linejoin: round;
 }
 
-.compass-needle {
-  fill: #8a2a1c;
-  stroke: #3d2610;
-  stroke-width: 1.5;
+.trench-floor {
+  fill: none;
+  stroke: #1c140a;
+  stroke-width: 11;
+  stroke-linejoin: round;
 }
 
-.compass-needle-cross {
-  fill: #5a3b17;
+/* Duckboards laid along the bottom */
+.trench-boards {
+  fill: none;
+  stroke: #8a6a42;
+  stroke-width: 7;
+  stroke-dasharray: 3 2;
+  stroke-linejoin: round;
 }
 
-.compass-n {
-  font-family: var(--font-display);
-  font-size: 14px;
-  fill: #3d2610;
-  text-anchor: middle;
+.barbed-wire ellipse {
+  fill: none;
+  stroke: #9a9a92;
+  stroke-width: 1.1;
 }
 
-@keyframes compass-wobble {
-  50% {
-    rotate: 6deg;
-  }
+.wire-shadow ellipse {
+  stroke: rgba(15, 20, 5, 0.35);
+}
+
+.wire-barb {
+  fill: none;
+  stroke: #c4c4bc;
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+.wire-stake path {
+  fill: none;
+  stroke: #5a3d1e;
+  stroke-width: 3.5;
+  stroke-linecap: round;
 }
 
 /* --- FIFA: a packed stadium under floodlights --- */

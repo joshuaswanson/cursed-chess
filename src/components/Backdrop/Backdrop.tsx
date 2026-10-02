@@ -1,6 +1,7 @@
 import type { ThemeId } from "../../theme/themes";
 import { PRESETS } from "./particles";
 import { useParticleCanvas } from "./useParticleCanvas";
+import { BattleLand } from "./BattleLand";
 import "./Backdrop.css";
 
 /** Hand-drawn scenery for each channel, layered under the particles */
@@ -119,57 +120,7 @@ function Scene({ theme }: { theme: ThemeId }) {
         </>
       );
     case "stratego":
-      return (
-        <>
-          <div className="war-table" />
-          <div className="war-map">
-            <svg
-              className="war-map-ink"
-              viewBox="0 0 1000 600"
-              preserveAspectRatio="none"
-            >
-              <g className="contours">
-                <ellipse cx="160" cy="140" rx="120" ry="70" />
-                <ellipse cx="160" cy="140" rx="85" ry="48" />
-                <ellipse cx="160" cy="140" rx="48" ry="26" />
-                <ellipse cx="840" cy="470" rx="140" ry="80" />
-                <ellipse cx="840" cy="470" rx="98" ry="54" />
-                <ellipse cx="840" cy="470" rx="56" ry="30" />
-                <ellipse cx="860" cy="110" rx="90" ry="50" />
-                <ellipse cx="860" cy="110" rx="52" ry="28" />
-              </g>
-              <path
-                className="troop-arrow troop-red"
-                d="M880 60 C760 140 700 200 640 270"
-              />
-              <path
-                className="troop-head troop-red"
-                d="M628 252 L640 270 L656 258"
-              />
-              <path
-                className="troop-arrow troop-blue"
-                d="M110 560 C220 470 300 420 370 380"
-              />
-              <path
-                className="troop-head troop-blue"
-                d="M352 378 L370 380 L364 398"
-              />
-            </svg>
-            <svg className="compass" viewBox="-50 -50 100 100" aria-hidden>
-              <circle r="44" className="compass-ring" />
-              <circle r="36" className="compass-ring compass-ring-inner" />
-              <path d="M0 -42 L8 0 L0 42 L-8 0 Z" className="compass-needle" />
-              <path
-                d="M-42 0 L0 8 L42 0 L0 -8 Z"
-                className="compass-needle compass-needle-cross"
-              />
-              <text y="-30" className="compass-n">
-                N
-              </text>
-            </svg>
-          </div>
-        </>
-      );
+      return <BattleLand />;
     default:
       return null;
   }
