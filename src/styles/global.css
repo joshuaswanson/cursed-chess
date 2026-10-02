@@ -118,9 +118,11 @@ button {
     --sky-text var(--theme-blend);
 }
 
+/* The logo is decoration only, so clicks pass through it to the board's goal beneath */
 .topbar {
   position: relative;
   z-index: 3;
+  pointer-events: none;
   display: flex;
   align-items: center;
   justify-content: space-between;

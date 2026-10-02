@@ -152,7 +152,7 @@
   font-size: calc(var(--square-size, 72px) * 0.2);
   white-space: nowrap;
   box-shadow: 2px 3px 0 var(--ink);
-  pointer-events: none;
+  cursor: pointer;
 }
 
 .shoot-label.no-shot {
