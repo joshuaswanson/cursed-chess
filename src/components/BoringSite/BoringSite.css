@@ -206,6 +206,41 @@
   min-height: auto;
 }
 
+@media (max-width: 600px) {
+  .boring-header {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding: 8px 12px 0;
+  }
+
+  /* The tabs get their own row and scroll sideways when they run out of room */
+  .boring-nav {
+    order: 3;
+    width: 100%;
+    gap: 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .boring-nav button {
+    flex: none;
+    padding: 6px 0 8px;
+  }
+
+  .app.is-boring .stage {
+    padding-top: 12px;
+  }
+
+  .boring-sidebar {
+    width: 100%;
+  }
+
+  .boring-footer {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+}
+
 .boring-dev-grid {
   display: flex;
   flex-wrap: wrap;

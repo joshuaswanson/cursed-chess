@@ -99,9 +99,11 @@ button {
 
 /* --- App shell: a broadcast with the board center stage --- */
 
+/* Scenery may spill past the screen edges, but the page never scrolls sideways */
 .app {
   position: relative;
   min-height: 100vh;
+  overflow-x: clip;
   display: grid;
   grid-template-rows: auto 1fr;
   color: var(--sky-text);
@@ -145,10 +147,27 @@ button {
   padding: 8px clamp(16px, 3vw, 40px) 32px;
 }
 
+/* One column that never grows wider than the screen to fit what is in it */
 @media (max-width: 1080px) {
   .stage {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     justify-items: center;
+  }
+}
+
+/* Phones: the board fills the width of the screen and everything stacks under it */
+@media (max-width: 600px) {
+  :root .app[data-theme] {
+    --square-size: calc((100vw - 48px) / 8);
+  }
+
+  .topbar {
+    padding: 10px 12px 2px;
+  }
+
+  .stage {
+    gap: 16px;
+    padding: 4px 8px 24px;
   }
 }
 

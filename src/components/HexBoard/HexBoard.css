@@ -148,6 +148,11 @@
   transition: scale 0.15s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
+/* A finger pressing a piece drags it, not the page */
+.hex-cell.hex-occupied {
+  touch-action: none;
+}
+
 .hex-piece.hovered {
   scale: 1.1;
 }

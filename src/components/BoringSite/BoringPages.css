@@ -352,3 +352,20 @@
   margin-top: 16px;
   padding: 14px 16px;
 }
+
+@media (max-width: 600px) {
+  .puzzle-grid,
+  .stream-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .puzzle-card {
+    grid-template-columns: 120px 1fr;
+  }
+
+  .thread-row {
+    grid-template-columns: 1fr 64px 52px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}

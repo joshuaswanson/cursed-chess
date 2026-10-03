@@ -22,6 +22,22 @@ function allHexCoords(): HexCoord[] {
 
 const ALL_HEXES = allHexCoords();
 
+/** Room left beside the board on a narrow screen */
+const SCREEN_MARGIN_PX = 24;
+
+/** How much the board shrinks so it fits a narrow screen, 1 when it already fits */
+function useFitScale(width: number) {
+  const measure = () =>
+    Math.min(1, (window.innerWidth - SCREEN_MARGIN_PX) / width);
+  const [scale, setScale] = useState(measure);
+  useEffect(() => {
+    const onResize = () => setScale(measure());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  });
+  return scale;
+}
+
 const HEX_SIZE = 34; // hex radius in px
 const SQRT3 = Math.sqrt(3);
 
@@ -75,6 +91,7 @@ export function HexBoard() {
 
   const [hovered, setHovered] = useState<string | null>(null);
   const [drag, setDrag] = useState<HexDrag | null>(null);
+  const fit = useFitScale(BOARD_WIDTH);
   /** The move that was made by dropping a piece, which is already where it landed */
   const [droppedId, setDroppedId] = useState<number | null>(null);
   const dropped = lastHexMove !== null && droppedId === lastHexMove.id;
@@ -250,6 +267,7 @@ export function HexBoard() {
           {
             width: BOARD_WIDTH,
             height: BOARD_HEIGHT,
+            zoom: fit,
             "--square-size": `${HEX_H}px`,
           } as React.CSSProperties
         }
@@ -277,6 +295,7 @@ export function HexBoard() {
           if (isLastMove) className += " hex-last-move";
           if (isCapture && isLegalTarget) className += " hex-capture-target";
           if (isCheck) className += " hex-in-check";
+          if (piece) className += " hex-occupied";
 
           return (
             <div
@@ -377,10 +396,10 @@ export function HexBoard() {
           alt=""
           draggable={false}
           style={{
-            left: drag.x - PIECE_SIZE * 0.65,
-            top: drag.y - PIECE_SIZE * 0.65,
-            width: PIECE_SIZE * 1.3,
-            height: PIECE_SIZE * 1.3,
+            left: drag.x - PIECE_SIZE * fit * 0.65,
+            top: drag.y - PIECE_SIZE * fit * 0.65,
+            width: PIECE_SIZE * fit * 1.3,
+            height: PIECE_SIZE * fit * 1.3,
           }}
         />
       )}

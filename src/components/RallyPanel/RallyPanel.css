@@ -283,6 +283,30 @@
     8px 16px 18px rgba(0, 0, 0, 0.4);
 }
 
+/* On a phone the hand of cards drops to its own row under the elixir */
+@media (max-width: 600px) {
+  .rally-bar {
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 8px 10px;
+  }
+
+  .rally-crest {
+    width: 32px;
+    height: 32px;
+  }
+
+  .elixir {
+    min-width: 0;
+  }
+
+  .foe-hand,
+  .deploy-hand {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* The arena bars take vertical room, so the board shrinks to keep everything on screen */
 .app[data-theme="clash"] {
   --square-size: clamp(34px, min(7.2vh, 6.6vw), 78px);
