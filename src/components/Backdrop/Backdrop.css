@@ -49,7 +49,7 @@
   );
   background-size: 9px 9px;
   mask-image: linear-gradient(180deg, transparent 0%, #000 70%);
-  mix-blend-mode: overlay;
+  opacity: 0.6;
 }
 
 .backdrop-vignette {
@@ -64,10 +64,10 @@
 
 /* --- Portals: deep space --- */
 
+/* The gradients fade all the way out, so the clouds need no blur filter */
 .nebula {
   position: absolute;
   border-radius: 50%;
-  filter: blur(40px);
   opacity: 0.55;
   animation: nebula-drift 26s ease-in-out infinite alternate;
 }
@@ -77,7 +77,13 @@
   height: 50vh;
   left: -10vw;
   top: 10vh;
-  background: radial-gradient(circle, #ff4fd8 0%, #7a2bff 45%, transparent 70%);
+  background: radial-gradient(
+    closest-side,
+    #ff4fd8 0%,
+    rgba(122, 43, 255, 0.85) 40%,
+    rgba(122, 43, 255, 0.3) 72%,
+    rgba(122, 43, 255, 0) 100%
+  );
 }
 
 .nebula-b {
@@ -85,7 +91,13 @@
   height: 55vh;
   right: -12vw;
   bottom: -5vh;
-  background: radial-gradient(circle, #21e6ff 0%, #2443ff 40%, transparent 70%);
+  background: radial-gradient(
+    closest-side,
+    #21e6ff 0%,
+    rgba(36, 67, 255, 0.85) 38%,
+    rgba(36, 67, 255, 0.3) 70%,
+    rgba(36, 67, 255, 0) 100%
+  );
   animation-delay: -9s;
 }
 
