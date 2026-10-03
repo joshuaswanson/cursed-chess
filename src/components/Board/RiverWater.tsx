@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { bendSource } from "./meander";
+import type { Meander } from "./meander";
 
 /** The water is soft, so it renders at half resolution and scales up */
 const RESOLUTION = 0.5;
@@ -10,11 +12,11 @@ void main() {
 }
 `;
 
-// Water flowing left to right. Noise is sampled in screen pixels, so every
-// stretch of the river shows one continuous current. Apple GPUs run mediump as
-// 16-bit floats, which overflow on pixel-sized values, so this needs highp and
-// a hash that keeps its numbers small.
-const FRAGMENT = `
+// Water flowing left to right along the river's bends. Noise is sampled in
+// screen pixels, so every stretch of the river shows one continuous current.
+// Apple GPUs run mediump as 16-bit floats, which overflow on pixel-sized
+// values, so this needs highp and a hash that keeps its numbers small.
+const fragmentSource = (bend: string) => `
 precision highp float;
 uniform float uTime;
 uniform vec2 uSize;
@@ -50,11 +52,18 @@ float fbm(vec2 p) {
   return v;
 }
 
+${bend}
+
 void main() {
   vec2 local = vec2(gl_FragCoord.x, uSize.y - gl_FragCoord.y) / uScale;
   vec2 px = local + uOffset;
   vec2 uv = local / (uSize / uScale);
   float t = uTime;
+
+  // Straighten the river out, so the current and the deep channel follow its bends
+  float bend = riverBend(uv.x);
+  uv.y -= bend;
+  px.y -= bend * uSize.y / uScale;
 
   // Stretched along the flow, warped twice so the surface folds like a current
   vec2 p = px * vec2(0.006, 0.014);
@@ -113,6 +122,7 @@ export function RiverWater({
   viewBox,
   outline,
   pad,
+  bends,
 }: {
   className: string;
   style?: React.CSSProperties;
@@ -120,8 +130,11 @@ export function RiverWater({
   outline: string;
   /** Share of the canvas height above and below the river, where the banks sit */
   pad: number;
+  /** How the river winds, in units where the canvas is `worldHeight` tall */
+  bends?: { meander: Meander; worldHeight: number };
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fragment = fragmentSource(bendSource(bends));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -131,7 +144,7 @@ export function RiverWater({
     const program = gl.createProgram()!;
     const shaders = [
       compile(gl, gl.VERTEX_SHADER, VERTEX),
-      compile(gl, gl.FRAGMENT_SHADER, FRAGMENT),
+      compile(gl, gl.FRAGMENT_SHADER, fragment),
     ];
     for (const shader of shaders) gl.attachShader(program, shader);
     gl.linkProgram(program);
@@ -182,7 +195,7 @@ export function RiverWater({
       gl.deleteProgram(program);
       for (const shader of shaders) gl.deleteShader(shader);
     };
-  }, [pad]);
+  }, [pad, fragment]);
 
   const mask = `url("data:image/svg+xml;utf8,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" preserveAspectRatio="none"><path d="${outline}"/></svg>`,

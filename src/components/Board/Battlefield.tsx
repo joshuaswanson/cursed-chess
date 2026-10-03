@@ -1,5 +1,7 @@
 import { useId } from "react";
 import { RiverWater } from "./RiverWater";
+import { meanderAt } from "./meander";
+import type { Meander } from "./meander";
 
 const SQ = 100;
 const BOARD = SQ * 8;
@@ -564,18 +566,18 @@ export function Battlefield({
 }
 
 const WORLD_WIDTH = 4000;
-/** Half the width of the stretch behind the board, in world units, where the river stays straight */
-const STRAIGHT_HALF = 420;
-const MEANDER_RAMP = 260;
 
-/** How far the river bends up or down at world position `x`: none behind the board, then curving away */
-function meander(x: number): number {
-  const away = Math.abs(x - WORLD_WIDTH / 2) - STRAIGHT_HALF;
-  if (away <= 0) return 0;
-  const t = Math.min(1, away / MEANDER_RAMP);
-  const ease = t * t * (3 - 2 * t);
-  return ease * (85 * Math.sin(x / 210 + 0.6) + 30 * Math.sin(x / 110 + 1));
-}
+const BENDS: Meander = {
+  worldWidth: WORLD_WIDTH,
+  straightHalf: 420,
+  ramp: 260,
+  waves: [
+    [85, 210, 0.6],
+    [30, 110, 1],
+  ],
+};
+
+const meander = (x: number) => meanderAt(BENDS, x);
 
 /**
  * The river continuing off both sides of the board, behind its frame, so the
@@ -628,6 +630,7 @@ export function WorldRiver({ rows }: { rows: number }) {
         viewBox={viewBox}
         outline={shape}
         pad={pad / total}
+        bends={{ meander: BENDS, worldHeight: total }}
       />
       <svg
         className="world-river"
