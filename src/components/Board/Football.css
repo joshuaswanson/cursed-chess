@@ -400,7 +400,7 @@
     rgba(200, 255, 61, 0.15) 60%,
     transparent
   );
-  animation: goal-flash 1.8s ease-out both;
+  animation: goal-flash 3s ease-out both;
 }
 
 .goal-celebration.theirs {
@@ -419,11 +419,11 @@
   1% {
     opacity: 1;
   }
-  70% {
+  75% {
     opacity: 1;
   }
   100% {
-    opacity: 0.85;
+    opacity: 0;
   }
 }
 

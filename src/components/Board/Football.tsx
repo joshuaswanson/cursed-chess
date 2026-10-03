@@ -450,6 +450,11 @@ export function FootballLayer({
     setRecent(kick);
     setLanded(false);
   }
+  // A new game clears the last kick, so the ball comes back out of the net
+  if (!kick && recent) {
+    setSeenId(0);
+    setRecent(null);
+  }
 
   useEffect(() => {
     if (!recent) return;
