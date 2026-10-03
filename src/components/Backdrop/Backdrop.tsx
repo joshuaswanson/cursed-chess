@@ -1,9 +1,46 @@
+import { useEffect, useRef } from "react";
 import type { ThemeId } from "../../theme/themes";
+import { useGameStore } from "../../stores/gameStore";
 import { PRESETS } from "./particles";
 import { useParticleCanvas } from "./useParticleCanvas";
 import { BattleLand } from "./BattleLand";
 import { SiegeCamp } from "./SiegeCamp";
 import "./Backdrop.css";
+
+/** How fast the spirals whirl backwards while gravity shifts, against their usual speed */
+const SHIFT_SPIN_RATE = -3;
+const RAMP_IN_MS = 350;
+const RAMP_OUT_MS = 700;
+
+/** The funhouse spirals, which whirl the other way while the pieces fall */
+function Spirals() {
+  const falling = useGameStore((s) => s.gravityFalling);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const spins = ref.current?.getAnimations({ subtree: true }) ?? [];
+    const starts = spins.map((a) => a.playbackRate);
+    const target = falling ? SHIFT_SPIN_RATE : 1;
+    const duration = falling ? RAMP_IN_MS : RAMP_OUT_MS;
+    const begin = performance.now();
+    let frame = 0;
+    const ramp = (now: number) => {
+      const t = Math.min(1, (now - begin) / duration);
+      const ease = t * t * (3 - 2 * t);
+      spins.forEach((a, i) => {
+        a.playbackRate = starts[i] + (target - starts[i]) * ease;
+      });
+      if (t < 1) frame = requestAnimationFrame(ramp);
+    };
+    frame = requestAnimationFrame(ramp);
+    return () => cancelAnimationFrame(frame);
+  }, [falling]);
+  return (
+    <div ref={ref} className="spirals">
+      <div className="spiral" />
+      <div className="spiral spiral-inner" />
+    </div>
+  );
+}
 
 /** Hand-drawn scenery for each channel, layered under the particles */
 function Scene({ theme }: { theme: ThemeId }) {
@@ -105,12 +142,7 @@ function Scene({ theme }: { theme: ThemeId }) {
         </>
       );
     case "gravity":
-      return (
-        <>
-          <div className="spiral" />
-          <div className="spiral spiral-inner" />
-        </>
-      );
+      return <Spirals />;
     case "hex":
       return (
         <>

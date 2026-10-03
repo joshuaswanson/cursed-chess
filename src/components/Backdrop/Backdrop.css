@@ -578,6 +578,10 @@
 
 /* --- Gravity: the funhouse spiral --- */
 
+.spirals {
+  display: contents;
+}
+
 .spiral {
   position: absolute;
   left: 50%;
