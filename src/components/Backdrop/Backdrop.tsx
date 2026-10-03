@@ -7,24 +7,24 @@ import { BattleLand } from "./BattleLand";
 import { SiegeCamp } from "./SiegeCamp";
 import "./Backdrop.css";
 
-/** How fast the spirals whirl backwards while gravity shifts, against their usual speed */
-const SHIFT_SPIN_RATE = -3;
-const RAMP_IN_MS = 350;
-const RAMP_OUT_MS = 700;
+/** How long the spirals take to slow, stop, and wind up the other way */
+const REVERSE_MS = 900;
 
-/** The funhouse spirals, which whirl the other way while the pieces fall */
+/** The funhouse spirals, which turn the other way each time gravity shifts */
 function Spirals() {
   const falling = useGameStore((s) => s.gravityFalling);
   const ref = useRef<HTMLDivElement>(null);
+  const direction = useRef(1);
   useEffect(() => {
+    if (!falling) return;
+    direction.current = -direction.current;
+    const target = direction.current;
     const spins = ref.current?.getAnimations({ subtree: true }) ?? [];
     const starts = spins.map((a) => a.playbackRate);
-    const target = falling ? SHIFT_SPIN_RATE : 1;
-    const duration = falling ? RAMP_IN_MS : RAMP_OUT_MS;
     const begin = performance.now();
     let frame = 0;
     const ramp = (now: number) => {
-      const t = Math.min(1, (now - begin) / duration);
+      const t = Math.min(1, (now - begin) / REVERSE_MS);
       const ease = t * t * (3 - 2 * t);
       spins.forEach((a, i) => {
         a.playbackRate = starts[i] + (target - starts[i]) * ease;
