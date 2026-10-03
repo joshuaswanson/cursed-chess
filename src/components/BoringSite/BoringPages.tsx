@@ -476,10 +476,6 @@ const FAQ = [
     q: "Why does the computer always win?",
     a: "It is Level 1. It is trying its best. You should try yours.",
   },
-  {
-    q: "Can I talk to a human?",
-    a: "Our support team is a single pawn named Gary. He moves one square per business day and cannot go backwards.",
-  },
 ];
 
 function HelpPage() {
@@ -517,12 +513,11 @@ function HelpPage() {
       <div className="boring-card help-contact">
         <div>
           <h2>Still stuck?</h2>
-          <p className="muted">Open a ticket and Gary will get to it.</p>
+          <p className="muted">Open a ticket and we will get to it.</p>
         </div>
         {ticket ? (
           <p className="reveal">
-            Ticket #00000001 created. Gary is on his way. Estimated arrival: 6
-            business days.
+            Ticket #00000001 created. Estimated reply: 6 to 8 business years.
           </p>
         ) : (
           <button
