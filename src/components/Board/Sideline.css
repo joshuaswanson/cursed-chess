@@ -1,0 +1,133 @@
+/* --- The left touchline, where the kings coach and the taken players watch --- */
+
+.sideline-member {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+  z-index: 6;
+  pointer-events: none;
+  animation:
+    sideline-walk var(--dur) var(--delay) both,
+    sideline-pace 2.8s calc(var(--delay) + var(--dur)) ease-in-out infinite
+      alternate;
+}
+
+.sideline-player {
+  scale: 0.8;
+}
+
+.sideline-reaction {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.sideline-reaction img,
+.coach-kit {
+  position: absolute;
+  inset: 5%;
+  width: 90%;
+  height: 90%;
+}
+
+.sideline-reaction img {
+  filter: drop-shadow(0.06em 0.09em 0 rgba(20, 8, 40, 0.45));
+}
+
+/* From the square they left to their spot on the touchline, swaying as they go */
+@keyframes sideline-walk {
+  0% {
+    translate: var(--from-x) var(--from-y);
+    rotate: 0deg;
+  }
+  20% {
+    rotate: -7deg;
+  }
+  40% {
+    rotate: 7deg;
+  }
+  60% {
+    rotate: -7deg;
+  }
+  80% {
+    rotate: 7deg;
+  }
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+}
+
+/* Pacing up and down the touchline while play goes on */
+@keyframes sideline-pace {
+  from {
+    translate: 0 -6%;
+    rotate: -3deg;
+  }
+  to {
+    translate: 0 6%;
+    rotate: 3deg;
+  }
+}
+
+.sideline-player {
+  animation:
+    sideline-walk var(--dur) var(--delay) both,
+    sideline-fidget 1.6s calc(var(--delay) + var(--dur) + var(--beat))
+      ease-in-out infinite alternate;
+}
+
+@keyframes sideline-fidget {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 0 -5%;
+  }
+}
+
+/* A goal for their side: arms up, jumping */
+.sideline-reaction.cheering {
+  animation: sideline-cheer 0.5s var(--beat, 0ms) ease-in-out 6;
+}
+
+@keyframes sideline-cheer {
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+  20% {
+    scale: 1.1 0.88;
+  }
+  50% {
+    translate: 0 -40%;
+    scale: 0.95 1.12;
+  }
+}
+
+/* A goal against them: heads drop and they stay down */
+.sideline-reaction.sulking {
+  animation: sideline-sulk 0.8s 0.3s ease-out both;
+}
+
+@keyframes sideline-sulk {
+  to {
+    rotate: -12deg;
+    translate: 0 8%;
+    scale: 0.92 0.84;
+    filter: saturate(0.5) brightness(0.85);
+  }
+}
+
+/* A phone has no room beside the board, so only the coaches stay, perched on the frame */
+@media (max-width: 600px) {
+  .sideline-player {
+    display: none;
+  }
+
+  .sideline-coach {
+    margin-left: 11%;
+    scale: 0.7;
+  }
+}

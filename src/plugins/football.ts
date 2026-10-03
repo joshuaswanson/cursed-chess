@@ -83,6 +83,13 @@ export interface ShotOption {
 export interface FootballView {
   ball: SquareIndex;
   lastKick: Kick | null;
+  /** Captured players watching from the sideline, with the square they were taken on */
+  bench: BenchedPlayer[];
+}
+
+export interface BenchedPlayer {
+  piece: Piece;
+  takenOn: SquareIndex;
 }
 
 const spotOf = (sq: SquareIndex): Spot => ({
@@ -130,16 +137,21 @@ export class FootballPlugin implements ModePlugin {
   ball: SquareIndex = toIndex(4, 3);
   lastKick: Kick | null = null;
   private scorer: Color | null = null;
+  private bench: BenchedPlayer[] = [];
   private nextId = 1;
 
   onGameStart(ctx: PluginContext): void {
     this.scorer = null;
+    this.bench = [];
     this.lastKick = null;
     this.ball = this.kickoffSpot(ctx.board);
   }
 
   onAfterMove(_ctx: PluginContext, move: Move): void {
     const mover = move.piece.color;
+    if (move.captured) {
+      this.bench.push({ piece: { ...move.captured }, takenOn: move.to });
+    }
     if (move.from === this.ball) {
       this.ball = move.to;
       return;
@@ -171,7 +183,11 @@ export class FootballPlugin implements ModePlugin {
   }
 
   getBoardOverlays(): BoardOverlay[] {
-    const view: FootballView = { ball: this.ball, lastKick: this.lastKick };
+    const view: FootballView = {
+      ball: this.ball,
+      lastKick: this.lastKick,
+      bench: [...this.bench],
+    };
     return [{ type: "football", squares: [this.ball], data: view }];
   }
 

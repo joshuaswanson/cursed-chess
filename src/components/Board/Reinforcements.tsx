@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Color, PieceType } from "../../engine";
-import { ARRIVAL_MS, KING_DEPART_MS } from "../../stores/gameStore";
+import { ARRIVAL_MS } from "../../stores/gameStore";
 import type { ArrivalStyle, Reinforcement } from "../../stores/reinforcements";
 import { pieceImage } from "../../utils/pieceImages";
 import { visualCol } from "./boardGeometry";
@@ -137,37 +137,7 @@ export function ReinforcementBanner({
   );
 }
 
-/** A king strolling off the side of the board, nose in the air, for a mode he sits out */
-export function DepartingKing({
-  departure,
-  flipped,
-  squareSize,
-}: {
-  departure: Reinforcement;
-  flipped: boolean;
-  squareSize: number;
-}) {
-  const col = visualCol(departure.sq, flipped);
-  const toLeft = col < 4;
-  const style: Style = {
-    "--delay": `${departure.delayMs}ms`,
-    "--dur": `${KING_DEPART_MS}ms`,
-    "--to-x": `${Math.round((toLeft ? -(col + 1.3) : 8.3 - col) * squareSize)}px`,
-    "--face": toLeft ? "-1" : "1",
-  };
-  return (
-    <div className="king-departure" style={style} aria-hidden>
-      <img
-        src={pieceImage(departure.piece)}
-        alt=""
-        className="piece-img"
-        draggable={false}
-      />
-    </div>
-  );
-}
-
-/** The announcement that both kings are leaving the board to the troops */
+/** The announcement that both kings are heading to the touchline to coach */
 export function KingsLeaveBanner({ startMs }: { startMs: number }) {
   return (
     <div
@@ -175,9 +145,9 @@ export function KingsLeaveBanner({ startMs }: { startMs: number }) {
       style={{ animationDelay: `${startMs - 250}ms` }}
       role="status"
     >
-      <span className="reinforce-title">Kings out!</span>
+      <span className="reinforce-title">Coach mode!</span>
       <span className="reinforce-sub">
-        No checkmates here. Win it the other way.
+        The kings are on the sideline. No checkmates here.
       </span>
     </div>
   );

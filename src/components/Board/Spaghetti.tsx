@@ -1,5 +1,9 @@
 import { useEffect, useRef } from "react";
-import { SPAGHETTI_REACH, drawSpaghetti, prepareSpaghetti } from "./spaghettiDraw";
+import {
+  SPAGHETTI_REACH,
+  drawSpaghetti,
+  prepareSpaghetti,
+} from "./spaghettiDraw";
 
 /** A piece torn apart by a portal's pull as it is swallowed */
 export function SpaghettiPiece({

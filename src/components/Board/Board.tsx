@@ -13,7 +13,6 @@ import { SiegeLayer } from "./Siege";
 import { FootballLayer, Goal, PassMarker, Pitch } from "./Football";
 import {
   ArrivingPiece,
-  DepartingKing,
   KingsLeaveBanner,
   ReinforcementBanner,
 } from "./Reinforcements";
@@ -26,6 +25,7 @@ import {
   visualRow as rowOnScreen,
 } from "./boardGeometry";
 import { PortalArrows } from "./PortalArrows";
+import { Sideline } from "./Sideline";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
 import { BoardFog } from "../Fog/Fog";
@@ -139,7 +139,7 @@ export function Board() {
     kickOptions,
     kick,
     reinforcements,
-    departingKings,
+    sidelineKings,
     arrivalStyle,
     introDone,
     ramTargets,
@@ -257,7 +257,6 @@ export function Board() {
   const hillLeader =
     hillWhite > hillBlack ? "white" : hillBlack > hillWhite ? "black" : null;
   const arrivals = new Map(reinforcements.map((r) => [r.sq, r]));
-  const departures = new Map(departingKings.map((d) => [d.sq, d]));
   const football = overlays.football;
   const footballRules = pluginManager.find<FootballPlugin>("football");
   const ourBall =
@@ -480,13 +479,6 @@ export function Board() {
               squareSize={squareSize}
             />
           )}
-          {departures.has(sq) && (
-            <DepartingKing
-              departure={departures.get(sq)!}
-              flipped={flipped}
-              squareSize={squareSize}
-            />
-          )}
           {piece && arrivals.has(sq) && (
             <ArrivingPiece
               arrival={arrivals.get(sq)!}
@@ -643,8 +635,17 @@ export function Board() {
             />
           )}
           {rows}
-          {departingKings.length > 0 && (
-            <KingsLeaveBanner startMs={departingKings[0].delayMs} />
+          {sidelineKings.length > 0 && (
+            <KingsLeaveBanner startMs={sidelineKings[0].delayMs} />
+          )}
+          {(sidelineKings.length > 0 || (football?.bench.length ?? 0) > 0) && (
+            <Sideline
+              coaches={sidelineKings}
+              bench={football?.bench ?? []}
+              lastKick={football?.lastKick ?? null}
+              flipped={flipped}
+              squareSize={squareSize}
+            />
           )}
           {reinforcements.length > 0 && (
             <ReinforcementBanner
