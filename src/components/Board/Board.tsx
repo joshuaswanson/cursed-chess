@@ -42,6 +42,8 @@ import {
   useMineExplosions,
   useCaptureBurst,
   useSlideAnimation,
+  useShotDives,
+  DIVE_MS,
   SLIDE_MS,
 } from "./useBoardEffects";
 import type { GravityFall } from "./useBoardEffects";
@@ -212,6 +214,11 @@ export function Board() {
   }, [portalsDue, travel, slides, settlePortals]);
 
   useGravitySpin(shellRef, overlays.gravityDirection !== null);
+  const shotDives = useShotDives(
+    overlays.football?.lastKick ?? null,
+    flipped,
+    squareSize,
+  );
   const gravityShift = useGravityShift(
     overlays.gravityMoves,
     overlays.gravityAngle,
@@ -355,6 +362,7 @@ export function Board() {
       const slide = slides.get(sq);
       const fall = gravityFalls.get(sq);
       const leap = kingLeaps.get(sq);
+      const dive = shotDives.get(sq);
       const pieceStyle = leap
         ? ({
             "--slide-from-x": `${leap.x}px`,
@@ -373,7 +381,14 @@ export function Board() {
                 "--grav-y": `${fall.y}px`,
                 animation: `gravity-drop ${fall.durationMs}ms ${fall.delayMs}ms both`,
               } as React.CSSProperties)
-            : undefined;
+            : dive
+              ? ({
+                  "--slide-from-x": `${dive.x}px`,
+                  "--slide-from-y": `${dive.y}px`,
+                  "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
+                  animation: `fifa-dive ${DIVE_MS}ms ${dive.delayMs}ms both`,
+                } as React.CSSProperties)
+              : undefined;
 
       // Pieces next to a detonating mine are shoved away from it
       const blastFrom = [...minesBlasting].find(

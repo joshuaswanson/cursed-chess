@@ -18,8 +18,10 @@ const BLOCK_CHANCE: Record<PieceType, number> = {
   [PieceType.Queen]: 0.35,
   [PieceType.King]: 0.6,
 };
-/** Chance the enemy keeper dives across to save a shot that passes next to them */
-const KEEPER_DIVE_CHANCE = 0.35;
+/** Chance a defender next to a shot's path dives into it in time to stop the ball */
+const DIVE_CHANCE = 0.3;
+/** The keeper on the goal line is better at it */
+const KEEPER_DIVE_CHANCE = 0.4;
 const DIRECTIONS: [number, number][] = [
   [1, 0],
   [-1, 0],
@@ -47,6 +49,13 @@ export interface Kick {
   outcome: KickOutcome;
   /** The ball's flight, starting at the kicker */
   waypoints: Spot[];
+  /** Defenders who threw themselves into a shot's path, and where they landed */
+  dives: Dive[];
+}
+
+export interface Dive {
+  from: SquareIndex;
+  to: SquareIndex;
 }
 
 export type KickTarget = SquareIndex | "goal";
@@ -62,8 +71,10 @@ export interface ShotOption {
   chance: number;
   path: SquareIndex[];
   exitFile: number;
+  /** Defenders already standing in the way */
   blockers: SquareIndex[];
-  keeper: SquareIndex | null;
+  /** Defenders next to the path, each with the empty square in it they will dive onto */
+  dives: Dive[];
   accuracy: number;
 }
 
@@ -228,23 +239,48 @@ export class FootballPlugin implements ModePlugin {
       }
 
       const blockers = path.filter((sq) => board.get(sq)?.color === enemy);
-      const lastTwo = path.slice(-2);
-      const keeper =
-        keeperSq !== null &&
-        !blockers.includes(keeperSq) &&
-        lastTwo.some((sq) => reach(sq, keeperSq) === 1)
-          ? keeperSq
-          : null;
+      const dives = this.divesInto(board, path, enemy);
       const accuracy = shotAccuracy(path.length + 1);
-      let chance = accuracy * (keeper !== null ? 1 - KEEPER_DIVE_CHANCE : 1);
+      let chance = accuracy;
       for (const sq of blockers)
         chance *= 1 - BLOCK_CHANCE[board.get(sq)!.type];
+      for (const dive of dives)
+        chance *=
+          1 - (dive.from === keeperSq ? KEEPER_DIVE_CHANCE : DIVE_CHANCE);
 
       if (!best || chance > best.chance) {
-        best = { chance, path, exitFile: file, blockers, keeper, accuracy };
+        best = { chance, path, exitFile: file, blockers, dives, accuracy };
       }
     }
     return best;
+  }
+
+  /**
+   * Every defender beside a shot's path throws themselves at it, each onto the
+   * first empty square of the path within reach, nearest the kicker first
+   */
+  private divesInto(
+    board: Board,
+    path: SquareIndex[],
+    defender: Color,
+  ): Dive[] {
+    const claimed = new Set<SquareIndex>();
+    const dives: Dive[] = [];
+    const divers = ALL_SQUARES.filter(
+      (sq) =>
+        board.get(sq)?.color === defender &&
+        !path.includes(sq) &&
+        path.some((p) => reach(p, sq) === 1),
+    );
+    for (const from of divers) {
+      const to = path.find(
+        (p) => reach(p, from) === 1 && !board.get(p) && !claimed.has(p),
+      );
+      if (to === undefined) continue;
+      claimed.add(to);
+      dives.push({ from, to });
+    }
+    return dives.sort((a, b) => path.indexOf(a.to) - path.indexOf(b.to));
   }
 
   /** Plays a pass or shot from the carrier, rolling for interceptions and saves */
@@ -253,16 +289,40 @@ export class FootballPlugin implements ModePlugin {
     if (!kicker) return null;
     const from = this.ball;
     const start = spotOf(from);
-    const finish = (kick: Omit<Kick, "id" | "color">): Kick => {
-      this.lastKick = { ...kick, id: this.nextId++, color: kicker.color };
+    let dives: Dive[] = [];
+    const finish = (kick: Omit<Kick, "id" | "color" | "dives">): Kick => {
+      this.lastKick = {
+        ...kick,
+        dives,
+        id: this.nextId++,
+        color: kicker.color,
+      };
       return this.lastKick;
     };
 
     if (target === "goal") {
       const shot = this.shotOption(board, from);
       if (!shot) return null;
-      for (const sq of shot.blockers) {
-        if (Math.random() < BLOCK_CHANCE[board.get(sq)!.type]) {
+      const keeperSq = keeperOf(board, opponent(kicker.color));
+      // Everyone beside the path dives at once, and stays where they land
+      dives = shot.dives;
+      for (const dive of dives) {
+        board.put(dive.to, board.get(dive.from)!);
+        board.remove(dive.from);
+      }
+      // The ball meets whoever is in its way in the order it reaches them
+      const stoppers = [
+        ...shot.blockers.map((sq) => ({
+          sq,
+          chance: BLOCK_CHANCE[board.get(sq)!.type],
+        })),
+        ...dives.map((dive) => ({
+          sq: dive.to,
+          chance: dive.from === keeperSq ? KEEPER_DIVE_CHANCE : DIVE_CHANCE,
+        })),
+      ].sort((a, b) => shot.path.indexOf(a.sq) - shot.path.indexOf(b.sq));
+      for (const { sq, chance } of stoppers) {
+        if (Math.random() < chance) {
           this.ball = sq;
           return finish({
             kind: "shot",
@@ -270,19 +330,6 @@ export class FootballPlugin implements ModePlugin {
             waypoints: [start, spotOf(sq)],
           });
         }
-      }
-      if (shot.keeper !== null && Math.random() < KEEPER_DIVE_CHANCE) {
-        const passing = shot.path.find((sq) => reach(sq, shot.keeper!) === 1);
-        this.ball = shot.keeper;
-        return finish({
-          kind: "shot",
-          outcome: "saved",
-          waypoints: [
-            start,
-            spotOf(passing ?? shot.keeper),
-            spotOf(shot.keeper),
-          ],
-        });
       }
       const exit = { file: shot.exitFile, rank: goalRank(kicker.color) };
       if (Math.random() > shot.accuracy) {

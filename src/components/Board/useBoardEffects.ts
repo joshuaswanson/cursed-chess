@@ -4,6 +4,7 @@ import type { SquareIndex } from "../../engine";
 import { offsetBetween } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
 import { GRAVITY_SHIFT_MS } from "../../plugins/gravity";
+import type { Kick } from "../../plugins/football";
 
 type Move = { from: SquareIndex; to: SquareIndex };
 type Offsets = Map<SquareIndex, { x: number; y: number }>;
@@ -188,4 +189,52 @@ export function useCaptureBurst<Sq extends string | number = SquareIndex>(
   }, [captureSquare, moveCount, delayMs]);
 
   return burst;
+}
+
+/** How long a shot takes to cover one square */
+export const SHOT_MS_PER_SQUARE = 55;
+/** A diver leaves this long before the ball reaches them */
+const DIVE_LEAD_MS = 180;
+export const DIVE_MS = 380;
+
+export interface DiveSlide {
+  x: number;
+  y: number;
+  delayMs: number;
+}
+
+/**
+ * Defenders diving into a shot's path: each leaps from where it stood to
+ * where it lands, timed to meet the ball as it comes past.
+ */
+export function useShotDives(
+  kick: Kick | null,
+  flipped: boolean,
+  squareSize: number,
+): Map<SquareIndex, DiveSlide> {
+  const id = kick?.id ?? 0;
+  const [seen, setSeen] = useState(id);
+  const [dives, setDives] = useState<Map<SquareIndex, DiveSlide>>(new Map());
+  if (id !== seen) {
+    setSeen(id);
+    const next = new Map<SquareIndex, DiveSlide>();
+    const start = kick?.waypoints[0];
+    for (const { from, to } of kick?.dives ?? []) {
+      const squares = start
+        ? Math.hypot((to & 7) - start.file, (to >> 4) - start.rank)
+        : 0;
+      next.set(to, {
+        ...offsetBetween(from, to, flipped, squareSize),
+        delayMs: Math.max(0, squares * SHOT_MS_PER_SQUARE - DIVE_LEAD_MS),
+      });
+    }
+    setDives(next);
+  }
+  useEffect(() => {
+    if (dives.size === 0) return;
+    const longest = Math.max(...[...dives.values()].map((d) => d.delayMs));
+    const done = setTimeout(() => setDives(new Map()), longest + DIVE_MS + 100);
+    return () => clearTimeout(done);
+  }, [dives]);
+  return dives;
 }

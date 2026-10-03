@@ -474,3 +474,29 @@
     scale: 1;
   }
 }
+
+/* A defender throws themselves sideways into the shot: a stretched leap that
+   tilts toward the ball, then a skid as they hit the turf */
+@keyframes fifa-dive {
+  0% {
+    translate: var(--slide-from-x) var(--slide-from-y);
+    rotate: 0deg;
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+  }
+  55% {
+    translate: calc(var(--slide-from-x) * 0.15) calc(var(--slide-from-y) * 0.15);
+    rotate: calc(var(--dive-tilt) * 38deg);
+    scale: 1.25 0.85;
+  }
+  75% {
+    translate: 0 0;
+    rotate: calc(var(--dive-tilt) * 24deg);
+    scale: 1.1 0.9;
+  }
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 1;
+  }
+}

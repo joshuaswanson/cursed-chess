@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Color } from "../../engine";
 import type { FootballView, Kick, Spot } from "../../plugins/football";
 import { visualCol, visualRow } from "./boardGeometry";
+import { SHOT_MS_PER_SQUARE } from "./useBoardEffects";
 import { Confetti } from "../Show/Confetti";
 import { sfx } from "../../audio/sfx";
 import "./Football.css";
@@ -9,7 +10,6 @@ import "./Football.css";
 /** The kickoff whistle blows as the mode's title card clears */
 const KICKOFF_WHISTLE_MS = 4300;
 const PASS_MS_PER_SQUARE = 95;
-const SHOT_MS_PER_SQUARE = 55;
 const MIN_FLIGHT_MS = 260;
 /** Callouts stay up this long after the ball lands */
 const AFTERMATH_MS = 1600;
