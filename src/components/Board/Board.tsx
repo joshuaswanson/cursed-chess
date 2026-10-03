@@ -11,11 +11,7 @@ import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
 import { SiegeLayer } from "./Siege";
 import { FootballLayer, Goal, PassMarker, Pitch } from "./Football";
-import {
-  ArrivingPiece,
-  KingsLeaveBanner,
-  ReinforcementBanner,
-} from "./Reinforcements";
+import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
 import type { GravityPlugin } from "../../plugins/gravity";
@@ -635,9 +631,6 @@ export function Board() {
             />
           )}
           {rows}
-          {sidelineKings.length > 0 && (
-            <KingsLeaveBanner startMs={sidelineKings[0].delayMs} />
-          )}
           {(sidelineKings.length > 0 || (football?.bench.length ?? 0) > 0) && (
             <Sideline
               coaches={sidelineKings}

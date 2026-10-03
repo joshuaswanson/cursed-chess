@@ -136,19 +136,3 @@ export function ReinforcementBanner({
     </div>
   );
 }
-
-/** The announcement that both kings are heading to the touchline to coach */
-export function KingsLeaveBanner({ startMs }: { startMs: number }) {
-  return (
-    <div
-      className="reinforce-banner"
-      style={{ animationDelay: `${startMs - 250}ms` }}
-      role="status"
-    >
-      <span className="reinforce-title">Coach mode!</span>
-      <span className="reinforce-sub">
-        The kings are on the sideline. No checkmates here.
-      </span>
-    </div>
-  );
-}

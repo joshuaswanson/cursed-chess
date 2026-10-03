@@ -1085,10 +1085,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
         });
 
     // Newcomers land before the mode's rules are set up, so they count for them
-    // Any newcomers wait for the kings' farewell banner to clear
+    // Any newcomers wait for the kings to clear the pitch
     const arrivalsStart =
-      REINFORCE_START_MS +
-      (sidelineKings.length > 0 ? KING_DEPART_MS + 700 : 0);
+      REINFORCE_START_MS + (sidelineKings.length > 0 ? KING_DEPART_MS : 0);
     const reinforcements = mode.noReinforcements
       ? []
       : [
