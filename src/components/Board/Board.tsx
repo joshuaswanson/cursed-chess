@@ -14,6 +14,7 @@ import { FootballLayer, Goal, PassMarker, Pitch } from "./Football";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
+import type { GravityPlugin } from "../../plugins/gravity";
 import { BattleEffects, BattleUnit } from "./Battle";
 import {
   visualCol as colOnScreen,
@@ -64,6 +65,44 @@ function GravityAlert({ delta }: { delta: number }) {
   );
 }
 
+/** How long the board takes to swing back upright once gravity mode ends */
+const UNSPIN_MS = 800;
+
+/**
+ * Turns the board frame with the gravity board's slow spin, every frame. At
+ * diagonal angles the board shrinks so its corners stay inside its spot.
+ */
+function useGravitySpin(
+  shellRef: React.RefObject<HTMLDivElement | null>,
+  active: boolean,
+) {
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!active || !shell) return;
+    let frame = 0;
+    const draw = () => {
+      const gravity = useGameStore
+        .getState()
+        .pluginManager.find<GravityPlugin>("gravity");
+      if (gravity) {
+        const angle = gravity.spinAt(performance.now());
+        const t = (angle * Math.PI) / 180;
+        const fit = 1 / (Math.abs(Math.cos(t)) + Math.abs(Math.sin(t)));
+        shell.style.transform = `rotate(${angle}deg) scale(${fit})`;
+      }
+      frame = requestAnimationFrame(draw);
+    };
+    shell.style.transition = "none";
+    frame = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(frame);
+      shell.style.transition = `transform ${UNSPIN_MS}ms cubic-bezier(0.34, 1.45, 0.64, 1)`;
+      shell.style.transform = "";
+      setTimeout(() => (shell.style.transition = ""), UNSPIN_MS);
+    };
+  }, [shellRef, active]);
+}
+
 function playPortalPhase(phase: PortalPhase): void {
   if (phase.type === "shrink") sfx.portalEnter();
   if (phase.type === "pop" || phase.type === "fly") {
@@ -98,6 +137,7 @@ export function Board() {
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
   const [squareSize, setSquareSize] = useState(72);
   useLayoutEffect(() => {
     const board = boardRef.current;
@@ -165,6 +205,7 @@ export function Board() {
     return () => clearTimeout(timer);
   }, [portalsDue, travel, slides, settlePortals]);
 
+  useGravitySpin(shellRef, overlays.gravityDirection !== null);
   const gravityShift = useGravityShift(
     overlays.gravityMoves,
     overlays.gravityAngle,
@@ -512,24 +553,18 @@ export function Board() {
       "--shrink-ring": battleRoyale.shrinkRing,
     }),
   } as React.CSSProperties;
-  // The frame turns with the board so the board never pokes through it
-  // At diagonal angles the board shrinks so its corners stay inside its spot
-  const fitScale =
-    gravityAngle === null
-      ? 1
-      : 1 /
-        (Math.abs(Math.cos((gravityAngle * Math.PI) / 180)) +
-          Math.abs(Math.sin((gravityAngle * Math.PI) / 180)));
+  // Pieces stay at the angle gravity last settled at, so they tilt with the
+  // turning board until the next shift stands them upright again
   const shellStyle = {
     ...(gravityAngle !== null && {
       "--gravity-rotation": `${gravityAngle}deg`,
-      transform: `rotate(${gravityAngle}deg) scale(${fitScale})`,
     }),
   } as React.CSSProperties;
 
   return (
     <>
       <div
+        ref={shellRef}
         className={`board-shell${overlays.gravityDirection ? " gravity-active" : ""}${battleRoyale && battleRoyale.shrinkRing > 0 ? " br-broken" : ""}`}
         style={shellStyle}
       >

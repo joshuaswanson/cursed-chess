@@ -155,7 +155,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "gravity",
     title: "Gravity",
     tagline: "Everything falls. The board keeps turning.",
-    catchphrase: "Gravity shifts every few turns!",
+    catchphrase: "The board never stops turning!",
     sky: ["#12052e", "#3d1494", "#00b3a7"],
     accent: "#3ee6b0",
     accent2: "#ff4fa3",

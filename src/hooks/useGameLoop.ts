@@ -5,12 +5,13 @@ import { isGameOver } from "../engine";
 const MOVE_TICK_MS = 100;
 const MODE_TICK_MS = 1000;
 
-/** Drives the move clock, the autonomous-mode tick, and the mode countdown */
+/** Drives the move clock, the autonomous-mode tick, the turning gravity board, and the mode countdown */
 export function useGameLoop(): void {
   const moveTimerActive = useGameStore((s) => s.moveTimerActive);
   const gameOver = useGameStore((s) => isGameOver(s.status));
   const isAutonomous = useGameStore((s) => s.pluginManager.isAutonomous());
-  const { tickTimer, tickAutonomous, tickModeTimer } = useGameStore.getState();
+  const { tickTimer, tickAutonomous, tickModeTimer, tickGravity } =
+    useGameStore.getState();
 
   useEffect(() => {
     if (!moveTimerActive || gameOver || isAutonomous) return;
@@ -23,6 +24,12 @@ export function useGameLoop(): void {
     const interval = setInterval(tickAutonomous, AUTONOMOUS_TICK_MS);
     return () => clearInterval(interval);
   }, [isAutonomous, gameOver, tickAutonomous]);
+
+  useEffect(() => {
+    if (gameOver) return;
+    const interval = setInterval(tickGravity, MOVE_TICK_MS);
+    return () => clearInterval(interval);
+  }, [gameOver, tickGravity]);
 
   useEffect(() => {
     if (gameOver) return;

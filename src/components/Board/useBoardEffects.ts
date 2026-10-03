@@ -3,6 +3,7 @@ import type { RefObject } from "react";
 import type { SquareIndex } from "../../engine";
 import { offsetBetween } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
+import { GRAVITY_SHIFT_MS } from "../../plugins/gravity";
 
 type Move = { from: SquareIndex; to: SquareIndex };
 type Offsets = Map<SquareIndex, { x: number; y: number }>;
@@ -72,13 +73,12 @@ export interface GravityShift {
   falls: Map<SquareIndex, GravityFall>;
 }
 
-/** The board finishes spinning and the pieces come loose at this point */
-export const GRAVITY_RELEASE_MS = 1250;
-const GRAVITY_SHIFT_MS = 2900;
+/** The pieces stand upright and come loose at this point */
+export const GRAVITY_RELEASE_MS = 750;
 
 /**
- * When gravity changes direction: the board spins, then each piece drops from
- * where it was, taking longer to land the farther it falls.
+ * When gravity changes direction: the pieces pop upright, then each one drops
+ * from where it was, taking longer to land the farther it falls.
  */
 export function useGravityShift(
   gravityMoves: Move[],

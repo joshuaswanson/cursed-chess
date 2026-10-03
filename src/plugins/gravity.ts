@@ -42,6 +42,13 @@ const ANGLE_TO_DIR: Record<number, GravityDirection> = {
   315: "sw",
 };
 
+/** How fast the board turns, in degrees per second */
+const SPIN_RATE = 3;
+/** Gravity changes direction each time the board has turned this far */
+const SHIFT_STEP = 45;
+/** How long play stops while the pieces come loose and fall */
+export const GRAVITY_SHIFT_MS = 2000;
+
 /**
  * Pawns keep heading up the screen whichever way the board is turned: White
  * moves toward the top of the screen and Black toward the bottom, capturing on
@@ -75,13 +82,16 @@ export class GravityPlugin implements ModePlugin {
   id = "gravity";
   name = "Gravity";
   description =
-    "Gravity pulls all pieces in one direction. It shifts every few turns.";
+    "The board keeps turning. Every eighth of a turn, everything falls the new way down.";
 
   private direction: GravityDirection = "south";
+  /** The angle gravity last settled at, a multiple of SHIFT_STEP */
   private angle = 0;
-  private turnCount = 0;
-  private shiftCount = 0;
-  private shiftInterval = 4;
+  /** Where the board had turned to when it last stopped or started turning */
+  private spinBase = 0;
+  /** When the board started turning from `spinBase`, or null while it is held still */
+  private spinSince: number | null = null;
+  private spinDir: 1 | -1 = 1;
   lastGravityMoves: { from: SquareIndex; to: SquareIndex }[] = [];
 
   private angleToDirection(angle: number): GravityDirection {
@@ -93,36 +103,47 @@ export class GravityPlugin implements ModePlugin {
     ctx.game.pawnRules = null;
     this.direction = "south";
     this.angle = 0;
-    this.turnCount = 0;
-    this.shiftCount = 0;
+    this.spinBase = 0;
+    this.spinSince = null;
+    this.spinDir = Math.random() < 0.5 ? 1 : -1;
+    this.lastGravityMoves = [];
   }
 
-  onTurnEnd(ctx: PluginContext, color: Color): void {
-    // Gravity only applies when the board rotates — otherwise it's normal chess
-    if (color === Color.Black) {
-      this.turnCount++;
-      if (this.turnCount % this.shiftInterval === 0) {
-        // First 2 shifts: 90°, then a 45°, then random 45/90
-        let step: number;
-        if (this.shiftCount < 2) {
-          step = 90;
-        } else if (this.shiftCount === 2) {
-          step = 45;
-        } else {
-          step = Math.random() < 0.5 ? 45 : 90;
-        }
-        const sign = Math.random() < 0.5 ? 1 : -1;
-        this.shiftCount++;
-        this.angle += step * sign;
-        this.direction = this.angleToDirection(this.angle);
-        ctx.game.pawnRules = pawnRulesForAngle(this.angle);
-        this.applyGravity(ctx);
-      }
-    }
+  /** How far the board has turned at time `now`, in degrees */
+  spinAt(now: number): number {
+    if (this.spinSince === null) return this.spinBase;
+    return (
+      this.spinBase + (this.spinDir * SPIN_RATE * (now - this.spinSince)) / 1000
+    );
+  }
+
+  holdSpin(now: number): void {
+    this.spinBase = this.spinAt(now);
+    this.spinSince = null;
+  }
+
+  resumeSpin(now: number): void {
+    this.spinSince ??= now;
+  }
+
+  /**
+   * Once the turning board passes the next step, gravity takes the new
+   * direction, the pieces fall, and the board holds still. Returns whether
+   * that happened.
+   */
+  shiftIfDue(ctx: PluginContext, now: number): boolean {
+    const next = this.angle + this.spinDir * SHIFT_STEP;
+    if ((this.spinAt(now) - next) * this.spinDir < 0) return false;
+    this.angle = next;
+    this.spinBase = next;
+    this.spinSince = null;
+    this.direction = this.angleToDirection(next);
+    ctx.game.pawnRules = pawnRulesForAngle(next);
+    this.applyGravity(ctx);
+    return true;
   }
 
   getBoardOverlays(): BoardOverlay[] {
-    const progress = (this.turnCount % this.shiftInterval) / this.shiftInterval;
     return [
       {
         type: "gravity",
@@ -131,7 +152,6 @@ export class GravityPlugin implements ModePlugin {
           direction: this.direction,
           angle: this.angle,
           arrow: DIR_ARROWS[this.direction],
-          shiftProgress: progress,
           moves: this.lastGravityMoves,
         },
       },

@@ -19,7 +19,7 @@ import { BattleRoyalePlugin } from "../plugins/battleRoyale";
 import { RallyPlugin } from "../plugins/clashRoyale";
 import { MinefieldPlugin } from "../plugins/minefield";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
-import { GravityPlugin } from "../plugins/gravity";
+import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { StrategoPlugin } from "../plugins/stratego";
 import { SiegePlugin } from "../plugins/siege";
 import { FootballPlugin } from "../plugins/football";
@@ -214,6 +214,8 @@ export interface GameStore {
   autonomousTick: number;
   /** The current mode's title cards have cleared */
   introDone: boolean;
+  /** Pieces are falling after gravity shifted, so nobody may move */
+  gravityFalling: boolean;
   siteTab: SiteTab;
   setSiteTab: (tab: SiteTab) => void;
 
@@ -268,6 +270,8 @@ export interface GameStore {
   expireTimer: () => void;
   tickModeTimer: () => void;
   tickAutonomous: () => void;
+  /** Turns the gravity board and lets everything fall when it passes the next step */
+  tickGravity: () => void;
   resolveExplosion: (square: SquareIndex) => void;
   /** Moves the portals if a reshuffle is due, once the board has finished animating */
   settlePortals: () => void;
@@ -467,6 +471,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   curseStage: null,
   autonomousTick: 0,
   introDone: true,
+  gravityFalling: false,
   siteTab: "Play",
   setSiteTab: (tab) => set({ siteTab: tab }),
 
@@ -542,7 +547,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   selectSquare: (square) => {
     const state = get();
-    if (state.paused) return;
+    if (state.paused || state.gravityFalling) return;
     if (state.pluginManager.isAutonomous()) {
       if (state.deployPieceType) state.deployPiece(square);
       return;
@@ -620,7 +625,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   makeMove: (from, to, promotion) => {
     const state = get();
-    if (state.paused) return;
+    if (state.paused || state.gravityFalling) return;
     const { game, pluginManager } = state;
     const piece = game.board.get(from);
     if (!piece) return;
@@ -833,7 +838,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   tickTimer: () => {
     const { turn, moveTimerActive, paused, devMode, pluginManager } = get();
-    if (!moveTimerActive || paused) return;
+    if (!moveTimerActive || paused || get().gravityFalling) return;
     // A mine going off holds the clock, so nobody moves until the blast has played out
     const minefield = pluginManager.find<MinefieldPlugin>("minefield");
     if (minefield && minefield.pendingExplosions.size > 0) return;
@@ -908,6 +913,36 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (winner === null) return;
     set({ status: GameStatus.Checkmate });
     endGameSoon(winner);
+  },
+
+  tickGravity: () => {
+    const { pluginManager, game, paused, status, introDone, gravityFalling } =
+      get();
+    const gravity = pluginManager.find<GravityPlugin>("gravity");
+    if (!gravity) return;
+    const now = performance.now();
+    if (paused || !introDone || gravityFalling || isGameOver(status)) {
+      gravity.holdSpin(now);
+      return;
+    }
+    gravity.resumeSpin(now);
+    if (!gravity.shiftIfDue({ game, board: game.board }, now)) return;
+
+    const next = pluginManager.invokeModifyGameStatus(game.getStatus());
+    set({
+      ...CLEARED_SELECTION,
+      promotionPending: null,
+      gravityFalling: true,
+      status: next,
+      turn: game.turn,
+    });
+    schedule(() => set({ gravityFalling: false }), GRAVITY_SHIFT_MS);
+    if (isGameOver(next)) {
+      endGameSoon(
+        next === GameStatus.Checkmate ? opponent(game.turn) : null,
+        GRAVITY_SHIFT_MS,
+      );
+    }
   },
 
   tickModeTimer: () => {
@@ -1038,6 +1073,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       reinforcements,
       arrivalStyle: Math.random() < 0.5 ? "parachute" : "sprint",
       introDone: false,
+      gravityFalling: false,
       pluginManager: freshPluginManager(nextGame, mode.create()),
       turn: nextGame.turn,
       moveHistory: [...nextGame.history],
