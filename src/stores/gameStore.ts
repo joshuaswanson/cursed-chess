@@ -832,8 +832,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   tickTimer: () => {
-    const { turn, moveTimerActive, paused, devMode } = get();
+    const { turn, moveTimerActive, paused, devMode, pluginManager } = get();
     if (!moveTimerActive || paused) return;
+    // A mine going off holds the clock, so nobody moves until the blast has played out
+    const minefield = pluginManager.find<MinefieldPlugin>("minefield");
+    if (minefield && minefield.pendingExplosions.size > 0) return;
     // Dev mode gives the human unlimited time
     if (devMode && turn === Color.White) return;
     const key = turn === Color.White ? "timeWhite" : "timeBlack";
