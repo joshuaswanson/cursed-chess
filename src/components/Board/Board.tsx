@@ -136,6 +136,7 @@ export function Board() {
     kick,
     reinforcements,
     sidelineKings,
+    sidelineBench,
     arrivalStyle,
     introDone,
     ramTargets,
@@ -631,10 +632,10 @@ export function Board() {
             />
           )}
           {rows}
-          {(sidelineKings.length > 0 || (football?.bench.length ?? 0) > 0) && (
+          {sidelineKings.length > 0 && (
             <Sideline
               coaches={sidelineKings}
-              bench={football?.bench ?? []}
+              bench={sidelineBench}
               lastKick={football?.lastKick ?? null}
               flipped={flipped}
               squareSize={squareSize}

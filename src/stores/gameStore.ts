@@ -24,8 +24,12 @@ import { StrategoPlugin } from "../plugins/stratego";
 import { SiegePlugin } from "../plugins/siege";
 import { FootballPlugin } from "../plugins/football";
 import type { KickTarget } from "../plugins/football";
-import { reinforce, returnKing } from "./reinforcements";
-import type { ArrivalStyle, Reinforcement } from "./reinforcements";
+import { benchKings, reinforce, returnKing } from "./reinforcements";
+import type {
+  ArrivalStyle,
+  BenchedPlayer,
+  Reinforcement,
+} from "./reinforcements";
 import { HexGame } from "../engine/hex/game";
 import { chooseMove, PIECE_VALUE } from "../ai/chooseMove";
 import type { ThemeId } from "../theme/themes";
@@ -244,6 +248,8 @@ export interface GameStore {
   reinforcements: Reinforcement[];
   /** Kings coaching from the touchline for a mode they sit out */
   sidelineKings: Reinforcement[];
+  /** Pieces captured while the kings coach, standing beside them */
+  sidelineBench: BenchedPlayer[];
   arrivalStyle: ArrivalStyle;
 
   selectHex: (coord: HexCoord) => void;
@@ -306,6 +312,7 @@ const CLEARED_HEX = {
   hexArrivals: [],
   reinforcements: [],
   sidelineKings: [],
+  sidelineBench: [],
   arrivalStyle: "parachute",
 } satisfies Partial<GameStore>;
 
@@ -662,6 +669,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       moveHistory: [...game.history],
     };
 
+    // While the kings coach, the taken piece joins them on the touchline
+    if (processedMove.captured && get().sidelineKings.length > 0) {
+      set((s) => ({
+        sidelineBench: [
+          ...s.sidelineBench,
+          { piece: { ...processedMove.captured! }, takenOn: processedMove.to },
+        ],
+      }));
+    }
+
     if (processedMove.captured?.type === PieceType.King) {
       set({ ...moveState, lastPortalMove: null, status: GameStatus.Checkmate });
       endGameSoon(mover);
@@ -801,9 +818,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
 
     schedule(() => {
-      const { devMode, pluginManager, isHexMode } = get();
+      const { devMode, pluginManager, isHexMode, currentModeIndex } = get();
       const game = new Game();
       set({ game, ...FRESH_BOARD });
+      // Replaying a mode the kings sit out sends them back to the touchline
+      if (devMode && GAME_MODES[currentModeIndex]?.kingsSitOut) {
+        set({ sidelineKings: benchKings(game.board, 0) });
+      }
 
       if (!devMode) {
         get().switchMode();
@@ -1067,13 +1088,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     // Kings leave for modes they sit out, and come back for the next one that needs them
     const sidelineKings = mode.kingsSitOut
-      ? [Color.White, Color.Black].flatMap((color) => {
-          const sq = nextGame.board.findKing(color);
-          if (sq === null) return [];
-          const piece = nextGame.board.get(sq)!;
-          nextGame.board.remove(sq);
-          return [{ sq, piece, delayMs: REINFORCE_START_MS }];
-        })
+      ? benchKings(nextGame.board, REINFORCE_START_MS)
       : [];
     const returningKings = mode.kingsSitOut
       ? []

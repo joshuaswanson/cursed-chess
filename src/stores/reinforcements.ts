@@ -16,6 +16,12 @@ const SQUAD: PieceType[] = [
 
 export type ArrivalStyle = "parachute" | "sprint";
 
+/** A captured piece watching from the touchline, with the square it was taken on */
+export interface BenchedPlayer {
+  piece: Piece;
+  takenOn: SquareIndex;
+}
+
 export interface Reinforcement {
   sq: SquareIndex;
   piece: Piece;
@@ -83,4 +89,15 @@ export function returnKing(board: Board, color: Color): SquareIndex | null {
     }
   }
   return null;
+}
+
+/** Takes both kings off the board to coach from the touchline, walking off after `delayMs` */
+export function benchKings(board: Board, delayMs: number): Reinforcement[] {
+  return [Color.White, Color.Black].flatMap((color) => {
+    const sq = board.findKing(color);
+    if (sq === null) return [];
+    const piece = board.get(sq)!;
+    board.remove(sq);
+    return [{ sq, piece, delayMs }];
+  });
 }

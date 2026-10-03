@@ -1,7 +1,7 @@
 import { Color } from "../../engine";
 import type { SquareIndex } from "../../engine";
-import type { BenchedPlayer, Kick } from "../../plugins/football";
-import type { Reinforcement } from "../../stores/reinforcements";
+import type { Kick } from "../../plugins/football";
+import type { BenchedPlayer, Reinforcement } from "../../stores/reinforcements";
 import { KING_DEPART_MS } from "../../stores/gameStore";
 import { pieceImage } from "../../utils/pieceImages";
 import { visualCol, visualRow } from "./boardGeometry";
@@ -116,8 +116,8 @@ function reactionTo(kick: Kick | null, color: Color): string {
 }
 
 /**
- * The left touchline: each side's king coaching in cap and whistle, and in
- * FIFA the players taken off the pitch watching beside them
+ * The left touchline: each side's king coaching in cap and whistle, with the
+ * players taken off the board watching beside them
  */
 export function Sideline({
   coaches,
