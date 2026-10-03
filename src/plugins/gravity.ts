@@ -43,7 +43,7 @@ const ANGLE_TO_DIR: Record<number, GravityDirection> = {
 };
 
 /** How fast the board turns, in degrees per second */
-const SPIN_RATE = 3;
+const SPIN_RATE = 5;
 /** Gravity changes direction each time the board has turned this far */
 const SHIFT_STEP = 45;
 /** How long play stops while the pieces come loose and fall */
