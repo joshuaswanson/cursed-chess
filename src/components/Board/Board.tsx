@@ -11,7 +11,12 @@ import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
 import { SiegeLayer } from "./Siege";
 import { FootballLayer, Goal, PassMarker, Pitch } from "./Football";
-import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
+import {
+  ArrivingPiece,
+  DepartingKing,
+  KingsLeaveBanner,
+  ReinforcementBanner,
+} from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
 import type { GravityPlugin } from "../../plugins/gravity";
@@ -131,6 +136,7 @@ export function Board() {
     kickOptions,
     kick,
     reinforcements,
+    departingKings,
     arrivalStyle,
     introDone,
     ramTargets,
@@ -243,6 +249,7 @@ export function Board() {
   const hillLeader =
     hillWhite > hillBlack ? "white" : hillBlack > hillWhite ? "black" : null;
   const arrivals = new Map(reinforcements.map((r) => [r.sq, r]));
+  const departures = new Map(departingKings.map((d) => [d.sq, d]));
   const football = overlays.football;
   const footballRules = pluginManager.find<FootballPlugin>("football");
   const ourBall =
@@ -451,6 +458,13 @@ export function Board() {
               squareSize={squareSize}
             />
           )}
+          {departures.has(sq) && (
+            <DepartingKing
+              departure={departures.get(sq)!}
+              flipped={flipped}
+              squareSize={squareSize}
+            />
+          )}
           {piece && arrivals.has(sq) && (
             <ArrivingPiece
               arrival={arrivals.get(sq)!}
@@ -607,6 +621,9 @@ export function Board() {
             />
           )}
           {rows}
+          {departingKings.length > 0 && (
+            <KingsLeaveBanner startMs={departingKings[0].delayMs} />
+          )}
           {reinforcements.length > 0 && (
             <ReinforcementBanner
               key={reinforcements.map((r) => r.sq).join()}

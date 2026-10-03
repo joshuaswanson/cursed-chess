@@ -18,7 +18,7 @@ const BLOCK_CHANCE: Record<PieceType, number> = {
   [PieceType.Queen]: 0.35,
   [PieceType.King]: 0.6,
 };
-/** Chance the enemy king dives across to save a shot that passes next to him */
+/** Chance the enemy keeper dives across to save a shot that passes next to them */
 const KEEPER_DIVE_CHANCE = 0.35;
 const DIRECTIONS: [number, number][] = [
   [1, 0],
@@ -84,6 +84,19 @@ const reach = (a: SquareIndex, b: SquareIndex) =>
 const attackDirection = (color: Color) => (color === Color.White ? 1 : -1);
 /** Just over the goal line, where the goal takes over the ball's flight */
 const goalRank = (color: Color) => (color === Color.White ? 7.6 : -0.6);
+
+/**
+ * The kings sit this mode out, so whoever stands on their side's goal line
+ * between the posts keeps goal, the one nearest the middle if there are two
+ */
+function keeperOf(board: Board, color: Color): SquareIndex | null {
+  const rank = color === Color.White ? 0 : 7;
+  const keepers = GOAL_FILES.map((file) => toIndex(file, rank)).filter(
+    (sq) => board.get(sq)?.color === color,
+  );
+  keepers.sort((a, b) => Math.abs(fileOf(a) - 3.5) - Math.abs(fileOf(b) - 3.5));
+  return keepers[0] ?? null;
+}
 
 function shotAccuracy(distance: number): number {
   return Math.min(1, Math.max(0.6, 1 - (distance - 3) * 0.06));
@@ -191,7 +204,7 @@ export class FootballPlugin implements ModePlugin {
     if (!kicker) return null;
     const dr = attackDirection(kicker.color);
     const enemy = opponent(kicker.color);
-    const keeperSq = board.findKing(enemy);
+    const keeperSq = keeperOf(board, enemy);
     let best: ShotOption | null = null;
 
     for (const df of [-1, 0, 1]) {

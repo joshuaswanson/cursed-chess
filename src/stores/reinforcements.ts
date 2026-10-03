@@ -71,3 +71,16 @@ export function reinforce(
   }
   return arrivals;
 }
+
+/** Brings back a side's king if he sat out, on the nearest safe square to his own back rank */
+export function returnKing(board: Board, color: Color): SquareIndex | null {
+  if (board.findKing(color) !== null) return null;
+  const enemy = opponent(color);
+  for (const sq of openSquares(board, color, [0, 1, 2, 3])) {
+    if (!isSquareAttacked(board, sq, enemy)) {
+      board.put(sq, { type: PieceType.King, color });
+      return sq;
+    }
+  }
+  return null;
+}

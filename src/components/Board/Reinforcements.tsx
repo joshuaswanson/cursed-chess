@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { Color } from "../../engine";
-import { ARRIVAL_MS } from "../../stores/gameStore";
+import { Color, PieceType } from "../../engine";
+import { ARRIVAL_MS, KING_DEPART_MS } from "../../stores/gameStore";
 import type { ArrivalStyle, Reinforcement } from "../../stores/reinforcements";
 import { pieceImage } from "../../utils/pieceImages";
 import { visualCol } from "./boardGeometry";
@@ -105,6 +105,7 @@ export function ReinforcementBanner({
     return () => clearTimeout(bugle);
   }, [startMs]);
 
+  const onlyKings = arrivals.every((a) => a.piece.type === PieceType.King);
   const sides = new Set(arrivals.map((a) => a.piece.color));
   const who =
     sides.size === 2
@@ -118,9 +119,65 @@ export function ReinforcementBanner({
       style={{ animationDelay: `${startMs - 250}ms` }}
       role="status"
     >
-      <span className="reinforce-title">Reinforcements!</span>
+      {onlyKings ? (
+        <>
+          <span className="reinforce-title">Kings are back!</span>
+          <span className="reinforce-sub">Protect them again.</span>
+        </>
+      ) : (
+        <>
+          <span className="reinforce-title">Reinforcements!</span>
+          <span className="reinforce-sub">
+            {style === "parachute" ? "Airdrop incoming." : "Here they come."}{" "}
+            {who}
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** A king strolling off the side of the board, nose in the air, for a mode he sits out */
+export function DepartingKing({
+  departure,
+  flipped,
+  squareSize,
+}: {
+  departure: Reinforcement;
+  flipped: boolean;
+  squareSize: number;
+}) {
+  const col = visualCol(departure.sq, flipped);
+  const toLeft = col < 4;
+  const style: Style = {
+    "--delay": `${departure.delayMs}ms`,
+    "--dur": `${KING_DEPART_MS}ms`,
+    "--to-x": `${Math.round((toLeft ? -(col + 1.3) : 8.3 - col) * squareSize)}px`,
+    "--face": toLeft ? "-1" : "1",
+  };
+  return (
+    <div className="king-departure" style={style} aria-hidden>
+      <img
+        src={pieceImage(departure.piece)}
+        alt=""
+        className="piece-img"
+        draggable={false}
+      />
+    </div>
+  );
+}
+
+/** The announcement that both kings are leaving the board to the troops */
+export function KingsLeaveBanner({ startMs }: { startMs: number }) {
+  return (
+    <div
+      className="reinforce-banner"
+      style={{ animationDelay: `${startMs - 250}ms` }}
+      role="status"
+    >
+      <span className="reinforce-title">Kings out!</span>
       <span className="reinforce-sub">
-        {style === "parachute" ? "Airdrop incoming." : "Here they come."} {who}
+        No checkmates here. Win it the other way.
       </span>
     </div>
   );

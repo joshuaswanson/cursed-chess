@@ -416,6 +416,13 @@ export class Game {
 
   /** Check for insufficient material */
   private isInsufficientMaterial(): boolean {
+    // Too little to checkmate means nothing without kings to checkmate
+    if (
+      this.board.findKing(Color.White) === null ||
+      this.board.findKing(Color.Black) === null
+    ) {
+      return false;
+    }
     const whitePieces = this.board.findPieces(Color.White);
     const blackPieces = this.board.findPieces(Color.Black);
 

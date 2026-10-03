@@ -24,7 +24,7 @@ import { StrategoPlugin } from "../plugins/stratego";
 import { SiegePlugin } from "../plugins/siege";
 import { FootballPlugin } from "../plugins/football";
 import type { KickTarget } from "../plugins/football";
-import { reinforce } from "./reinforcements";
+import { reinforce, returnKing } from "./reinforcements";
 import type { ArrivalStyle, Reinforcement } from "./reinforcements";
 import { HexGame } from "../engine/hex/game";
 import { chooseMove, PIECE_VALUE } from "../ai/chooseMove";
@@ -72,6 +72,8 @@ const REINFORCE_START_MS = 4300;
 const REINFORCE_STAGGER_MS = 160;
 /** How long one newcomer takes to land */
 export const ARRIVAL_MS = 1700;
+/** How long a king takes to stroll off the board */
+export const KING_DEPART_MS = 1600;
 
 export interface GameMode {
   name: string;
@@ -83,6 +85,8 @@ export interface GameMode {
   isHex?: boolean;
   /** Modes with their own way to add pieces skip the top-up */
   noReinforcements?: boolean;
+  /** Modes won some other way than checkmate, so the kings walk off and leave it to the troops */
+  kingsSitOut?: boolean;
 }
 
 export const GAME_MODES: GameMode[] = [
@@ -119,12 +123,14 @@ export const GAME_MODES: GameMode[] = [
     name: "KING OF THE HILL",
     theme: "hill",
     create: () => [new KingOfTheHillPlugin()],
+    kingsSitOut: true,
   },
   {
     name: "FIFA",
     theme: "fifa",
     create: () => [new FootballPlugin()],
     durationSeconds: 60,
+    kingsSitOut: true,
   },
   {
     name: "GRAVITY",
@@ -236,6 +242,8 @@ export interface GameStore {
   hexArrivals: { from: SquareIndex; to: HexCoord; piece: Piece }[];
   /** Pieces dropping in to top up a side that ran short */
   reinforcements: Reinforcement[];
+  /** Kings walking off the board for a mode they sit out */
+  departingKings: Reinforcement[];
   arrivalStyle: ArrivalStyle;
 
   selectHex: (coord: HexCoord) => void;
@@ -297,6 +305,7 @@ const CLEARED_HEX = {
   hexTransition: null,
   hexArrivals: [],
   reinforcements: [],
+  departingKings: [],
   arrivalStyle: "parachute",
 } satisfies Partial<GameStore>;
 
@@ -1014,10 +1023,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
             const piece = game.board.get(sq);
             return piece ? [{ sq, piece: { ...piece } }] : [];
           });
-      const army = (color: Color) =>
-        sources.length > 0
-          ? sources.filter((s) => s.piece.color === color).map((s) => s.piece)
-          : armies[color];
+      const army = (color: Color) => {
+        const pieces =
+          sources.length > 0
+            ? sources.filter((s) => s.piece.color === color).map((s) => s.piece)
+            : armies[color];
+        // A king who sat out the last mode rejoins his side
+        return pieces.some((p) => p.type === PieceType.King)
+          ? pieces
+          : [...pieces, { type: PieceType.King, color }];
+      };
 
       schedule(() => set({ hexTransition: "morph-out" }), HEX_MORPH_OUT_MS);
       schedule(() => {
@@ -1050,27 +1065,61 @@ export const useGameStore = create<GameStore>((set, get) => ({
     nextGame.pawnRules = null;
     nextGame.board.walls.clear();
 
+    // Kings leave for modes they sit out, and come back for the next one that needs them
+    const departingKings = mode.kingsSitOut
+      ? [Color.White, Color.Black].flatMap((color) => {
+          const sq = nextGame.board.findKing(color);
+          if (sq === null) return [];
+          const piece = nextGame.board.get(sq)!;
+          nextGame.board.remove(sq);
+          return [{ sq, piece, delayMs: REINFORCE_START_MS }];
+        })
+      : [];
+    const returningKings = mode.kingsSitOut
+      ? []
+      : [Color.White, Color.Black].flatMap((color) => {
+          const sq = returnKing(nextGame.board, color);
+          return sq === null
+            ? []
+            : [{ sq, piece: { type: PieceType.King, color } }];
+        });
+
     // Newcomers land before the mode's rules are set up, so they count for them
+    // Any newcomers wait for the kings' farewell banner to clear
+    const arrivalsStart =
+      REINFORCE_START_MS +
+      (departingKings.length > 0 ? KING_DEPART_MS + 700 : 0);
     const reinforcements = mode.noReinforcements
       ? []
-      : interleave(
-          reinforce(nextGame.board, Color.White),
-          reinforce(nextGame.board, Color.Black),
-        ).map((r, i) => ({
+      : [
+          ...returningKings,
+          ...interleave(
+            reinforce(nextGame.board, Color.White),
+            reinforce(nextGame.board, Color.Black),
+          ),
+        ].map((r, i) => ({
           ...r,
-          delayMs: REINFORCE_START_MS + i * REINFORCE_STAGGER_MS,
+          delayMs: arrivalsStart + i * REINFORCE_STAGGER_MS,
         }));
-    if (reinforcements.length > 0) {
-      const landedMs =
-        reinforcements[reinforcements.length - 1].delayMs + ARRIVAL_MS;
-      holdPause(landedMs + 250);
-      schedule(() => set({ reinforcements: [] }), landedMs + 250);
+    const settledMs = Math.max(
+      reinforcements.length > 0
+        ? reinforcements[reinforcements.length - 1].delayMs + ARRIVAL_MS
+        : 0,
+      departingKings.length > 0 ? REINFORCE_START_MS + KING_DEPART_MS : 0,
+    );
+    if (settledMs > 0) {
+      holdPause(settledMs + 250);
+      schedule(
+        () => set({ reinforcements: [], departingKings: [] }),
+        settledMs + 250,
+      );
     }
 
     set({
       ...CLEARED_HEX,
       game: nextGame,
       reinforcements,
+      departingKings,
       arrivalStyle: Math.random() < 0.5 ? "parachute" : "sprint",
       introDone: false,
       gravityFalling: false,
