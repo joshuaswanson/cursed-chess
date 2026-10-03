@@ -43,6 +43,7 @@ import {
   useCaptureBurst,
   useSlideAnimation,
   useShotDives,
+  goalReaction,
   DIVE_MS,
   SLIDE_MS,
 } from "./useBoardEffects";
@@ -388,7 +389,13 @@ export function Board() {
                   "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
                   animation: `${dive.x === 0 && dive.y === 0 ? "fifa-jump" : "fifa-dive"} ${DIVE_MS}ms ${dive.delayMs}ms both`,
                 } as React.CSSProperties)
-              : undefined;
+              : piece
+                ? goalReaction(
+                    overlays.football?.lastKick ?? null,
+                    sq,
+                    piece.color,
+                  )
+                : undefined;
 
       // Pieces next to a detonating mine are shoved away from it
       const blastFrom = [...minesBlasting].find(

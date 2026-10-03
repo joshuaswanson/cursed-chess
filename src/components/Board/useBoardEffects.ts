@@ -193,6 +193,50 @@ export function useCaptureBurst<Sq extends string | number = SquareIndex>(
 
 /** How long a shot takes to cover one square */
 export const SHOT_MS_PER_SQUARE = 55;
+const PASS_MS_PER_SQUARE = 95;
+const MIN_FLIGHT_MS = 260;
+
+/** How long the ball is in the air for a kick */
+export function kickFlightMs(kick: Kick): number {
+  let total = 0;
+  for (let i = 1; i < kick.waypoints.length; i++) {
+    const a = kick.waypoints[i - 1];
+    const b = kick.waypoints[i];
+    total += Math.hypot(b.file - a.file, b.rank - a.rank);
+  }
+  const perSquare =
+    kick.kind === "shot" ? SHOT_MS_PER_SQUARE : PASS_MS_PER_SQUARE;
+  return Math.max(MIN_FLIGHT_MS, Math.round(total * perSquare + 120));
+}
+
+const CELEBRATIONS = ["fifa-hop", "fifa-twirl", "fifa-wiggle"] as const;
+
+/**
+ * How a piece reacts once a goal goes in: the scorer leaps and spins, their
+ * teammates jump about each in their own way, and the other side slumps
+ */
+export function goalReaction(
+  kick: Kick | null,
+  sq: SquareIndex,
+  color: string,
+): React.CSSProperties | undefined {
+  if (kick?.outcome !== "goal") return undefined;
+  const scored = kickFlightMs(kick);
+  if (color !== kick.color) {
+    return { animation: `fifa-slump 0.9s ${scored + 250}ms ease-out both` };
+  }
+  const start = kick.waypoints[0];
+  if ((sq & 7) === start.file && sq >> 4 === start.rank) {
+    return {
+      animation: `fifa-scorer 0.9s ${scored}ms cubic-bezier(0.3, 0, 0.3, 1) 2`,
+    };
+  }
+  const kind = CELEBRATIONS[(sq * 7) % CELEBRATIONS.length];
+  const stagger = ((sq * 37) % 5) * 70;
+  return {
+    animation: `${kind} 0.55s ${scored + 120 + stagger}ms ease-in-out 3`,
+  };
+}
 /** A diver leaves this long before the ball reaches them */
 const DIVE_LEAD_MS = 180;
 export const DIVE_MS = 380;

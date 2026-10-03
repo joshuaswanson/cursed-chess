@@ -2,15 +2,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Color } from "../../engine";
 import type { FootballView, Kick, Spot } from "../../plugins/football";
 import { visualCol, visualRow } from "./boardGeometry";
-import { SHOT_MS_PER_SQUARE } from "./useBoardEffects";
+import { kickFlightMs as flightMs } from "./useBoardEffects";
 import { Confetti } from "../Show/Confetti";
 import { sfx } from "../../audio/sfx";
 import "./Football.css";
 
 /** The kickoff whistle blows as the mode's title card clears */
 const KICKOFF_WHISTLE_MS = 4300;
-const PASS_MS_PER_SQUARE = 95;
-const MIN_FLIGHT_MS = 260;
 /** Callouts stay up this long after the ball lands */
 const AFTERMATH_MS = 1600;
 
@@ -29,16 +27,6 @@ function legLengths(points: Point[]): number[] {
   return points
     .slice(1)
     .map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
-}
-
-/** How long the ball is in the air for a kick */
-function flightMs(kick: Kick): number {
-  const total = legLengths(
-    kick.waypoints.map((w) => ({ x: w.file, y: w.rank })),
-  ).reduce((a, b) => a + b, 0);
-  const perSquare =
-    kick.kind === "shot" ? SHOT_MS_PER_SQUARE : PASS_MS_PER_SQUARE;
-  return Math.max(MIN_FLIGHT_MS, Math.round(total * perSquare + 120));
 }
 
 const pct = (squares: number) => `${squares * 12.5}%`;

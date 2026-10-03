@@ -527,3 +527,89 @@
     scale: 1;
   }
 }
+
+/* --- After a goal --- */
+
+/* The scorer leaps, spinning all the way round */
+@keyframes fifa-scorer {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 1;
+  }
+  15% {
+    scale: 1.15 0.85;
+  }
+  50% {
+    translate: 0 -45%;
+    rotate: 360deg;
+    scale: 1.4;
+  }
+  85% {
+    translate: 0 0;
+    rotate: 360deg;
+    scale: 1.12 0.9;
+  }
+}
+
+/* Teammates bounce, twirl, or shimmy, each to their own beat */
+@keyframes fifa-hop {
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+  20% {
+    scale: 1.1 0.88;
+  }
+  50% {
+    translate: 0 -30%;
+    scale: 0.95 1.1;
+  }
+}
+
+@keyframes fifa-twirl {
+  0% {
+    rotate: 0deg;
+    translate: 0 0;
+  }
+  50% {
+    rotate: 180deg;
+    translate: 0 -18%;
+  }
+  100% {
+    rotate: 360deg;
+    translate: 0 0;
+  }
+}
+
+@keyframes fifa-wiggle {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  25% {
+    rotate: -16deg;
+    translate: -8% -10%;
+  }
+  75% {
+    rotate: 16deg;
+    translate: 8% -10%;
+  }
+}
+
+/* The side that let it in sags and stays down */
+@keyframes fifa-slump {
+  from {
+    rotate: 0deg;
+    scale: 1;
+    filter: none;
+  }
+  to {
+    rotate: -10deg;
+    scale: 0.9 0.82;
+    translate: 0 8%;
+    filter: saturate(0.5) brightness(0.85);
+  }
+}

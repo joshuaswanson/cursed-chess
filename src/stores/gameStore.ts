@@ -56,7 +56,7 @@ const INTRO_HOLD_MS = 4700;
 /** Lets the final move animate before the result banner covers the board */
 const GAME_END_DELAY_MS = 600;
 /** A goal gets its celebration before the result banner */
-const GOAL_CELEBRATION_MS = 2600;
+const GOAL_CELEBRATION_MS = 3600;
 const RESULT_MS = 2500;
 const RESULT_HOLD_MS = 2800;
 
