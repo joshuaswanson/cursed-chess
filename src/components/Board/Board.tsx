@@ -386,7 +386,7 @@ export function Board() {
                   "--slide-from-x": `${dive.x}px`,
                   "--slide-from-y": `${dive.y}px`,
                   "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
-                  animation: `fifa-dive ${DIVE_MS}ms ${dive.delayMs}ms both`,
+                  animation: `${dive.x === 0 && dive.y === 0 ? "fifa-jump" : "fifa-dive"} ${DIVE_MS}ms ${dive.delayMs}ms both`,
                 } as React.CSSProperties)
               : undefined;
 

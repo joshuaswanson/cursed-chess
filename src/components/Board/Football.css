@@ -500,3 +500,30 @@
     scale: 1;
   }
 }
+
+/* A defender already in the shot's line springs straight up at it, rising
+   toward the viewer, then lands with a squash */
+@keyframes fifa-jump {
+  0% {
+    translate: 0 0;
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
+  }
+  15% {
+    scale: 1.12 0.86;
+  }
+  50% {
+    translate: 0 -28%;
+    scale: 1.35;
+    filter: drop-shadow(0 18px 6px rgba(0, 0, 0, 0.3));
+    animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.4);
+  }
+  85% {
+    translate: 0 0;
+    scale: 1.15 0.85;
+  }
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+}

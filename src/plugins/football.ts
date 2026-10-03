@@ -51,6 +51,8 @@ export interface Kick {
   waypoints: Spot[];
   /** Defenders who threw themselves into a shot's path, and where they landed */
   dives: Dive[];
+  /** Defenders already standing in a shot's path, who jump to block it */
+  jumps: SquareIndex[];
 }
 
 export interface Dive {
@@ -290,10 +292,14 @@ export class FootballPlugin implements ModePlugin {
     const from = this.ball;
     const start = spotOf(from);
     let dives: Dive[] = [];
-    const finish = (kick: Omit<Kick, "id" | "color" | "dives">): Kick => {
+    let jumps: SquareIndex[] = [];
+    const finish = (
+      kick: Omit<Kick, "id" | "color" | "dives" | "jumps">,
+    ): Kick => {
       this.lastKick = {
         ...kick,
         dives,
+        jumps,
         id: this.nextId++,
         color: kicker.color,
       };
@@ -306,6 +312,7 @@ export class FootballPlugin implements ModePlugin {
       const keeperSq = keeperOf(board, opponent(kicker.color));
       // Everyone beside the path dives at once, and stays where they land
       dives = shot.dives;
+      jumps = shot.blockers;
       for (const dive of dives) {
         board.put(dive.to, board.get(dive.from)!);
         board.remove(dive.from);

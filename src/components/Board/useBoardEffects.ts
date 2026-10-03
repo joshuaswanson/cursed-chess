@@ -198,14 +198,16 @@ const DIVE_LEAD_MS = 180;
 export const DIVE_MS = 380;
 
 export interface DiveSlide {
+  /** How far the defender leaps from, or nothing for one jumping on the spot */
   x: number;
   y: number;
   delayMs: number;
 }
 
 /**
- * Defenders diving into a shot's path: each leaps from where it stood to
- * where it lands, timed to meet the ball as it comes past.
+ * Defenders throwing themselves at a shot: those beside its path leap from
+ * where they stood to where they land, and those already in it jump on the
+ * spot, each timed to meet the ball as it comes past.
  */
 export function useShotDives(
   kick: Kick | null,
@@ -219,14 +221,20 @@ export function useShotDives(
     setSeen(id);
     const next = new Map<SquareIndex, DiveSlide>();
     const start = kick?.waypoints[0];
-    for (const { from, to } of kick?.dives ?? []) {
+    const meetsBallAt = (sq: SquareIndex) => {
       const squares = start
-        ? Math.hypot((to & 7) - start.file, (to >> 4) - start.rank)
+        ? Math.hypot((sq & 7) - start.file, (sq >> 4) - start.rank)
         : 0;
+      return Math.max(0, squares * SHOT_MS_PER_SQUARE - DIVE_LEAD_MS);
+    };
+    for (const { from, to } of kick?.dives ?? []) {
       next.set(to, {
         ...offsetBetween(from, to, flipped, squareSize),
-        delayMs: Math.max(0, squares * SHOT_MS_PER_SQUARE - DIVE_LEAD_MS),
+        delayMs: meetsBallAt(to),
       });
+    }
+    for (const sq of kick?.jumps ?? []) {
+      next.set(sq, { x: 0, y: 0, delayMs: meetsBallAt(sq) });
     }
     setDives(next);
   }
