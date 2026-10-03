@@ -39,11 +39,18 @@ export function useParticleCanvas(
 
     let frame = 0;
     let last = performance.now();
+    let w = 0;
+    let h = 0;
+    // An empty canvas left untouched costs the browser nothing to show
+    let blank = true;
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio, 1.5);
-      canvas.width = canvas.clientWidth * dpr;
-      canvas.height = canvas.clientHeight * dpr;
+      w = canvas.clientWidth;
+      h = canvas.clientHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      blank = true;
     };
     resize();
     window.addEventListener("resize", resize);
@@ -51,9 +58,7 @@ export function useParticleCanvas(
     const tick = (now: number) => {
       const dt = reducedMotion ? 0 : Math.min(MAX_DT, (now - last) / 1000);
       last = now;
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      ctx.clearRect(0, 0, w, h);
+      if (!blank || particlesRef.current.length > 0) ctx.clearRect(0, 0, w, h);
 
       const preset = presetsRef.current[themeRef.current];
       let particles = stepParticles(
@@ -64,6 +69,7 @@ export function useParticleCanvas(
         w,
         h,
       );
+      blank = particles.length === 0;
       if (preset) {
         const live = particles.filter((p) => p.fading === undefined).length;
         for (let i = live; i < preset.count; i++) {
