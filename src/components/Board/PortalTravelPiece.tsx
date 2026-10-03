@@ -1,12 +1,13 @@
 import { pieceImage } from "../../utils/pieceImages";
 import { offsetBetween, visualCol, visualRow } from "./boardGeometry";
 import { PortalBurst } from "./Portal";
+import { SpaghettiPiece } from "./Spaghetti";
 import { phaseDurationMs } from "./usePortalTravel";
 import type { PortalTravel } from "./usePortalTravel";
 
 const PHASE_CLASS = {
   approach: "",
-  shrink: " portal-anim-enter",
+  shrink: "",
   pop: " portal-anim-exit",
   fly: " portal-anim-fly",
 };
@@ -41,23 +42,24 @@ export function PortalTravelPiece({
     style["--slide-from-x"] = `${offset.x}px`;
     style["--slide-from-y"] = `${offset.y}px`;
   }
-  if (phase.type === "shrink") {
-    // The piece stretches back along the way it came, so find where that was
-    const before = travel.phases[travel.phaseIndex - 1];
-    const cameFrom = before?.slideFrom ?? travel.info.from;
-    const back = offsetBetween(cameFrom, phase.sq, flipped, 1);
-    const angle =
-      back.x === 0 && back.y === 0
-        ? 90
-        : (Math.atan2(-back.y, -back.x) * 180) / Math.PI;
-    style["--pull"] = `${angle}deg`;
-    style.animationDuration = `${durationMs}ms`;
-  }
   if (phase.type === "approach") {
     style.animation = `slide-in ${durationMs}ms ease-in forwards`;
   } else if (phase.type === "fly") {
     style.animationDuration = `${durationMs}ms`;
   }
+
+  // The piece tapers toward the hole along the way it was heading, so find where it came from
+  const before = travel.phases[travel.phaseIndex - 1];
+  const back = offsetBetween(
+    before?.slideFrom ?? travel.info.from,
+    phase.sq,
+    flipped,
+    1,
+  );
+  const heading =
+    back.x === 0 && back.y === 0
+      ? 90
+      : (Math.atan2(-back.y, -back.x) * 180) / Math.PI;
 
   const burstSq = phase.type === "fly" ? phase.slideFrom : phase.sq;
   const showBurst = phase.type !== "approach" && burstSq !== undefined;
@@ -80,13 +82,28 @@ export function PortalTravelPiece({
           }
         />
       )}
-      <img
-        key={`piece-${travel.phaseIndex}`}
-        src={pieceImage(travel.info.piece)}
-        className={`portal-anim-piece portal-${phase.color}${PHASE_CLASS[phase.type]}`}
-        style={style}
-        draggable={false}
-      />
+      {phase.type === "shrink" ? (
+        <SpaghettiPiece
+          key={`piece-${travel.phaseIndex}`}
+          src={pieceImage(travel.info.piece)}
+          heading={heading}
+          squareSize={squareSize}
+          durationMs={durationMs}
+          color={phase.color}
+          style={{
+            left: `calc(${visualCol(phase.sq, flipped) * 12.5 + 6.25}% - ${(squareSize * 3) / 2}px)`,
+            top: `calc(${visualRow(phase.sq, flipped) * 12.5 + 6.25}% - ${(squareSize * 3) / 2}px)`,
+          }}
+        />
+      ) : (
+        <img
+          key={`piece-${travel.phaseIndex}`}
+          src={pieceImage(travel.info.piece)}
+          className={`portal-anim-piece portal-${phase.color}${PHASE_CLASS[phase.type]}`}
+          style={style}
+          draggable={false}
+        />
+      )}
     </>
   );
 }

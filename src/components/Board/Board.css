@@ -1982,48 +1982,14 @@ svg.portal-layer {
   filter: drop-shadow(1px 2px 3px rgba(0, 0, 0, 0.5));
 }
 
-.portal-anim-enter {
-  animation: portal-enter 0.56s cubic-bezier(0.5, 0, 0.85, 0.45) forwards;
-}
-
 .portal-anim-exit {
   animation: portal-exit 0.45s cubic-bezier(0.15, 0.8, 0.3, 1.25) forwards;
 }
 
-/* Spaghettified: the piece stretches into a strand trailing back the way it
-   came, thins, and is slurped into the vortex, without turning. Each frame
-   turns into the pull's direction, stretches along it, and turns back. */
-@keyframes portal-enter {
-  0% {
-    transform: rotate(var(--pull)) translateX(0) scale(1, 1)
-      rotate(calc(-1 * var(--pull)));
-    filter: brightness(1) drop-shadow(0 0 0 rgba(var(--p-glow), 0));
-    opacity: 1;
-  }
-  25% {
-    transform: rotate(var(--pull)) translateX(-8%) scale(1.45, 0.8)
-      rotate(calc(-1 * var(--pull)));
-    filter: brightness(1.3) drop-shadow(0 0 6px rgba(var(--p-glow), 0.8));
-  }
-  55% {
-    transform: rotate(var(--pull)) translateX(-34%) scale(2.6, 0.38)
-      rotate(calc(-1 * var(--pull)));
-    filter: brightness(1.8) blur(0.5px)
-      drop-shadow(0 0 10px rgba(var(--p-glow), 1));
-  }
-  80% {
-    transform: rotate(var(--pull)) translateX(-30%) scale(3, 0.14)
-      rotate(calc(-1 * var(--pull)));
-    filter: brightness(2.6) blur(1px)
-      drop-shadow(0 0 14px rgba(var(--p-glow), 1));
-    opacity: 0.9;
-  }
-  100% {
-    transform: rotate(var(--pull)) translateX(0) scale(0.1, 0.04)
-      rotate(calc(-1 * var(--pull)));
-    filter: brightness(3) blur(1px) drop-shadow(0 0 16px rgba(var(--p-glow), 1));
-    opacity: 0.4;
-  }
+.spaghetti-piece {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
 }
 
 /* The piece is flung out of the exit, overshoots, then settles */
