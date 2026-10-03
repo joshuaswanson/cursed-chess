@@ -116,8 +116,8 @@ function reactionTo(kick: Kick | null, color: Color): string {
 }
 
 /**
- * The left touchline: each side's king coaching in cap and whistle, with the
- * players taken off the board watching beside them
+ * The left touchline: each side's king coaching in cap and whistle, and in
+ * FIFA the players taken off the pitch watching beside them
  */
 export function Sideline({
   coaches,

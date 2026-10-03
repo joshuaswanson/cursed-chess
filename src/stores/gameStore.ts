@@ -248,7 +248,7 @@ export interface GameStore {
   reinforcements: Reinforcement[];
   /** Kings coaching from the touchline for a mode they sit out */
   sidelineKings: Reinforcement[];
-  /** Pieces captured while the kings coach, standing beside them */
+  /** Pieces captured in FIFA, standing beside their coach */
   sidelineBench: BenchedPlayer[];
   arrivalStyle: ArrivalStyle;
 
@@ -669,8 +669,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       moveHistory: [...game.history],
     };
 
-    // While the kings coach, the taken piece joins them on the touchline
-    if (processedMove.captured && get().sidelineKings.length > 0) {
+    // In FIFA the taken piece joins its coach on the touchline
+    if (processedMove.captured && pluginManager.find("football")) {
       set((s) => ({
         sidelineBench: [
           ...s.sidelineBench,
