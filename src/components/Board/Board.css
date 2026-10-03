@@ -1485,17 +1485,34 @@
   pointer-events: none;
 }
 
-/* The SVG draws each portal centered on user-space (0, 0), which is where
-   transform-origin 0 0 lands when transform-box is view-box */
+/* Every part of a portal is drawn in the same -60 to 60 view box, stacked */
 .portal-svg {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
+  position: absolute;
+  inset: 0;
   scale: calc(1 + var(--charge, 0) * 0.7);
-  filter: brightness(calc(1 + var(--charge, 0) * 0.45));
   transition:
     scale var(--charge-ms, 250ms) cubic-bezier(0.3, 1.4, 0.5, 1),
     filter var(--charge-ms, 250ms) ease-out;
+}
+
+/* Brightening only while charged keeps a resting portal free of filter work */
+.portal-overlay[data-charged] > .portal-svg {
+  filter: brightness(calc(1 + var(--charge, 0) * 0.45));
+}
+
+.portal-layer,
+.portal-body,
+.portal-corona {
+  position: absolute;
+  inset: 0;
+}
+
+.portal-layer svg,
+svg.portal-layer {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 .portal-stop-hi {
@@ -1509,19 +1526,23 @@
 }
 
 .portal-light {
-  mix-blend-mode: screen;
+  position: absolute;
+  inset: 1.7%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(var(--p-glow), 0.7),
+    rgba(var(--p-glow), 0.25) 45%,
+    rgba(var(--p-glow), 0)
+  );
   animation: portal-light-pulse 2.4s ease-in-out infinite;
 }
 
 .portal-body {
-  transform-box: view-box;
-  transform-origin: 0 0;
   animation: portal-breathe 2.4s ease-in-out infinite;
 }
 
 .portal-arms {
-  transform-box: view-box;
-  transform-origin: 0 0;
   animation: portal-spin 2.2s linear infinite;
 }
 
@@ -1551,15 +1572,23 @@
   fill: none;
   stroke: var(--p-hi);
   stroke-width: 2.2;
+}
+
+/* A thicker copy of the rim blinks on and off, so the rim flickers */
+.portal-rim-thick {
+  stroke-width: 3.2;
+}
+
+.portal-rim-flare {
   animation: portal-rim-flicker 0.16s steps(1) infinite;
 }
 
 @keyframes portal-rim-flicker {
   0% {
-    stroke-width: 2.2;
+    opacity: 0;
   }
   50% {
-    stroke-width: 3.2;
+    opacity: 1;
   }
 }
 
@@ -1574,9 +1603,6 @@
   stroke-width: 5;
   stroke-dasharray: 9 5 3 7 14 4;
   opacity: 0.8;
-  transform-box: view-box;
-  transform-origin: 0 0;
-  animation: portal-spin 3s linear infinite reverse;
 }
 
 .portal-flame-outer {
@@ -1584,20 +1610,23 @@
   stroke-width: 2;
   stroke-dasharray: 4 9 12 6;
   opacity: 0.55;
+}
+
+.portal-flame-spin {
+  animation: portal-spin 3s linear infinite reverse;
+}
+
+.portal-flame-spin-outer {
   animation-duration: 1.9s;
   animation-direction: normal;
 }
 
 /* Lightning arcs that flash at random spots around the portal */
 .portal-bolts {
-  transform-box: view-box;
-  transform-origin: 0 0;
   scale: calc(1 + var(--charge, 0) * 0.3);
 }
 
 .portal-bolts-jump {
-  transform-box: view-box;
-  transform-origin: 0 0;
   animation: portal-bolt-jump 2.3s steps(1) infinite;
 }
 
@@ -1687,25 +1716,47 @@
   }
 }
 
+/* Each spark rides a layer the size of the portal, so moving the layer by a
+   percentage of its width moves the spark that far in the drawing: 25% is
+   30 view box units */
+.portal-ember,
+.portal-particle {
+  position: absolute;
+  inset: 0;
+}
+
+.portal-ember::before,
+.portal-particle::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  translate: -50% -50%;
+}
+
 /* Sparks thrown off the rim */
 .portal-ember {
-  fill: #fff;
-  filter: drop-shadow(0 0 2px var(--p-mid));
-  transform-box: view-box;
-  transform-origin: 0 0;
   animation: portal-ember 1.5s ease-out infinite;
+}
+
+.portal-ember::before {
+  width: 2.3%;
+  height: 2.3%;
+  background: #fff;
+  box-shadow: 0 0 2px var(--p-mid);
 }
 
 @keyframes portal-ember {
   0% {
-    transform: rotate(var(--a)) translateX(30px);
+    transform: rotate(var(--a)) translateX(25%);
     opacity: 0;
   }
   10% {
     opacity: 1;
   }
   100% {
-    transform: rotate(calc(var(--a) - 50deg)) translateX(60px) scale(0.3);
+    transform: rotate(calc(var(--a) - 50deg)) translateX(50%) scale(0.3);
     opacity: 0;
   }
 }
@@ -1730,11 +1781,14 @@
 }
 
 .portal-particle {
-  fill: var(--p-hi);
-  filter: drop-shadow(0 0 1.5px var(--p-mid));
-  transform-box: view-box;
-  transform-origin: 0 0;
   animation: portal-particle 1.8s linear infinite;
+}
+
+.portal-particle::before {
+  width: calc(var(--r) * 1.67%);
+  height: calc(var(--r) * 1.67%);
+  background: var(--p-hi);
+  box-shadow: 0 0 1.5px var(--p-mid);
 }
 
 @keyframes portal-spin {
@@ -1766,14 +1820,14 @@
 /* Particles spiral inward from outside the rim and vanish into the core */
 @keyframes portal-particle {
   0% {
-    transform: rotate(var(--a)) translateX(48px);
+    transform: rotate(var(--a)) translateX(40%);
     opacity: 0;
   }
   15% {
     opacity: 1;
   }
   100% {
-    transform: rotate(calc(var(--a) + 260deg)) translateX(6px);
+    transform: rotate(calc(var(--a) + 260deg)) translateX(5%);
     opacity: 0;
   }
 }

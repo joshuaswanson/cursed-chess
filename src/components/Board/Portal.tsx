@@ -99,6 +99,13 @@ const PARTICLES = Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
   radius: 1.3 + (i % 2) * 0.6,
 }));
 
+const VIEW_BOX = "-60 -60 120 120";
+
+/**
+ * A swirling portal. Each part is its own layer whose filters are drawn once,
+ * and the motion only turns, scales, and fades those layers, so the browser
+ * never has to redraw the noise and blur filters while the portal animates.
+ */
 export function Portal({
   color,
   state = "idle",
@@ -114,10 +121,34 @@ export function Portal({
 }) {
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const ref = (name: string) => `url(#${name}-${id})`;
+  const plasma = (name: string, seed: number) => (
+    <filter id={`${name}-${id}`} x="-40%" y="-40%" width="180%" height="180%">
+      <feTurbulence
+        type="turbulence"
+        baseFrequency="0.05"
+        numOctaves="3"
+        seed={seed}
+      />
+      <feDisplacementMap in="SourceGraphic" scale="10" />
+      <feGaussianBlur stdDeviation="1.2" />
+    </filter>
+  );
+  const wobble = (
+    <filter id={`wobble-${id}`} x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" />
+      <feDisplacementMap in="SourceGraphic" scale="7" />
+    </filter>
+  );
+  const blur = (
+    <filter id={`blur-${id}`} x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.4" />
+    </filter>
+  );
 
   return (
     <div
       className={`portal-overlay portal-${color} portal-${state}${charge > 0.5 ? " portal-charged" : ""}`}
+      data-charged={charge > 0 || undefined}
       style={
         {
           "--charge": charge,
@@ -131,186 +162,175 @@ export function Portal({
           <span className="portal-shock" aria-hidden />
         </>
       )}
-      <svg className="portal-svg" viewBox="-60 -60 120 120" aria-hidden>
-        <defs>
-          <radialGradient id={`light-${id}`}>
-            <stop offset="0%" className="portal-stop-mid" stopOpacity="0.7" />
-            <stop offset="45%" className="portal-stop-mid" stopOpacity="0.25" />
-            <stop offset="100%" className="portal-stop-mid" stopOpacity="0" />
-          </radialGradient>
-          <radialGradient id={`disc-${id}`}>
-            <stop offset="0%" stopColor="#000" />
-            <stop offset="22%" stopColor="#02030a" />
-            <stop offset="55%" className="portal-stop-deep" />
-            <stop offset="86%" className="portal-stop-mid" />
-            <stop offset="100%" className="portal-stop-hi" />
-          </radialGradient>
-          <radialGradient
-            id={`arm-${id}`}
-            gradientUnits="userSpaceOnUse"
-            r={DISC_RADIUS}
-          >
-            <stop offset="15%" className="portal-stop-hi" stopOpacity="0" />
-            <stop offset="45%" className="portal-stop-hi" stopOpacity="0.95" />
-            <stop offset="80%" className="portal-stop-hi" stopOpacity="0.7" />
-            <stop offset="100%" className="portal-stop-mid" stopOpacity="0.3" />
-          </radialGradient>
-          <radialGradient id={`core-${id}`}>
-            <stop offset="0%" stopColor="#000" />
-            <stop offset="65%" stopColor="#000" />
-            <stop offset="100%" stopColor="#000" stopOpacity="0" />
-          </radialGradient>
-          <clipPath id={`clip-${id}`}>
-            <circle r={DISC_RADIUS} />
-          </clipPath>
-          <filter
-            id={`wobble-${id}`}
-            x="-30%"
-            y="-30%"
-            width="160%"
-            height="160%"
-          >
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.09"
-              numOctaves="2"
-              result="noise"
-            >
-              <animate
-                attributeName="baseFrequency"
-                values="0.07;0.12;0.07"
-                dur="2.6s"
-                repeatCount="indefinite"
-              />
-            </feTurbulence>
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" />
-          </filter>
-          <filter
-            id={`plasma-${id}`}
-            x="-40%"
-            y="-40%"
-            width="180%"
-            height="180%"
-          >
-            <feTurbulence
-              type="turbulence"
-              baseFrequency="0.05"
-              numOctaves="3"
-              result="noise"
-            >
-              <animate
-                attributeName="baseFrequency"
-                values="0.04;0.07;0.05;0.04"
-                dur="1.7s"
-                repeatCount="indefinite"
-              />
-            </feTurbulence>
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" />
-            <feGaussianBlur stdDeviation="1.2" />
-          </filter>
-          <filter
-            id={`blur-${id}`}
-            x="-50%"
-            y="-50%"
-            width="200%"
-            height="200%"
-          >
-            <feGaussianBlur stdDeviation="2.4" />
-          </filter>
-        </defs>
+      <div className="portal-svg" aria-hidden>
+        <div className="portal-light" />
 
-        <circle className="portal-light" r="58" fill={ref("light")} />
+        <div className="portal-corona">
+          <div className="portal-layer portal-flame-spin">
+            <svg viewBox={VIEW_BOX}>
+              <defs>{plasma("flame", 1)}</defs>
+              <g filter={ref("flame")}>
+                <circle r={DISC_RADIUS + 4} className="portal-flame" />
+              </g>
+            </svg>
+          </div>
+          <div className="portal-layer portal-flame-spin portal-flame-spin-outer">
+            <svg viewBox={VIEW_BOX}>
+              <defs>{plasma("flare", 2)}</defs>
+              <g filter={ref("flare")}>
+                <circle
+                  r={DISC_RADIUS + 7}
+                  className="portal-flame portal-flame-outer"
+                />
+              </g>
+            </svg>
+          </div>
+        </div>
 
-        <g className="portal-corona" filter={ref("plasma")}>
-          <circle r={DISC_RADIUS + 4} className="portal-flame" />
-          <circle
-            r={DISC_RADIUS + 7}
-            className="portal-flame portal-flame-outer"
-          />
-        </g>
+        <div className="portal-body">
+          <svg className="portal-layer" viewBox={VIEW_BOX}>
+            <defs>
+              <radialGradient id={`disc-${id}`}>
+                <stop offset="0%" stopColor="#000" />
+                <stop offset="22%" stopColor="#02030a" />
+                <stop offset="55%" className="portal-stop-deep" />
+                <stop offset="86%" className="portal-stop-mid" />
+                <stop offset="100%" className="portal-stop-hi" />
+              </radialGradient>
+            </defs>
+            <circle r={DISC_RADIUS} fill={ref("disc")} />
+          </svg>
+          {["portal-arms", "portal-arms portal-arms-inner"].map((layer, k) => (
+            <div key={layer} className={`portal-layer ${layer}`}>
+              <svg viewBox={VIEW_BOX}>
+                <defs>
+                  <radialGradient
+                    id={`arm-${k}-${id}`}
+                    gradientUnits="userSpaceOnUse"
+                    r={DISC_RADIUS}
+                  >
+                    <stop
+                      offset="15%"
+                      className="portal-stop-hi"
+                      stopOpacity="0"
+                    />
+                    <stop
+                      offset="45%"
+                      className="portal-stop-hi"
+                      stopOpacity="0.95"
+                    />
+                    <stop
+                      offset="80%"
+                      className="portal-stop-hi"
+                      stopOpacity="0.7"
+                    />
+                    <stop
+                      offset="100%"
+                      className="portal-stop-mid"
+                      stopOpacity="0.3"
+                    />
+                  </radialGradient>
+                  <clipPath id={`clip-${k}-${id}`}>
+                    <circle r={DISC_RADIUS} />
+                  </clipPath>
+                </defs>
+                <g clipPath={ref(`clip-${k}`)} stroke={ref(`arm-${k}`)}>
+                  {k === 0 &&
+                    ARMS.map((d, i) => (
+                      <path key={`h${i}`} d={d} className="portal-arm-haze" />
+                    ))}
+                  {ARMS.map((d, i) => (
+                    <path key={i} d={d} className="portal-arm" />
+                  ))}
+                </g>
+              </svg>
+            </div>
+          ))}
+          <svg className="portal-layer" viewBox={VIEW_BOX}>
+            <defs>
+              <radialGradient id={`core-${id}`}>
+                <stop offset="0%" stopColor="#000" />
+                <stop offset="65%" stopColor="#000" />
+                <stop offset="100%" stopColor="#000" stopOpacity="0" />
+              </radialGradient>
+              {blur}
+              {wobble}
+            </defs>
+            <circle r="13" fill={ref("core")} />
+            <circle
+              r={DISC_RADIUS}
+              className="portal-rim-glow"
+              filter={ref("blur")}
+            />
+            <circle
+              r={DISC_RADIUS}
+              className="portal-rim"
+              filter={ref("wobble")}
+            />
+          </svg>
+          <svg className="portal-layer portal-rim-flare" viewBox={VIEW_BOX}>
+            <circle
+              r={DISC_RADIUS}
+              className="portal-rim portal-rim-thick"
+              filter={ref("wobble")}
+            />
+          </svg>
+        </div>
 
-        <g className="portal-body">
-          <circle r={DISC_RADIUS} fill={ref("disc")} />
-          <g clipPath={ref("clip")}>
-            <g className="portal-arms" stroke={ref("arm")}>
-              {ARMS.map((d, i) => (
-                <path key={i} d={d} className="portal-arm-haze" />
-              ))}
-              {ARMS.map((d, i) => (
-                <path key={i} d={d} className="portal-arm" />
-              ))}
-            </g>
-            <g className="portal-arms portal-arms-inner" stroke={ref("arm")}>
-              {ARMS.map((d, i) => (
-                <path key={i} d={d} className="portal-arm" />
-              ))}
-            </g>
-          </g>
-          <circle r="13" fill={ref("core")} />
-          <circle
-            r={DISC_RADIUS}
-            className="portal-rim-glow"
-            filter={ref("blur")}
-          />
-          <circle
-            r={DISC_RADIUS}
-            className="portal-rim"
-            filter={ref("wobble")}
-          />
-        </g>
-
-        <g className="portal-bolts">
-          <g className="portal-bolts-jump">
+        <div className="portal-layer portal-bolts">
+          <div className="portal-layer portal-bolts-jump">
             {BOLTS.map((b, i) => (
-              <g
+              <div
                 key={i}
-                className="portal-bolt"
+                className="portal-layer portal-bolt"
                 style={{
                   animationDuration: `${b.duration}s`,
                   animationDelay: `${b.delay}s`,
                 }}
               >
-                <path
-                  d={b.d}
-                  className="portal-bolt-glow"
-                  filter={ref("blur")}
-                />
-                <path d={b.d} className="portal-bolt-core" />
-              </g>
+                <svg viewBox={VIEW_BOX}>
+                  <path
+                    d={b.d}
+                    className="portal-bolt-glow"
+                    filter={ref("blur")}
+                  />
+                  <path d={b.d} className="portal-bolt-core" />
+                </svg>
+              </div>
             ))}
-          </g>
-        </g>
+          </div>
+        </div>
 
-        {EMBERS.map((e, i) => (
-          <circle
-            key={i}
-            r="1.4"
-            className="portal-ember"
-            style={
-              {
-                "--a": `${e.angle}deg`,
-                animationDelay: `${e.delay}s`,
-                animationDuration: `${e.duration}s`,
-              } as React.CSSProperties
-            }
-          />
-        ))}
-
-        {PARTICLES.map((p, i) => (
-          <circle
-            key={i}
-            r={p.radius}
-            className="portal-particle"
-            style={
-              {
-                "--a": `${p.angle}deg`,
-                animationDelay: `${p.delay}s`,
-                animationDuration: `${p.duration}s`,
-              } as React.CSSProperties
-            }
-          />
-        ))}
-      </svg>
+        <div className="portal-layer portal-sparks">
+          {EMBERS.map((e, i) => (
+            <span
+              key={`e${i}`}
+              className="portal-ember"
+              style={
+                {
+                  "--a": `${e.angle}deg`,
+                  animationDelay: `${e.delay}s`,
+                  animationDuration: `${e.duration}s`,
+                } as React.CSSProperties
+              }
+            />
+          ))}
+          {PARTICLES.map((p, i) => (
+            <span
+              key={`p${i}`}
+              className="portal-particle"
+              style={
+                {
+                  "--a": `${p.angle}deg`,
+                  "--r": p.radius,
+                  animationDelay: `${p.delay}s`,
+                  animationDuration: `${p.duration}s`,
+                } as React.CSSProperties
+              }
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
