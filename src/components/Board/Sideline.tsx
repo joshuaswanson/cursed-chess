@@ -1,7 +1,7 @@
 import { Color } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import type { Kick } from "../../plugins/football";
-import type { BenchedPlayer, Reinforcement } from "../../stores/reinforcements";
+import type { BenchedKing, BenchedPlayer } from "../../stores/reinforcements";
 import { KING_DEPART_MS } from "../../stores/gameStore";
 import { pieceImage } from "../../utils/pieceImages";
 import { visualCol, visualRow } from "./boardGeometry";
@@ -120,13 +120,16 @@ function reactionTo(kick: Kick | null, color: Color): string {
  * FIFA the players taken off the pitch watching beside them
  */
 export function Sideline({
+  coaching,
   coaches,
   bench,
   lastKick,
   flipped,
   squareSize,
 }: {
-  coaches: Reinforcement[];
+  /** FIFA's kings stay to coach; elsewhere they walk off and are gone */
+  coaching: boolean;
+  coaches: BenchedKing[];
   bench: BenchedPlayer[];
   lastKick: Kick | null;
   flipped: boolean;
@@ -148,23 +151,26 @@ export function Sideline({
     <div className="sideline" aria-hidden>
       {coaches.map(({ sq, piece, delayMs }) => {
         const spot = COACH_SPOT[half(piece.color)];
+        // A king already off the board from the mode before is just there
         const style: Style = {
           ...place(spot),
-          ...walkFrom(sq, spot),
+          ...(sq === null
+            ? { "--from-x": "0px", "--from-y": "0px" }
+            : walkFrom(sq, spot)),
           "--delay": `${delayMs}ms`,
-          "--dur": `${KING_DEPART_MS}ms`,
+          "--dur": `${sq === null ? 0 : KING_DEPART_MS}ms`,
         };
         return (
           <div
             key={piece.color}
-            className="sideline-member sideline-coach"
+            className={`sideline-member sideline-coach${coaching ? "" : " leaving"}`}
             style={style}
           >
             <div
               className={`sideline-reaction${reactionTo(lastKick, piece.color)}`}
             >
               <img src={pieceImage(piece)} alt="" draggable={false} />
-              <CoachKit color={piece.color} />
+              {coaching && <CoachKit color={piece.color} />}
             </div>
           </div>
         );

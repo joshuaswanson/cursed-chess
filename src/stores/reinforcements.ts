@@ -16,6 +16,13 @@ const SQUAD: PieceType[] = [
 
 export type ArrivalStyle = "parachute" | "sprint";
 
+/** A king off the board for a mode, walking from `sq` after `delayMs`, or already off it when `sq` is null */
+export interface BenchedKing {
+  sq: SquareIndex | null;
+  piece: Piece;
+  delayMs: number;
+}
+
 /** A captured piece watching from the touchline, with the square it was taken on */
 export interface BenchedPlayer {
   piece: Piece;
@@ -91,13 +98,18 @@ export function returnKing(board: Board, color: Color): SquareIndex | null {
   return null;
 }
 
-/** Takes both kings off the board to coach from the touchline, walking off after `delayMs` */
-export function benchKings(board: Board, delayMs: number): Reinforcement[] {
-  return [Color.White, Color.Black].flatMap((color) => {
+/**
+ * Takes both kings off the board for a mode they sit out, each walking off
+ * after `delayMs`. A king already off from the mode before stays off.
+ */
+export function benchKings(board: Board, delayMs: number): BenchedKing[] {
+  return [Color.White, Color.Black].map((color) => {
     const sq = board.findKing(color);
-    if (sq === null) return [];
+    if (sq === null) {
+      return { sq: null, piece: { type: PieceType.King, color }, delayMs: 0 };
+    }
     const piece = board.get(sq)!;
     board.remove(sq);
-    return [{ sq, piece, delayMs }];
+    return { sq, piece, delayMs };
   });
 }

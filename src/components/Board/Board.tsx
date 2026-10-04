@@ -634,6 +634,7 @@ export function Board() {
           {rows}
           {sidelineKings.length > 0 && (
             <Sideline
+              coaching={football !== null}
               coaches={sidelineKings}
               bench={sidelineBench}
               lastKick={football?.lastKick ?? null}

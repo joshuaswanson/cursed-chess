@@ -27,6 +27,7 @@ import type { KickTarget } from "../plugins/football";
 import { benchKings, reinforce, returnKing } from "./reinforcements";
 import type {
   ArrivalStyle,
+  BenchedKing,
   BenchedPlayer,
   Reinforcement,
 } from "./reinforcements";
@@ -247,7 +248,7 @@ export interface GameStore {
   /** Pieces dropping in to top up a side that ran short */
   reinforcements: Reinforcement[];
   /** Kings coaching from the touchline for a mode they sit out */
-  sidelineKings: Reinforcement[];
+  sidelineKings: BenchedKing[];
   /** Pieces captured in FIFA, standing beside their coach */
   sidelineBench: BenchedPlayer[];
   arrivalStyle: ArrivalStyle;
@@ -1100,9 +1101,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
         });
 
     // Newcomers land before the mode's rules are set up, so they count for them
+    const kingsWalkOff = sidelineKings.some((king) => king.sq !== null);
     // Any newcomers wait for the kings to clear the pitch
     const arrivalsStart =
-      REINFORCE_START_MS + (sidelineKings.length > 0 ? KING_DEPART_MS : 0);
+      REINFORCE_START_MS + (kingsWalkOff ? KING_DEPART_MS : 0);
     const reinforcements = mode.noReinforcements
       ? []
       : [
@@ -1119,7 +1121,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       reinforcements.length > 0
         ? reinforcements[reinforcements.length - 1].delayMs + ARRIVAL_MS
         : 0,
-      sidelineKings.length > 0 ? REINFORCE_START_MS + KING_DEPART_MS : 0,
+      kingsWalkOff ? REINFORCE_START_MS + KING_DEPART_MS : 0,
     );
     if (settledMs > 0) {
       holdPause(settledMs + 250);
