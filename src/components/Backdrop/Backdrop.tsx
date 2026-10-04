@@ -5,6 +5,7 @@ import { PRESETS } from "./particles";
 import { useParticleCanvas } from "./useParticleCanvas";
 import { BattleLand } from "./BattleLand";
 import { SiegeCamp } from "./SiegeCamp";
+import { Stands } from "./Stands";
 import "./Backdrop.css";
 
 /** How long the spirals take to slow, stop, and wind up the other way */
@@ -130,8 +131,7 @@ function Scene({ theme }: { theme: ThemeId }) {
     case "fifa":
       return (
         <>
-          <div className="stand stand-far" />
-          <div className="stand stand-near" />
+          <Stands />
           <div className="floodlight floodlight-left">
             <div className="floodlight-beam" />
           </div>
