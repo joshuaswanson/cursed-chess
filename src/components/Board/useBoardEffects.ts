@@ -329,3 +329,57 @@ export function useSkidMarks(
   }, [marks]);
   return marks;
 }
+
+/** Something worth a word from the commentary box */
+export interface PlayCall {
+  /** Changes with every new piece of play */
+  key: string;
+  kind: string;
+  /** The shirt number of the player involved */
+  number?: number;
+  /** When the moment lands, after the ball or the tackler gets there */
+  delayMs: number;
+}
+
+/**
+ * The latest bit of FIFA play for the commentary box: the newest kick, or a
+ * slide tackle if one came after it
+ */
+export function usePlayCall(
+  kick: Kick | null,
+  tackle: { to: SquareIndex } | null,
+  moveCount: number,
+  shirts: Record<number, number>,
+): PlayCall | null {
+  const [call, setCall] = useState<PlayCall | null>(null);
+  const [seenKick, setSeenKick] = useState(kick?.id ?? 0);
+  const [seenMove, setSeenMove] = useState(moveCount);
+  if (kick && kick.id !== seenKick) {
+    setSeenKick(kick.id);
+    const start = kick.waypoints[0];
+    const kind =
+      kick.outcome === "goal"
+        ? kick.color === "w"
+          ? "goal-ours"
+          : "goal-theirs"
+        : kick.outcome;
+    setCall({
+      key: `kick-${kick.id}`,
+      kind,
+      number: shirts[start.rank * 16 + start.file],
+      delayMs: kickFlightMs(kick),
+    });
+  }
+  if (moveCount !== seenMove) {
+    setSeenMove(moveCount);
+    if (tackle) {
+      setCall({
+        key: `tackle-${moveCount}`,
+        kind: "tackle",
+        number: shirts[tackle.to],
+        delayMs: TACKLE_MS,
+      });
+    }
+  }
+  return call;
+}

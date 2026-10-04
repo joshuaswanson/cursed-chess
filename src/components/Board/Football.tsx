@@ -4,6 +4,7 @@ import type { SquareIndex } from "../../engine";
 import type { FootballView, Kick, Spot } from "../../plugins/football";
 import { visualCol, visualRow } from "./boardGeometry";
 import { TACKLE_MS, kickFlightMs as flightMs } from "./useBoardEffects";
+import type { PlayCall } from "./useBoardEffects";
 import { Confetti } from "../Show/Confetti";
 import { sfx } from "../../audio/sfx";
 import "./Football.css";
@@ -666,5 +667,80 @@ export function Jersey({
         {number}
       </text>
     </svg>
+  );
+}
+
+const LINES: Record<string, string[]> = {
+  "goal-ours": [
+    "GOAL! No. {n} buries it!",
+    "GOAL! What a strike from No. {n}!",
+    "Top bins! No. {n} wheels away!",
+  ],
+  "goal-theirs": [
+    "They score. No. {n} punishes the defense.",
+    "Goal for the visitors. No. {n} with the finish.",
+  ],
+  saved: [
+    "Saved! What a dive!",
+    "Denied! The keeper is having a day.",
+    "Blocked! Bodies on the line!",
+  ],
+  wide: [
+    "Wide! Row Z says thank you.",
+    "Off target. The crowd groans.",
+    "That one is going into orbit.",
+  ],
+  post: ["Off the post! So close!", "CLANG! The woodwork says no."],
+  received: [
+    "Lovely ball from No. {n}.",
+    "Tidy pass. Keep it moving.",
+    "No. {n} picks out a teammate.",
+  ],
+  intercepted: ["Cut out! Read it all the way.", "Intercepted! Sloppy, that."],
+  tackle: [
+    "Crunching tackle from No. {n}!",
+    "No. {n} goes to ground and wins it!",
+    "Clean through the ball from No. {n}!",
+  ],
+  kickoff: ["And we're under way!"],
+};
+
+const KICKOFF_CALL_MS = KICKOFF_WHISTLE_MS + 200;
+
+/** A TV-style ticker under the pitch with a line for each bit of play */
+export function Commentary({ call }: { call: PlayCall | null }) {
+  const [line, setLine] = useState<{ key: string; text: string } | null>(null);
+  useEffect(() => {
+    const kickoff = setTimeout(
+      () => setLine({ key: "kickoff", text: LINES.kickoff[0] }),
+      KICKOFF_CALL_MS,
+    );
+    return () => clearTimeout(kickoff);
+  }, []);
+  useEffect(() => {
+    if (!call) return;
+    const options = LINES[call.kind] ?? [];
+    if (options.length === 0) return;
+    const seed = [...call.key].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+    const pick = options[seed % options.length];
+    const filled =
+      call.number !== undefined
+        ? pick.replace("{n}", String(call.number))
+        : pick.replace("No. {n}", "the player");
+    const text = filled.charAt(0).toUpperCase() + filled.slice(1);
+    const say = setTimeout(
+      () => setLine({ key: call.key, text }),
+      call.delayMs,
+    );
+    return () => clearTimeout(say);
+  }, [call]);
+
+  return (
+    <div className="commentary" aria-live="polite">
+      <span className="commentary-live">LIVE</span>
+      <span className="commentary-text" key={line?.key ?? "quiet"}>
+        {line?.text ?? "Warming up..."}
+      </span>
+    </div>
   );
 }

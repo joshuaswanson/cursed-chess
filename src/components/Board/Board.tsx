@@ -17,6 +17,7 @@ import {
   PassMarker,
   Pitch,
   TackleMark,
+  Commentary,
 } from "./Football";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
@@ -47,6 +48,7 @@ import {
   useSlideAnimation,
   useShotDives,
   useSkidMarks,
+  usePlayCall,
   TACKLE_MS,
   goalReaction,
   DIVE_MS,
@@ -243,6 +245,12 @@ export function Board() {
       ? lastRecord.move
       : null;
   const skidMarks = useSkidMarks(tackle, moveHistory.length);
+  const playCall = usePlayCall(
+    overlays.football?.lastKick ?? null,
+    tackle,
+    moveHistory.length,
+    overlays.football?.shirts ?? {},
+  );
   const capture = useCaptureBurst(
     cursed && lastPortalMove === null && lastRecord?.move.captured
       ? lastRecord.move.to
@@ -805,6 +813,7 @@ export function Board() {
           )}
         </div>
       </div>
+      {overlays.football && <Commentary call={playCall} />}
       {gravityShift && (
         <GravityAlert key={gravityShift.id} delta={gravityShift.delta} />
       )}
