@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Color } from "../../engine";
+import type { SquareIndex } from "../../engine";
 import type { FootballView, Kick, Spot } from "../../plugins/football";
 import { visualCol, visualRow } from "./boardGeometry";
-import { kickFlightMs as flightMs } from "./useBoardEffects";
+import { TACKLE_MS, kickFlightMs as flightMs } from "./useBoardEffects";
 import { Confetti } from "../Show/Confetti";
 import { sfx } from "../../audio/sfx";
 import "./Football.css";
@@ -553,6 +554,73 @@ export function PassMarker({ chance }: { chance: number }) {
     <>
       <span className="pass-ring" aria-hidden />
       <span className="pass-chance">{Math.round(chance * 100)}%</span>
+    </>
+  );
+}
+
+/**
+ * Where a slide tackle went in: a muddy skid torn up the turf from where the
+ * tackler set off, and a spray of grass where they took the player down
+ */
+export function TackleMark({
+  from,
+  to,
+  flipped,
+}: {
+  from: SquareIndex;
+  to: SquareIndex;
+  flipped: boolean;
+}) {
+  const start = {
+    x: visualCol(from, flipped) + 0.5,
+    y: visualRow(from, flipped) + 0.5,
+  };
+  const end = {
+    x: visualCol(to, flipped) + 0.5,
+    y: visualRow(to, flipped) + 0.5,
+  };
+  const length = Math.hypot(end.x - start.x, end.y - start.y);
+  const angle = (Math.atan2(end.y - start.y, end.x - start.x) * 180) / Math.PI;
+  return (
+    <>
+      <span
+        className="tackle-skid"
+        style={
+          {
+            left: pct(start.x),
+            top: pct(start.y),
+            width: pct(length),
+            rotate: `${angle}deg`,
+            "--dur": `${TACKLE_MS}ms`,
+          } as Style
+        }
+        aria-hidden
+      />
+      <span
+        className="tackle-spray"
+        style={
+          {
+            left: pct(end.x),
+            top: pct(end.y),
+            "--delay": `${TACKLE_MS - 60}ms`,
+          } as Style
+        }
+        aria-hidden
+      >
+        {Array.from({ length: 12 }, (_, i) => (
+          <i
+            key={i}
+            style={
+              {
+                "--a": `${angle + 180 + (i - 5.5) * 13}deg`,
+                "--reach": `${50 + ((i * 37) % 45)}%`,
+                "--tint":
+                  i % 3 === 0 ? "#6b4a2a" : i % 2 ? "#3f9a2c" : "#7ccf4a",
+              } as Style
+            }
+          />
+        ))}
+      </span>
     </>
   );
 }

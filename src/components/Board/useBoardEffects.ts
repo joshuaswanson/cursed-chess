@@ -191,6 +191,9 @@ export function useCaptureBurst<Sq extends string | number = SquareIndex>(
   return burst;
 }
 
+/** How long a slide tackle takes to reach the player on the ball */
+export const TACKLE_MS = 320;
+
 /** How long a shot takes to cover one square */
 export const SHOT_MS_PER_SQUARE = 55;
 const PASS_MS_PER_SQUARE = 95;
@@ -289,4 +292,40 @@ export function useShotDives(
     return () => clearTimeout(done);
   }, [dives]);
   return dives;
+}
+
+/** How long a slide tackle's skid stays torn into the turf */
+const SKID_LIFE_MS = 5400;
+
+export interface SkidMark {
+  id: number;
+  from: SquareIndex;
+  to: SquareIndex;
+}
+
+/** Skid marks from recent slide tackles, which outlast the moves after them */
+export function useSkidMarks(
+  tackle: { from: SquareIndex; to: SquareIndex } | null,
+  moveCount: number,
+): SkidMark[] {
+  const [marks, setMarks] = useState<SkidMark[]>([]);
+  const [seen, setSeen] = useState(moveCount);
+  if (moveCount !== seen) {
+    setSeen(moveCount);
+    if (tackle) {
+      setMarks((now) => [
+        ...now,
+        { id: moveCount, from: tackle.from, to: tackle.to },
+      ]);
+    }
+  }
+  useEffect(() => {
+    if (marks.length === 0) return;
+    const fade = setTimeout(
+      () => setMarks((now) => now.slice(1)),
+      SKID_LIFE_MS,
+    );
+    return () => clearTimeout(fade);
+  }, [marks]);
+  return marks;
 }
