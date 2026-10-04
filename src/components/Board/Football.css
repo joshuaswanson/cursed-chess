@@ -605,21 +605,6 @@
   }
 }
 
-/* The side that let it in sags and stays down */
-@keyframes fifa-slump {
-  from {
-    rotate: 0deg;
-    scale: 1;
-    filter: none;
-  }
-  to {
-    rotate: -10deg;
-    scale: 0.9 0.82;
-    translate: 0 8%;
-    filter: saturate(0.5) brightness(0.85);
-  }
-}
-
 /* --- The commentary box --- */
 
 /* Pinned along the bottom of the screen like a TV broadcast's ticker */

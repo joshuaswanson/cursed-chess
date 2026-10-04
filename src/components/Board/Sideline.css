@@ -145,17 +145,3 @@
     scale: 0.95 1.12;
   }
 }
-
-/* A goal against them: heads drop and they stay down */
-.sideline-reaction.sulking {
-  animation: sideline-sulk 0.8s 0.3s ease-out both;
-}
-
-@keyframes sideline-sulk {
-  to {
-    rotate: -12deg;
-    translate: 0 8%;
-    scale: 0.92 0.84;
-    filter: saturate(0.5) brightness(0.85);
-  }
-}

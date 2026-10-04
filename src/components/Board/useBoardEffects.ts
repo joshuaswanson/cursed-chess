@@ -213,7 +213,7 @@ const CELEBRATIONS = ["fifa-hop", "fifa-twirl", "fifa-wiggle"] as const;
 
 /**
  * How a piece reacts once a goal goes in: the scorer leaps and spins, their
- * teammates jump about each in their own way, and the other side slumps
+ * teammates jump about each in their own way
  */
 export function goalReaction(
   kick: Kick | null,
@@ -222,9 +222,7 @@ export function goalReaction(
 ): React.CSSProperties | undefined {
   if (kick?.outcome !== "goal") return undefined;
   const scored = kickFlightMs(kick);
-  if (color !== kick.color) {
-    return { animation: `fifa-slump 0.9s ${scored + 250}ms ease-out both` };
-  }
+  if (color !== kick.color) return undefined;
   const start = kick.waypoints[0];
   if ((sq & 7) === start.file && sq >> 4 === start.rank) {
     return {
