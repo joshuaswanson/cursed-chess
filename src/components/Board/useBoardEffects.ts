@@ -191,9 +191,6 @@ export function useCaptureBurst<Sq extends string | number = SquareIndex>(
   return burst;
 }
 
-/** How long a slide tackle takes to reach the player on the ball */
-export const TACKLE_MS = 320;
-
 /** How long a shot takes to cover one square */
 export const SHOT_MS_PER_SQUARE = 55;
 const PASS_MS_PER_SQUARE = 95;
@@ -294,42 +291,6 @@ export function useShotDives(
   return dives;
 }
 
-/** How long a slide tackle's skid stays torn into the turf */
-const SKID_LIFE_MS = 5400;
-
-export interface SkidMark {
-  id: number;
-  from: SquareIndex;
-  to: SquareIndex;
-}
-
-/** Skid marks from recent slide tackles, which outlast the moves after them */
-export function useSkidMarks(
-  tackle: { from: SquareIndex; to: SquareIndex } | null,
-  moveCount: number,
-): SkidMark[] {
-  const [marks, setMarks] = useState<SkidMark[]>([]);
-  const [seen, setSeen] = useState(moveCount);
-  if (moveCount !== seen) {
-    setSeen(moveCount);
-    if (tackle) {
-      setMarks((now) => [
-        ...now,
-        { id: moveCount, from: tackle.from, to: tackle.to },
-      ]);
-    }
-  }
-  useEffect(() => {
-    if (marks.length === 0) return;
-    const fade = setTimeout(
-      () => setMarks((now) => now.slice(1)),
-      SKID_LIFE_MS,
-    );
-    return () => clearTimeout(fade);
-  }, [marks]);
-  return marks;
-}
-
 /** Something worth a word from the commentary box */
 export interface PlayCall {
   /** Changes with every new piece of play */
@@ -337,17 +298,17 @@ export interface PlayCall {
   kind: string;
   /** The shirt number of the player involved */
   number?: number;
-  /** When the moment lands, after the ball or the tackler gets there */
+  /** When the moment lands, after the ball or the player gets there */
   delayMs: number;
 }
 
 /**
  * The latest bit of FIFA play for the commentary box: the newest kick, or a
- * slide tackle if one came after it
+ * the ball being won off its carrier if that came after it
  */
 export function usePlayCall(
   kick: Kick | null,
-  tackle: { to: SquareIndex } | null,
+  ballWon: { to: SquareIndex } | null,
   moveCount: number,
   shirts: Record<number, number>,
 ): PlayCall | null {
@@ -372,12 +333,12 @@ export function usePlayCall(
   }
   if (moveCount !== seenMove) {
     setSeenMove(moveCount);
-    if (tackle) {
+    if (ballWon) {
       setCall({
-        key: `tackle-${moveCount}`,
-        kind: "tackle",
-        number: shirts[tackle.to],
-        delayMs: TACKLE_MS,
+        key: `won-${moveCount}`,
+        kind: "won",
+        number: shirts[ballWon.to],
+        delayMs: SLIDE_MS,
       });
     }
   }

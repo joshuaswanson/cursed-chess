@@ -4,21 +4,14 @@ import { rankOf, toIndex } from "../../utils/squareUtils";
 import { Color, GameStatus, PieceType, isGameOver } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
+import { useKitImages } from "../../utils/kitImages";
 import { Portal } from "./Portal";
 import { Battlefield, WorldRiver } from "./Battlefield";
 import { BoardShatter } from "../HexWarp/HexWarp";
 import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
 import { SiegeLayer } from "./Siege";
-import {
-  FootballLayer,
-  Goal,
-  Jersey,
-  PassMarker,
-  Pitch,
-  TackleMark,
-  Commentary,
-} from "./Football";
+import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
@@ -47,9 +40,7 @@ import {
   useCaptureBurst,
   useSlideAnimation,
   useShotDives,
-  useSkidMarks,
   usePlayCall,
-  TACKLE_MS,
   goalReaction,
   DIVE_MS,
   SLIDE_MS,
@@ -237,17 +228,23 @@ export function Board() {
   const gravityFalls =
     gravityShift?.falls ?? new Map<SquareIndex, GravityFall>();
   const lastRecord = moveHistory[moveHistory.length - 1];
-  // In FIFA, taking the player on the ball is a slide tackle
-  const tackle =
+  const kitFor = useKitImages(
+    Object.entries(overlays.football?.shirts ?? {}).flatMap(([sq, number]) => {
+      const piece = game.board.get(Number(sq));
+      return piece ? [{ piece, number }] : [];
+    }),
+    pieceImage,
+  );
+  // In FIFA, taking the player on the ball wins it
+  const ballWon =
     overlays.football !== null &&
     lastRecord?.move.captured &&
     overlays.football.ball === lastRecord.move.to
       ? lastRecord.move
       : null;
-  const skidMarks = useSkidMarks(tackle, moveHistory.length);
   const playCall = usePlayCall(
     overlays.football?.lastKick ?? null,
-    tackle,
+    ballWon,
     moveHistory.length,
     overlays.football?.shirts ?? {},
   );
@@ -256,7 +253,7 @@ export function Board() {
       ? lastRecord.move.to
       : null,
     moveHistory.length,
-    tackle ? TACKLE_MS : SLIDE_MS,
+    SLIDE_MS,
   );
   // A capture through a portal bursts once the piece has flown out and landed
   const portalCapture = useCaptureBurst(
@@ -395,11 +392,7 @@ export function Board() {
           ? ({
               "--slide-from-x": `${slide.x}px`,
               "--slide-from-y": `${slide.y}px`,
-              "--tackle-lean": `${slide.x > 0 ? 1 : -1}`,
-              animation:
-                tackle?.to === sq
-                  ? `fifa-tackle ${TACKLE_MS}ms cubic-bezier(0.2, 0.6, 0.3, 1) both`
-                  : `slide-in ${SLIDE_MS}ms ease-out forwards`,
+              animation: `slide-in ${SLIDE_MS}ms ease-out forwards`,
             } as React.CSSProperties)
           : fall
             ? ({
@@ -516,7 +509,7 @@ export function Board() {
           {piece && !battle && !arrivals.has(sq) && !isLifted && !isDead && (
             <>
               <img
-                src={pieceImage(piece)}
+                src={kitFor(piece, football?.shirts[sq])}
                 alt={`${piece.color}${piece.type}`}
                 className={`piece-img${isHidden ? " stratego-piece-hidden" : ""}`}
                 style={finalPieceStyle}
@@ -527,13 +520,6 @@ export function Board() {
                 <div className="stratego-mask" style={pieceStyle}>
                   ?
                 </div>
-              )}
-              {football?.shirts[sq] !== undefined && (
-                <Jersey
-                  number={football.shirts[sq]}
-                  color={piece.color}
-                  style={finalPieceStyle}
-                />
               )}
             </>
           )}
@@ -559,14 +545,14 @@ export function Board() {
                 aria-hidden
               >
                 <span
-                  className={`capture-word${tackle?.to === sq ? " tackle-word" : ""}`}
+                  className="capture-word"
                   style={
                     {
                       "--tilt": `${(burst.id % 2 ? 1 : -1) * 10}deg`,
                     } as React.CSSProperties
                   }
                 >
-                  {tackle?.to === sq ? "TACKLE!" : burst.word}
+                  {burst.word}
                 </span>
               </div>
             ))}
@@ -711,14 +697,6 @@ export function Board() {
                 onShoot={() => kick("goal")}
               />
             ))}
-          {skidMarks.map((mark) => (
-            <TackleMark
-              key={mark.id}
-              from={mark.from}
-              to={mark.to}
-              flipped={flipped}
-            />
-          ))}
           {football && (
             <FootballLayer
               view={football}

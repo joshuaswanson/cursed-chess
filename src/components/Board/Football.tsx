@@ -1,9 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Color } from "../../engine";
-import type { SquareIndex } from "../../engine";
 import type { FootballView, Kick, Spot } from "../../plugins/football";
 import { visualCol, visualRow } from "./boardGeometry";
-import { TACKLE_MS, kickFlightMs as flightMs } from "./useBoardEffects";
+import { kickFlightMs as flightMs } from "./useBoardEffects";
 import type { PlayCall } from "./useBoardEffects";
 import { Confetti } from "../Show/Confetti";
 import { sfx } from "../../audio/sfx";
@@ -559,117 +558,6 @@ export function PassMarker({ chance }: { chance: number }) {
   );
 }
 
-/**
- * Where a slide tackle went in: a muddy skid torn up the turf from where the
- * tackler set off, and a spray of grass where they took the player down
- */
-export function TackleMark({
-  from,
-  to,
-  flipped,
-}: {
-  from: SquareIndex;
-  to: SquareIndex;
-  flipped: boolean;
-}) {
-  const start = {
-    x: visualCol(from, flipped) + 0.5,
-    y: visualRow(from, flipped) + 0.5,
-  };
-  const end = {
-    x: visualCol(to, flipped) + 0.5,
-    y: visualRow(to, flipped) + 0.5,
-  };
-  const length = Math.hypot(end.x - start.x, end.y - start.y);
-  const angle = (Math.atan2(end.y - start.y, end.x - start.x) * 180) / Math.PI;
-  return (
-    <>
-      <span
-        className="tackle-skid"
-        style={
-          {
-            left: pct(start.x),
-            top: pct(start.y),
-            width: pct(length),
-            rotate: `${angle}deg`,
-            "--dur": `${TACKLE_MS}ms`,
-          } as Style
-        }
-        aria-hidden
-      />
-      <span
-        className="tackle-spray"
-        style={
-          {
-            left: pct(end.x),
-            top: pct(end.y),
-            "--delay": `${TACKLE_MS - 60}ms`,
-          } as Style
-        }
-        aria-hidden
-      >
-        {Array.from({ length: 12 }, (_, i) => (
-          <i
-            key={i}
-            style={
-              {
-                "--a": `${angle + 180 + (i - 5.5) * 13}deg`,
-                "--reach": `${50 + ((i * 37) % 45)}%`,
-                "--tint":
-                  i % 3 === 0 ? "#6b4a2a" : i % 2 ? "#3f9a2c" : "#7ccf4a",
-              } as Style
-            }
-          />
-        ))}
-      </span>
-    </>
-  );
-}
-
-const KIT = {
-  [Color.White]: { shirt: "#2f6bff", trim: "#ffffff", number: "#ffffff" },
-  [Color.Black]: { shirt: "#e2304a", trim: "#ffd23f", number: "#ffffff" },
-};
-
-/** A team shirt with the player's number, worn over the piece */
-export function Jersey({
-  number,
-  color,
-  style,
-}: {
-  number: number;
-  color: Color;
-  style?: React.CSSProperties;
-}) {
-  const kit = KIT[color];
-  return (
-    <svg className="jersey" viewBox="0 0 100 100" style={style} aria-hidden>
-      <path
-        d="M36 50 L43 47 Q50 51 57 47 L64 50 L73 57 L67 64 L64 61 V84 H36 V61 L33 64 L27 57 Z"
-        fill={kit.shirt}
-        stroke="#1b1033"
-        strokeWidth="2.4"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M43 47 Q50 51 57 47"
-        fill="none"
-        stroke={kit.trim}
-        strokeWidth="2.2"
-      />
-      <text
-        x="50"
-        y="77"
-        textAnchor="middle"
-        className="jersey-number"
-        fill={kit.number}
-      >
-        {number}
-      </text>
-    </svg>
-  );
-}
-
 const LINES: Record<string, string[]> = {
   "goal-ours": [
     "GOAL! No. {n} buries it!",
@@ -697,10 +585,10 @@ const LINES: Record<string, string[]> = {
     "No. {n} picks out a teammate.",
   ],
   intercepted: ["Cut out! Read it all the way.", "Intercepted! Sloppy, that."],
-  tackle: [
-    "Crunching tackle from No. {n}!",
-    "No. {n} goes to ground and wins it!",
-    "Clean through the ball from No. {n}!",
+  won: [
+    "No. {n} wins it back!",
+    "Robbed! No. {n} takes it off him.",
+    "No. {n} pounces on the loose touch!",
   ],
   kickoff: ["And we're under way!"],
 };
