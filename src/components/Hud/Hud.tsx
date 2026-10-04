@@ -2,7 +2,6 @@ import { useEffect, useSyncExternalStore } from "react";
 import { useGameStore, GAME_MODES, MODE_SECONDS } from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
 import { THEMES } from "../../theme/themes";
-import type { SiegePlugin } from "../../plugins/siege";
 import { useTheme } from "../../theme/useTheme";
 import { pieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
@@ -66,16 +65,7 @@ function NowPlaying() {
       ? MODE_SECONDS
       : (GAME_MODES[modeIndex].durationSeconds ?? MODE_SECONDS);
   const fraction = Math.max(0, Math.min(1, remaining / duration));
-  const siege = useGameStore((s) =>
-    theme.id === "siege"
-      ? s.pluginManager.find<SiegePlugin>("siege")
-      : undefined,
-  );
-  const tagline = !siege
-    ? theme.tagline
-    : siege.defender === Color.White
-      ? "You hold the castle. Keep your king alive until time runs out."
-      : "You lay siege. Batter the walls and take their king.";
+  const tagline = theme.tagline;
   const urgent = !devMode && remaining <= 5;
 
   return (

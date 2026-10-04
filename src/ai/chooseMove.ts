@@ -69,7 +69,6 @@ function scoreMove(game: Game, move: Move, squareBonus: SquareBonus): number {
   if (move.flags & MoveFlag.Portal) return captured + PORTAL_BONUS;
 
   const after = new Game(game.toFen());
-  after.board.walls = game.board.walls;
   after.pawnRules = game.pawnRules;
   if (!after.makeMove(move)) return -Infinity;
 

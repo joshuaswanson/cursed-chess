@@ -21,7 +21,6 @@ import { MinefieldPlugin } from "../plugins/minefield";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { StrategoPlugin } from "../plugins/stratego";
-import { SiegePlugin } from "../plugins/siege";
 import { FootballPlugin } from "../plugins/football";
 import type { KickTarget } from "../plugins/football";
 import { benchKings, reinforce, returnKing } from "./reinforcements";
@@ -151,14 +150,6 @@ export const GAME_MODES: GameMode[] = [
     isHex: true,
   },
   {
-    name: "SIEGE",
-    theme: "siege",
-    create: () => [new SiegePlugin()],
-    durationSeconds: 75,
-    // Siege places every piece itself, so newcomers would only be moved again
-    noReinforcements: true,
-  },
-  {
     name: "STRATEGO",
     theme: "stratego",
     create: () => [new StrategoPlugin()],
@@ -191,8 +182,6 @@ export interface GameStore {
   portalEntrance: SquareIndex | null;
   /** Teammates the selected ball carrier can pass to, with the chance each pass arrives */
   kickOptions: { to: SquareIndex; chance: number }[];
-  /** Wall squares the selected attacker can batter */
-  ramTargets: SquareIndex[];
   lastMove: { from: SquareIndex; to: SquareIndex } | null;
   lastPortalMove: PortalMoveInfo | null;
   promotionPending: { from: SquareIndex; to: SquareIndex } | null;
@@ -265,8 +254,6 @@ export interface GameStore {
   ) => "moved" | "promotion" | "kicked" | null;
   /** The ball carrier passes or shoots instead of moving */
   kick: (target: KickTarget) => boolean;
-  /** An attacker strikes a castle wall instead of moving */
-  ram: (from: SquareIndex, target: SquareIndex) => boolean;
   makeMove: (from: SquareIndex, to: SquareIndex, promotion?: PieceType) => void;
   newGame: () => void;
   flipBoard: () => void;
@@ -299,7 +286,6 @@ const CLEARED_SELECTION = {
   hasPortalMoves: false,
   portalEntrance: null,
   kickOptions: [],
-  ramTargets: [],
 } satisfies Partial<GameStore>;
 
 const CLEARED_HEX = {
@@ -434,7 +420,6 @@ function modeSquareBonus(
   board: Board,
 ): SquareBonus {
   const football = pluginManager.find<FootballPlugin>("football");
-  const siege = pluginManager.find<SiegePlugin>("siege");
   return (square, piece, from) => {
     const classes = pluginManager
       .getSquareModifiers(square)
@@ -448,7 +433,6 @@ function modeSquareBonus(
     }
     if (classes.includes("hill-square")) bonus += 0.5;
     if (football) bonus += football.squareBonus(board, square, piece, from);
-    if (siege) bonus += siege.squareBonus(board, square, piece);
     return bonus;
   };
 }
@@ -572,18 +556,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // The human always plays White
     if (state.game.turn !== Color.White) return;
 
-    const { game, selectedSquare, legalMoveSquares, kickOptions, ramTargets } =
-      state;
+    const { game, selectedSquare, legalMoveSquares, kickOptions } = state;
     if (selectedSquare !== null && legalMoveSquares.includes(square)) {
       state.requestMove(selectedSquare, square);
       return;
     }
     if (selectedSquare !== null && kickOptions.some((k) => k.to === square)) {
       state.kick(square);
-      return;
-    }
-    if (selectedSquare !== null && ramTargets.includes(square)) {
-      state.ram(selectedSquare, square);
       return;
     }
 
@@ -607,11 +586,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
               .passOptions(game.board, square)
               .map(({ to, chance }) => ({ to, chance }))
           : [],
-        ramTargets: game.isInCheck()
-          ? []
-          : (state.pluginManager
-              .find<SiegePlugin>("siege")
-              ?.ramTargets(game.board, square) ?? []),
       });
       return;
     }
@@ -624,10 +598,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       .legalMovesFrom(from)
       .filter((m) => m.to === to);
     if (moves.length === 0) {
-      const { selectedSquare, kickOptions, ramTargets } = get();
-      if (selectedSquare === from && ramTargets.includes(to)) {
-        return get().ram(from, to) ? "kicked" : null;
-      }
+      const { selectedSquare, kickOptions } = get();
       const canPass =
         selectedSquare === from && kickOptions.some((k) => k.to === to);
       return canPass && get().kick(to) ? "kicked" : null;
@@ -764,16 +735,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     return true;
   },
 
-  ram: (from, target) => {
-    const { game, pluginManager, paused, status } = get();
-    if (paused || isGameOver(status) || game.isInCheck()) return false;
-    const siege = pluginManager.find<SiegePlugin>("siege");
-    if (game.board.get(from)?.color !== game.turn) return false;
-    if (!siege?.ram(game.board, from, target)) return false;
-    passTurnWithoutMoving(GAME_END_DELAY_MS);
-    return true;
-  },
-
   newGame: () => {
     cancelScheduled();
     const game = new Game();
@@ -904,13 +865,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       .flatMap((sq) => get().legalMovesFrom(sq))
       .filter((m) => !m.promotion || m.promotion === PieceType.Queen);
 
-    const siege = get().pluginManager.find<SiegePlugin>("siege");
-    const ram =
-      game.turn === Color.Black && !game.isInCheck()
-        ? siege?.chooseRam(game.board, Color.Black)
-        : null;
-    if (moves.length === 0 && ram && get().ram(ram.from, ram.target)) return;
-
     // Mode rules can remove every move the engine allows
     if (moves.length === 0) {
       const status = game.isInCheck()
@@ -936,10 +890,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
             modeSquareBonus(get().pluginManager, game.board),
           )
         : moves[Math.floor(Math.random() * moves.length)];
-    // Attackers batter the walls when they have nothing worth taking
-    if (ram && !pick.captured && Math.random() < 0.55) {
-      if (get().ram(ram.from, ram.target)) return;
-    }
     get().makeMove(pick.from, pick.to, pick.promotion);
   },
 
@@ -990,13 +940,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const next = Math.max(0, modeTimeRemaining - 1);
     set({ modeTimeRemaining: next });
     if (next > 0) return;
-    // Some modes, like a siege held to the end, award the game when time runs out
-    const winner = get().pluginManager.invokeOnTimeUp();
-    if (winner !== null && !isGameOver(get().status)) {
-      set({ status: GameStatus.Checkmate });
-      endGameSoon(winner);
-      return;
-    }
     get().switchMode();
   },
 
@@ -1091,9 +1034,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const nextGame = isHexMode
       ? Game.fromArmies(armies[Color.White], armies[Color.Black])
       : game;
-    // A turned board's pawn rules and a castle's walls end with their mode
+    // A turned board's pawn rules end with its mode
     nextGame.pawnRules = null;
-    nextGame.board.walls.clear();
 
     // Kings leave for modes they sit out, and come back for the next one that needs them
     const sidelineKings = mode.kingsSitOut

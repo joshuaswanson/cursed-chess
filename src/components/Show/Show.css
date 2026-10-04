@@ -894,35 +894,6 @@
   }
 }
 
-/* --- Siege: a castle against the firelit sky, with a stone arcing over it --- */
-
-[data-card-theme="siege"] .card-band {
-  background: linear-gradient(180deg, #1a1426, #5a2412 75%, #8a3a14);
-}
-
-.card-castle {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: min(70vw, 900px);
-  height: 70%;
-  translate: -50% 0;
-  fill: #120c08;
-  animation: castle-rise 0.6s 0.15s cubic-bezier(0.3, 1.4, 0.5, 1) both;
-}
-
-.card-castle-flag {
-  fill: #ff9a2e;
-  stroke: #120c08;
-  stroke-width: 2;
-}
-
-@keyframes castle-rise {
-  from {
-    translate: -50% 60%;
-  }
-}
-
 /* --- King of the hill: golden rays and a crown --- */
 
 [data-card-theme="hill"] .card-band {

@@ -26,8 +26,6 @@ function pieceToChar(piece: Piece): string {
 
 export class Board {
   squares: (Piece | null)[];
-  /** Squares no piece can stand on or move through. Knights still leap over them. */
-  walls = new Set<SquareIndex>();
 
   constructor() {
     this.squares = new Array(128).fill(null);
@@ -36,11 +34,6 @@ export class Board {
   get(sq: SquareIndex): Piece | null {
     if (!isValidSquare(sq)) return null;
     return this.squares[sq];
-  }
-
-  /** On the board and not walled off */
-  passable(sq: SquareIndex): boolean {
-    return isValidSquare(sq) && !this.walls.has(sq);
   }
 
   put(sq: SquareIndex, piece: Piece): void {
@@ -90,7 +83,6 @@ export class Board {
     for (let i = 0; i < 128; i++) {
       copy.squares[i] = this.squares[i] ? { ...this.squares[i]! } : null;
     }
-    copy.walls = new Set(this.walls);
     return copy;
   }
 

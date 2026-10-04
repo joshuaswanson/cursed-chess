@@ -10,7 +10,6 @@ import { Battlefield, WorldRiver } from "./Battlefield";
 import { BoardShatter } from "../HexWarp/HexWarp";
 import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
-import { SiegeLayer } from "./Siege";
 import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
@@ -141,7 +140,6 @@ export function Board() {
     sidelineBench,
     arrivalStyle,
     introDone,
-    ramTargets,
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -268,7 +266,6 @@ export function Board() {
   );
 
   const battle = overlays.rallyBattle;
-  const siege = overlays.siege;
   const hill = overlays.hillSquares;
   const hillHolders = hill.map((sq) => game.board.get(sq)?.color);
   const hillWhite = hillHolders.filter((c) => c === Color.White).length;
@@ -426,24 +423,6 @@ export function Board() {
         blastFrom !== undefined
           ? offsetBetween(sq, blastFrom, flipped, squareSize * 0.35)
           : null;
-      // A piece that just battered a wall lunges into it
-      const lastRam = siege?.lastRam;
-      const ramStyle =
-        !pieceStyle && lastRam && lastRam.from === sq
-          ? (() => {
-              const toward = offsetBetween(
-                lastRam.target,
-                sq,
-                flipped,
-                squareSize,
-              );
-              return {
-                "--ram-x": `${toward.x * 0.4}px`,
-                "--ram-y": `${toward.y * 0.4}px`,
-                animation: `siege-ram-${lastRam.id % 2 ? "a" : "b"} 0.34s ease-in-out`,
-              } as React.CSSProperties;
-            })()
-          : undefined;
       const finalPieceStyle = shove
         ? ({
             ...pieceStyle,
@@ -451,7 +430,7 @@ export function Board() {
             "--shove-y": `${shove.y}px`,
             animation: "blast-shove 0.5s cubic-bezier(0.2, 0.8, 0.3, 1)",
           } as React.CSSProperties)
-        : (pieceStyle ?? ramStyle);
+        : pieceStyle;
 
       const portalColor = overlays.portalSquares.get(sq);
       const closingColor = closingPortals.get(sq);
@@ -634,15 +613,6 @@ export function Board() {
             />
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
-          {siege && introDone && (
-            <SiegeLayer
-              view={siege}
-              flipped={flipped}
-              squareSize={squareSize}
-              ramTargets={ramTargets}
-              rising
-            />
-          )}
           {hill.length > 0 && (
             <div
               className={`hill-throne${hillLeader ? ` held-${hillLeader}` : ""}${Math.max(hillWhite, hillBlack) >= 3 ? " dominated" : ""}`}

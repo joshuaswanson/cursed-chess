@@ -929,31 +929,4 @@ export const sfx = {
     boom.stop(t + 0.9);
     for (let i = 0; i < 6; i++) crackle(c, out, 1);
   },
-
-  /** Stone strikes stone. When the wall gives way, it crumbles with a rumble. */
-  stoneHit(collapse: boolean): void {
-    const a = audio();
-    if (!a) return;
-    const { ctx: c, out } = a;
-    const t = c.currentTime;
-    const thud = c.createOscillator();
-    thud.type = "sine";
-    thud.frequency.setValueAtTime(140, t);
-    thud.frequency.exponentialRampToValueAtTime(40, t + 0.25);
-    const gain = c.createGain();
-    gain.gain.setValueAtTime(collapse ? 0.8 : 0.55, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-    thud.connect(gain).connect(out);
-    thud.start(t);
-    thud.stop(t + 0.32);
-    crackle(c, out, 1.6);
-    for (let i = 0; i < (collapse ? 14 : 5); i++) {
-      creak(
-        c,
-        out,
-        t + Math.random() * (collapse ? 0.9 : 0.3),
-        collapse ? 0.7 : 0.45,
-      );
-    }
-  },
 };

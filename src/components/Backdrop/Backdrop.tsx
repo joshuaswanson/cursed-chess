@@ -4,7 +4,6 @@ import { useGameStore } from "../../stores/gameStore";
 import { PRESETS } from "./particles";
 import { useParticleCanvas } from "./useParticleCanvas";
 import { BattleLand } from "./BattleLand";
-import { SiegeCamp } from "./SiegeCamp";
 import { Stands } from "./Stands";
 import "./Backdrop.css";
 
@@ -154,8 +153,6 @@ function Scene({ theme }: { theme: ThemeId }) {
       );
     case "stratego":
       return <BattleLand />;
-    case "siege":
-      return <SiegeCamp />;
     default:
       return null;
   }
