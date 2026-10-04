@@ -715,3 +715,24 @@
       rotate(280deg);
   }
 }
+
+/* --- Team shirts --- */
+
+.jersey {
+  position: absolute;
+  inset: 5%;
+  width: 90%;
+  height: 90%;
+  z-index: 3;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.jersey-number {
+  font-family: var(--font-display);
+  font-size: 19px;
+  paint-order: stroke fill;
+  stroke: #1b1033;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}

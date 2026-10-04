@@ -85,7 +85,18 @@ export interface ShotOption {
 export interface FootballView {
   ball: SquareIndex;
   lastKick: Kick | null;
+  /** The shirt number worn by the piece on each square */
+  shirts: Record<number, number>;
 }
+
+/** Shirt numbers handed out by position, the way a team sheet would */
+const SQUAD_NUMBERS: Partial<Record<PieceType, number[]>> = {
+  [PieceType.Queen]: [10],
+  [PieceType.Knight]: [9, 11],
+  [PieceType.Bishop]: [7, 8],
+  [PieceType.Rook]: [4, 5],
+  [PieceType.Pawn]: [2, 3, 6, 12, 13, 14, 15, 16],
+};
 
 const spotOf = (sq: SquareIndex): Spot => ({
   file: fileOf(sq),
@@ -132,16 +143,22 @@ export class FootballPlugin implements ModePlugin {
   ball: SquareIndex = toIndex(4, 3);
   lastKick: Kick | null = null;
   private scorer: Color | null = null;
+  private shirts = new Map<SquareIndex, number>();
   private nextId = 1;
 
   onGameStart(ctx: PluginContext): void {
     this.scorer = null;
+    this.handOutShirts(ctx.board);
     this.lastKick = null;
     this.ball = this.kickoffSpot(ctx.board);
   }
 
   onAfterMove(_ctx: PluginContext, move: Move): void {
     const mover = move.piece.color;
+    this.carryShirt(move.from, move.to);
+    if (move.flags & MoveFlag.EnPassant) {
+      this.shirts.delete(move.to - 16 * attackDirection(mover));
+    }
     if (move.from === this.ball) {
       this.ball = move.to;
       return;
@@ -176,6 +193,7 @@ export class FootballPlugin implements ModePlugin {
     const view: FootballView = {
       ball: this.ball,
       lastKick: this.lastKick,
+      shirts: Object.fromEntries(this.shirts),
     };
     return [{ type: "football", squares: [this.ball], data: view }];
   }
@@ -321,6 +339,7 @@ export class FootballPlugin implements ModePlugin {
       for (const dive of dives) {
         board.put(dive.to, board.get(dive.from)!);
         board.remove(dive.from);
+        this.carryShirt(dive.from, dive.to);
       }
       // The ball meets whoever is in its way in the order it reaches them
       const stoppers = [
@@ -493,6 +512,43 @@ export class FootballPlugin implements ModePlugin {
   }
 
   /** After a miss, the defending piece nearest its own goal takes the ball */
+  /** Gives every piece on the pitch a number, by position and then by file */
+  private handOutShirts(board: Board): void {
+    this.shirts.clear();
+    for (const color of [Color.White, Color.Black]) {
+      const squad = ALL_SQUARES.filter(
+        (sq) => board.get(sq)?.color === color,
+      ).sort((a, b) => fileOf(a) - fileOf(b) || rankOf(a) - rankOf(b));
+      const used = new Set<number>();
+      const leftover: SquareIndex[] = [];
+      for (const sq of squad) {
+        const free = (SQUAD_NUMBERS[board.get(sq)!.type] ?? []).find(
+          (n) => !used.has(n),
+        );
+        if (free === undefined) {
+          leftover.push(sq);
+          continue;
+        }
+        used.add(free);
+        this.shirts.set(sq, free);
+      }
+      let next = 17;
+      for (const sq of leftover) {
+        while (used.has(next)) next++;
+        used.add(next);
+        this.shirts.set(sq, next);
+      }
+    }
+  }
+
+  /** A player keeps their number wherever they go; anyone taken on `to` loses theirs */
+  private carryShirt(from: SquareIndex, to: SquareIndex): void {
+    const number = this.shirts.get(from);
+    this.shirts.delete(from);
+    this.shirts.delete(to);
+    if (number !== undefined) this.shirts.set(to, number);
+  }
+
   /** A free square in front of the goal for a ball that comes back off a post */
   private reboundSpot(
     board: Board,

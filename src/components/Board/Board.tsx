@@ -10,7 +10,14 @@ import { BoardShatter } from "../HexWarp/HexWarp";
 import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
 import { SiegeLayer } from "./Siege";
-import { FootballLayer, Goal, PassMarker, Pitch, TackleMark } from "./Football";
+import {
+  FootballLayer,
+  Goal,
+  Jersey,
+  PassMarker,
+  Pitch,
+  TackleMark,
+} from "./Football";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
@@ -512,6 +519,13 @@ export function Board() {
                 <div className="stratego-mask" style={pieceStyle}>
                   ?
                 </div>
+              )}
+              {football?.shirts[sq] !== undefined && (
+                <Jersey
+                  number={football.shirts[sq]}
+                  color={piece.color}
+                  style={finalPieceStyle}
+                />
               )}
             </>
           )}

@@ -624,3 +624,47 @@ export function TackleMark({
     </>
   );
 }
+
+const KIT = {
+  [Color.White]: { shirt: "#2f6bff", trim: "#ffffff", number: "#ffffff" },
+  [Color.Black]: { shirt: "#e2304a", trim: "#ffd23f", number: "#ffffff" },
+};
+
+/** A team shirt with the player's number, worn over the piece */
+export function Jersey({
+  number,
+  color,
+  style,
+}: {
+  number: number;
+  color: Color;
+  style?: React.CSSProperties;
+}) {
+  const kit = KIT[color];
+  return (
+    <svg className="jersey" viewBox="0 0 100 100" style={style} aria-hidden>
+      <path
+        d="M36 50 L43 47 Q50 51 57 47 L64 50 L73 57 L67 64 L64 61 V84 H36 V61 L33 64 L27 57 Z"
+        fill={kit.shirt}
+        stroke="#1b1033"
+        strokeWidth="2.4"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M43 47 Q50 51 57 47"
+        fill="none"
+        stroke={kit.trim}
+        strokeWidth="2.2"
+      />
+      <text
+        x="50"
+        y="77"
+        textAnchor="middle"
+        className="jersey-number"
+        fill={kit.number}
+      >
+        {number}
+      </text>
+    </svg>
+  );
+}
