@@ -656,6 +656,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!processedMove) return;
 
     const mover = game.turn;
+    // A captured FIFA player keeps the number they wore onto the touchline
+    const takenShirt = pluginManager
+      .find<FootballPlugin>("football")
+      ?.shirtOn(processedMove.to);
     const isPortalMove = !!(processedMove.flags & MoveFlag.Portal);
     const success = isPortalMove
       ? game.executeTrustedMove(processedMove)
@@ -675,7 +679,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set((s) => ({
         sidelineBench: [
           ...s.sidelineBench,
-          { piece: { ...processedMove.captured! }, takenOn: processedMove.to },
+          {
+            piece: { ...processedMove.captured! },
+            takenOn: processedMove.to,
+            number: takenShirt,
+          },
         ],
       }));
     }

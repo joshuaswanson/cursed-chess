@@ -5,6 +5,7 @@ import type { Kick } from "../../plugins/football";
 import type { BenchedKing, BenchedPlayer } from "../../stores/reinforcements";
 import { KING_DEPART_MS } from "../../stores/gameStore";
 import { pieceImage } from "../../utils/pieceImages";
+import { useKitImages } from "../../utils/kitImages";
 import { visualCol, visualRow } from "./boardGeometry";
 import "./Sideline.css";
 
@@ -106,10 +107,10 @@ function CoachKit({ color }: { color: Color }) {
   );
 }
 
-/** Which way a team takes a goal: cheering if it was theirs, slumping if not */
+/** A team cheers when the goal was theirs */
 function reactionTo(kick: Kick | null, color: Color): string {
   if (kick?.outcome !== "goal") return "";
-  return kick.color === color ? " cheering" : " sulking";
+  return kick.color === color ? " cheering" : "";
 }
 
 /**
@@ -133,6 +134,12 @@ export function Sideline({
   squareSize: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const kitFor = useKitImages(
+    bench.flatMap(({ piece, number }) =>
+      number === undefined ? [] : [{ piece, number }],
+    ),
+    pieceImage,
+  );
   const room = useRoomOnLeft(ref);
   const nearColor = flipped ? Color.Black : Color.White;
   const half = (color: Color) => (color === nearColor ? "near" : "far");
@@ -200,7 +207,7 @@ export function Sideline({
           </div>
         );
       })}
-      {bench.map(({ piece, takenOn }, i) => {
+      {bench.map(({ piece, takenOn, number }, i) => {
         const side = half(piece.color);
         const { column, row } = seat(seats[side]++);
         const spot = spotAt(side, column, row);
@@ -220,7 +227,7 @@ export function Sideline({
             <div
               className={`sideline-reaction${reactionTo(lastKick, piece.color)}`}
             >
-              <img src={pieceImage(piece)} alt="" draggable={false} />
+              <img src={kitFor(piece, number)} alt="" draggable={false} />
             </div>
           </div>
         );

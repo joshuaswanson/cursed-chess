@@ -27,6 +27,8 @@ export interface BenchedKing {
 export interface BenchedPlayer {
   piece: Piece;
   takenOn: SquareIndex;
+  /** The FIFA shirt number they wore on the pitch */
+  number?: number;
 }
 
 export interface Reinforcement {
