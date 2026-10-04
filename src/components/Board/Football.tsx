@@ -132,6 +132,7 @@ export function Goal({
   shotChance,
   noShotReason,
   scoredKick,
+  postKick,
   onShoot,
 }: {
   atTop: boolean;
@@ -142,9 +143,31 @@ export function Goal({
   shotChance: number | null;
   noShotReason: string;
   scoredKick: Kick | null;
+  /** A shot that just struck this goal's woodwork */
+  postKick: Kick | null;
   onShoot: () => void;
 }) {
   const [nudge, setNudge] = useState(0);
+  const goalRef = useRef<HTMLDivElement>(null);
+
+  // The frame shudders when the ball cracks against a post
+  useEffect(() => {
+    if (!postKick) return;
+    const hit = setTimeout(() => {
+      goalRef.current?.animate(
+        [
+          { translate: "0 0" },
+          { translate: "3px -2px" },
+          { translate: "-3px 1px" },
+          { translate: "2px 0" },
+          { translate: "-1px 0" },
+          { translate: "0 0" },
+        ],
+        { duration: 420, easing: "ease-out" },
+      );
+    }, timeToPost(postKick));
+    return () => clearTimeout(hit);
+  }, [postKick]);
   const netRef = useRef<SVGAnimateElement>(null);
   const barRef = useRef<SVGAnimateElement>(null);
   const shootable = shotChance !== null;
@@ -173,6 +196,7 @@ export function Goal({
     NET_STRETCH.map((st) => shape(ballX, st)).join(";");
   return (
     <div
+      ref={goalRef}
       className={`goal ${atTop ? "goal-top" : "goal-bottom"}${attacked ? " attacked" : ""}${shootable ? " shootable" : ""}`}
       data-goal={defender}
       onClick={attacked ? onClick : undefined}
@@ -271,6 +295,7 @@ const CALLOUT: Record<Kick["outcome"], string | null> = {
   intercepted: "Intercepted!",
   saved: "Saved!",
   wide: "Wide!",
+  post: "Off the post!",
   goal: null,
 };
 
@@ -399,9 +424,23 @@ function GoalCelebration({ kick }: { kick: Kick }) {
   );
 }
 
+/** When a shot off the woodwork reaches the post, before it bounces back */
+function timeToPost(kick: Kick): number {
+  const [from, post, back] = kick.waypoints;
+  const toPost = Math.hypot(post.file - from.file, post.rank - from.rank);
+  const rebound = Math.hypot(back.file - post.file, back.rank - post.rank);
+  return (flightMs(kick) * toPost) / (toPost + rebound);
+}
+
 function playKick(kick: Kick): void {
   sfx.kick(kick.kind === "shot");
   const land = flightMs(kick);
+  if (kick.outcome === "post") {
+    setTimeout(() => {
+      sfx.post();
+      sfx.crowd("ooh");
+    }, timeToPost(kick));
+  }
   setTimeout(() => {
     switch (kick.outcome) {
       case "received":
@@ -417,6 +456,9 @@ function playKick(kick: Kick): void {
         break;
       case "wide":
         sfx.crowd("ooh");
+        break;
+      case "post":
+        sfx.thud();
         break;
       case "goal":
         sfx.crowd("roar");

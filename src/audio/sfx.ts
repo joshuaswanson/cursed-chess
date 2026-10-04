@@ -781,6 +781,36 @@ export const sfx = {
     src.stop(t + 0.06);
   },
 
+  /** A ball striking the woodwork: a sharp metallic clang that rings on */
+  post(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    for (const [freq, level] of [
+      [1180, 0.22],
+      [1770, 0.14],
+      [2620, 0.08],
+    ]) {
+      const ring = c.createOscillator();
+      ring.type = "sine";
+      ring.frequency.value = freq;
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(level, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+      ring.connect(gain).connect(out);
+      ring.start(t);
+      ring.stop(t + 0.92);
+    }
+    const src = noiseSource(c);
+    const click = c.createGain();
+    click.gain.setValueAtTime(0.3, t);
+    click.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+    src.connect(click).connect(out);
+    src.start(t, Math.random() * 0.8);
+    src.stop(t + 0.04);
+  },
+
   /** The referee's pea whistle: one short blast, or a long one for a goal */
   whistle(long: boolean): void {
     const a = audio();

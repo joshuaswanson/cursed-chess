@@ -666,6 +666,12 @@ export function Board() {
                     ? football.lastKick
                     : null
                 }
+                postKick={
+                  football.lastKick?.outcome === "post" &&
+                  football.lastKick.color !== defender
+                    ? football.lastKick
+                    : null
+                }
                 onShoot={() => kick("goal")}
               />
             ))}

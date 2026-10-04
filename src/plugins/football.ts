@@ -18,6 +18,8 @@ const BLOCK_CHANCE: Record<PieceType, number> = {
   [PieceType.Queen]: 0.35,
   [PieceType.King]: 0.6,
 };
+/** Of the shots that miss, the share that clang off a post and back into play */
+const POST_CHANCE = 0.4;
 /** Chance a defender next to a shot's path dives into it in time to stop the ball */
 const DIVE_CHANCE = 0.3;
 /** The keeper on the goal line is better at it */
@@ -40,7 +42,7 @@ export interface Spot {
 }
 
 export type KickOutcome =
-  "received" | "intercepted" | "saved" | "goal" | "wide";
+  "received" | "intercepted" | "saved" | "goal" | "wide" | "post";
 
 export interface Kick {
   id: number;
@@ -344,6 +346,25 @@ export class FootballPlugin implements ModePlugin {
       const exit = { file: shot.exitFile, rank: goalRank(kicker.color) };
       if (Math.random() > shot.accuracy) {
         const side = shot.exitFile < 4 ? -1 : 1;
+        const rebound =
+          Math.random() < POST_CHANCE
+            ? this.reboundSpot(board, kicker.color, side)
+            : null;
+        if (rebound !== null) {
+          this.ball = rebound;
+          return finish({
+            kind: "shot",
+            outcome: "post",
+            waypoints: [
+              start,
+              {
+                file: side < 0 ? 1.5 : 5.5,
+                rank: exit.rank - Math.sign(exit.rank) * 0.1,
+              },
+              spotOf(rebound),
+            ],
+          });
+        }
         this.ball = this.goalKickSpot(board, opponent(kicker.color));
         return finish({
           kind: "shot",
@@ -472,6 +493,25 @@ export class FootballPlugin implements ModePlugin {
   }
 
   /** After a miss, the defending piece nearest its own goal takes the ball */
+  /** A free square in front of the goal for a ball that comes back off a post */
+  private reboundSpot(
+    board: Board,
+    attacker: Color,
+    side: number,
+  ): SquareIndex | null {
+    const goalLine = attacker === Color.White ? 7 : 0;
+    const postFile = side < 0 ? 2 : 5;
+    const spots = ALL_SQUARES.filter(
+      (sq) =>
+        !board.get(sq) &&
+        Math.abs(rankOf(sq) - goalLine) <= 2 &&
+        Math.abs(fileOf(sq) - postFile) <= 2,
+    );
+    return spots.length > 0
+      ? spots[Math.floor(Math.random() * spots.length)]
+      : null;
+  }
+
   private goalKickSpot(board: Board, defender: Color): SquareIndex {
     const goalLine = defender === Color.White ? 0 : 7;
     const mouth = toIndex(3, goalLine);

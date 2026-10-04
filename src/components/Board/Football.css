@@ -361,6 +361,12 @@
   background: #ffb020;
 }
 
+.callout-post {
+  background: #c9d1dc;
+  color: #1b1033;
+  -webkit-text-stroke: 0;
+}
+
 @keyframes callout-pop {
   0% {
     opacity: 0;
