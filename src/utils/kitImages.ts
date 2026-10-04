@@ -37,10 +37,10 @@ const KITS: Record<Color, Kit> = {
 /** Where on each piece the shirt sits, in the artwork's 45 by 45 units: the top and bottom of the shirt, and the number's center */
 const FIT: Record<
   PieceType,
-  { top: number; hem: number; x: number; y: number }
+  { top: number; hem: number; x: number; y: number; left?: number }
 > = {
   [PieceType.Pawn]: { top: 22, hem: 34, x: 22.5, y: 31 },
-  [PieceType.Knight]: { top: 27, hem: 36, x: 26, y: 33.5 },
+  [PieceType.Knight]: { top: 27, hem: 36, x: 26, y: 33.5, left: 18.5 },
   [PieceType.Bishop]: { top: 22.5, hem: 30, x: 22.5, y: 28.6 },
   [PieceType.Rook]: { top: 17, hem: 32, x: 22.5, y: 27 },
   [PieceType.Queen]: { top: 20, hem: 34, x: 22.5, y: 30 },
@@ -54,7 +54,7 @@ const FIT: Record<
  * inside the piece's own outline.
  */
 function kitFill(kit: Kit, type: PieceType, skin: string): string {
-  const { top, hem, x } = FIT[type];
+  const { top, hem, x, left = -5 } = FIT[type];
   const shorts = hem + 4.5;
   const stripes =
     kit.stripe === kit.shirt
@@ -62,7 +62,7 @@ function kitFill(kit: Kit, type: PieceType, skin: string): string {
       : Array.from({ length: 12 }, (_, i) => i * 4 + ((x - 1) % 4))
           .map(
             (sx) =>
-              `<rect x="${sx}" y="${top}" width="2" height="${hem - top}" fill="${kit.stripe}"/>`,
+              `<rect x="${sx}" width="2" height="45" fill="${kit.stripe}"/>`,
           )
           .join("");
   return (
@@ -75,23 +75,46 @@ function kitFill(kit: Kit, type: PieceType, skin: string): string {
     skin +
     `<pattern id="body" patternUnits="userSpaceOnUse" width="45" height="45">` +
     `<rect width="45" height="45" fill="url(#skin)"/>` +
-    `<rect y="${top}" width="45" height="${hem - top}" fill="${kit.shirt}"/>` +
-    stripes +
-    `<rect y="${top}" width="45" height="1.4" fill="${kit.trim}"/>` +
-    `<path d="M${x - 4.4} ${top} L${x} ${top + 4.4} L${x + 4.4} ${top} Z" fill="${kit.trim}"/>` +
-    `<path d="M${x - 2.6} ${top} L${x} ${top + 2.6} L${x + 2.6} ${top} Z" fill="${kit.shirt}"/>` +
     `<rect y="${hem}" width="45" height="4.5" fill="${kit.shorts}"/>` +
     `<rect y="${shorts}" width="45" height="${45 - shorts}" fill="${kit.socks}"/>` +
     `<rect y="${shorts + 1.6}" width="45" height="1.2" fill="${kit.trim}"/>` +
     `<rect width="45" height="45" fill="url(#kit-shade)"/>` +
-    // Ink lines in the pieces' own outline style, kept inside each piece's outline by the fill
-    `<g fill="none" stroke="${INK}" stroke-linejoin="round">` +
-    `<path d="M0 ${top} H45" stroke-width="1.6"/>` +
-    `<path d="M${x - 4.4} ${top} L${x} ${top + 4.4} L${x + 4.4} ${top}" stroke-width="1.1"/>` +
-    `<path d="M0 ${hem} H45" stroke-width="1.6"/>` +
-    `<path d="M0 ${shorts} H45" stroke-width="1.2"/>` +
-    `</g>` +
-    `</pattern>`
+    `<path d="M0 ${shorts} H45" stroke="${INK}" stroke-width="1.2"/>` +
+    `</pattern>` +
+    `<pattern id="shirt" patternUnits="userSpaceOnUse" width="45" height="45">` +
+    `<rect width="45" height="45" fill="${kit.shirt}"/>` +
+    stripes +
+    `<rect width="45" height="45" fill="url(#kit-shade)"/>` +
+    `</pattern>` +
+    `<clipPath id="shirt-band"><rect x="${left}" y="${top}" width="${50 - left}" height="${hem - top}"/></clipPath>` +
+    `<clipPath id="shirt-edge"><rect x="${left - 1}" y="${top - 1}" width="${51 - left}" height="${hem - top + 2}"/></clipPath>`
+  );
+}
+
+/**
+ * The shirt as a garment of its own over the piece: the piece's silhouette in
+ * the shirt's band, grown a little past the piece's outline, filled with the
+ * kit and edged in the same ink as the piece. `#piece` is the whole artwork.
+ */
+function shirtOverlay(kit: Kit, type: PieceType): string {
+  const { top, x } = FIT[type];
+  const grow = (id: string, radius: number) =>
+    `<filter id="${id}" x="-20%" y="-20%" width="140%" height="140%">` +
+    `<feMorphology in="SourceAlpha" operator="dilate" radius="${radius}"/>` +
+    `<feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0"/>` +
+    `</filter>`;
+  const mask = (id: string, filter: string) =>
+    `<mask id="${id}" maskUnits="userSpaceOnUse" x="-5" y="-5" width="55" height="55">` +
+    `<use href="#piece" filter="url(#${filter})"/></mask>`;
+  const sheet = (fill: string, maskId: string, clip: string) =>
+    `<rect x="-5" y="-5" width="55" height="55" fill="${fill}" mask="url(#${maskId})" clip-path="url(#${clip})"/>`;
+  return (
+    `<defs>${grow("grow-edge", 1.9)}${grow("grow-shirt", 0.7)}` +
+    `${mask("edge-mask", "grow-edge")}${mask("shirt-mask", "grow-shirt")}</defs>` +
+    sheet(INK, "edge-mask", "shirt-edge") +
+    sheet("url(#shirt)", "shirt-mask", "shirt-band") +
+    `<path d="M${x - 4.4} ${top} L${x} ${top + 4.4} L${x + 4.4} ${top} Z" fill="${kit.trim}" stroke="${INK}" stroke-width="1.1" stroke-linejoin="round"/>` +
+    `<path d="M${x - 2.4} ${top + 0.1} L${x} ${top + 2.5} L${x + 2.4} ${top + 0.1} Z" fill="${kit.shirt}"/>`
   );
 }
 
@@ -154,6 +177,7 @@ export function kitImage(
         const kit = KITS[piece.color];
         const fit = FIT[piece.type];
         const numbered = svg
+          .replace(/<svg[^>]*>/, (root) => `${root}<g id="piece">`)
           .replace(
             /<linearGradient id="body"[\s\S]*?<\/linearGradient>/,
             (body) =>
@@ -161,13 +185,16 @@ export function kitImage(
           )
           .replace(
             "</svg>",
-            shirtNumber(
-              number,
-              fit.x,
-              fit.y - 2.2,
-              piece.type === PieceType.Bishop ? 4.2 : 5.4,
-              kit.number,
-            ) + "</svg>",
+            "</g>" +
+              shirtOverlay(kit, piece.type) +
+              shirtNumber(
+                number,
+                fit.x,
+                fit.y - 2.2,
+                piece.type === PieceType.Bishop ? 4.2 : 5.4,
+                kit.number,
+              ) +
+              "</svg>",
           );
         return URL.createObjectURL(
           new Blob([numbered], { type: "image/svg+xml" }),
