@@ -811,6 +811,26 @@ export const sfx = {
     src.stop(t + 0.04);
   },
 
+  /** A team heaves on the rope: fibres creaking under the strain, then a thump as everyone digs in */
+  heave(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    for (let i = 0; i < 5; i++) creak(c, out, t + i * 0.05, 0.7);
+    const thump = c.createOscillator();
+    thump.type = "sine";
+    thump.frequency.setValueAtTime(120, t + 0.18);
+    thump.frequency.exponentialRampToValueAtTime(50, t + 0.4);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.setValueAtTime(0.45, t + 0.18);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.42);
+    thump.connect(gain).connect(out);
+    thump.start(t + 0.18);
+    thump.stop(t + 0.44);
+  },
+
   /** The referee's pea whistle: one short blast, or a long one for a goal */
   whistle(long: boolean): void {
     const a = audio();

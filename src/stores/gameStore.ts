@@ -22,6 +22,7 @@ import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
+import { TugOfWarPlugin } from "../plugins/tugOfWar";
 import type { KickTarget } from "../plugins/football";
 import { benchKings, reinforce, returnKing } from "./reinforcements";
 import type {
@@ -148,6 +149,13 @@ export const GAME_MODES: GameMode[] = [
     durationSeconds: 60,
     introHoldMs: HEX_MORPH_DONE_MS,
     isHex: true,
+  },
+  {
+    name: "TUG OF WAR",
+    theme: "tug",
+    create: () => [new TugOfWarPlugin()],
+    durationSeconds: 75,
+    kingsSitOut: true,
   },
   {
     name: "STRATEGO",
@@ -420,6 +428,7 @@ function modeSquareBonus(
   board: Board,
 ): SquareBonus {
   const football = pluginManager.find<FootballPlugin>("football");
+  const tug = pluginManager.find<TugOfWarPlugin>("tug-of-war");
   return (square, piece, from) => {
     const classes = pluginManager
       .getSquareModifiers(square)
@@ -433,6 +442,7 @@ function modeSquareBonus(
     }
     if (classes.includes("hill-square")) bonus += 0.5;
     if (football) bonus += football.squareBonus(board, square, piece, from);
+    if (tug) bonus += tug.squareBonus(square, piece);
     return bonus;
   };
 }

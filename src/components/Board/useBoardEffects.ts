@@ -342,3 +342,28 @@ export function usePlayCall(
   }
   return call;
 }
+
+const HEAVE_MS = 700;
+
+/**
+ * Which way the pieces on the rope are being dragged, on screen, while a tug
+ * of war heave plays out: 1 down, -1 up, or 0 between heaves
+ */
+export function useHeave(
+  heave: number,
+  heaveDir: number,
+  flipped: boolean,
+): number {
+  const [seen, setSeen] = useState(heave);
+  const [yank, setYank] = useState(0);
+  if (heave !== seen) {
+    setSeen(heave);
+    if (heave > 0) setYank(heaveDir * (flipped ? -1 : 1));
+  }
+  useEffect(() => {
+    if (yank === 0) return;
+    const done = setTimeout(() => setYank(0), HEAVE_MS);
+    return () => clearTimeout(done);
+  }, [yank, heave]);
+  return yank;
+}

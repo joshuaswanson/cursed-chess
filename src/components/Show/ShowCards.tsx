@@ -113,6 +113,17 @@ function Flair({ theme }: { theme: ThemeId }) {
       );
     case "stratego":
       return <span className="card-stamp-ring" />;
+    case "tug":
+      return (
+        <svg
+          className="card-rope"
+          viewBox="0 0 400 40"
+          preserveAspectRatio="none"
+        >
+          <rect x="0" y="14" width="400" height="12" rx="6" />
+          <path d="M200 8 L188 2 L184 20 L188 38 L200 32 L212 38 L216 20 L212 2 Z" />
+        </svg>
+      );
     default:
       return null;
   }

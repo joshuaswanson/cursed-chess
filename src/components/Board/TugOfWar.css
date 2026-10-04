@@ -1,0 +1,190 @@
+/* --- Tug of war: a rope up the middle of a sports-day arena --- */
+
+.tug-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* A churned-up mud pit where the two halves meet */
+.tug-mud {
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  top: 42%;
+  bottom: 42%;
+  border-radius: 46% 54% 50% 48% / 60% 48% 55% 45%;
+  background:
+    radial-gradient(
+      circle at 30% 40%,
+      rgba(255, 255, 255, 0.22) 0 4%,
+      transparent 5%
+    ),
+    radial-gradient(
+      circle at 70% 62%,
+      rgba(255, 255, 255, 0.18) 0 3%,
+      transparent 4%
+    ),
+    radial-gradient(
+      ellipse at 50% 50%,
+      #6b4422 0%,
+      #7d532b 55%,
+      rgba(125, 83, 43, 0) 75%
+    );
+  box-shadow: inset 0 3px 8px rgba(40, 20, 5, 0.55);
+}
+
+.tug-center-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 0;
+  border-top: 3px dashed rgba(255, 255, 255, 0.75);
+  translate: 0 -50%;
+}
+
+/* Chalk lines three squares into each half: drag the flag past yours to win */
+.tug-win-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  translate: 0 -50%;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.95) 0 14px,
+    rgba(255, 255, 255, 0.55) 14px 18px
+  );
+  box-shadow: 0 0 0 2px rgba(42, 26, 16, 0.35);
+}
+
+.tug-win-label {
+  position: absolute;
+  left: 3%;
+  top: 50%;
+  translate: 0 -50%;
+  padding: 1px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: calc(var(--square-size, 72px) * 0.16);
+  white-space: nowrap;
+  color: #fff;
+}
+
+.win-white .tug-win-label {
+  background: #2f6bff;
+}
+
+.win-black .tug-win-label {
+  background: #e8402f;
+}
+
+/* The rope runs past both ends of the board, into each team's hands */
+.tug-rope-wrap {
+  position: absolute;
+  left: 50%;
+  top: -9%;
+  bottom: -9%;
+  width: calc(var(--square-size, 72px) * 0.26);
+  translate: -50% 0;
+  z-index: 2;
+}
+
+.tug-rope {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.35));
+}
+
+/* Each heave snaps the rope toward the side that won it, then it springs back */
+.tug-rope-wrap.heaving {
+  animation: rope-yank 0.7s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes rope-yank {
+  25% {
+    translate: -50% calc(var(--yank) * 14px);
+    scale: 0.85 1;
+  }
+}
+
+/* The flag tied on the rope slides to its new spot with every heave */
+.tug-flag {
+  position: absolute;
+  left: 50%;
+  z-index: 3;
+  width: calc(var(--square-size, 72px) * 1.1);
+  translate: -50% -50%;
+  transition: top 0.7s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.tug-flag-body.heaving {
+  animation: flag-yank 0.7s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes flag-yank {
+  25% {
+    translate: 0 calc(var(--yank) * 14px);
+  }
+}
+
+.tug-flag-cloth {
+  display: block;
+  width: 100%;
+  filter: drop-shadow(2px 3px 0 rgba(42, 26, 16, 0.4));
+  animation: flag-flap 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes flag-flap {
+  to {
+    scale: 0.92 1.06;
+    rotate: 3deg;
+  }
+}
+
+.tug-score {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  translate: 4px -50%;
+  padding: 2px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: calc(var(--square-size, 72px) * 0.2);
+  white-space: nowrap;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.tug-score .you {
+  color: #2f6bff;
+}
+
+.tug-score .foe {
+  color: #e8402f;
+}
+
+/* Pieces on the rope are dragged along with every heave */
+.board.tug-heave .square.rope-square .piece-img {
+  animation: rope-drag 0.7s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes rope-drag {
+  25% {
+    translate: 0 calc(var(--yank) * 14%);
+    rotate: calc(var(--yank) * -9deg);
+  }
+}
+
+/* The rope's files are worn into the ground from all the pulling */
+[data-theme="tug"] .square.rope-square {
+  box-shadow: inset 0 0 0 999px rgba(120, 80, 40, 0.1);
+}

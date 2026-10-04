@@ -4,6 +4,7 @@ import type { PortalColor } from "../../plugins/portalChess";
 import type { BattleRoyaleOverlay } from "../../plugins/battleRoyale";
 import type { BattleView } from "../../plugins/clashRoyale";
 import type { FootballView } from "../../plugins/football";
+import type { TugView } from "../../plugins/tugOfWar";
 
 export interface PortalPair {
   a: SquareIndex;
@@ -18,6 +19,7 @@ export interface BoardOverlays {
   hasRally: boolean;
   rallyBattle: BattleView | null;
   football: FootballView | null;
+  tug: TugView | null;
   hillSquares: SquareIndex[];
   battleRoyale: BattleRoyaleOverlay | null;
   gravityDirection: string | null;
@@ -37,6 +39,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     hasRally: false,
     rallyBattle: null,
     football: null,
+    tug: null,
     hillSquares: [],
     battleRoyale: null,
     gravityDirection: null,
@@ -96,6 +99,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
         break;
       case "minefield":
         result.pendingExplosions = overlay.squares;
+        break;
+      case "tug-of-war":
+        result.tug = overlay.data as TugView;
         break;
     }
   }

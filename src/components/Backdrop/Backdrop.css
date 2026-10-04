@@ -993,3 +993,50 @@
     opacity: 0.75;
   }
 }
+
+/* --- Tug of war: a sunny sports day at the fair --- */
+
+.fairground {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.fair-cloud {
+  animation: cloud-drift 40s linear infinite alternate;
+}
+
+@keyframes cloud-drift {
+  to {
+    translate: 120px 0;
+  }
+}
+
+.fair-sun {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  opacity: 0.6;
+  animation: fair-sun-pulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes fair-sun-pulse {
+  to {
+    scale: 1.12;
+    opacity: 0.35;
+  }
+}
+
+/* Pennants flutter in the breeze */
+.pennant {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: pennant-flutter 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes pennant-flutter {
+  to {
+    rotate: 7deg;
+    scale: 0.92 1;
+  }
+}

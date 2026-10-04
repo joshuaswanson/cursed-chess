@@ -1212,3 +1212,40 @@
   color: #ffd23f;
   text-shadow: 2px 2px 0 #1b1033;
 }
+
+/* --- Tug of war: a rope stretched across the card, yanked back and forth --- */
+
+[data-card-theme="tug"] .card-band {
+  background: linear-gradient(100deg, #2f6bff, #7cc35a 50%, #e8402f);
+}
+
+.card-rope {
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  bottom: 8%;
+  width: 110%;
+  height: 3.2vh;
+  animation: card-rope-yank 0.9s cubic-bezier(0.4, 1.6, 0.5, 1) 0.3s 3 alternate;
+}
+
+.card-rope rect {
+  fill: #d9b277;
+  stroke: #2a1a10;
+  stroke-width: 3;
+}
+
+.card-rope path {
+  fill: #e8402f;
+  stroke: #2a1a10;
+  stroke-width: 3;
+}
+
+@keyframes card-rope-yank {
+  from {
+    translate: -4vw 0;
+  }
+  to {
+    translate: 4vw 0;
+  }
+}

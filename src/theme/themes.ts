@@ -9,7 +9,8 @@ export type ThemeId =
   | "gravity"
   | "fifa"
   | "hex"
-  | "stratego";
+  | "stratego"
+  | "tug";
 
 /** Which animated scene sits behind the board */
 export type BackdropKind = ThemeId;
@@ -192,6 +193,21 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#d9cf96",
     dark: "#8f9150",
     text: "#f4ead0",
+  },
+  tug: {
+    id: "tug",
+    title: "Tug of War",
+    tagline:
+      "Pieces on the two middle files grab the rope. Out-muscle them and haul the flag three squares your way.",
+    catchphrase: "Heave ho!",
+    sky: ["#7fd0ff", "#bfe9ff", "#ffe9b0"],
+    accent: "#e8402f",
+    accent2: "#2f6bff",
+    ink: "#2a1a10",
+    frame: "#8a5a2b",
+    light: "#e8cf9a",
+    dark: "#c99e62",
+    text: "#2a1a10",
   },
 };
 

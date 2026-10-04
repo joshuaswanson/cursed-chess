@@ -470,3 +470,36 @@
   width: 100%;
   pointer-events: none;
 }
+
+/* --- Tug of war: a fenced arena of packed sand --- */
+
+[data-theme="tug"] .board-shell {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.18) 0 3px,
+      transparent 3px 34px
+    ),
+    linear-gradient(180deg, #a8743c, #8a5a2b);
+  box-shadow:
+    10px 12px 0 var(--ink),
+    inset 0 0 0 3px rgba(255, 220, 160, 0.35);
+}
+
+[data-theme="tug"] .square.light,
+[data-theme="tug"] .square.dark {
+  background-image:
+    radial-gradient(
+      circle at 30% 40%,
+      rgba(120, 80, 40, 0.28) 0 1.5px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at 70% 75%,
+      rgba(255, 255, 255, 0.35) 0 1px,
+      transparent 2px
+    );
+  background-size:
+    12px 12px,
+    17px 15px;
+}

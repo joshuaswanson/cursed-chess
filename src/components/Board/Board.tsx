@@ -22,6 +22,7 @@ import {
 } from "./boardGeometry";
 import { PortalArrows } from "./PortalArrows";
 import { Sideline } from "./Sideline";
+import { TugLayer } from "./TugOfWar";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
 import { BoardFog } from "../Fog/Fog";
@@ -39,6 +40,7 @@ import {
   useCaptureBurst,
   useSlideAnimation,
   useShotDives,
+  useHeave,
   usePlayCall,
   goalReaction,
   DIVE_MS,
@@ -212,6 +214,11 @@ export function Board() {
   }, [portalsDue, travel, slides, settlePortals]);
 
   useGravitySpin(shellRef, overlays.gravityDirection !== null);
+  const tugYank = useHeave(
+    overlays.tug?.heave ?? 0,
+    overlays.tug?.heaveDir ?? 0,
+    flipped,
+  );
   const shotDives = useShotDives(
     overlays.football?.lastKick ?? null,
     flipped,
@@ -559,6 +566,7 @@ export function Board() {
 
   const boardClass =
     "board" +
+    (tugYank !== 0 ? " tug-heave" : "") +
     (overlays.hasFog ? " fog-active" : "") +
     (overlays.portalPairs.length > 0 ? " portal-active" : "") +
     (overlays.gravityDirection ? " gravity-active" : "") +
@@ -572,6 +580,7 @@ export function Board() {
 
   const { gravityAngle } = overlays;
   const boardStyle = {
+    "--yank": tugYank,
     ...(deployPieceType && {
       "--deploy-preview": `url(${pieceImage({ type: deployPieceType, color: Color.White })})`,
     }),
@@ -613,6 +622,7 @@ export function Board() {
             />
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
+          {overlays.tug && <TugLayer view={overlays.tug} flipped={flipped} />}
           {hill.length > 0 && (
             <div
               className={`hill-throne${hillLeader ? ` held-${hillLeader}` : ""}${Math.max(hillWhite, hillBlack) >= 3 ? " dominated" : ""}`}
