@@ -124,8 +124,18 @@ function keeperOf(board: Board, color: Color): SquareIndex | null {
   return keepers[0] ?? null;
 }
 
+/**
+ * Chance a shot is on target by how many squares out it is taken. Close in it
+ * is near certain; from your own half it almost never goes in.
+ */
+const ACCURACY_BY_DISTANCE = [
+  0.95, 0.95, 0.92, 0.85, 0.65, 0.2, 0.08, 0.04, 0.02,
+];
+
 function shotAccuracy(distance: number): number {
-  return Math.min(1, Math.max(0.6, 1 - (distance - 3) * 0.06));
+  return ACCURACY_BY_DISTANCE[
+    Math.min(distance, ACCURACY_BY_DISTANCE.length - 1)
+  ];
 }
 
 /**
@@ -144,6 +154,11 @@ export class FootballPlugin implements ModePlugin {
   lastKick: Kick | null = null;
   private scorer: Color | null = null;
   private shirts = new Map<SquareIndex, number>();
+
+  /** The shirt number of whoever stands on a square */
+  shirtOn(sq: SquareIndex): number | undefined {
+    return this.shirts.get(sq);
+  }
   private nextId = 1;
 
   onGameStart(ctx: PluginContext): void {
