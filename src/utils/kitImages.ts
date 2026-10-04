@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Color, PieceType } from "../engine";
 import type { Piece } from "../engine";
 
+/** The dark line the piece artwork is drawn with */
+const INK = "#1b1033";
+
 interface Kit {
   shirt: string;
   /** Second color for vertical stripes, or the shirt color for a plain shirt */
@@ -74,16 +77,60 @@ function kitFill(kit: Kit, type: PieceType, skin: string): string {
     `<rect width="45" height="45" fill="url(#skin)"/>` +
     `<rect y="${top}" width="45" height="${hem - top}" fill="${kit.shirt}"/>` +
     stripes +
-    `<rect y="${top}" width="45" height="1.3" fill="${kit.trim}"/>` +
-    `<path d="M${x - 4.2} ${top} L${x} ${top + 4.2} L${x + 4.2} ${top} Z" fill="${kit.trim}"/>` +
-    `<path d="M${x - 2.6} ${top} L${x} ${top + 2.5} L${x + 2.6} ${top} Z" fill="${kit.shirt}"/>` +
-    `<rect y="${hem - 0.9}" width="45" height="0.9" fill="#000" fill-opacity="0.25"/>` +
+    `<rect y="${top}" width="45" height="1.4" fill="${kit.trim}"/>` +
+    `<path d="M${x - 4.4} ${top} L${x} ${top + 4.4} L${x + 4.4} ${top} Z" fill="${kit.trim}"/>` +
+    `<path d="M${x - 2.6} ${top} L${x} ${top + 2.6} L${x + 2.6} ${top} Z" fill="${kit.shirt}"/>` +
     `<rect y="${hem}" width="45" height="4.5" fill="${kit.shorts}"/>` +
     `<rect y="${shorts}" width="45" height="${45 - shorts}" fill="${kit.socks}"/>` +
     `<rect y="${shorts + 1.6}" width="45" height="1.2" fill="${kit.trim}"/>` +
     `<rect width="45" height="45" fill="url(#kit-shade)"/>` +
+    // Ink lines in the pieces' own outline style, kept inside each piece's outline by the fill
+    `<g fill="none" stroke="${INK}" stroke-linejoin="round">` +
+    `<path d="M0 ${top} H45" stroke-width="1.6"/>` +
+    `<path d="M${x - 4.4} ${top} L${x} ${top + 4.4} L${x + 4.4} ${top}" stroke-width="1.1"/>` +
+    `<path d="M0 ${hem} H45" stroke-width="1.6"/>` +
+    `<path d="M0 ${shorts} H45" stroke-width="1.2"/>` +
+    `</g>` +
     `</pattern>`
   );
+}
+
+/** Block shirt digits drawn on a 4 by 6 grid, the way numbers are cut from felt */
+const DIGITS: Record<string, string> = {
+  "0": "M0 0H4V6H0Z",
+  "1": "M1 1.2L2.2 0V6M1 6H3.4",
+  "2": "M0 0H4V3H0V6H4",
+  "3": "M0 0H4V6H0M1.2 3H4",
+  "4": "M0 0V3.4H4M3.2 0V6",
+  "5": "M4 0H0V3H4V6H0",
+  "6": "M4 0H0V6H4V3H0",
+  "7": "M0 0H4V6",
+  "8": "M0 0H4V6H0ZM0 3H4",
+  "9": "M4 3H0V0H4V6H0",
+};
+
+/** The number in block digits, centered on (x, y), with a dark outline round each stroke */
+function shirtNumber(
+  number: number,
+  x: number,
+  y: number,
+  height: number,
+  color: string,
+): string {
+  const digits = String(number).split("");
+  const scale = height / 6;
+  const advance = 5.6;
+  const width = digits.length * advance - (advance - 4);
+  const strokes = digits
+    .map(
+      (d, i) =>
+        `<path transform="translate(${i * advance} 0)" d="${DIGITS[d]}"/>`,
+    )
+    .join("");
+  const at = `translate(${x - (width * scale) / 2} ${y - height / 2}) scale(${scale})`;
+  const line = (stroke: string, w: number) =>
+    `<g transform="${at}" fill="none" stroke="${stroke}" stroke-width="${w}" stroke-linecap="square" stroke-linejoin="miter">${strokes}</g>`;
+  return line(INK, 3.1) + line(color, 1.5);
 }
 
 const cache = new Map<string, Promise<string>>();
@@ -114,7 +161,13 @@ export function kitImage(
           )
           .replace(
             "</svg>",
-            `<text x="${fit.x}" y="${fit.y}" text-anchor="middle" font-family="Bungee, Rubik, sans-serif" font-size="${(number > 9 ? 6.4 : 7.4) * (piece.type === PieceType.Bishop ? 0.8 : 1)}" fill="${kit.number}" stroke="#1b1033" stroke-width="1.6" paint-order="stroke" stroke-linejoin="round">${number}</text></svg>`,
+            shirtNumber(
+              number,
+              fit.x,
+              fit.y - 2.2,
+              piece.type === PieceType.Bishop ? 4.2 : 5.4,
+              kit.number,
+            ) + "</svg>",
           );
         return URL.createObjectURL(
           new Blob([numbered], { type: "image/svg+xml" }),
