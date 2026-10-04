@@ -1,9 +1,13 @@
 /* --- The left touchline, where the kings coach and the taken players watch --- */
 
+.sideline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .sideline-member {
   position: absolute;
-  width: 12.5%;
-  height: 12.5%;
   z-index: 6;
   pointer-events: none;
   animation:
@@ -12,8 +16,8 @@
       alternate;
 }
 
-.sideline-player {
-  scale: 0.8;
+.sideline-coach {
+  scale: 1.2;
 }
 
 .sideline-reaction {
@@ -34,27 +38,50 @@
   filter: drop-shadow(0.06em 0.09em 0 rgba(20, 8, 40, 0.45));
 }
 
-/* From the square they left to their spot on the touchline, swaying as they go */
+/* Off the board sideways along their own rank, then along the touchline to their spot */
 @keyframes sideline-walk {
   0% {
     translate: var(--from-x) var(--from-y);
-    rotate: 0deg;
   }
-  20% {
-    rotate: -7deg;
-  }
-  40% {
-    rotate: 7deg;
-  }
-  60% {
-    rotate: -7deg;
-  }
-  80% {
-    rotate: 7deg;
+  65% {
+    translate: 0 var(--from-y);
   }
   100% {
     translate: 0 0;
+  }
+}
+
+/* A step in every stride while they walk */
+.sideline-member > .sideline-reaction {
+  animation: sideline-steps var(--dur) var(--delay) linear both;
+}
+
+@keyframes sideline-steps {
+  0%,
+  12.5%,
+  25%,
+  37.5%,
+  50%,
+  62.5%,
+  75%,
+  87.5%,
+  100% {
+    translate: 0 0;
     rotate: 0deg;
+  }
+  6.25%,
+  31.25%,
+  56.25%,
+  81.25% {
+    translate: 0 -12%;
+    rotate: -5deg;
+  }
+  18.75%,
+  43.75%,
+  68.75%,
+  93.75% {
+    translate: 0 -12%;
+    rotate: 5deg;
   }
 }
 
@@ -130,17 +157,5 @@
     translate: 0 8%;
     scale: 0.92 0.84;
     filter: saturate(0.5) brightness(0.85);
-  }
-}
-
-/* A phone has no room beside the board, so only the coaches stay, perched on the frame */
-@media (max-width: 600px) {
-  .sideline-player {
-    display: none;
-  }
-
-  .sideline-coach {
-    margin-left: 11%;
-    scale: 0.7;
   }
 }

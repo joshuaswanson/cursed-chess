@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { Color } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import type { Kick } from "../../plugins/football";
@@ -9,17 +10,13 @@ import "./Sideline.css";
 
 type Style = React.CSSProperties & Record<`--${string}`, string | number>;
 
-/** Where along the left touchline each team gathers, in squares from the board's top left */
-const COACH_SPOT = {
-  near: { col: -1.45, row: 5.3 },
-  far: { col: -1.45, row: 1.7 },
-};
-const BENCH_COLS = [-2.4, -3.35];
-const BENCH_ROWS = {
-  near: [4.15, 5.1, 6.05, 7.0],
-  far: [0.15, 1.1, 2.05, 3.0],
-};
 const BENCH_WALK_MS = 1100;
+/** How much of a square each touchline spot takes */
+const CELL = 0.72;
+/** The board frame's width beyond the squares, kept clear of the touchline */
+const FRAME = 0.32;
+/** Breathing room left at the screen's edge */
+const EDGE_PX = 6;
 
 const CAP_COLOR = { [Color.White]: "#2f6bff", [Color.Black]: "#e2304a" };
 
@@ -135,22 +132,50 @@ export function Sideline({
   flipped: boolean;
   squareSize: number;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const room = useRoomOnLeft(ref);
   const nearColor = flipped ? Color.Black : Color.White;
   const half = (color: Color) => (color === nearColor ? "near" : "far");
-  const walkFrom = (sq: SquareIndex, spot: { col: number; row: number }) => ({
-    "--from-x": `${Math.round((visualCol(sq, flipped) - spot.col) * squareSize)}px`,
-    "--from-y": `${Math.round((visualRow(sq, flipped) - spot.row) * squareSize)}px`,
+
+  // Lay the touchline out in the room actually left of the board, so
+  // everyone on it stays on screen however wide the window is
+  const cell = squareSize * CELL;
+  const gap = Math.min(squareSize * FRAME, Math.max(0, room - cell));
+  const columns = Math.max(1, Math.floor((room - gap) / cell));
+  const rows = Math.floor((4 * squareSize) / cell);
+  const coachRow = Math.floor(rows / 2);
+  // With no room at all, as on a phone, the touchline overlaps the board's edge
+  const spotAt = (side: "near" | "far", column: number, row: number) => ({
+    x: Math.max(-room, -gap - cell * (Math.min(column, columns - 1) + 1)),
+    y:
+      (side === "far" ? 0 : 4 * squareSize) +
+      (4 * squareSize - rows * cell) / 2 +
+      row * cell,
   });
-  const place = (spot: { col: number; row: number }) => ({
-    left: `${spot.col * 12.5}%`,
-    top: `${spot.row * 12.5}%`,
+  // Seats in the order they fill: down the column beside the coach, then the next one out
+  const seat = (n: number) => {
+    const perColumn = rows - 1;
+    const column = Math.floor(n / perColumn);
+    const row = n % perColumn;
+    return { column, row: row >= coachRow ? row + 1 : row };
+  };
+
+  const walkFrom = (sq: SquareIndex, spot: { x: number; y: number }) => ({
+    "--from-x": `${Math.round((visualCol(sq, flipped) + 0.5) * squareSize - (spot.x + cell / 2))}px`,
+    "--from-y": `${Math.round((visualRow(sq, flipped) + 0.5) * squareSize - (spot.y + cell / 2))}px`,
+  });
+  const place = (spot: { x: number; y: number }) => ({
+    left: `${Math.round(spot.x)}px`,
+    top: `${Math.round(spot.y)}px`,
+    width: `${Math.round(cell)}px`,
+    height: `${Math.round(cell)}px`,
   });
   const seats = { near: 0, far: 0 };
 
   return (
-    <div className="sideline" aria-hidden>
+    <div ref={ref} className="sideline" aria-hidden>
       {coaches.map(({ sq, piece, delayMs }) => {
-        const spot = COACH_SPOT[half(piece.color)];
+        const spot = spotAt(half(piece.color), 0, coachRow);
         // A king already off the board from the mode before is just there
         const style: Style = {
           ...place(spot),
@@ -177,11 +202,8 @@ export function Sideline({
       })}
       {bench.map(({ piece, takenOn }, i) => {
         const side = half(piece.color);
-        const seat = seats[side]++;
-        const spot = {
-          col: BENCH_COLS[Math.floor(seat / 4) % BENCH_COLS.length],
-          row: BENCH_ROWS[side][seat % 4],
-        };
+        const { column, row } = seat(seats[side]++);
+        const spot = spotAt(side, column, row);
         const style: Style = {
           ...place(spot),
           ...walkFrom(takenOn, spot),
@@ -205,4 +227,19 @@ export function Sideline({
       })}
     </div>
   );
+}
+
+/** How many pixels there are between the board's left edge and the screen's */
+function useRoomOnLeft(ref: React.RefObject<HTMLDivElement | null>): number {
+  const [room, setRoom] = useState(0);
+  useLayoutEffect(() => {
+    const measure = () => {
+      const left = ref.current?.getBoundingClientRect().left ?? 0;
+      setRoom(Math.max(0, left - EDGE_PX));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [ref]);
+  return room;
 }
