@@ -10,21 +10,39 @@
   overflow: visible;
 }
 
+.grave-shadow {
+  fill: rgba(0, 0, 0, 0.35);
+}
+
 .grave-earth {
-  fill: #4a3a26;
-  stroke: #1c150d;
-  stroke-width: 2.5;
+  stroke: #1c130b;
+  stroke-width: 2.4;
+  stroke-linejoin: round;
 }
 
 .grave-lit {
-  fill: none;
-  stroke: #7a6142;
-  stroke-width: 3;
-  stroke-linecap: round;
+  fill: #86643e;
+  opacity: 0.75;
+}
+
+.grave-stone {
+  fill: #8e8b80;
+  stroke: #1c130b;
+  stroke-width: 0.9;
 }
 
 .grave-clod {
-  fill: #2e2316;
+  fill: #4a3420;
+  stroke: #1c130b;
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+}
+
+.grave-grass {
+  fill: none;
+  stroke: #5d8a33;
+  stroke-width: 1.6;
+  stroke-linecap: round;
 }
 
 .headstone,
@@ -71,58 +89,89 @@
   }
 }
 
-.headstone-face {
-  fill: #9a988c;
-  stroke: #24222a;
-  stroke-width: 3.5;
+.headstone-face,
+.headstone-side {
+  stroke: #1d1b22;
+  stroke-width: 3;
   stroke-linejoin: round;
 }
 
-.headstone-lit {
-  fill: none;
-  stroke: #d2cfc2;
-  stroke-width: 3;
-  stroke-linecap: round;
-  opacity: 0.7;
+/* The stone's thickness, showing past its face */
+.headstone-side {
+  fill: #5a574e;
 }
 
-.headstone-ring {
-  fill: none;
-  stroke: #24222a;
-  stroke-width: 3.5;
-}
-
-.headstone-rip {
+.carving {
   font-family: var(--font-display);
-  font-size: 17px;
-  fill: #3a3842;
+  fill: #3b3940;
 }
 
-.headstone-lines {
-  stroke: #5e5c62;
-  stroke-width: 2.5;
+.carving-lip {
+  font-family: var(--font-display);
+  fill: #ebe7d8;
+  opacity: 0.55;
+}
+
+.carving-line,
+.epitaph {
+  fill: none;
+  stroke: #4a4842;
+  stroke-width: 1.6;
   stroke-linecap: round;
+  opacity: 0.8;
 }
 
-.headstone-skull {
-  fill: #6e6c64;
+.epitaph {
+  stroke-width: 2.2;
+  opacity: 0.55;
 }
 
-.headstone-socket {
-  fill: #24222a;
+.cross-ring {
+  fill: none;
+  stroke: #a3a093;
+  stroke-width: 5;
 }
 
-.headstone-moss {
+.recess {
+  fill: #6f6c62;
+  stroke: #4a4842;
+  stroke-width: 1.4;
+}
+
+.skull {
+  fill: #b9b6a8;
+  stroke: #3b3940;
+  stroke-width: 1.2;
+}
+
+.socket {
+  fill: #2a282e;
+}
+
+.chip {
+  fill: #5a574e;
+  stroke: #1d1b22;
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+.lichen {
+  fill: #b5b25a;
+  opacity: 0.75;
+}
+
+.moss {
   fill: #5d7a34;
   stroke: #24222a;
-  stroke-width: 2;
+  stroke-width: 1.6;
 }
 
 .headstone-crack {
   fill: none;
   stroke: #1a1820;
-  stroke-width: 2.5;
+  stroke-width: 2.2;
   stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 /* The round before its dead rise, the stone trembles and the earth heaves */
