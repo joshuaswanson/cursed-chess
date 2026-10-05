@@ -2,7 +2,11 @@ import { useEffect, useRef } from "react";
 import { WIN_LINE } from "../../plugins/tugOfWar";
 import type { TugView } from "../../plugins/tugOfWar";
 import { sfx } from "../../audio/sfx";
-import { ROPE_TILE, ROPE_TILE_RATIO, ROPE_TILE_SHADED_URL } from "./ropeTexture";
+import {
+  ROPE_TILE,
+  ROPE_TILE_RATIO,
+  ROPE_TILE_SHADED_URL,
+} from "./ropeTexture";
 import { useTugStruggle } from "./tugStruggle";
 import "./TugOfWar.css";
 
@@ -619,63 +623,72 @@ export function TugLayer({
           <Coil end="bottom" />
           <div className="tug-rope" style={{ "--rope": ROPE_TILE } as Style} />
         </div>
-        <div className="tug-flag" style={{ top: `${flagTop * 12.5}%` }}>
+        {(["cloth", "knots"] as const).map((part) => (
           <div
-            key={view.heave}
-            className={`tug-flag-body${view.heave > 0 ? " heaving" : ""}`}
-            style={{ "--yank": yank } as Style}
+            key={part}
+            className={`tug-flag${part === "cloth" ? " under-rope" : ""}`}
+            style={{ top: `${flagTop * 12.5}%` }}
           >
-            <svg viewBox="0 0 70 44" className="tug-flag-cloth">
-              {/* The cloth ripples between two shapes as it flies off the rope,
-                  and swings about its knots as the rope jolts */}
-              <g className="tug-flag-swing">
-                <path
-                  d={FLAG_WAVES[0]}
-                  fill="#e8402f"
-                  stroke="#2a1a10"
-                  strokeWidth="2.4"
-                  strokeLinejoin="round"
-                >
-                  <animate
-                    attributeName="d"
-                    values={`${FLAG_WAVES[0]};${FLAG_WAVES[1]};${FLAG_WAVES[0]}`}
-                    dur="1.1s"
-                    repeatCount="indefinite"
-                  />
-                </path>
-                <path d={FLAG_STRIPE[0]} fill="#ffffff">
-                  <animate
-                    attributeName="d"
-                    values={`${FLAG_STRIPE[0]};${FLAG_STRIPE[1]};${FLAG_STRIPE[0]}`}
-                    dur="1.1s"
-                    repeatCount="indefinite"
-                  />
-                </path>
-                <path
-                  d={FLAG_FOLDS[0]}
-                  fill="none"
-                  stroke="#000"
-                  strokeOpacity="0.22"
-                  strokeWidth="3"
-                >
-                  <animate
-                    attributeName="d"
-                    values={`${FLAG_FOLDS[0]};${FLAG_FOLDS[1]};${FLAG_FOLDS[0]}`}
-                    dur="1.1s"
-                    repeatCount="indefinite"
-                  />
-                </path>
-              </g>
-              {[5, 35].map((y) => (
-                <Lashing key={y} y={y} />
-              ))}
-            </svg>
-            <span className="tug-score">
-              <b className="you">{view.white}</b> vs{" "}
-              <b className="foe">{view.black}</b>
-            </span>
+            <div
+              key={view.heave}
+              className={`tug-flag-body${view.heave > 0 ? " heaving" : ""}`}
+              style={{ "--yank": yank } as Style}
+            >
+              <svg viewBox="0 0 70 44" className="tug-flag-cloth">
+                {part === "cloth" ? (
+                  /* The cloth ripples between two shapes as it flies off the
+                     rope, and swings about its knots as the rope jolts */
+                  <g className="tug-flag-swing">
+                    <path
+                      d={FLAG_WAVES[0]}
+                      fill="#e8402f"
+                      stroke="#2a1a10"
+                      strokeWidth="2.4"
+                      strokeLinejoin="round"
+                    >
+                      <animate
+                        attributeName="d"
+                        values={`${FLAG_WAVES[0]};${FLAG_WAVES[1]};${FLAG_WAVES[0]}`}
+                        dur="1.1s"
+                        repeatCount="indefinite"
+                      />
+                    </path>
+                    <path d={FLAG_STRIPE[0]} fill="#ffffff">
+                      <animate
+                        attributeName="d"
+                        values={`${FLAG_STRIPE[0]};${FLAG_STRIPE[1]};${FLAG_STRIPE[0]}`}
+                        dur="1.1s"
+                        repeatCount="indefinite"
+                      />
+                    </path>
+                    <path
+                      d={FLAG_FOLDS[0]}
+                      fill="none"
+                      stroke="#000"
+                      strokeOpacity="0.22"
+                      strokeWidth="3"
+                    >
+                      <animate
+                        attributeName="d"
+                        values={`${FLAG_FOLDS[0]};${FLAG_FOLDS[1]};${FLAG_FOLDS[0]}`}
+                        dur="1.1s"
+                        repeatCount="indefinite"
+                      />
+                    </path>
+                  </g>
+                ) : (
+                  [5, 35].map((y) => <Lashing key={y} y={y} />)
+                )}
+              </svg>
+              {part === "knots" && (
+                <span className="tug-score">
+                  <b className="you">{view.white}</b> vs{" "}
+                  <b className="foe">{view.black}</b>
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        ))}
       </div>
     </>
   );
