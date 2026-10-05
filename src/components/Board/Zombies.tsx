@@ -343,10 +343,11 @@ export function ZombiePiece({
     "--side-y": `${45 + Math.sign(y) * 28}%`,
     "--away": `${-Math.sign(x) || 1}`,
     "--toward": `${Math.sign(x) || 1}`,
-    // How far along the way to its victim the biter stands when the two touch,
-    // and when its teeth are in; a diagonal neighbour is further off
-    "--contact": x && y ? 0.7 : 0.58,
-    "--bite-in": x && y ? 0.82 : 0.76,
+    "--contact": act?.contact ?? 0.58,
+    "--bite-in": act?.biteIn ?? 0.76,
+    // One square's step toward the biter, however far off it is
+    "--near-x": `calc(var(--square-size, 72px) * ${x / (Math.max(Math.abs(x), Math.abs(y)) || 1)})`,
+    "--near-y": `calc(var(--square-size, 72px) * ${y / (Math.max(Math.abs(x), Math.abs(y)) || 1)})`,
     "--delay": `${ZOMBIE_DELAY_MS}ms`,
     "--rise-ms": `${ZOMBIE_RISE_MS}ms`,
     "--bite-ms": `${ZOMBIE_BITE_MS}ms`,

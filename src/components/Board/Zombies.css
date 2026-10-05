@@ -831,36 +831,36 @@
   20%,
   28%,
   36% {
-    translate: calc(var(--from-x) * -0.03 - 3px) calc(var(--from-y) * -0.03);
+    translate: calc(var(--near-x) * -0.03 - 3px) calc(var(--near-y) * -0.03);
   }
   16%,
   24%,
   32%,
   40% {
-    translate: calc(var(--from-x) * -0.05 + 3px)
-      calc(var(--from-y) * -0.05 - 2px);
+    translate: calc(var(--near-x) * -0.05 + 3px)
+      calc(var(--near-y) * -0.05 - 2px);
   }
   46% {
-    translate: calc(var(--from-x) * -0.05) calc(var(--from-y) * -0.05);
+    translate: calc(var(--near-x) * -0.05) calc(var(--near-y) * -0.05);
   }
   48% {
-    translate: calc(var(--from-x) * -0.1) calc(var(--from-y) * -0.1);
+    translate: calc(var(--near-x) * -0.1) calc(var(--near-y) * -0.1);
   }
   52%,
   58%,
   64% {
-    translate: calc(var(--from-x) * -0.07 + 4px) calc(var(--from-y) * -0.07);
+    translate: calc(var(--near-x) * -0.07 + 4px) calc(var(--near-y) * -0.07);
   }
   55%,
   61% {
-    translate: calc(var(--from-x) * -0.09 - 4px)
-      calc(var(--from-y) * -0.09 + 2px);
+    translate: calc(var(--near-x) * -0.09 - 4px)
+      calc(var(--near-y) * -0.09 + 2px);
   }
   68% {
-    translate: calc(var(--from-x) * -0.12) calc(var(--from-y) * -0.12);
+    translate: calc(var(--near-x) * -0.12) calc(var(--near-y) * -0.12);
   }
   76% {
-    translate: calc(var(--from-x) * -0.05) calc(var(--from-y) * -0.05);
+    translate: calc(var(--near-x) * -0.05) calc(var(--near-y) * -0.05);
   }
   100% {
     translate: 0 0;

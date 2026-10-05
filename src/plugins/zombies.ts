@@ -1,7 +1,13 @@
 import { Color, GameStatus, MoveFlag, PieceType } from "../engine/types";
 import type { Move, Piece, SquareIndex } from "../engine/types";
 import type { Board } from "../engine/board";
-import { QUEEN_DIRECTIONS, isSquareAttacked, opponent } from "../engine/moves";
+import {
+  BISHOP_DIRECTIONS,
+  QUEEN_DIRECTIONS,
+  ROOK_DIRECTIONS,
+  isSquareAttacked,
+  opponent,
+} from "../engine/moves";
 import type {
   ModePlugin,
   PluginContext,
@@ -57,23 +63,31 @@ export interface ZombieView {
   round: number;
   events: ZombieEvent[];
   bounce: ZombieBounce | null;
-  /** The king of the side to move, if a zombie stands next to it, and the zombies about to bite it */
+  /** The king of the side to move, if a zombie can bite it, and the zombies that can */
   menace: { king: SquareIndex; zombies: SquareIndex[] } | null;
 }
 
 const reach = (a: SquareIndex, b: SquareIndex) =>
   Math.max(Math.abs(fileOf(a) - fileOf(b)), Math.abs(rankOf(a) - rankOf(b)));
 
+const KNIGHT_JUMPS = [33, 31, 18, 14, -14, -18, -31, -33];
+const SLIDES: Partial<Record<PieceType, number[]>> = {
+  [PieceType.Bishop]: BISHOP_DIRECTIONS,
+  [PieceType.Rook]: ROOK_DIRECTIONS,
+  [PieceType.Queen]: QUEEN_DIRECTIONS,
+};
+
 /**
  * Zombies. A captured piece is buried under a tombstone and, two rounds later,
  * claws its way out as a zombie. Zombies belong to no one. After every round
- * each one shambles a square toward the nearest living piece of either army,
- * or bites a piece next to it and turns it into one of them. Either side can
- * put a zombie down by capturing it. A side whose king is bitten loses.
+ * each one bites a piece it could capture as the piece it used to be, and
+ * turns it into one of them, or else shambles a square toward the nearest
+ * living piece of either army. Zombie pawns, with no side to face, bite on
+ * every diagonal. Either side can put a zombie down by capturing it.
  *
- * Zombies bite at the end of every round, so a king may never end its side's
- * move next to one. A king with a zombie beside it is in check: it must step
- * away, or someone must put the zombie down. With no way out it is mated.
+ * Kings are never bitten outright. A king a zombie could bite is in check: it
+ * must get clear, block the zombie, or have it put down, and may never end its
+ * own side's move where one could bite it. With no way out it is mated.
  */
 export class ZombiesPlugin implements ModePlugin {
   id = "zombies";
@@ -85,7 +99,6 @@ export class ZombiesPlugin implements ModePlugin {
   private graves: Grave[] = [];
   private round = 0;
   private events: ZombieEvent[] = [];
-  private winner: Color | null = null;
   private bounce: ZombieBounce | null = null;
 
   onGameStart(): void {
@@ -93,7 +106,6 @@ export class ZombiesPlugin implements ModePlugin {
     this.graves = [];
     this.round = 0;
     this.events = [];
-    this.winner = null;
     this.bounce = null;
   }
 
@@ -140,30 +152,68 @@ export class ZombiesPlugin implements ModePlugin {
     return kept.filter((move) => this.leavesKingSafe(ctx.board, move, color));
   }
 
-  /** The zombies standing next to a square, leaving out one put down this move */
-  private zombiesBeside(sq: SquareIndex, killed?: SquareIndex): SquareIndex[] {
-    return [...this.zombies.keys()].filter(
-      (z) => z !== killed && reach(z, sq) === 1,
+  /** Whether a zombie could bite a square, the way the piece it was captures */
+  private canBite(
+    board: Board,
+    zombies: Map<SquareIndex, PieceType>,
+    from: SquareIndex,
+    target: SquareIndex,
+  ): boolean {
+    const type = zombies.get(from);
+    const df = Math.abs(fileOf(target) - fileOf(from));
+    const dr = Math.abs(rankOf(target) - rankOf(from));
+    switch (type) {
+      case PieceType.Knight:
+        return KNIGHT_JUMPS.includes(target - from);
+      case PieceType.King:
+        return reach(from, target) === 1;
+      case PieceType.Pawn:
+        return df === 1 && dr === 1;
+    }
+    for (const step of SLIDES[type!] ?? []) {
+      for (let sq = from + step; isValidSquare(sq); sq += step) {
+        if (sq === target) return true;
+        if (board.get(sq) || zombies.has(sq)) break;
+      }
+    }
+    return false;
+  }
+
+  /** The zombies that could bite a square */
+  private biters(
+    board: Board,
+    zombies: Map<SquareIndex, PieceType>,
+    sq: SquareIndex,
+  ): SquareIndex[] {
+    return [...zombies.keys()].filter((z) =>
+      this.canBite(board, zombies, z, sq),
     );
   }
 
   /**
-   * Whether the mover's king ends the move clear of every zombie, and, for
-   * the pawn captures the engine never checked, out of check
+   * Whether the mover's king ends the move where no zombie could bite it,
+   * and, for the pawn captures the engine never checked, out of check
    */
   private leavesKingSafe(board: Board, move: Move, color: Color): boolean {
-    const king =
-      move.piece.type === PieceType.King ? move.to : board.findKing(color);
-    if (king === null) return true;
-    const killed = this.zombies.has(move.to) ? move.to : undefined;
-    if (this.zombiesBeside(king, killed).length > 0) return false;
-    if (!(move.flags & MoveFlag.ModeMove)) return true;
     const after = board.clone();
     after.remove(move.from);
     after.put(move.to, {
       type: move.promotion ?? move.piece.type,
       color: move.piece.color,
     });
+    if (move.flags & MoveFlag.KingsideCastle) {
+      after.put(move.from + 1, after.remove(move.from + 3)!);
+    } else if (move.flags & MoveFlag.QueensideCastle) {
+      after.put(move.from - 1, after.remove(move.from - 4)!);
+    } else if (move.flags & MoveFlag.EnPassant) {
+      after.remove(move.to + (color === Color.White ? -16 : 16));
+    }
+    const king = after.findKing(color);
+    if (king === null) return true;
+    const zombies = new Map(this.zombies);
+    zombies.delete(move.to);
+    if (this.biters(after, zombies, king).length > 0) return false;
+    if (!(move.flags & MoveFlag.ModeMove)) return true;
     return !isSquareAttacked(after, king, opponent(color));
   }
 
@@ -236,7 +286,7 @@ export class ZombiesPlugin implements ModePlugin {
       const safe =
         king === null ||
         (!isSquareAttacked(board, king, opponent(piece.color)) &&
-          this.zombiesBeside(king).length === 0);
+          this.biters(board, this.zombies, king).length === 0);
       board.remove(sq);
       board.put(from, piece);
       if (safe) return sq;
@@ -290,14 +340,18 @@ export class ZombiesPlugin implements ModePlugin {
     }
   }
 
-  /** A living piece next to the zombie, if any, kings first */
+  /** A piece the zombie could bite, if any. Kings only ever stand in check. */
   private biteTarget(board: Board, from: SquareIndex): SquareIndex | null {
-    const near = QUEEN_DIRECTIONS.map((d) => from + d).filter(
-      (sq) => isValidSquare(sq) && board.get(sq),
-    );
-    if (near.length === 0) return null;
-    const king = near.find((sq) => board.get(sq)?.type === PieceType.King);
-    return king ?? near[Math.floor(Math.random() * near.length)];
+    const prey = ALL_SQUARES.filter((sq) => {
+      const piece = board.get(sq);
+      return (
+        piece !== null &&
+        piece.type !== PieceType.King &&
+        this.canBite(board, this.zombies, from, sq)
+      );
+    });
+    if (prey.length === 0) return null;
+    return prey[Math.floor(Math.random() * prey.length)];
   }
 
   /** The open neighboring square that brings the zombie closest to the nearest living piece */
@@ -321,19 +375,17 @@ export class ZombiesPlugin implements ModePlugin {
     return better[0]?.sq ?? null;
   }
 
-  /** The bitten piece turns; a bitten king costs its side the game */
+  /** The bitten piece turns */
   private bite(board: Board, from: SquareIndex, victim: SquareIndex): void {
     const piece = board.get(victim)!;
     this.events.push({ kind: "bite", from, to: victim, victim: piece });
     board.remove(victim);
     this.zombies.set(victim, piece.type);
     this.graves = this.graves.filter((g) => g.sq !== victim);
-    if (piece.type === PieceType.King) this.winner = opponent(piece.color);
   }
 
-  /** A zombie beside the king to move is check, and with no way out, mate */
+  /** A zombie that could bite the king to move is check, and with no way out, mate */
   modifyGameStatus(ctx: PluginContext, status: GameStatus): GameStatus {
-    if (this.winner !== null) return GameStatus.Checkmate;
     if (status !== GameStatus.Active && status !== GameStatus.Check) {
       return status;
     }
@@ -351,12 +403,8 @@ export class ZombiesPlugin implements ModePlugin {
   private menace(board: Board, color: Color): ZombieView["menace"] {
     const king = board.findKing(color);
     if (king === null) return null;
-    const zombies = this.zombiesBeside(king);
+    const zombies = this.biters(board, this.zombies, king);
     return zombies.length > 0 ? { king, zombies } : null;
-  }
-
-  getWinner(): Color | null {
-    return this.winner;
   }
 
   getSquareModifiers(
@@ -370,12 +418,9 @@ export class ZombiesPlugin implements ModePlugin {
    * The computer puts zombies down when it can and keeps its pieces from
    * standing where one could bite them
    */
-  squareBonus(square: SquareIndex, piece: Piece): number {
+  squareBonus(board: Board, square: SquareIndex, piece: Piece): number {
     if (this.zombies.has(square)) return 2.5;
-    const bitable = [...this.zombies.keys()].some(
-      (z) => reach(z, square) === 1,
-    );
-    if (!bitable) return 0;
+    if (this.biters(board, this.zombies, square).length === 0) return 0;
     return piece.type === PieceType.King ? -50 : -1.5;
   }
 

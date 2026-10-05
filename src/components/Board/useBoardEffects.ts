@@ -467,7 +467,17 @@ export interface ZombieAct {
   look?: number;
   /** A bitten piece as it was before it turned */
   was?: Piece;
+  /**
+   * How far along the way to its victim a biter stands when the two touch,
+   * and when its teeth are in, so it always ends up right against it
+   */
+  contact?: number;
+  biteIn?: number;
 }
+
+/** How far apart two touching pieces' centres stand, and a biter's with its teeth in, in squares */
+const TOUCHING = 0.42;
+const TEETH_IN = 0.24;
 
 /** What each zombie did at the end of the round just played, for one round's animation */
 export function useZombieActs(
@@ -489,9 +499,13 @@ export function useZombieActs(
           ...offsetBetween(from, event.to, flipped, squareSize),
         });
       } else if (event.kind === "bite") {
+        const toVictim = offsetBetween(event.to, from, flipped, squareSize);
+        const apart = Math.hypot(toVictim.x, toVictim.y) / squareSize || 1;
         next.set(from, {
           kind: "bite",
-          ...offsetBetween(event.to, from, flipped, squareSize),
+          ...toVictim,
+          contact: Math.max(0, (apart - TOUCHING) / apart),
+          biteIn: Math.max(0, (apart - TEETH_IN) / apart),
         });
         next.set(event.to, {
           kind: "bitten",

@@ -215,7 +215,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "zombies",
     title: "Zombies",
     tagline:
-      "Captured pieces rise from their graves and bite whoever they reach. Lose your king to a bite and you lose.",
+      "Captured pieces rise from their graves and bite the way they used to capture. Get your king cornered by the undead and you lose.",
     catchphrase: "Beware the undead!",
     sky: ["#07060f", "#1a1530", "#27402a"],
     accent: "#8fe04a",

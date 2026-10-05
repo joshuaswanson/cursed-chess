@@ -63,6 +63,18 @@ const FILES = "abcdefgh";
 const PORTAL_SETTLE_MS = 150;
 
 /** Warns that gravity is turning: the arrow starts at the new fall direction and swings down with the board */
+/** A one-square step from one square toward another, however far apart they are */
+function oneSquareToward(
+  target: number,
+  from: number,
+  flipped: boolean,
+  squareSize: number,
+) {
+  const { x, y } = offsetBetween(target, from, flipped, 1);
+  const longest = Math.max(Math.abs(x), Math.abs(y)) || 1;
+  return { x: (x / longest) * squareSize, y: (y / longest) * squareSize };
+}
+
 /** A board offset as a pair of CSS custom properties, `name-x` and `name-y` */
 function offsetVars(name: string, { x, y }: { x: number; y: number }) {
   return { [`${name}-x`]: `${x}px`, [`${name}-y`]: `${y}px` };
@@ -583,7 +595,7 @@ export function Board() {
               act={zombieActs.get(sq)}
               reach={
                 menace?.zombies.includes(sq)
-                  ? offsetBetween(menace.king, sq, flipped, squareSize)
+                  ? oneSquareToward(menace.king, sq, flipped, squareSize)
                   : undefined
               }
             />
