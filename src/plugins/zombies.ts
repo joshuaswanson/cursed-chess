@@ -1,17 +1,26 @@
 import { Color, GameStatus, MoveFlag, PieceType } from "../engine/types";
 import type { Move, Piece, SquareIndex } from "../engine/types";
 import type { Board } from "../engine/board";
-import { QUEEN_DIRECTIONS, opponent } from "../engine/moves";
+import { QUEEN_DIRECTIONS, isSquareAttacked, opponent } from "../engine/moves";
 import type {
   ModePlugin,
   PluginContext,
   BoardOverlay,
   SquareModifier,
 } from "./types";
-import { ALL_SQUARES, fileOf, isValidSquare, rankOf } from "../utils/squareUtils";
+import {
+  ALL_SQUARES,
+  fileOf,
+  isValidSquare,
+  rankOf,
+} from "../utils/squareUtils";
 
 /** Rounds a buried piece lies under its tombstone before it rises */
 const RISE_AFTER_ROUNDS = 2;
+/** How many headstone designs there are to pick from */
+export const HEADSTONE_LOOKS = 4;
+/** How far a capturing piece may bounce off the fresh grave */
+const BOUNCE_REACH = 2;
 
 export interface Grave {
   sq: SquareIndex;
@@ -19,11 +28,24 @@ export interface Grave {
   type: PieceType;
   /** Rounds left before it rises */
   rounds: number;
+  /** Which headstone design marks it */
+  look: number;
 }
 
 export interface ZombieEvent {
   kind: "rise" | "shamble" | "bite";
   from?: SquareIndex;
+  to: SquareIndex;
+  /** The headstone a rising zombie climbs out from behind */
+  look?: number;
+  /** The piece a zombie bit, as it was before it turned */
+  victim?: Piece;
+}
+
+/** A capturing piece knocked off the grave it just dug, from where it moved, via the grave, to where it landed */
+export interface ZombieBounce {
+  from: SquareIndex;
+  via: SquareIndex;
   to: SquareIndex;
 }
 
@@ -34,6 +56,7 @@ export interface ZombieView {
   /** What the undead did at the end of the last round, numbered so each round animates once */
   round: number;
   events: ZombieEvent[];
+  bounce: ZombieBounce | null;
 }
 
 const reach = (a: SquareIndex, b: SquareIndex) =>
@@ -57,6 +80,7 @@ export class ZombiesPlugin implements ModePlugin {
   private round = 0;
   private events: ZombieEvent[] = [];
   private winner: Color | null = null;
+  private bounce: ZombieBounce | null = null;
 
   onGameStart(): void {
     this.zombies.clear();
@@ -64,6 +88,7 @@ export class ZombiesPlugin implements ModePlugin {
     this.round = 0;
     this.events = [];
     this.winner = null;
+    this.bounce = null;
   }
 
   /** Whether a zombie stands on a square */
@@ -121,10 +146,34 @@ export class ZombiesPlugin implements ModePlugin {
     return false;
   }
 
+  /**
+   * A fallen piece is buried where it fell, and the piece that took it
+   * bounces off the fresh grave onto a free square nearby
+   */
   onAfterMove(ctx: PluginContext, move: Move): void {
+    this.bounce = null;
     // Landing on a zombie puts it down for good
     if (this.zombies.delete(move.to)) return;
-    if (move.captured) this.bury(ctx.board, move.captured.type, move.to);
+    if (!move.captured) return;
+    const { board } = ctx;
+    if (move.flags & MoveFlag.EnPassant) {
+      const fell = move.to + (move.piece.color === Color.White ? -16 : 16);
+      this.dig(fell, move.captured.type);
+      return;
+    }
+    const landing = this.bounceSquare(board, move.to);
+    if (landing === null) {
+      this.bury(board, move.captured.type, move.to);
+      return;
+    }
+    board.put(landing, board.remove(move.to)!);
+    this.dig(move.to, move.captured.type);
+    this.bounce = { from: move.from, via: move.to, to: landing };
+  }
+
+  private dig(sq: SquareIndex, type: PieceType): void {
+    const look = Math.floor(Math.random() * HEADSTONE_LOOKS);
+    this.graves.push({ sq, type, rounds: RISE_AFTER_ROUNDS, look });
   }
 
   /** Buries a fallen piece on the nearest open ground to where it fell */
@@ -132,8 +181,32 @@ export class ZombiesPlugin implements ModePlugin {
     const open = ALL_SQUARES.filter((sq) => this.isOpen(board, sq)).sort(
       (a, b) => reach(a, near) - reach(b, near) || Math.random() - 0.5,
     );
-    if (open.length === 0) return;
-    this.graves.push({ sq: open[0], type, rounds: RISE_AFTER_ROUNDS });
+    if (open.length > 0) this.dig(open[0], type);
+  }
+
+  /**
+   * The nearest open square the capturer can be knocked onto without
+   * leaving its own king attacked. Pawns never land on the back ranks.
+   */
+  private bounceSquare(board: Board, from: SquareIndex): SquareIndex | null {
+    const piece = board.get(from)!;
+    const candidates = ALL_SQUARES.filter(
+      (sq) =>
+        reach(sq, from) <= BOUNCE_REACH &&
+        this.isOpen(board, sq) &&
+        (piece.type !== PieceType.Pawn || (rankOf(sq) > 0 && rankOf(sq) < 7)),
+    ).sort((a, b) => reach(a, from) - reach(b, from) || Math.random() - 0.5);
+    for (const sq of candidates) {
+      board.remove(from);
+      board.put(sq, piece);
+      const king = board.findKing(piece.color);
+      const safe =
+        king === null || !isSquareAttacked(board, king, opponent(piece.color));
+      board.remove(sq);
+      board.put(from, piece);
+      if (safe) return sq;
+    }
+    return null;
   }
 
   /** Free of pieces, zombies, and other graves */
@@ -159,7 +232,7 @@ export class ZombiesPlugin implements ModePlugin {
     this.graves = this.graves.filter((g) => !rising.includes(g));
     for (const grave of rising) {
       this.zombies.set(grave.sq, grave.type);
-      this.events.push({ kind: "rise", to: grave.sq });
+      this.events.push({ kind: "rise", to: grave.sq, look: grave.look });
     }
 
     // Zombies that rose this round need a moment before they act
@@ -216,7 +289,7 @@ export class ZombiesPlugin implements ModePlugin {
   /** The bitten piece turns; a bitten king costs its side the game */
   private bite(board: Board, from: SquareIndex, victim: SquareIndex): void {
     const piece = board.get(victim)!;
-    this.events.push({ kind: "bite", from, to: victim });
+    this.events.push({ kind: "bite", from, to: victim, victim: piece });
     board.remove(victim);
     this.zombies.set(victim, piece.type);
     this.graves = this.graves.filter((g) => g.sq !== victim);
@@ -244,7 +317,9 @@ export class ZombiesPlugin implements ModePlugin {
    */
   squareBonus(square: SquareIndex, piece: Piece): number {
     if (this.zombies.has(square)) return 2.5;
-    const bitable = [...this.zombies.keys()].some((z) => reach(z, square) === 1);
+    const bitable = [...this.zombies.keys()].some(
+      (z) => reach(z, square) === 1,
+    );
     if (!bitable) return 0;
     return piece.type === PieceType.King ? -50 : -1.5;
   }
@@ -255,6 +330,7 @@ export class ZombiesPlugin implements ModePlugin {
       graves: this.graves.map((g) => ({ ...g })),
       round: this.round,
       events: this.events,
+      bounce: this.bounce,
     };
     return [{ type: "zombies", squares: [...this.zombies.keys()], data: view }];
   }

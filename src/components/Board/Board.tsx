@@ -45,6 +45,7 @@ import {
   useHeave,
   useTugDrags,
   useZombieActs,
+  useGraveBounce,
   DRAG_MS,
   RUNOFF_MS,
   CAPTURE_BURST_MS,
@@ -62,6 +63,11 @@ const FILES = "abcdefgh";
 const PORTAL_SETTLE_MS = 150;
 
 /** Warns that gravity is turning: the arrow starts at the new fall direction and swings down with the board */
+/** A board offset as a pair of CSS custom properties, `name-x` and `name-y` */
+function offsetVars(name: string, { x, y }: { x: number; y: number }) {
+  return { [`${name}-x`]: `${x}px`, [`${name}-y`]: `${y}px` };
+}
+
 function GravityAlert({ delta }: { delta: number }) {
   return (
     <div className="gravity-alert" aria-live="polite">
@@ -281,6 +287,13 @@ export function Board() {
     overlays.football?.shirts ?? {},
   );
   const zombieActs = useZombieActs(overlays.zombies, flipped, squareSize);
+  const graveBounce =
+    overlays.zombies?.bounce &&
+    lastMove?.to === overlays.zombies.bounce.via &&
+    lastMove.from === overlays.zombies.bounce.from
+      ? overlays.zombies.bounce
+      : null;
+  useGraveBounce(graveBounce);
   const capture = useCaptureBurst(
     cursed && lastPortalMove === null && lastRecord?.move.captured
       ? lastRecord.move.to
@@ -417,50 +430,65 @@ export function Board() {
       const leap = kingLeaps.get(sq);
       const dive = shotDives.get(sq);
       const hauled = tugDrags.get(sq);
-      const pieceStyle = leap
+      const bounceFrom = graveBounce?.to === sq ? graveBounce : null;
+      const pieceStyle = bounceFrom
         ? ({
-            "--slide-from-x": `${leap.x}px`,
-            "--slide-from-y": `${leap.y}px`,
-            animation: "br-king-leap 0.75s cubic-bezier(0.3, 0, 0.3, 1) both",
+            ...offsetVars(
+              "--slide-from",
+              offsetBetween(bounceFrom.from, sq, flipped, squareSize),
+            ),
+            ...offsetVars(
+              "--via",
+              offsetBetween(bounceFrom.via, sq, flipped, squareSize),
+            ),
+            "--hop": `${squareSize * 0.6}px`,
+            "--spin": `${offsetBetween(bounceFrom.via, sq, flipped, 1).x > 0 ? -360 : 360}deg`,
+            animation: `grave-bounce ${SLIDE_MS + 560}ms linear both`,
           } as React.CSSProperties)
-        : hauled
+        : leap
           ? ({
-              "--slide-from-x": `${hauled.x}px`,
-              "--slide-from-y": `${hauled.y}px`,
-              ...(hauled.off && {
-                "--off-x": `${hauled.off.x}px`,
-                "--off-y": `${hauled.off.y}px`,
-              }),
-              animation: hauled.off
-                ? `tug-runoff ${RUNOFF_MS}ms linear ${heaveDelay}ms both`
-                : `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) ${heaveDelay}ms both`,
+              "--slide-from-x": `${leap.x}px`,
+              "--slide-from-y": `${leap.y}px`,
+              animation: "br-king-leap 0.75s cubic-bezier(0.3, 0, 0.3, 1) both",
             } as React.CSSProperties)
-          : slide
+          : hauled
             ? ({
-                "--slide-from-x": `${slide.x}px`,
-                "--slide-from-y": `${slide.y}px`,
-                animation: `slide-in ${SLIDE_MS}ms ease-out forwards`,
+                "--slide-from-x": `${hauled.x}px`,
+                "--slide-from-y": `${hauled.y}px`,
+                ...(hauled.off && {
+                  "--off-x": `${hauled.off.x}px`,
+                  "--off-y": `${hauled.off.y}px`,
+                }),
+                animation: hauled.off
+                  ? `tug-runoff ${RUNOFF_MS}ms linear ${heaveDelay}ms both`
+                  : `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) ${heaveDelay}ms both`,
               } as React.CSSProperties)
-            : fall
+            : slide
               ? ({
-                  "--grav-x": `${fall.x}px`,
-                  "--grav-y": `${fall.y}px`,
-                  animation: `gravity-drop ${fall.durationMs}ms ${fall.delayMs}ms both`,
+                  "--slide-from-x": `${slide.x}px`,
+                  "--slide-from-y": `${slide.y}px`,
+                  animation: `slide-in ${SLIDE_MS}ms ease-out forwards`,
                 } as React.CSSProperties)
-              : dive
+              : fall
                 ? ({
-                    "--slide-from-x": `${dive.x}px`,
-                    "--slide-from-y": `${dive.y}px`,
-                    "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
-                    animation: `${dive.x === 0 && dive.y === 0 ? "fifa-jump" : "fifa-dive"} ${DIVE_MS}ms ${dive.delayMs}ms both`,
+                    "--grav-x": `${fall.x}px`,
+                    "--grav-y": `${fall.y}px`,
+                    animation: `gravity-drop ${fall.durationMs}ms ${fall.delayMs}ms both`,
                   } as React.CSSProperties)
-                : piece
-                  ? goalReaction(
-                      overlays.football?.lastKick ?? null,
-                      sq,
-                      piece.color,
-                    )
-                  : undefined;
+                : dive
+                  ? ({
+                      "--slide-from-x": `${dive.x}px`,
+                      "--slide-from-y": `${dive.y}px`,
+                      "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
+                      animation: `${dive.x === 0 && dive.y === 0 ? "fifa-jump" : "fifa-dive"} ${DIVE_MS}ms ${dive.delayMs}ms both`,
+                    } as React.CSSProperties)
+                  : piece
+                    ? goalReaction(
+                        overlays.football?.lastKick ?? null,
+                        sq,
+                        piece.color,
+                      )
+                    : undefined;
 
       // Pieces next to a detonating mine are shoved away from it
       const blastFrom = [...minesBlasting].find(
@@ -539,9 +567,15 @@ export function Board() {
               squareSize={squareSize}
             />
           )}
-          {grave && <Tombstone stirring={grave.rounds <= 1} />}
+          {grave ? (
+            <Tombstone look={grave.look} stirring={grave.rounds <= 1} />
+          ) : (
+            zombieActs.get(sq)?.kind === "rise" && (
+              <Tombstone look={zombieActs.get(sq)!.look ?? 0} rising />
+            )
+          )}
           {zombie !== undefined && (
-            <ZombiePiece type={zombie} act={zombieActs.get(sq)} />
+            <ZombiePiece type={zombie} sq={sq} act={zombieActs.get(sq)} />
           )}
           {piece && !battle && !arrivals.has(sq) && !isLifted && !isDead && (
             <>

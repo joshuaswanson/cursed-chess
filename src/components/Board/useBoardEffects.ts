@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import type { SquareIndex } from "../../engine";
+import type { Piece, SquareIndex } from "../../engine";
+import type { ZombieBounce, ZombieView } from "../../plugins/zombies";
 import { offsetBetween, visualRow } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
 import { GRAVITY_SHIFT_MS } from "../../plugins/gravity";
@@ -432,25 +433,28 @@ export { DRAG_MS };
 
 /** How long after the round ends the undead stir, so the last move lands first */
 export const ZOMBIE_DELAY_MS = SLIDE_MS + 250;
-const ZOMBIE_ACT_MS = 1100;
+export const ZOMBIE_RISE_MS = 2600;
+export const ZOMBIE_BITE_MS = 2800;
+/** When in a bite the teeth go in */
+const BITE_CONTACT = 0.48;
 
 export interface ZombieAct {
   kind: "rise" | "shamble" | "bite" | "bitten";
-  /** Where a shambling zombie came from, from where it is now */
+  /**
+   * Shambling, where the zombie came from; biting, where its victim stands;
+   * bitten, where the biter stands; each measured from the zombie's square
+   */
   x: number;
   y: number;
+  /** The headstone a rising zombie climbs out from behind */
+  look?: number;
+  /** A bitten piece as it was before it turned */
+  was?: Piece;
 }
 
 /** What each zombie did at the end of the round just played, for one round's animation */
 export function useZombieActs(
-  view: {
-    round: number;
-    events: {
-      kind: "rise" | "shamble" | "bite";
-      from?: SquareIndex;
-      to: SquareIndex;
-    }[];
-  } | null,
+  view: ZombieView | null,
   flipped: boolean,
   squareSize: number,
 ): Map<SquareIndex, ZombieAct> {
@@ -461,34 +465,67 @@ export function useZombieActs(
     setSeen(round);
     const next = new Map<SquareIndex, ZombieAct>();
     for (const event of view?.events ?? []) {
-      if (event.kind === "shamble" && event.from !== undefined) {
+      const from = event.from ?? event.to;
+      if (event.kind === "shamble") {
         next.set(event.to, {
           kind: "shamble",
-          ...offsetBetween(event.from, event.to, flipped, squareSize),
+          ...offsetBetween(from, event.to, flipped, squareSize),
         });
-      } else if (event.kind === "bite" && event.from !== undefined) {
-        // The biter lunges at its victim, who turns on the spot
-        next.set(event.from, {
+      } else if (event.kind === "bite") {
+        next.set(from, {
           kind: "bite",
-          ...offsetBetween(event.to, event.from, flipped, squareSize),
+          ...offsetBetween(event.to, from, flipped, squareSize),
         });
-        next.set(event.to, { kind: "bitten", x: 0, y: 0 });
+        next.set(event.to, {
+          kind: "bitten",
+          ...offsetBetween(from, event.to, flipped, squareSize),
+          was: event.victim,
+        });
       } else {
-        next.set(event.to, { kind: "rise", x: 0, y: 0 });
+        next.set(event.to, { kind: "rise", x: 0, y: 0, look: event.look });
       }
     }
     setActs(next);
-    if ((view?.events ?? []).some((e) => e.kind === "bite")) {
-      setTimeout(() => sfx.capture(), ZOMBIE_DELAY_MS + 300);
-    }
   }
   useEffect(() => {
     if (acts.size === 0) return;
-    const done = setTimeout(
-      () => setActs(new Map()),
-      ZOMBIE_DELAY_MS + ZOMBIE_ACT_MS,
-    );
-    return () => clearTimeout(done);
+    const kinds = [...acts.values()].map((act) => act.kind);
+    const at = (ms: number, play: () => void) =>
+      setTimeout(play, ZOMBIE_DELAY_MS + ms);
+    const timers = [
+      at(ZOMBIE_RISE_MS + ZOMBIE_BITE_MS, () => setActs(new Map())),
+    ];
+    if (kinds.includes("rise")) {
+      timers.push(at(0, sfx.graveRise), at(ZOMBIE_RISE_MS * 0.55, sfx.groan));
+    }
+    if (kinds.includes("bite")) {
+      timers.push(
+        at(0, sfx.groan),
+        at(ZOMBIE_BITE_MS * BITE_CONTACT, sfx.bite),
+      );
+    } else if (kinds.includes("shamble")) {
+      timers.push(at(0, sfx.shuffle));
+      if (!kinds.includes("rise") && Math.random() < 0.5) {
+        timers.push(at(300, sfx.groan));
+      }
+    }
+    return () => timers.forEach(clearTimeout);
   }, [acts]);
   return acts;
 }
+
+/** A capturing piece knocked off the grave it just dug springs away with a boing */
+export function useGraveBounce(bounce: ZombieBounce | null): void {
+  useEffect(() => {
+    if (!bounce) return;
+    const boing = setTimeout(sfx.boing, SLIDE_MS + 80);
+    const thud = setTimeout(sfx.thud, GRAVE_DROP_MS);
+    return () => {
+      clearTimeout(boing);
+      clearTimeout(thud);
+    };
+  }, [bounce]);
+}
+
+/** When a fresh headstone slams into the ground, once the capturer is clear of it */
+export const GRAVE_DROP_MS = SLIDE_MS + 420;
