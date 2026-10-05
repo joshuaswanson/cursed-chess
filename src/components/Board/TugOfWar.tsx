@@ -114,9 +114,14 @@ function arcLengths(points: Point[]): number[] {
 
 /**
  * Short pieces of rope laid end to end along a path, each placed and turned to
- * follow it, with the texture carried on from one piece to the next
+ * follow it, with the texture carried on from one piece to the next. The rope
+ * can swell or thin along the way, as a share of its width at rest.
  */
-function piecesAlong(points: Point[], startAt = 0) {
+function piecesAlong(
+  points: Point[],
+  startAt = 0,
+  widthAt: (along: number) => number = () => 1,
+) {
   const along = arcLengths(points);
   const pieces: { transform: string; at: number; phase: number }[] = [];
   let i = 1;
@@ -129,10 +134,11 @@ function piecesAlong(points: Point[], startAt = 0) {
     const y = a.y + (b.y - a.y) * k;
     const angle = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI - 90;
     const phase = (startAt + at) % TILE_STEP;
+    const width = widthAt(at / (along[along.length - 1] || 1));
     pieces.push({
       at,
       phase,
-      transform: `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${angle.toFixed(1)}) translate(${(-COIL_ROPE / 2).toFixed(2)} ${(-phase).toFixed(2)})`,
+      transform: `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${angle.toFixed(1)}) scale(${width.toFixed(3)} 1) translate(${(-COIL_ROPE / 2).toFixed(2)} ${(-phase).toFixed(2)})`,
     });
   }
   return pieces;
@@ -191,10 +197,15 @@ function Coil({ end }: { end: "top" | "bottom" }) {
 
   useEffect(() => {
     const board = svgRef.current?.closest<HTMLElement>(".tug-layer");
+    const rope = board?.querySelector<HTMLElement>(".tug-rope");
     let frame = 0;
     let shown = -1;
     let shownShift = NaN;
+    let shownThin = NaN;
     const draw = () => {
+      // How thick the rope in play is right now, stretched by the struggle or springing after a heave
+      const scale = rope ? getComputedStyle(rope).scale : "none";
+      const thin = scale === "none" ? 1 : parseFloat(scale) || 1;
       const pull = parseFloat(
         board?.style.getPropertyValue("--rope-pull") || "0",
       );
@@ -207,10 +218,12 @@ function Coil({ end }: { end: "top" | "bottom" }) {
       const held = COIL_REST + (end === "bottom" ? pull : -pull) * COIL_GIVE;
       if (
         Math.abs(held - shown) > 0.004 ||
-        Math.abs(shift - shownShift) > 0.3
+        Math.abs(shift - shownShift) > 0.3 ||
+        Math.abs(thin - shownThin) > 0.01
       ) {
         shown = held;
         shownShift = shift;
+        shownThin = thin;
         const unit =
           (svgRef.current?.getBoundingClientRect().width ?? 100) / 100;
         const entry = {
@@ -232,7 +245,11 @@ function Coil({ end }: { end: "top" | "bottom" }) {
           COIL_SPIRAL.length - 2,
         );
         const curve = slackCurve(entry, COIL_SPIRAL[i], spiralHeading(i));
-        const lead = piecesAlong(curve);
+        // The slack rope eases from the rope in play's thickness to the pile's
+        const lead = piecesAlong(curve, 0, (t) => {
+          const eased = t * t * (3 - 2 * t);
+          return thin + (1 - thin) * eased;
+        });
         leadRefs.current.forEach((el, k) => {
           if (!el) return;
           const piece = lead[k];
