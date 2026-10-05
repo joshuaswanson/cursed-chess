@@ -64,9 +64,12 @@ function NowPlaying() {
     modeIndex < 0
       ? MODE_SECONDS
       : (GAME_MODES[modeIndex].durationSeconds ?? MODE_SECONDS);
-  const fraction = Math.max(0, Math.min(1, remaining / duration));
+  // Modes the kings sit out have no clock; they run until someone wins
+  const untimed =
+    devMode || (modeIndex >= 0 && GAME_MODES[modeIndex].kingsSitOut);
+  const fraction = untimed ? 1 : Math.max(0, Math.min(1, remaining / duration));
   const tagline = theme.tagline;
-  const urgent = !devMode && remaining <= 5;
+  const urgent = !untimed && remaining <= 5;
 
   return (
     <section className="hud-card now-playing" aria-label="Now playing">
@@ -80,7 +83,11 @@ function NowPlaying() {
       <div
         className={`mode-ring${urgent ? " urgent" : ""}`}
         role="timer"
-        aria-label={`${remaining} seconds left in this mode`}
+        aria-label={
+          untimed
+            ? "No time limit: play until someone wins"
+            : `${remaining} seconds left in this mode`
+        }
       >
         <svg viewBox="0 0 64 64">
           <circle className="mode-ring-track" cx="32" cy="32" r={RING_RADIUS} />
@@ -93,7 +100,7 @@ function NowPlaying() {
             strokeDashoffset={RING_LENGTH * (1 - fraction)}
           />
         </svg>
-        <span className="mode-ring-value">{devMode ? "∞" : remaining}</span>
+        <span className="mode-ring-value">{untimed ? "∞" : remaining}</span>
       </div>
     </section>
   );

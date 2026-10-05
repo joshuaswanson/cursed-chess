@@ -92,7 +92,10 @@ export interface GameMode {
   isHex?: boolean;
   /** Modes with their own way to add pieces skip the top-up */
   noReinforcements?: boolean;
-  /** Modes won some other way than checkmate, so the kings walk off and leave it to the troops */
+  /**
+   * Modes won some other way than checkmate, so the kings walk off and leave
+   * it to the troops. These have no clock: they run until one side wins.
+   */
   kingsSitOut?: boolean;
 }
 
@@ -113,14 +116,12 @@ export const GAME_MODES: GameMode[] = [
     name: "FIFA",
     theme: "fifa",
     create: () => [new FootballPlugin()],
-    durationSeconds: 60,
     kingsSitOut: true,
   },
   {
     name: "TUG OF WAR",
     theme: "tug",
     create: () => [new TugOfWarPlugin()],
-    durationSeconds: 75,
     kingsSitOut: true,
   },
   {
@@ -226,8 +227,6 @@ export interface GameStore {
   introDone: boolean;
   /** Pieces are falling after gravity shifted, so nobody may move */
   gravityFalling: boolean;
-  /** FIFA's time is up with no goal yet, so the next goal wins */
-  goldenGoal: boolean;
   /** The last side to miss a turn, because none of its pieces could move or its time ran out */
   skippedTurn: { id: number; color: Color; reason: "stuck" | "time" } | null;
   /** A piece is on its way through a portal, so the clock waits for it to arrive */
@@ -541,7 +540,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   autonomousTick: 0,
   introDone: true,
   gravityFalling: false,
-  goldenGoal: false,
   skippedTurn: null,
   portalTravelling: false,
   siteTab: "Play",
@@ -1047,14 +1045,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   tickModeTimer: () => {
     const { paused, modeTimeRemaining, devMode } = get();
     if (paused || devMode) return;
+    // Modes the kings sit out run until one side wins them, with no clock
+    if (GAME_MODES[get().currentModeIndex]?.kingsSitOut) return;
     const next = Math.max(0, modeTimeRemaining - 1);
     set({ modeTimeRemaining: next });
     if (next > 0) return;
-    // FIFA plays on past the whistle until someone scores; the goal ends the mode
-    if (get().pluginManager.find("football") && !isGameOver(get().status)) {
-      if (!get().goldenGoal) set({ goldenGoal: true });
-      return;
-    }
     get().switchMode();
   },
 
@@ -1201,7 +1196,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       arrivalStyle: Math.random() < 0.5 ? "parachute" : "sprint",
       introDone: false,
       gravityFalling: false,
-      goldenGoal: false,
       skippedTurn: null,
       portalTravelling: false,
       pluginManager: freshPluginManager(nextGame, mode.create()),
