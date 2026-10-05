@@ -311,27 +311,50 @@
   }
 }
 
-/* Jammed at the end of the line, a piece hops off the rope to make way */
-@keyframes tug-hop {
+/* Jammed at the end of the line, a piece is hauled clean off the board in
+   the direction the rope went, stumbles, then runs back on to a free square,
+   bobbing with each stride */
+@keyframes tug-runoff {
   0% {
     translate: var(--slide-from-x) var(--slide-from-y);
-    scale: 1;
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.7, 0.4);
   }
-  15% {
-    scale: 1.1 0.85;
+  28% {
+    translate: var(--off-x) var(--off-y);
+    rotate: 14deg;
+  }
+  34% {
+    translate: var(--off-x) var(--off-y);
+    rotate: -8deg;
+  }
+  42% {
+    translate: var(--off-x) var(--off-y);
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.5, 1);
   }
   50% {
-    translate: calc(var(--slide-from-x) * 0.5)
-      calc(var(--slide-from-y) * 0.5 - var(--square-size, 72px) * 0.45);
-    scale: 1.12;
+    translate: calc(var(--off-x) * 0.75) calc(var(--off-y) * 0.75 - 6%);
   }
-  85% {
+  58% {
+    translate: calc(var(--off-x) * 0.6) calc(var(--off-y) * 0.6);
+  }
+  66% {
+    translate: calc(var(--off-x) * 0.45) calc(var(--off-y) * 0.45 - 6%);
+  }
+  74% {
+    translate: calc(var(--off-x) * 0.3) calc(var(--off-y) * 0.3);
+  }
+  82% {
+    translate: calc(var(--off-x) * 0.15) calc(var(--off-y) * 0.15 - 6%);
+  }
+  92% {
     translate: 0 0;
-    scale: 1.1 0.88;
+    rotate: -6deg;
   }
   100% {
     translate: 0 0;
-    scale: 1;
+    rotate: 0deg;
   }
 }
 

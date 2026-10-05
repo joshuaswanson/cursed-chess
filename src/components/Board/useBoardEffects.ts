@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import type { SquareIndex } from "../../engine";
-import { offsetBetween } from "./boardGeometry";
+import { offsetBetween, visualRow } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
 import { GRAVITY_SHIFT_MS } from "../../plugins/gravity";
 import type { Kick } from "../../plugins/football";
@@ -372,32 +372,57 @@ export function useHeave(
 
 const DRAG_MS = 560;
 
-/** Pieces a tug of war heave just moved, with where they came from and whether they hopped off the rope */
+/** How long a piece jammed at the end of the line takes to run off the board and back on */
+export const RUNOFF_MS = 1500;
+
+export interface TugDrag {
+  /** Where the piece was before the heave, from where it is now */
+  x: number;
+  y: number;
+  /** Jammed at the end of the line, it runs off the board this far from where it is now, then back on */
+  off: { x: number; y: number } | null;
+}
+
+/** Pieces a tug of war heave just moved, with where they came from */
 export function useTugDrags(
   heave: number,
+  heaveDir: number,
   dragged: { from: SquareIndex; to: SquareIndex; hop: boolean }[],
   flipped: boolean,
   squareSize: number,
   delayMs: number,
-): Map<SquareIndex, { x: number; y: number; hop: boolean }> {
+): Map<SquareIndex, TugDrag> {
   const [seen, setSeen] = useState(heave);
-  const [drags, setDrags] = useState<
-    Map<SquareIndex, { x: number; y: number; hop: boolean }>
-  >(new Map());
+  const [drags, setDrags] = useState<Map<SquareIndex, TugDrag>>(new Map());
   if (heave !== seen) {
     setSeen(heave);
+    // Toward White's end is down the screen, unless the board is flipped
+    const down = heaveDir * (flipped ? -1 : 1) > 0;
     setDrags(
-      new Map(
-        dragged.map(({ from, to, hop }) => [
-          to,
-          { ...offsetBetween(from, to, flipped, squareSize), hop },
-        ]),
+      new Map<SquareIndex, TugDrag>(
+        dragged.map(({ from, to, hop }): [SquareIndex, TugDrag] => {
+          const back = offsetBetween(from, to, flipped, squareSize);
+          if (!hop) return [to, { ...back, off: null }];
+          // Off past the edge the rope was hauled toward, in the piece's own file
+          const row = visualRow(from, flipped);
+          const edgeRow = down ? 8.1 : -1.1;
+          return [
+            to,
+            {
+              ...back,
+              off: { x: back.x, y: back.y + (edgeRow - row) * squareSize },
+            },
+          ];
+        }),
       ),
     );
   }
   useEffect(() => {
     if (drags.size === 0) return;
-    const done = setTimeout(() => setDrags(new Map()), delayMs + DRAG_MS + 100);
+    const longest = [...drags.values()].some((d) => d.off)
+      ? RUNOFF_MS
+      : DRAG_MS;
+    const done = setTimeout(() => setDrags(new Map()), delayMs + longest + 100);
     return () => clearTimeout(done);
   }, [drags, delayMs]);
   return drags;

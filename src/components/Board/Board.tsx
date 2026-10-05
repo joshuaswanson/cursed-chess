@@ -44,6 +44,7 @@ import {
   useHeave,
   useTugDrags,
   DRAG_MS,
+  RUNOFF_MS,
   CAPTURE_BURST_MS,
   usePlayCall,
   goalReaction,
@@ -231,6 +232,7 @@ export function Board() {
     : SLIDE_MS + 100;
   const tugDrags = useTugDrags(
     overlays.tug?.heave ?? 0,
+    overlays.tug?.heaveDir ?? 0,
     overlays.tug?.dragged ?? [],
     flipped,
     squareSize,
@@ -420,8 +422,12 @@ export function Board() {
           ? ({
               "--slide-from-x": `${hauled.x}px`,
               "--slide-from-y": `${hauled.y}px`,
-              animation: hauled.hop
-                ? `tug-hop ${DRAG_MS}ms ease-out ${heaveDelay}ms both`
+              ...(hauled.off && {
+                "--off-x": `${hauled.off.x}px`,
+                "--off-y": `${hauled.off.y}px`,
+              }),
+              animation: hauled.off
+                ? `tug-runoff ${RUNOFF_MS}ms linear ${heaveDelay}ms both`
                 : `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) ${heaveDelay}ms both`,
             } as React.CSSProperties)
           : slide
