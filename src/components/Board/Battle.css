@@ -1159,7 +1159,12 @@
 
 /* Behind a parapet that faces the viewer, a man shows only from the waist up */
 .battle-unit.is-sunk .unit-body {
+  translate: 0 var(--stand);
   clip-path: inset(-60% -60% var(--sunk) -60%);
+}
+
+.battle-unit.is-sunk .unit-mg {
+  translate: 0 var(--stand);
 }
 
 .battle-unit.is-sunk .unit-base {

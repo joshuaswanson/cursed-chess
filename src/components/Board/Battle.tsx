@@ -165,8 +165,10 @@ export function BattleUnit({
       className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}${behindParapet === undefined ? "" : " is-sunk"}`}
       style={{
         ...arrivalStyle(arrival, flipped, squareSize),
+        // He stands in his bay of the trench, the wall in front cutting him off at the waist
         ...(behindParapet !== undefined && {
-          "--sunk": `${Math.max(0, ((0.95 - behindParapet) / 0.9) * 100)}%`,
+          "--stand": px((behindParapet - WAIST_LINE) * squareSize),
+          "--sunk": `${((0.95 - WAIST_LINE) / 0.9) * 100}%`,
         }),
       }}
     >
@@ -538,6 +540,9 @@ function Helmet({ color, type }: { color: Color; type: PieceType }) {
     </svg>
   );
 }
+
+/** Where in his square the trench wall cuts a man off, as a share of the square: about his waist */
+const WAIST_LINE = 0.7;
 
 /** A rifle is carried upright at its man's side while he waits */
 const RIFLE_AT_SIDE = -90;

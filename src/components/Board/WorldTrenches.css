@@ -119,3 +119,17 @@
   stroke-width: 1.4;
   stroke-dasharray: 1.6 2.4;
 }
+
+/* The back of the trench, seen from behind: an earth bank shored with planks */
+.bank-face {
+  fill: #4a3a27;
+  stroke: #1f170e;
+  stroke-width: 1.5;
+}
+
+.bank-planks {
+  fill: none;
+  stroke: #6b5030;
+  stroke-width: 7;
+  stroke-opacity: 0.85;
+}
