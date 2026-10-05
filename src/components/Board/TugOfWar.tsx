@@ -70,14 +70,15 @@ function coilSpiral(): Point[] {
 
 /**
  * Slack rope lying on the ground from where it leaves the board to the pile's
- * outside loop: a gentle curve that sags out to one side, more the further it
- * has to go
+ * outside loop. It carries straight on from the board's rope, which comes down
+ * into the pile, and runs into the loop the way the loop is already going, so
+ * it bends smoothly at both ends.
  */
-function slackCurve(from: Point, to: Point): Point[] {
+function slackCurve(from: Point, to: Point, into: Point): Point[] {
   const reach = Math.hypot(to.x - from.x, to.y - from.y);
-  const swing = (to.x >= from.x ? -1 : 1) * Math.min(14, reach * 0.3);
-  const c1 = { x: from.x + swing, y: from.y + Math.min(14, reach * 0.4) };
-  const c2 = { x: to.x + swing * 0.5, y: to.y - Math.min(10, reach * 0.3) };
+  const handle = Math.min(18, Math.max(4, reach * 0.45));
+  const c1 = { x: from.x, y: from.y + handle };
+  const c2 = { x: to.x - into.x * handle, y: to.y - into.y * handle };
   return Array.from({ length: 50 }, (_, i) => {
     const t = i / 49;
     const u = 1 - t;
@@ -139,6 +140,14 @@ function piecesAlong(points: Point[], startAt = 0) {
 
 const COIL_SPIRAL = coilSpiral();
 const SPIRAL_ALONG = arcLengths(COIL_SPIRAL);
+
+/** Which way the pile's rope runs at a point along the spiral, as a unit step */
+function spiralHeading(i: number): Point {
+  const a = COIL_SPIRAL[i];
+  const b = COIL_SPIRAL[i + 1];
+  const length = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  return { x: (b.x - a.x) / length, y: (b.y - a.y) / length };
+}
 const SPIRAL_LENGTH = SPIRAL_ALONG[SPIRAL_ALONG.length - 1];
 /** The pile's pieces, the free end in the middle first: the order the rope was laid */
 const SPIRAL_PIECES = piecesAlong(COIL_SPIRAL).reverse();
@@ -217,11 +226,12 @@ function Coil({ end }: { end: "top" | "bottom" }) {
         });
 
         // The slack rope runs from the board to where the outside loop now starts
-        const i = SPIRAL_ALONG.findIndex((at) => at >= off);
-        const curve = slackCurve(
-          entry,
-          COIL_SPIRAL[i < 0 ? COIL_SPIRAL.length - 1 : i],
+        const found = SPIRAL_ALONG.findIndex((at) => at >= off);
+        const i = Math.min(
+          found < 0 ? COIL_SPIRAL.length - 1 : found,
+          COIL_SPIRAL.length - 2,
         );
+        const curve = slackCurve(entry, COIL_SPIRAL[i], spiralHeading(i));
         const lead = piecesAlong(curve);
         leadRefs.current.forEach((el, k) => {
           if (!el) return;
