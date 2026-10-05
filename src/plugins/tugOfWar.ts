@@ -88,12 +88,14 @@ export class TugOfWarPlugin implements ModePlugin {
   }
 
   getSquareModifiers(
-    _ctx: PluginContext,
+    ctx: PluginContext,
     square: SquareIndex,
   ): SquareModifier[] {
     if (!onRope(square)) return [];
     const side = fileOf(square) === ROPE_FILES[0] ? "rope-d" : "rope-e";
-    return [{ className: `rope-square ${side}` }];
+    const team =
+      ctx.board.get(square)?.color === Color.Black ? " rope-black" : "";
+    return [{ className: `rope-square ${side}${team}` }];
   }
 
   /** The computer wants its pieces on the rope, and more so the closer the flag is to its own end */
