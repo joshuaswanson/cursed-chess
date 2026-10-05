@@ -5,7 +5,7 @@ import "./Reinforcements.css";
 const COPY = {
   time: {
     title: "Time's up!",
-    you: "Too slow, so your turn is skipped.",
+    you: "Too slow!",
     foe: "The foe ran out of time. Your turn again!",
   },
   stuck: {
