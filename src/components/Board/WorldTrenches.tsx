@@ -44,13 +44,24 @@ const toPath = (points: Point[], close = false) =>
     .map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
     .join(" ") + (close ? " Z" : "");
 
+/** How tall a parapet stands where it faces the viewer, hiding the lower half of whoever is behind it */
+const PARAPET_HEIGHT = 30;
+
 interface TrenchLine {
   key: string;
+  /** The screen row it runs along */
+  row: number;
+  /** The sandbag wall facing the viewer, where the trench's parapet is on its near side */
+  face: string | null;
+  /** How far down each square, on the board, the top of that wall comes, as a share of the square */
+  wallTop: number[] | null;
   outline: string;
   centre: string;
   parapet: { x: number; y: number; w: number; tilt: number }[];
   parados: string;
   water: { x: number; y: number; rx: number; ry: number }[];
+  /** The far wall, just inside the cut, where wattle shores it up */
+  wattle: string;
 }
 
 /**
@@ -101,22 +112,42 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
   const enemyEdge = enemyAbove ? top : bottom;
   const rearEdge = enemyAbove ? bottom : top;
   const away = enemyAbove ? 1 : -1;
+  // A parapet on the near side is seen from the front: a wall of sandbags
+  // standing up from the trench's edge, hiding the men behind it to the waist
+  const facesViewer = !enemyAbove;
 
-  // Sandbags in two staggered courses along the lip facing the enemy
   const parapet: TrenchLine["parapet"] = [];
-  for (let course = 0; course < 2; course++) {
-    for (let i = course * 1; i < enemyEdge.length - 2; i += 2) {
+  const courses = facesViewer ? 3 : 2;
+  for (let course = 0; course < courses; course++) {
+    for (let i = course % 2; i < enemyEdge.length - 2; i += 2) {
       const a = enemyEdge[i];
       const b = enemyEdge[i + 2];
       const tilt = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
       parapet.push({
         x: a.x + 2,
-        y: a.y - away * (4 + course * 7) + (rand() - 0.5) * 2,
+        y: facesViewer
+          ? a.y - 5 - course * 9.5 + (rand() - 0.5) * 1.5
+          : a.y - away * (4 + course * 7) + (rand() - 0.5) * 2,
         w: 11 + rand() * 3,
-        tilt: tilt + (rand() - 0.5) * 12,
+        tilt: tilt + (rand() - 0.5) * (facesViewer ? 6 : 12),
       });
     }
   }
+  const face = facesViewer
+    ? toPath(
+        [
+          ...bottom.map((p) => ({ x: p.x, y: p.y - PARAPET_HEIGHT })),
+          ...[...bottom].reverse(),
+        ],
+        true,
+      )
+    : null;
+  const wallTop = facesViewer
+    ? Array.from({ length: 8 }, (_, col) => {
+        const i = Math.round((col * SQ + SQ / 2 + REACH) / STEP);
+        return (bottom[i].y - PARAPET_HEIGHT - (MARGIN + row * SQ)) / SQ;
+      })
+    : null;
 
   // The spoil thrown up behind, in a lumpy heap
   const heap = ragged(rand, rearEdge.length, 9);
@@ -138,8 +169,14 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
     }
   }
 
+  const wattle = toPath(top.map((p) => ({ x: p.x, y: p.y + 4 })));
+
   return {
     key: `t${row}`,
+    row,
+    wattle,
+    face,
+    wallTop,
     outline: toPath([...top, ...[...bottom].reverse()], true),
     centre: toPath(xs.map((x) => ({ x, y: centreAt(x) }))),
     parapet,
@@ -225,35 +262,57 @@ function cratersOff(rows: number[], seed: number) {
  * wire and shell holes across no man's land, so the board is one stretch of
  * a war that goes on out of sight
  */
+/** The front as dug for one way round of the board, worked out once */
+const fronts = new Map<boolean, ReturnType<typeof surveyFront>>();
+
+function frontFor(flipped: boolean) {
+  if (!fronts.has(flipped)) fronts.set(flipped, surveyFront(flipped));
+  return fronts.get(flipped)!;
+}
+
+/**
+ * Where a parapet facing the viewer tops out in each square of the board, by
+ * screen row and column, as a share of the square: the men behind it show
+ * only above that line
+ */
+export function parapetTops(flipped: boolean): Map<number, number[]> {
+  return new Map(
+    frontFor(flipped).lines.flatMap((line) =>
+      line.wallTop ? [[line.row, line.wallTop] as const] : [],
+    ),
+  );
+}
+
+/** Dig the whole front: the four trench lines, the saps between them, the wire and the craters */
+function surveyFront(flipped: boolean) {
+  const rowOf = (rank: number) => (flipped ? rank : 7 - rank);
+  const lines = (Object.keys(TRENCH_RANKS) as Color[]).flatMap((color) =>
+    [TRENCH_RANKS[color].front, TRENCH_RANKS[color].back].map((rank, i) => {
+      const enemyAbove = (color === Color.White) !== flipped;
+      return digTrench(rowOf(rank), enemyAbove, 101 + rank * 37 + i);
+    }),
+  );
+  const comms = (Object.keys(TRENCH_RANKS) as Color[]).flatMap((color, c) => {
+    const { front, back } = TRENCH_RANKS[color];
+    const rand = seeded(500 + c);
+    const out: string[] = [];
+    for (let x = -REACH + 200; x < BOARD + REACH; x += 380 + rand() * 360) {
+      if (onBoard(x) || onBoard(x - 60) || onBoard(x + 60)) continue;
+      out.push(commsTrench(x, rowOf(front), rowOf(back), 700 + Math.round(x)));
+    }
+    return out;
+  });
+  const noMansLand = NO_MANS_LAND.map(rowOf);
+  return {
+    lines,
+    comms,
+    wire: wireBelts(noMansLand, 77),
+    craters: cratersOff(noMansLand, 91),
+  };
+}
+
 export function WorldTrenches({ flipped }: { flipped: boolean }) {
-  const scene = useMemo(() => {
-    const rowOf = (rank: number) => (flipped ? rank : 7 - rank);
-    const lines = (Object.keys(TRENCH_RANKS) as Color[]).flatMap((color) =>
-      [TRENCH_RANKS[color].front, TRENCH_RANKS[color].back].map((rank, i) => {
-        const enemyAbove = (color === Color.White) !== flipped;
-        return digTrench(rowOf(rank), enemyAbove, 101 + rank * 37 + i);
-      }),
-    );
-    const comms = (Object.keys(TRENCH_RANKS) as Color[]).flatMap((color, c) => {
-      const { front, back } = TRENCH_RANKS[color];
-      const rand = seeded(500 + c);
-      const out: string[] = [];
-      for (let x = -REACH + 200; x < BOARD + REACH; x += 380 + rand() * 360) {
-        if (onBoard(x) || onBoard(x - 60) || onBoard(x + 60)) continue;
-        out.push(
-          commsTrench(x, rowOf(front), rowOf(back), 700 + Math.round(x)),
-        );
-      }
-      return out;
-    });
-    const noMansLand = NO_MANS_LAND.map(rowOf);
-    return {
-      lines,
-      comms,
-      wire: wireBelts(noMansLand, 77),
-      craters: cratersOff(noMansLand, 91),
-    };
-  }, [flipped]);
+  const scene = useMemo(() => frontFor(flipped), [flipped]);
 
   const viewBox = `${-REACH} 0 ${BOARD + REACH * 2} ${BOARD + MARGIN * 2}`;
   return (
@@ -270,6 +329,43 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
       aria-hidden
     >
       <defs>
+        <filter id="wt-soil" x="0" y="0" width="100%" height="100%">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.09"
+            numOctaves="4"
+            seed="5"
+            stitchTiles="stitch"
+            result="n"
+          />
+          <feDiffuseLighting
+            in="n"
+            surfaceScale="3"
+            diffuseConstant="1"
+            lightingColor="#fff"
+            result="lit"
+          >
+            <feDistantLight azimuth="235" elevation="40" />
+          </feDiffuseLighting>
+          <feFlood floodColor="#4a3824" result="base" />
+          <feComposite
+            in="lit"
+            in2="base"
+            operator="arithmetic"
+            k1="1"
+            k2="0"
+            k3="0.1"
+            k4="0"
+          />
+        </filter>
+        <pattern
+          id="wt-earth"
+          width="140"
+          height="140"
+          patternUnits="userSpaceOnUse"
+        >
+          <rect width="140" height="140" filter="url(#wt-soil)" />
+        </pattern>
         <radialGradient id="wt-crater">
           <stop offset="0" stopColor="#3a3f3e" />
           <stop offset="0.45" stopColor="#2c2a24" />
@@ -290,7 +386,19 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
       {scene.lines.map((line) => (
         <g key={line.key}>
           <path d={line.parados} className="parados" />
+          <path d={line.parados} className="earth-texture" />
           <path d={line.outline} className="trench-cut" />
+          <path d={line.outline} className="earth-texture trench-floor" />
+          <clipPath id={`wt-inside-${line.key}`}>
+            <path d={line.outline} />
+          </clipPath>
+          <path
+            d={line.outline}
+            className="trench-shadow"
+            clipPath={`url(#wt-inside-${line.key})`}
+          />
+          <path d={line.wattle} className="wattle" />
+          <path d={line.wattle} className="wattle wattle-weave" />
           <path d={line.outline} className="trench-wall" />
           <path d={line.centre} className="duckboard-bed" />
           <path d={line.centre} className="duckboards" />
@@ -304,6 +412,7 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
               className="trench-water"
             />
           ))}
+          {line.face && <path d={line.face} className="parapet-face" />}
           {line.parapet.map((b, i) => (
             <rect
               key={i}

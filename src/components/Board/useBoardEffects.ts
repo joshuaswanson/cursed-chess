@@ -443,9 +443,11 @@ const BITE_RIP = 0.67;
 
 /** The board jolts, as teeth sink in or a shell lands */
 export function shakeBoard(): void {
-  document
-    .querySelector<HTMLElement>(".board-shell")
-    ?.animate(
+  // The ground behind the board shakes with it, so the two never come apart
+  for (const el of document.querySelectorAll<HTMLElement>(
+    ".board-shell, .backdrop-scene",
+  )) {
+    el.animate(
       [
         { translate: "0 0" },
         { translate: "-6px 3px" },
@@ -455,6 +457,7 @@ export function shakeBoard(): void {
       ],
       { duration: 340, easing: "ease-out", composite: "add" },
     );
+  }
 }
 
 export interface ZombieAct {

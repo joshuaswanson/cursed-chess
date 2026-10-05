@@ -620,13 +620,13 @@
 /* A rifle held at the ready from the shoulder, turned toward wherever it points */
 .unit-rifle {
   position: absolute;
-  left: 38%;
-  top: 46%;
-  width: 70%;
-  height: 17%;
+  left: calc(var(--grip-x) - 80% * 0.14);
+  top: calc(var(--grip-y) - 7.5%);
+  width: 80%;
+  height: 15%;
   z-index: 2;
   overflow: visible;
-  transform-origin: 16% 50%;
+  transform-origin: 14% 50%;
   rotate: var(--rest);
   filter: drop-shadow(0.03em 0.05em 0 rgba(10, 8, 4, 0.5));
 }
@@ -634,6 +634,34 @@
 /* Swung onto the target, fired with a kick, and lowered again */
 .unit-rifle.firing {
   animation: rifle-fire 1s var(--fire) ease-out both;
+}
+
+/* Lowered onto the enemy and driven home with the bayonet, then pulled back */
+.unit-rifle.thrusting {
+  animation: rifle-thrust 0.5s ease-in-out both;
+}
+
+@keyframes rifle-thrust {
+  0% {
+    rotate: var(--rest);
+    transform: translateX(0);
+  }
+  25% {
+    rotate: var(--aim);
+    transform: translateX(-8%);
+  }
+  40% {
+    rotate: var(--aim);
+    transform: translateX(26%);
+  }
+  70% {
+    rotate: var(--aim);
+    transform: translateX(0);
+  }
+  100% {
+    rotate: var(--rest);
+    transform: translateX(0);
+  }
 }
 
 @keyframes rifle-fire {
@@ -659,65 +687,126 @@
   }
 }
 
-.rifle-stock {
-  fill: #6b4423;
+.rifle-wood {
+  fill: #7a4b24;
   stroke: #1b120a;
-  stroke-width: 1;
+  stroke-width: 0.9;
   stroke-linejoin: round;
 }
 
-.rifle-barrel {
-  stroke: #2a2a2e;
-  stroke-width: 1.8;
+.rifle-grain {
+  stroke: #5a3417;
+  stroke-width: 0.6;
+}
+
+.rifle-steel {
+  fill: #2d3034;
+  stroke: #121315;
+  stroke-width: 0.5;
+}
+
+.rifle-bolt {
+  stroke: #2d3034;
+  stroke-width: 1.2;
   stroke-linecap: round;
 }
 
-.rifle-bayonet {
-  stroke: #c9ced6;
-  stroke-width: 1;
-  stroke-linecap: round;
+.rifle-band {
+  fill: #50555b;
 }
 
-/* The machine gun stands in front of its gunner, facing the enemy line */
+.rifle-blade {
+  fill: #d5dae1;
+  stroke: #4b5260;
+  stroke-width: 0.5;
+}
+
+.rifle-sling {
+  fill: none;
+  stroke: #4a3a22;
+  stroke-width: 1.2;
+}
+
+/* The machine gun stands on its tripod in front of its gunner, and turns on it */
 .unit-mg {
   position: absolute;
-  left: 20%;
-  top: -22%;
-  width: 60%;
-  height: 60%;
+  inset: 0;
   z-index: 3;
-  overflow: visible;
-  filter: drop-shadow(0.03em 0.06em 0 rgba(10, 8, 4, 0.55));
+  pointer-events: none;
 }
 
-.unit-mg.mg-red {
-  top: auto;
-  bottom: -22%;
-  rotate: 180deg;
+.mg-tripod {
+  position: absolute;
+  left: 50%;
+  top: var(--pivot-y);
+  width: 44%;
+  height: 44%;
+  translate: -50% -46%;
+  overflow: visible;
+}
+
+/* Pivots a quarter of the way along, where it sits on the tripod */
+.mg-gun {
+  position: absolute;
+  left: calc(50% - 80% * 0.25);
+  top: calc(var(--pivot-y) - 14%);
+  width: 80%;
+  height: 28%;
+  transform-origin: 25% 50%;
+  rotate: var(--turn);
+  transition: rotate 0.22s ease-out;
+  overflow: visible;
+  filter: drop-shadow(0.03em 0.06em 0 rgba(10, 8, 4, 0.55));
 }
 
 .mg-legs {
   fill: none;
   stroke: #2b2b2b;
-  stroke-width: 2.4;
+  stroke-width: 3;
   stroke-linecap: round;
 }
 
-.mg-body,
+.mg-feet {
+  stroke: #1a1a1a;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.mg-head,
+.mg-steel {
+  fill: #3a3e42;
+  stroke: #121315;
+  stroke-width: 1.2;
+}
+
+/* The water jacket that keeps the barrel cool, ribbed along its length */
 .mg-jacket {
-  fill: #4a4f45;
-  stroke: #15170f;
-  stroke-width: 1.3;
+  fill: #59605a;
+  stroke: #121315;
+  stroke-width: 1.2;
 }
 
-.mg-barrel {
-  fill: #23252a;
+.mg-flutes {
+  stroke: #2f3431;
+  stroke-width: 1.4;
 }
 
+.mg-seam {
+  stroke: #24272a;
+  stroke-width: 0.8;
+}
+
+.mg-grip {
+  fill: #5a3a1e;
+  stroke: #121315;
+  stroke-width: 0.8;
+}
+
+/* The ammunition belt, brass rounds and all, feeding in from the side */
 .mg-belt {
-  fill: #b8862e;
-  stroke: #3a2a0c;
-  stroke-width: 1;
+  fill: #c89a3a;
+  stroke: #4a3410;
+  stroke-width: 0.8;
 }
 
 /* Men going over the top run hunched, bobbing as they go */
@@ -985,4 +1074,94 @@
     scale: 2.4;
     translate: 20% -80%;
   }
+}
+
+/* Steel helmets, sat on each piece's head */
+.unit-helmet {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  translate: -50% 0;
+  overflow: visible;
+  filter: drop-shadow(0.02em 0.04em 0 rgba(10, 8, 4, 0.55));
+}
+
+.helmet-on-p {
+  top: 3%;
+  width: 50%;
+}
+
+.helmet-on-n {
+  top: 2%;
+  left: 44%;
+  width: 46%;
+  rotate: -14deg;
+}
+
+.helmet-on-b {
+  top: 0;
+  width: 44%;
+}
+
+.helmet-on-r {
+  top: 6%;
+  width: 62%;
+}
+
+.helmet-on-q {
+  top: 2%;
+  width: 66%;
+}
+
+.helmet-on-k {
+  top: 0;
+  width: 58%;
+}
+
+.unit-helmet .helmet-edge {
+  stroke: #15120c;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+
+.unit-helmet .helmet-underside {
+  fill: #2e2c1a;
+}
+
+.unit-helmet .helmet-glint {
+  fill: none;
+  stroke: rgba(255, 252, 225, 0.28);
+  stroke-width: 1.2;
+}
+
+.unit-helmet .helmet-rivet {
+  fill: #3f3d26;
+}
+
+.unit-helmet .helmet-rim {
+  fill: none;
+  stroke: #262c29;
+  stroke-width: 1.3;
+}
+
+.unit-helmet .helmet-lug {
+  fill: #2c322f;
+  stroke: #8b9590;
+  stroke-width: 0.6;
+}
+
+.unit-helmet .helmet-shine {
+  fill: none;
+  stroke: rgba(255, 255, 240, 0.4);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+/* Behind a parapet that faces the viewer, a man shows only from the waist up */
+.battle-unit.is-sunk .unit-body {
+  clip-path: inset(-60% -60% var(--sunk) -60%);
+}
+
+.battle-unit.is-sunk .unit-base {
+  display: none;
 }

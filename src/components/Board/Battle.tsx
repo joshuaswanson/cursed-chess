@@ -122,6 +122,7 @@ export function BattleUnit({
   flipped,
   squareSize,
   stance,
+  behindParapet,
 }: {
   sq: SquareIndex;
   piece: Piece;
@@ -130,6 +131,8 @@ export function BattleUnit({
   squareSize: number;
   /** Charging across open ground, or caught on the wire */
   stance?: "charging" | "snagged";
+  /** Standing behind a parapet whose top comes this far down the square, hidden below it */
+  behindParapet?: number;
 }) {
   const unit = view.units[sq];
   if (!unit) return null;
@@ -151,13 +154,21 @@ export function BattleUnit({
 
   const tower = piece.type === PieceType.King;
   const firing =
-    action?.unitId === unit.id && action.weapon === "rifle"
+    action?.unitId === unit.id &&
+    (action.weapon === "rifle" || action.weapon === "bayonet")
       ? action
       : undefined;
+  const gunning =
+    action?.unitId === unit.id && action.weapon === "mg" ? action : undefined;
   return (
     <div
-      className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}`}
-      style={arrivalStyle(arrival, flipped, squareSize)}
+      className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}${behindParapet === undefined ? "" : " is-sunk"}`}
+      style={{
+        ...arrivalStyle(arrival, flipped, squareSize),
+        ...(behindParapet !== undefined && {
+          "--sunk": `${Math.max(0, ((0.95 - behindParapet) / 0.9) * 100)}%`,
+        }),
+      }}
     >
       <span className="unit-base" />
       <div
@@ -171,16 +182,25 @@ export function BattleUnit({
           className="unit-img"
           draggable={false}
         />
+        {arms && <Helmet color={piece.color} type={piece.type} />}
         {arms === "rifle" && (
           <Rifle
             key={firing?.id ?? "rest"}
-            rest={readyAngle(piece.color, flipped)}
+            rest={RIFLE_AT_SIDE}
+            side={gripSide(piece.color)}
             aim={firing ? aimAngle(firing, flipped) : null}
             fireMs={Math.max(0, (firing?.delayMs ?? 0) - AIM_MS)}
+            thrust={firing?.weapon === "bayonet"}
           />
         )}
       </div>
-      {arms === "mg" && <MachineGun color={piece.color} />}
+      {arms === "mg" && (
+        <MachineGun
+          color={piece.color}
+          flipped={flipped}
+          aim={gunning ? aimAngle(gunning, flipped) : null}
+        />
+      )}
       {(tower || unit.hp < unit.maxHp) && (
         <HealthBar unit={unit} tower={tower} />
       )}
@@ -194,49 +214,160 @@ export function BattleUnit({
  */
 function Rifle({
   rest,
+  side,
   aim,
   fireMs,
+  thrust = false,
 }: {
   rest: number;
+  /** Which hand he holds it in: 1 for his right, -1 for his left */
+  side: number;
   aim: number | null;
   fireMs: number;
+  /** Driven forward with the bayonet, in place of firing */
+  thrust?: boolean;
 }) {
   const style: Style = {
+    "--grip-x": `${50 + (side * RIFLE_GRIP.x * 100) / 0.9}%`,
+    "--grip-y": `${50 + (RIFLE_GRIP.y * 100) / 0.9}%`,
     "--rest": `${rest}deg`,
     "--aim": `${aim ?? rest}deg`,
     "--fire": `${fireMs}ms`,
   };
   return (
     <svg
-      className={`unit-rifle${aim === null ? "" : " firing"}`}
-      viewBox="0 0 50 12"
+      className={`unit-rifle${aim === null ? "" : thrust ? " thrusting" : " firing"}`}
+      viewBox="0 0 100 18"
       style={style}
       aria-hidden
     >
+      <path d="M22 11.5 Q46 17 70 11" className="rifle-sling" />
       <path
-        d="M0 4 L12 2.5 L16 4.2 L42 4.2 L42 6.8 L17 6.8 L13 9 L1 9.5 Z"
-        className="rifle-stock"
+        d="M0 6.2 L20 4.6 L29 6.6 L37 7.2 L37 10 L30 10.2 L22 11.6 L1.5 12.6 Z"
+        className="rifle-wood"
       />
-      <path d="M26 5.5 L46 5.5" className="rifle-barrel" />
-      <path d="M44 5.5 L50 5.5" className="rifle-bayonet" />
+      <path d="M3 8.8 L20 7.6" className="rifle-grain" />
+      <rect
+        x="36.5"
+        y="6.1"
+        width="14"
+        height="4.2"
+        rx="0.8"
+        className="rifle-steel"
+      />
+      <path d="M44 10.3 L42.5 13.2" className="rifle-bolt" />
+      <circle cx="42.3" cy="13.6" r="1.3" className="rifle-steel" />
+      <rect
+        x="45"
+        y="10"
+        width="5"
+        height="3.4"
+        rx="0.6"
+        className="rifle-steel"
+      />
+      <path d="M50 6.5 L83 7 L83 9.6 L50 10.2 Z" className="rifle-wood" />
+      <rect
+        x="82"
+        y="7.4"
+        width="17"
+        height="1.8"
+        rx="0.6"
+        className="rifle-steel"
+      />
+      <rect x="62" y="6.3" width="1.6" height="4.2" className="rifle-band" />
+      <rect x="77" y="6.6" width="1.6" height="3.6" className="rifle-band" />
+      <rect x="96" y="6.2" width="1.4" height="1.6" className="rifle-steel" />
+      <path d="M95 9.6 L116 8.4 L95 7.4 Z" className="rifle-blade" />
     </svg>
   );
 }
 
-/** The machine gun on its tripod in front of the gunner, pointed at the enemy line */
-function MachineGun({ color }: { color: Color }) {
+/** Where the machine gun pivots, ahead of its gunner toward the enemy, and how far out its muzzle is, in squares */
+const MG_PIVOT_AHEAD = 0.12;
+const MG_REACH = 0.62;
+/** How far from a rifleman's middle his muzzle sits, in squares */
+const RIFLE_REACH = 0.6;
+
+/** Which way is toward the enemy for a side, on screen: up the board for the side at the bottom */
+function towardEnemy(color: Color, flipped: boolean): { x: number; y: number } {
+  return { x: 0, y: (color === Color.White) !== flipped ? -1 : 1 };
+}
+
+/**
+ * The machine gun on its tripod in front of the gunner. It traverses onto
+ * whatever it is firing at and stays trained there through the burst, then
+ * settles back toward the enemy line.
+ */
+function MachineGun({
+  color,
+  flipped,
+  aim,
+}: {
+  color: Color;
+  flipped: boolean;
+  aim: number | null;
+}) {
+  const ahead = towardEnemy(color, flipped);
+  const rest = (Math.atan2(ahead.y, ahead.x) * 180) / Math.PI;
+  const style: Style = {
+    "--pivot-y": `${50 + ahead.y * MG_PIVOT_AHEAD * 100}%`,
+    "--turn": `${aim ?? rest}deg`,
+  };
   return (
-    <svg
-      className={`unit-mg mg-${team(color)}`}
-      viewBox="0 0 40 40"
-      aria-hidden
-    >
-      <path d="M12 34 L20 22 L28 34" className="mg-legs" />
-      <rect x="15.5" y="15" width="9" height="11" rx="2" className="mg-body" />
-      <rect x="18.5" y="2" width="3" height="14" rx="1" className="mg-barrel" />
-      <rect x="17" y="4" width="6" height="7" rx="1.5" className="mg-jacket" />
-      <rect x="24.5" y="18" width="6" height="5" rx="1" className="mg-belt" />
-    </svg>
+    <span className="unit-mg" style={style} aria-hidden>
+      <svg className="mg-tripod" viewBox="0 0 40 40">
+        <path d="M20 20 L5 35 M20 20 L35 35 M20 20 L20 3" className="mg-legs" />
+        <path d="M3 35 h5 M32 35 h5 M18 3 h4" className="mg-feet" />
+        <circle cx="20" cy="20" r="4.5" className="mg-head" />
+      </svg>
+      <svg className="mg-gun" viewBox="0 0 100 34">
+        <path
+          d="M30 22 Q36 30 30 33 M33 23 l2.4 -0.6 l0.8 3.4 l-2.4 0.6 Z M31 27 l2.4 -0.2 l0.4 3.4 l-2.4 0.2 Z M29 31 l2.4 0.2 l-0.2 2.4 l-2.4 -0.2 Z"
+          className="mg-belt"
+        />
+        <rect x="1" y="9" width="7" height="3.6" rx="1.6" className="mg-grip" />
+        <rect
+          x="1"
+          y="20"
+          width="7"
+          height="3.6"
+          rx="1.6"
+          className="mg-grip"
+        />
+        <rect x="7" y="8" width="4" height="17" rx="1" className="mg-steel" />
+        <rect
+          x="10"
+          y="6.5"
+          width="24"
+          height="20"
+          rx="2"
+          className="mg-steel"
+        />
+        <path d="M12 9.5 H32 M12 23.5 H32" className="mg-seam" />
+        <rect
+          x="18"
+          y="3.5"
+          width="5"
+          height="3.5"
+          rx="0.8"
+          className="mg-steel"
+        />
+        <rect
+          x="33"
+          y="9"
+          width="44"
+          height="15"
+          rx="4"
+          className="mg-jacket"
+        />
+        <path
+          d="M38 9.5 V23.5 M43 9.5 V23.5 M48 9.5 V23.5 M53 9.5 V23.5 M58 9.5 V23.5 M63 9.5 V23.5 M68 9.5 V23.5 M73 9.5 V23.5"
+          className="mg-flutes"
+        />
+        <rect x="76" y="14" width="10" height="5" rx="1" className="mg-steel" />
+        <path d="M85 12.5 L98 10 L98 23 L85 20.5 Z" className="mg-steel" />
+      </svg>
+    </span>
   );
 }
 
@@ -256,13 +387,31 @@ function Gunshot({
   const fired = event.delayMs ?? 0;
   const impact = event.impact ?? { x: 0, y: 0 };
   const sign = flipped ? -1 : 1;
-  const start = {
-    x: (visualCol(event.from, flipped) + 0.5) * squareSize,
-    y: (visualRow(event.from, flipped) + 0.5) * squareSize,
-  };
   const end = {
     x: (visualCol(event.to, flipped) + 0.5 + impact.x * sign) * squareSize,
     y: (visualRow(event.to, flipped) + 0.5 + impact.y * sign) * squareSize,
+  };
+  // Rounds leave from the muzzle: the machine gun's, ahead of its gunner, or the rifle's
+  const middle = {
+    x: (visualCol(event.from, flipped) + 0.5) * squareSize,
+    y: (visualRow(event.from, flipped) + 0.5) * squareSize,
+  };
+  const ahead = towardEnemy(event.color, flipped);
+  const pivot =
+    event.weapon === "mg"
+      ? {
+          x: middle.x + ahead.x * MG_PIVOT_AHEAD * squareSize,
+          y: middle.y + ahead.y * MG_PIVOT_AHEAD * squareSize,
+        }
+      : {
+          x: middle.x + gripSide(event.color) * RIFLE_GRIP.x * squareSize,
+          y: middle.y + RIFLE_GRIP.y * squareSize,
+        };
+  const toEnd = Math.hypot(end.x - pivot.x, end.y - pivot.y) || 1;
+  const reach = (event.weapon === "mg" ? MG_REACH : RIFLE_REACH) * squareSize;
+  const start = {
+    x: pivot.x + ((end.x - pivot.x) / toEnd) * reach,
+    y: pivot.y + ((end.y - pivot.y) / toEnd) * reach,
   };
   const length = Math.hypot(end.x - start.x, end.y - start.y);
   const angle = Math.atan2(end.y - start.y, end.x - start.x);
@@ -324,10 +473,77 @@ function Gunshot({
   );
 }
 
-/** Which way a rifle points while its man waits: up the board at the enemy line, a little off straight */
-function readyAngle(color: Color, flipped: boolean): number {
-  return (color === Color.White) !== flipped ? -70 : 110;
+/** A soldier's steel helmet: the flat British one for your army, the German one for theirs */
+function Helmet({ color, type }: { color: Color; type: PieceType }) {
+  return (
+    <svg
+      className={`unit-helmet helmet-on-${type}`}
+      viewBox="0 0 44 26"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id="brodie-dome" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#9a9564" />
+          <stop offset="0.5" stopColor="#6c6842" />
+          <stop offset="1" stopColor="#45422a" />
+        </linearGradient>
+        <linearGradient id="brodie-brim" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#837e54" />
+          <stop offset="1" stopColor="#4e4b30" />
+        </linearGradient>
+        <linearGradient id="stahl-dome" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#8b9590" />
+          <stop offset="0.55" stopColor="#5b6560" />
+          <stop offset="1" stopColor="#363d3a" />
+        </linearGradient>
+      </defs>
+      {color === Color.White ? (
+        <>
+          <ellipse
+            cx="22"
+            cy="18.4"
+            rx="20.5"
+            ry="4.6"
+            className="helmet-underside"
+          />
+          <ellipse
+            cx="22"
+            cy="17"
+            rx="20.5"
+            ry="4.4"
+            fill="url(#brodie-brim)"
+            className="helmet-edge"
+          />
+          <path
+            d="M10 17 C10.5 6 15 3.5 22 3.5 C29 3.5 33.5 6 34 17 Z"
+            fill="url(#brodie-dome)"
+            className="helmet-edge"
+          />
+          <path d="M3.5 16.4 Q22 13 40.5 16.4" className="helmet-glint" />
+          <circle cx="22" cy="4.4" r="1.1" className="helmet-rivet" />
+          <path d="M14 10 Q16.5 6 22 5.8" className="helmet-shine" />
+        </>
+      ) : (
+        <>
+          <path
+            d="M4 21 C3 16 6 14.2 9 13.6 C10 4.8 15 2 23 2 C31 2 35.6 5 36.6 12.2 L40.4 13.8 C41.4 15.2 40.8 17.2 39.2 17.6 C30 15.6 20 16 12.6 18 C9.4 19 6.2 21.4 4 21 Z"
+            fill="url(#stahl-dome)"
+            className="helmet-edge"
+          />
+          <path d="M8.5 16.4 Q24 13.2 38.8 15.6" className="helmet-rim" />
+          <circle cx="13.5" cy="10.8" r="1.7" className="helmet-lug" />
+          <path d="M15 7.5 Q18 3.8 24 3.7" className="helmet-shine" />
+        </>
+      )}
+    </svg>
+  );
 }
+
+/** A rifle is carried upright at its man's side while he waits */
+const RIFLE_AT_SIDE = -90;
+/** Where a rifleman grips his rifle at his side, from his middle, in squares: your army holds it on the right, theirs on the left */
+const RIFLE_GRIP = { x: 0.2, y: 0.22 };
+const gripSide = (color: Color) => (color === Color.White ? 1 : -1);
 
 /** The angle, in degrees, from a shooter to where his round is going */
 function aimAngle(event: AttackEvent, flipped: boolean): number {
@@ -465,6 +681,27 @@ function Effect({
 
   switch (event.kind) {
     case "attack": {
+      if (event.weapon === "bayonet") {
+        const struck = { animationDelay: `${event.hitMs}ms` };
+        return event.miss ? null : (
+          <>
+            <span
+              className="hit-spark"
+              style={{ ...cell(event.to), ...struck }}
+            />
+            <span
+              className={`hit-number${event.kill ? " is-kill" : ""}`}
+              style={css({
+                ...cell(event.to),
+                ...struck,
+                "--drift": `${((event.id % 5) - 2) * 6}%`,
+              })}
+            >
+              -{event.damage}
+            </span>
+          </>
+        );
+      }
       if (event.weapon) {
         return (
           <Gunshot event={event} flipped={flipped} squareSize={squareSize} />
@@ -599,6 +836,8 @@ function playEvent(event: BattleEvent): void {
         if (event.round === 0) sfx.machineGun();
       } else if (event.weapon === "rifle") {
         later(fired, sfx.rifle);
+      } else if (event.weapon === "bayonet") {
+        sfx.swing();
       } else if (event.ranged) {
         sfx.bowShot();
       } else {

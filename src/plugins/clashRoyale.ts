@@ -87,8 +87,8 @@ export type BattleEvent =
       ranged: boolean;
       kill: boolean;
       hitMs: number;
-      /** A gunshot, from a rifle or a machine gun, drawn as a tracer */
-      weapon?: "rifle" | "mg";
+      /** A gunshot from a rifle or a machine gun, drawn as a tracer, or a thrust with a bayonet */
+      weapon?: "rifle" | "mg" | "bayonet";
       /** The shot or blow went wide, landing this far off the target in squares */
       miss?: boolean;
       impact?: { x: number; y: number };

@@ -463,6 +463,7 @@ export class TrenchesPlugin implements ModePlugin {
       }
     }
 
+    if (this.fightInTrench(board, sq, unit, piece)) return;
     if (this.moveUp(board, sq, unit, piece)) return;
 
     // Only the front line fires; the back trenches and the reserves keep their heads down
@@ -612,17 +613,24 @@ export class TrenchesPlugin implements ModePlugin {
     });
     if (target === null) return;
     const chance =
-      this.hitChance(target, RIFLE_HIT) * (running ? RUNNING_AIM : 1);
+      this.hitChance(sq, target, RIFLE_HIT) * (running ? RUNNING_AIM : 1);
     this.shoot(board, sq, target, piece, "rifle", chance, AIM_MS, 0);
   }
 
   /** The machine gun rakes one target with a burst; returns false if there is nobody to fire at */
-  private burst(board: Board, sq: SquareIndex, piece: Piece): boolean {
-    const target = this.pickTarget(board, sq, piece.color, {
-      trench: 1,
-      reserve: 3,
-      open: 14,
-    });
+  private burst(
+    board: Board,
+    sq: SquareIndex,
+    piece: Piece,
+    at?: SquareIndex,
+  ): boolean {
+    const target =
+      at ??
+      this.pickTarget(board, sq, piece.color, {
+        trench: 1,
+        reserve: 3,
+        open: 14,
+      });
     if (target === null) return false;
     for (let round = 0; round < BURST_ROUNDS; round++) {
       if (!board.get(target)) break;
@@ -632,7 +640,7 @@ export class TrenchesPlugin implements ModePlugin {
         target,
         piece,
         "mg",
-        this.hitChance(target, ROUND_HIT),
+        this.hitChance(sq, target, ROUND_HIT),
         round * ROUND_GAP_MS,
         round,
       );
@@ -640,9 +648,72 @@ export class TrenchesPlugin implements ModePlugin {
     return true;
   }
 
-  private hitChance(target: SquareIndex, table: Record<Cover, number>): number {
+  /** A trench gives no cover from fire down its own length */
+  private hitChance(
+    from: SquareIndex,
+    target: SquareIndex,
+    table: Record<Cover, number>,
+  ): number {
     const snagged = (this.units.get(target)?.snaggedUntil ?? 0) > this.clock;
-    return table[coverAt(target)] + (snagged ? SNAGGED_HIT_BONUS : 0);
+    const cover = rankOf(from) === rankOf(target) ? "open" : coverAt(target);
+    return table[cover] + (snagged ? SNAGGED_HIT_BONUS : 0);
+  }
+
+  /**
+   * With the enemy in the same trench, the fight is fought along it: each man
+   * makes his way toward the nearest of them to close with him, and shoots
+   * down the trench when he cannot get past. The machine gunner stays on his
+   * gun and rakes the trench.
+   */
+  private fightInTrench(
+    board: Board,
+    sq: SquareIndex,
+    unit: TrenchUnit,
+    piece: Piece,
+  ): boolean {
+    if (coverAt(sq) !== "trench") return false;
+    const rank = rankOf(sq);
+    const rivals = ALL_SQUARES.filter(
+      (s) =>
+        rankOf(s) === rank && board.get(s)?.color === opponent(piece.color),
+    );
+    if (rivals.length === 0) return false;
+    const gap = (s: SquareIndex) => Math.abs(fileOf(s) - fileOf(sq));
+    const nearest = rivals.reduce((a, b) => (gap(b) < gap(a) ? b : a));
+    const gunner =
+      sq === GUN_NESTS[piece.color] && piece.type === PieceType.Pawn;
+    if (gunner) {
+      this.burst(board, sq, piece, nearest);
+      unit.readyIn = jitter(BURST_MS);
+      return true;
+    }
+    const step = sq + Math.sign(fileOf(nearest) - fileOf(sq));
+    if (!board.get(step)) {
+      const ms = Math.round(STEP_MS * rand(0.9, 1.2));
+      this.relocate(board, sq, step);
+      this.emit({
+        kind: "move",
+        unitId: unit.id,
+        from: sq,
+        to: step,
+        ms,
+        delayMs: 0,
+      });
+      unit.readyIn = ms;
+      return true;
+    }
+    this.shoot(
+      board,
+      sq,
+      nearest,
+      piece,
+      "rifle",
+      this.hitChance(sq, nearest, RIFLE_HIT),
+      AIM_MS,
+      0,
+    );
+    unit.readyIn = jitter(RIFLE_MS * 0.7);
+    return true;
   }
 
   private shoot(
@@ -711,6 +782,7 @@ export class TrenchesPlugin implements ModePlugin {
       kill,
       hitMs,
       miss: !hit,
+      weapon: "bayonet",
     });
     if (!kill) return;
     this.fall(board, to, from, hitMs);

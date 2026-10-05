@@ -27,7 +27,7 @@ import { TugLayer } from "./TugOfWar";
 import { Tombstone, ZombiePiece } from "./Zombies";
 import type { TrenchView } from "../../plugins/trenches";
 import { TrenchField } from "./TrenchField";
-import { WorldTrenches } from "./WorldTrenches";
+import { WorldTrenches, parapetTops } from "./WorldTrenches";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
 import { BoardFog } from "../Fog/Fog";
@@ -595,6 +595,13 @@ export function Board() {
               flipped={flipped}
               squareSize={squareSize}
               stance={trenchStance(overlays.trenches, battle.units[sq]?.id)}
+              behindParapet={
+                overlays.trenches
+                  ? parapetTops(flipped).get(rowOnScreen(sq, flipped))?.[
+                      colOnScreen(sq, flipped)
+                    ]
+                  : undefined
+              }
             />
           )}
           {piece && arrivals.has(sq) && (
