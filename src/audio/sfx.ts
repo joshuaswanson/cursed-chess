@@ -1169,4 +1169,165 @@ export const sfx = {
       node.stop(t + 0.42);
     }
   },
+
+  /** A guttural growl: a low rasping buzz, shaken rough */
+  growl(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const length = 0.6 + Math.random() * 0.4;
+    const voice = c.createOscillator();
+    voice.type = "sawtooth";
+    const pitch = 52 + Math.random() * 20;
+    voice.frequency.setValueAtTime(pitch * 1.2, t);
+    voice.frequency.exponentialRampToValueAtTime(pitch, t + length);
+    const low = c.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.value = 520;
+    const rough = c.createGain();
+    rough.gain.value = 0.5;
+    const shake = c.createOscillator();
+    shake.type = "square";
+    shake.frequency.value = 28 + Math.random() * 18;
+    const depth = c.createGain();
+    depth.gain.value = 0.5;
+    shake.connect(depth).connect(rough.gain);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.4, t + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + length);
+    voice.connect(low).connect(rough).connect(gain).connect(out);
+    const rasp = noiseSource(c);
+    const raspBand = c.createBiquadFilter();
+    raspBand.type = "bandpass";
+    raspBand.frequency.value = 340;
+    raspBand.Q.value = 3;
+    const raspGain = c.createGain();
+    raspGain.gain.value = 0.35;
+    rasp.connect(raspBand).connect(raspGain).connect(rough);
+    for (const node of [voice, shake, rasp]) {
+      node.start(t);
+      node.stop(t + length + 0.05);
+    }
+  },
+
+  /** Wet gurgling, as if through a throat full of something: bubbles popping in a squelch */
+  gurgle(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    squelch(c, out, t, 0.8, 0.35);
+    for (let i = 0; i < 9; i++) {
+      const at = t + Math.random() * 0.7;
+      const bubble = c.createOscillator();
+      bubble.type = "sine";
+      const from = 160 + Math.random() * 200;
+      bubble.frequency.setValueAtTime(from, at);
+      bubble.frequency.exponentialRampToValueAtTime(from * 2.6, at + 0.06);
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(0.22, at + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.07);
+      bubble.connect(gain).connect(out);
+      bubble.start(at);
+      bubble.stop(at + 0.08);
+    }
+  },
+
+  /** A rattling wheeze: a long breath dragged in and pushed back out */
+  wheeze(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const breath = noiseSource(c);
+    const band = c.createBiquadFilter();
+    band.type = "bandpass";
+    band.Q.value = 4;
+    band.frequency.setValueAtTime(900, t);
+    band.frequency.linearRampToValueAtTime(1700, t + 0.5);
+    band.frequency.linearRampToValueAtTime(700, t + 1.2);
+    const rattle = c.createGain();
+    rattle.gain.value = 0.6;
+    const flutter = c.createOscillator();
+    flutter.frequency.value = 18 + Math.random() * 10;
+    const depth = c.createGain();
+    depth.gain.value = 0.4;
+    flutter.connect(depth).connect(rattle.gain);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(0.28, t + 0.45);
+    gain.gain.linearRampToValueAtTime(0.05, t + 0.6);
+    gain.gain.linearRampToValueAtTime(0.32, t + 0.8);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 1.25);
+    breath.connect(band).connect(rattle).connect(gain).connect(out);
+    for (const node of [breath, flutter]) {
+      node.start(t);
+      node.stop(t + 1.3);
+    }
+  },
+
+  /** A raspy shriek, sliding up and cracking back down */
+  shriek(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const length = 0.55 + Math.random() * 0.25;
+    const voice = c.createOscillator();
+    voice.type = "sawtooth";
+    const pitch = 380 + Math.random() * 120;
+    voice.frequency.setValueAtTime(pitch, t);
+    voice.frequency.exponentialRampToValueAtTime(
+      pitch * 2.1,
+      t + length * 0.35,
+    );
+    voice.frequency.exponentialRampToValueAtTime(pitch * 1.3, t + length);
+    const wobble = c.createOscillator();
+    wobble.frequency.value = 9;
+    const wobbleDepth = c.createGain();
+    wobbleDepth.gain.value = pitch * 0.05;
+    wobble.connect(wobbleDepth).connect(voice.frequency);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.16, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + length);
+    for (const [f, q] of [
+      [1300, 6],
+      [2600, 8],
+    ]) {
+      const formant = c.createBiquadFilter();
+      formant.type = "bandpass";
+      formant.frequency.value = f;
+      formant.Q.value = q;
+      voice.connect(formant).connect(gain);
+    }
+    const rasp = noiseSource(c);
+    const raspBand = c.createBiquadFilter();
+    raspBand.type = "highpass";
+    raspBand.frequency.value = 2000;
+    const raspGain = c.createGain();
+    raspGain.gain.value = 0.15;
+    rasp.connect(raspBand).connect(raspGain).connect(gain);
+    gain.connect(out);
+    for (const node of [voice, wobble, rasp]) {
+      node.start(t);
+      node.stop(t + length + 0.05);
+    }
+  },
+
+  /** One of the undead making itself heard, in any of its voices */
+  zombie(): void {
+    const voices = [
+      sfx.groan,
+      sfx.groan,
+      sfx.growl,
+      sfx.gurgle,
+      sfx.wheeze,
+      sfx.shriek,
+    ];
+    voices[Math.floor(Math.random() * voices.length)]();
+  },
 };
