@@ -23,6 +23,30 @@ const FLAG_FOLDS = [
   "M24 8 C22 18 26 26 24 34 M44 5 C46 15 42 27 45 36",
 ];
 
+/** The loose end of the rope piled on the ground, drawn for the bottom end: the rope arrives from the top */
+const COIL =
+  "M50 -6 C50 14 50 20 46 27 C30 29 13 35 17 46 C23 59 77 59 83 46 C89 33 66 23 46 27 C33 31 29 44 44 48 C59 52 71 44 63 35 C56 29 43 33 46 41";
+
+/** A loose coil of rope, built from the same strands as the rope it ends */
+function Coil({ end }: { end: "top" | "bottom" }) {
+  return (
+    <svg className={`tug-coil coil-${end}`} viewBox="0 -8 100 68" aria-hidden>
+      <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d={COIL} stroke="#4a2c12" strokeWidth="14" />
+        <path d={COIL} stroke="#c9a066" strokeWidth="11" />
+        <path
+          d={COIL}
+          stroke="#7a5228"
+          strokeWidth="11"
+          strokeDasharray="1.6 3.4"
+          strokeOpacity="0.75"
+        />
+        <path d={COIL} stroke="#f3dcae" strokeWidth="2.2" strokeOpacity="0.7" />
+      </g>
+    </svg>
+  );
+}
+
 const STRUGGLE = new Set(["tug-surge", "tug-lean-white", "tug-lean-black"]);
 
 /** How far down the board, in squares, a spot `toWhite` squares from the center line toward White sits */
@@ -96,6 +120,8 @@ export function TugLayer({
           className={`tug-rope-wrap${view.heave > 0 ? " heaving" : ""}`}
           style={{ "--yank": yank } as Style}
         >
+          <Coil end="top" />
+          <Coil end="bottom" />
           <div className="tug-rope" style={{ "--rope": ROPE_TILE } as Style} />
         </div>
         <div className="tug-flag" style={{ top: `${flagTop * 12.5}%` }}>

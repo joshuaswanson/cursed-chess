@@ -98,7 +98,7 @@
   left: 50%;
   top: -9%;
   bottom: -9%;
-  width: calc(var(--square-size, 72px) * 0.21);
+  width: calc(var(--square-size, 72px) * 0.17);
   filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.3));
   translate: -50% 0;
   z-index: 2;
@@ -106,6 +106,25 @@
 
 /* Twisted strands repeating up the rope. The rounded shading is cut to the
    strands' own bumpy outline, so nothing paints between the bulges. */
+/* The rope's loose ends lie piled on the ground past each end of the board,
+   and the pulled rope runs into them */
+.tug-coil {
+  position: absolute;
+  left: 50%;
+  width: calc(var(--square-size, 72px) * 1.35);
+  translate: -50% 0;
+  overflow: visible;
+}
+
+.coil-bottom {
+  bottom: calc(var(--square-size, 72px) * -0.55);
+}
+
+.coil-top {
+  top: calc(var(--square-size, 72px) * -0.55);
+  scale: 1 -1;
+}
+
 .tug-rope {
   position: absolute;
   inset: 0;
