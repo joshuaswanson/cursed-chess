@@ -204,7 +204,7 @@
   animation: float 10s -2s ease-in-out infinite;
 }
 
-/* --- Ships flying over the board. Each loops, spending part of its cycle out of view. --- */
+/* --- Meteors flying over the board --- */
 
 .space-traffic {
   position: fixed;
@@ -213,54 +213,6 @@
   overflow: hidden;
   pointer-events: none;
   animation: scene-in 1.2s ease-out both;
-}
-
-/* Each ship moves on its own layer, so flying never repaints the page */
-.ship {
-  position: absolute;
-  left: 0;
-  top: 0;
-  will-change: translate;
-}
-
-.ship-art {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.ship-rocket {
-  width: 5vmin;
-  height: 13.75vmin;
-  animation: rocket-path 15s -9s cubic-bezier(0.5, 0, 0.8, 0.6) infinite;
-}
-
-@keyframes rocket-path {
-  0% {
-    translate: 12vw 115vh;
-    rotate: 30deg;
-  }
-  30% {
-    translate: 80vw -30vh;
-    rotate: 42deg;
-  }
-  30.01%,
-  100% {
-    translate: 80vw -40vh;
-    rotate: 42deg;
-  }
-}
-
-.rocket-flame {
-  transform-origin: 20px 78px;
-  animation: rocket-flame 0.12s steps(2) infinite alternate;
-}
-
-@keyframes rocket-flame {
-  to {
-    scale: 0.8 1.25;
-  }
 }
 
 @keyframes float {
