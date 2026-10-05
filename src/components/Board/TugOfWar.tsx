@@ -25,15 +25,22 @@ const FLAG_FOLDS = [
 ];
 
 /** The rope's width inside the coil's 100-unit-wide drawing, matching the rope beside it */
-const COIL_ROPE = 12.6;
+const COIL_ROPE = 10;
 const STRAND_TONES = ["#c9a066", "#b88d52", "#d6b077"];
 /** Where the rope comes down into the pile, in the coil's drawing */
 const COIL_ENTRY = { x: 50, y: -10 };
-const LOBE_SPACING = COIL_ROPE * 0.46;
+/** The same proportions as the rope's own strands, so the pile matches it */
+const STRAND_HALF = COIL_ROPE * 0.9;
+const STRAND_THICK = COIL_ROPE * 0.3;
+const LOBE_SPACING = COIL_ROPE * 0.4;
 /** Share of the spiral a pile holds when neither team has pulled rope out of it or into it */
 const COIL_REST = 0.7;
 const COIL_GIVE = 0.3;
-const LEAD_POOL = 26;
+const LEAD_POOL = 44;
+/** The pile is drawn in this many stretches, each outlined, so loops lying against each other stay distinct */
+const COIL_STRETCHES = 22;
+
+type Point = { x: number; y: number };
 
 /**
  * A pile of rope lying on the ground, drawn for the bottom end: uneven loops
@@ -41,8 +48,8 @@ const LEAD_POOL = 26;
  * spiral runs from its outermost loop to the free end of the rope at the
  * center.
  */
-function coilSpiral(): { x: number; y: number }[] {
-  const points: { x: number; y: number }[] = [];
+function coilSpiral(): Point[] {
+  const points: Point[] = [];
   const turns = 1.9;
   const steps = 260;
   for (let i = 0; i <= steps; i++) {
@@ -63,10 +70,7 @@ function coilSpiral(): { x: number; y: number }[] {
  * Slack rope lying on the ground from where it leaves the board to the pile's
  * outside loop: a loose S that swings out to one side, then back the other
  */
-function slackCurve(
-  from: { x: number; y: number },
-  to: { x: number; y: number },
-): { x: number; y: number }[] {
+function slackCurve(from: Point, to: Point): Point[] {
   const swing = to.x >= from.x ? -24 : 24;
   const c1 = { x: from.x + swing, y: from.y + 20 };
   const c2 = { x: to.x - swing * 0.9, y: to.y - 18 };
@@ -88,69 +92,104 @@ function slackCurve(
   });
 }
 
-/** The rope's lobes lean 38 degrees off its length */
+/** The rope's strands lean steeply off straight across it */
 const lobeAngle = (dx: number, dy: number) =>
   (Math.atan2(dy, dx) * 180) / Math.PI - 90 - STRAND_LEAN;
 
-/** Strand lobes spaced evenly along the spiral, outermost first */
-function coilLobes() {
-  const path = coilSpiral();
-  const lobes: {
-    x: number;
-    y: number;
-    angle: number;
-    tone: string;
-    shade: number;
-  }[] = [];
-  let carried = 0;
-  for (let i = 1; i < path.length; i++) {
-    const a = path[i - 1];
-    const b = path[i];
-    carried += Math.hypot(b.x - a.x, b.y - a.y);
-    if (carried < LOBE_SPACING) continue;
-    carried = 0;
-    lobes.push({
-      x: b.x,
-      y: b.y,
-      angle: lobeAngle(b.x - a.x, b.y - a.y),
-      tone: STRAND_TONES[lobes.length % STRAND_TONES.length],
-      // The inner loops, laid first, sit lower in the pile and in shadow
-      shade: 0.3 * (i / path.length),
-    });
+const pathThrough = (points: Point[]) =>
+  `M${points.map((p) => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" L")}`;
+
+/** Distance along a path at each of its points */
+function arcLengths(points: Point[]): number[] {
+  const at = [0];
+  for (let i = 1; i < points.length; i++) {
+    at.push(
+      at[i - 1] +
+        Math.hypot(
+          points[i].x - points[i - 1].x,
+          points[i].y - points[i - 1].y,
+        ),
+    );
+  }
+  return at;
+}
+
+/** Strand placements spaced evenly along a path, each with its distance along it */
+function lobesAlong(points: Point[], spacing: number) {
+  const along = arcLengths(points);
+  const lobes: { x: number; y: number; angle: number; at: number }[] = [];
+  let next = spacing / 2;
+  for (let i = 1; i < points.length; i++) {
+    while (along[i] >= next) {
+      const a = points[i - 1];
+      const b = points[i];
+      const k = (next - along[i - 1]) / (along[i] - along[i - 1] || 1);
+      lobes.push({
+        x: a.x + (b.x - a.x) * k,
+        y: a.y + (b.y - a.y) * k,
+        angle: lobeAngle(b.x - a.x, b.y - a.y),
+        at: next,
+      });
+      next += spacing;
+    }
   }
   return lobes;
 }
 
-const COIL_LOOPS = coilLobes();
-
-const pathThrough = (points: { x: number; y: number }[]) =>
-  `M${points.map((p) => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" L")}`;
 const COIL_SPIRAL = coilSpiral();
-const SPIRAL_D = pathThrough(COIL_SPIRAL);
-const SPIRAL_LENGTH = COIL_SPIRAL.slice(1).reduce(
-  (sum, p, i) =>
-    sum + Math.hypot(p.x - COIL_SPIRAL[i].x, p.y - COIL_SPIRAL[i].y),
-  0,
-);
+const SPIRAL_ALONG = arcLengths(COIL_SPIRAL);
+const SPIRAL_LENGTH = SPIRAL_ALONG[SPIRAL_ALONG.length - 1];
+const SPIRAL_LOBES = lobesAlong(COIL_SPIRAL, LOBE_SPACING);
+
+/**
+ * The spiral cut into stretches. They are drawn from the free end in the
+ * middle outward, the order the rope was laid, so each loop's outline shows
+ * where it lies against the one inside it.
+ */
+const COIL_PIECES = Array.from({ length: COIL_STRETCHES }, (_, n) => {
+  const from = (SPIRAL_LENGTH * n) / COIL_STRETCHES;
+  const to = (SPIRAL_LENGTH * (n + 1)) / COIL_STRETCHES;
+  const points = COIL_SPIRAL.filter(
+    (_, i) => SPIRAL_ALONG[i] >= from - 0.01 && SPIRAL_ALONG[i] <= to + 0.6,
+  );
+  return {
+    from,
+    to,
+    d: pathThrough(points),
+    lobes: SPIRAL_LOBES.filter((l) => l.at >= from && l.at < to).map(
+      (l, k) => ({
+        ...l,
+        tone: STRAND_TONES[
+          Math.round(l.at / LOBE_SPACING) % STRAND_TONES.length
+        ],
+        // The inner loops sit lower in the pile, a little in shadow
+        shade: 0.22 * (l.at / SPIRAL_LENGTH),
+        key: `${n}-${k}`,
+      }),
+    ),
+  };
+}).reverse();
 
 /** One twisted strand lobe of the rope */
 function Strand({
   end,
   tone,
   shade,
+  transform,
   innerRef,
 }: {
   end: string;
   tone: string;
   shade: number;
+  transform?: string;
   innerRef?: (el: SVGGElement | null) => void;
 }) {
-  const half = COIL_ROPE * 0.8;
-  const thick = COIL_ROPE * 0.27;
+  const half = STRAND_HALF;
+  const thick = STRAND_THICK;
   const [low, mid, high] = fibrePaths(half, thick);
   const body = strandPath(half, thick);
   return (
-    <g ref={innerRef}>
+    <g ref={innerRef} transform={transform}>
       <path
         d={body}
         fill={tone}
@@ -182,17 +221,15 @@ function Strand({
  * A loose coil of rope at one end of the tug of war. Its free end stays put in
  * the middle of the pile; rope pulled out of the pile comes off its outside
  * loops, and rope hauled into it winds fresh loops back round the outside.
- * The rope runs down from the board to wherever the outside loop starts.
+ * The rope lies slack between the board and wherever the outside loop starts.
  */
 function Coil({ end }: { end: "top" | "bottom" }) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const loopRefs = useRef<(SVGGElement | null)[]>([]);
+  const pieceRefs = useRef<(SVGGElement | null)[]>([]);
+  const bandRefs = useRef<(SVGPathElement | null)[][]>([]);
+  const lobeRefs = useRef<Map<string, SVGGElement | null>>(new Map());
+  const leadBandRefs = useRef<(SVGPathElement | null)[]>([]);
   const leadRefs = useRef<(SVGGElement | null)[]>([]);
-  /** The spiral's band and its outline, trimmed to the rope the pile holds */
-  const spiralRefs = useRef<(SVGPathElement | null)[]>([]);
-  /** The slack rope's band and its outline, redrawn as it moves */
-  const leadPathRefs = useRef<(SVGPathElement | null)[]>([]);
-  const maskId = `coil-band-${end}`;
 
   useEffect(() => {
     const board = svgRef.current?.closest<HTMLElement>(".board");
@@ -223,53 +260,46 @@ function Coil({ end }: { end: "top" | "bottom" }) {
           y: COIL_ENTRY.y + (shift / unit) * (end === "bottom" ? 1 : -1),
         };
 
-        // Rope pulled out of the pile comes off its outside, so the spiral is
-        // trimmed from its outer end
+        // Rope pulled out of the pile comes off its outside first
         const off = (1 - held) * SPIRAL_LENGTH;
-        for (const el of spiralRefs.current) {
-          el?.setAttribute(
-            "stroke-dasharray",
-            `0 ${off.toFixed(1)} ${SPIRAL_LENGTH.toFixed(1)}`,
-          );
-        }
-        const last = COIL_LOOPS.length - 1;
-        const from = (1 - held) * last;
-        const first = Math.min(last, Math.ceil(from));
-        loopRefs.current.forEach((el, i) => {
+        COIL_PIECES.forEach((piece, n) => {
+          const group = pieceRefs.current[n];
+          if (!group) return;
+          group.style.display = piece.to <= off ? "none" : "";
+          const cut =
+            piece.from < off
+              ? `0 ${(off - piece.from).toFixed(2)} ${SPIRAL_LENGTH.toFixed(1)}`
+              : "";
+          for (const band of bandRefs.current[n] ?? []) {
+            if (cut) band?.setAttribute("stroke-dasharray", cut);
+            else band?.removeAttribute("stroke-dasharray");
+          }
+          for (const lobe of piece.lobes) {
+            const el = lobeRefs.current.get(lobe.key);
+            if (el) el.style.display = lobe.at < off ? "none" : "";
+          }
+        });
+
+        // The rope lies slack between the board and the outside loop, in a lazy S
+        const startAt = Math.min(off, SPIRAL_LENGTH - 1);
+        const i = SPIRAL_ALONG.findIndex((at) => at >= startAt);
+        const curve = slackCurve(entry, COIL_SPIRAL[Math.max(0, i)]);
+        const leadD = pathThrough(curve);
+        for (const band of leadBandRefs.current) band?.setAttribute("d", leadD);
+        const lobes = lobesAlong(curve, LOBE_SPACING);
+        leadRefs.current.forEach((el, k) => {
           if (!el) return;
-          const lobe = COIL_LOOPS[i];
+          const lobe = lobes[k];
+          if (!lobe) {
+            el.style.display = "none";
+            return;
+          }
+          el.style.display = "";
           el.setAttribute(
             "transform",
             `translate(${lobe.x.toFixed(2)} ${lobe.y.toFixed(2)}) rotate(${lobe.angle.toFixed(1)})`,
           );
-          el.style.opacity = i >= first - 1 ? "1" : "0";
         });
-
-        // The rope lies slack between the board and the outside loop, in a lazy S
-        const start = COIL_LOOPS[first];
-        const curve = slackCurve(entry, start);
-        const leadD = pathThrough(curve);
-        for (const el of leadPathRefs.current) el?.setAttribute("d", leadD);
-        let placed = 0;
-        let carried = LOBE_SPACING / 2;
-        for (let i = 1; i < curve.length && placed < LEAD_POOL; i++) {
-          const a = curve[i - 1];
-          const b = curve[i];
-          carried += Math.hypot(b.x - a.x, b.y - a.y);
-          if (carried < LOBE_SPACING) continue;
-          carried = 0;
-          const el = leadRefs.current[placed++];
-          if (!el) continue;
-          el.style.opacity = "1";
-          el.setAttribute(
-            "transform",
-            `translate(${b.x.toFixed(2)} ${b.y.toFixed(2)}) rotate(${lobeAngle(b.x - a.x, b.y - a.y).toFixed(1)})`,
-          );
-        }
-        for (let k = placed; k < LEAD_POOL; k++) {
-          const el = leadRefs.current[k];
-          if (el) el.style.opacity = "0";
-        }
       }
       frame = requestAnimationFrame(draw);
     };
@@ -277,33 +307,37 @@ function Coil({ end }: { end: "top" | "bottom" }) {
     return () => cancelAnimationFrame(frame);
   }, [end]);
 
-  const band = (width: number, stroke: string, slot: number) => (
-    <>
+  /**
+   * A stretch of rope: its dark outline and the rope's body under the
+   * strands, and a soft sheen down the middle over them. Stretches of the pile
+   * meet end to end, so their ends are cut square.
+   */
+  const bands = (
+    d: string | undefined,
+    keep: (el: SVGPathElement | null, slot: number) => void,
+    cap: "butt" | "round",
+  ) => {
+    const band = (slot: number, width: number, stroke: string, opacity = 1) => (
       <path
-        key={`spiral-${slot}`}
-        ref={(el) => {
-          spiralRefs.current[slot] = el;
-        }}
-        d={SPIRAL_D}
+        key={slot}
+        ref={(el) => keep(el, slot)}
+        d={d}
         fill="none"
         stroke={stroke}
+        strokeOpacity={opacity}
         strokeWidth={width}
-        strokeLinecap="round"
+        strokeLinecap={cap}
         strokeLinejoin="round"
       />
-      <path
-        key={`lead-${slot}`}
-        ref={(el) => {
-          leadPathRefs.current[slot] = el;
-        }}
-        fill="none"
-        stroke={stroke}
-        strokeWidth={width}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </>
-  );
+    );
+    return {
+      under: [
+        band(0, COIL_ROPE + 1.8, "#4a2c12"),
+        band(1, COIL_ROPE, "#b88d52"),
+      ],
+      over: band(2, COIL_ROPE * 0.32, "#fff6e0", 0.18),
+    };
+  };
 
   return (
     <svg
@@ -318,45 +352,75 @@ function Coil({ end }: { end: "top" | "bottom" }) {
           <stop offset="0.45" stopColor="#fff" stopOpacity="0" />
           <stop offset="1" stopColor="#000" stopOpacity="0.35" />
         </linearGradient>
-        {/* The rope's own outline, so the strands never stray outside it */}
-        <mask
-          id={maskId}
-          maskUnits="userSpaceOnUse"
-          x="-30"
-          y="-60"
-          width="160"
-          height="140"
-        >
-          {band(COIL_ROPE, "#fff", 0)}
-        </mask>
       </defs>
-      {band(COIL_ROPE + 1.6, "#4a2c12", 1)}
-      <g mask={`url(#${maskId})`}>
-        {band(COIL_ROPE, "#b88d52", 2)}
-        {/* The inner loops were laid first, so the outer ones lie over them */}
-        {[...COIL_LOOPS.keys()].reverse().map((i) => (
-          <Strand
-            key={i}
-            end={end}
-            tone={COIL_LOOPS[i].tone}
-            shade={COIL_LOOPS[i].shade}
-            innerRef={(el) => {
-              loopRefs.current[i] = el;
-            }}
-          />
-        ))}
-        {Array.from({ length: LEAD_POOL }, (_, k) => (
-          <Strand
-            key={`lead-${k}`}
-            end={end}
-            tone={STRAND_TONES[k % STRAND_TONES.length]}
-            shade={0}
-            innerRef={(el) => {
-              leadRefs.current[k] = el;
-            }}
-          />
-        ))}
-      </g>
+      {COIL_PIECES.map((piece, n) => (
+        <g
+          key={n}
+          ref={(el) => {
+            pieceRefs.current[n] = el;
+          }}
+        >
+          {
+            bands(
+              piece.d,
+              (el, slot) => {
+                (bandRefs.current[n] ??= [])[slot] = el;
+              },
+              "butt",
+            ).under
+          }
+          {piece.lobes.map((lobe) => (
+            <Strand
+              key={lobe.key}
+              end={end}
+              tone={lobe.tone}
+              shade={lobe.shade}
+              transform={`translate(${lobe.x.toFixed(2)} ${lobe.y.toFixed(2)}) rotate(${lobe.angle.toFixed(1)})`}
+              innerRef={(el) => {
+                lobeRefs.current.set(lobe.key, el);
+              }}
+            />
+          ))}
+          {
+            bands(
+              piece.d,
+              (el) => {
+                (bandRefs.current[n] ??= [])[2] = el;
+              },
+              "butt",
+            ).over
+          }
+        </g>
+      ))}
+      {
+        bands(
+          undefined,
+          (el, slot) => {
+            leadBandRefs.current[slot] = el;
+          },
+          "round",
+        ).under
+      }
+      {Array.from({ length: LEAD_POOL }, (_, k) => (
+        <Strand
+          key={`lead-${k}`}
+          end={end}
+          tone={STRAND_TONES[k % STRAND_TONES.length]}
+          shade={0}
+          innerRef={(el) => {
+            leadRefs.current[k] = el;
+          }}
+        />
+      ))}
+      {
+        bands(
+          undefined,
+          (el) => {
+            leadBandRefs.current[2] = el;
+          },
+          "round",
+        ).over
+      }
     </svg>
   );
 }
