@@ -6,9 +6,24 @@ import type { ModeTheme, ThemeId } from "../../theme/themes";
 import { sfx } from "../../audio/sfx";
 import { Confetti } from "./Confetti";
 import { Portal } from "../Board/Portal";
+import { ROPE_TILE } from "../Board/ropeTexture";
+import { Color, PieceType } from "../../engine";
+import { pieceImage } from "../../utils/pieceImages";
 import "./Show.css";
 
 const CLOSE_MS = 450;
+
+/** Each team on the title card's rope, anchor at the far end */
+const TUG_TEAMS = [
+  {
+    color: Color.White,
+    line: [PieceType.Rook, PieceType.Knight, PieceType.Pawn],
+  },
+  {
+    color: Color.Black,
+    line: [PieceType.Pawn, PieceType.Knight, PieceType.Rook],
+  },
+];
 /** When the title clears and the catchphrase comes in */
 const CATCHPHRASE_AT_MS = 1900;
 
@@ -128,13 +143,34 @@ function Flair({ theme }: { theme: ThemeId }) {
       );
     case "tug":
       return (
-        <div className="card-tug">
-          <span className="card-tug-rope" />
-          <svg className="card-tug-pennant" viewBox="0 0 30 34">
-            <path d="M3 2 H27 L15 32 Z" />
-            <path d="M11 2 H19 L15 22 Z" className="stripe" />
-          </svg>
-        </div>
+        <>
+          <span className="card-tug-ground" />
+          <div className="card-tug">
+            {TUG_TEAMS.map(({ color, line }) => (
+              <div key={color} className={`card-team card-team-${color}`}>
+                <span className="card-dust" />
+                {line.map((type, n) => (
+                  <img
+                    key={n}
+                    src={pieceImage({ type, color })}
+                    alt=""
+                    style={{ "--n": n } as React.CSSProperties}
+                  />
+                ))}
+              </div>
+            ))}
+            <div className="card-tug-rope">
+              <span
+                className="card-tug-strands"
+                style={{ "--rope": ROPE_TILE } as React.CSSProperties}
+              />
+              <svg className="card-tug-pennant" viewBox="0 0 30 34">
+                <path d="M3 2 H27 L15 32 Z" />
+                <path d="M11 2 H19 L15 22 Z" className="stripe" />
+              </svg>
+            </div>
+          </div>
+        </>
       );
     default:
       return null;
