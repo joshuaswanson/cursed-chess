@@ -1289,7 +1289,7 @@
 }
 
 /* Each team digs in at its end of the rope, anchor at the back */
-.card-team {
+.card-tug-team {
   position: absolute;
   bottom: 8%;
   display: flex;
@@ -1300,18 +1300,18 @@
   --dir: -1;
 }
 
-.card-team-w {
+.card-tug-team-w {
   left: 13vw;
 }
 
-.card-team-b {
+.card-tug-team-b {
   right: 21vw;
   --heave-a: 3deg;
   --heave-b: 20deg;
   --dir: 1;
 }
 
-.card-team img {
+.card-tug-team img {
   width: 10.5vh;
   height: 10.5vh;
   margin-inline: -1.2vh;
@@ -1375,7 +1375,7 @@
   animation: card-dust 2s 0.5s ease-out infinite;
 }
 
-.card-team-b .card-dust {
+.card-tug-team-b .card-dust {
   animation-delay: 1.5s;
 }
 

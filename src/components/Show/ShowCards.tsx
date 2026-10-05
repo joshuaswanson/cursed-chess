@@ -147,7 +147,7 @@ function Flair({ theme }: { theme: ThemeId }) {
           <span className="card-tug-ground" />
           <div className="card-tug">
             {TUG_TEAMS.map(({ color, line }) => (
-              <div key={color} className={`card-team card-team-${color}`}>
+              <div key={color} className={`card-tug-team card-tug-team-${color}`}>
                 <span className="card-dust" />
                 {line.map((type, n) => (
                   <img
