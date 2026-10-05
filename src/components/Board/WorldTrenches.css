@@ -45,20 +45,6 @@
   fill: #6a5135;
 }
 
-.wattle {
-  fill: none;
-  stroke: #3b2915;
-  stroke-width: 2.2;
-  stroke-dasharray: 3 1.4;
-}
-
-.stakes {
-  fill: none;
-  stroke: #4a3219;
-  stroke-width: 3.2;
-  stroke-linecap: round;
-}
-
 .trench-lip {
   fill: none;
   stroke: #1c140c;
@@ -67,18 +53,6 @@
 }
 
 /* Duckboards along the bottom, gaps and all */
-.duckboard-bed {
-  fill: none;
-  stroke: #120c07;
-  stroke-width: 15;
-}
-
-.duckboards {
-  fill: none;
-  stroke: #6f5434;
-  stroke-width: 12;
-  stroke-dasharray: 6 2.6;
-}
 
 .trench-water {
   fill: #3f4748;
@@ -98,12 +72,6 @@
   stroke: #2a1f13;
   stroke-width: 1.6;
   stroke-linejoin: round;
-}
-
-.sandbag {
-  fill: #7a6b4c;
-  stroke: #2a2014;
-  stroke-width: 1.4;
 }
 
 .comms-cut {
@@ -129,4 +97,70 @@
 
 .world-post {
   fill: #3b2b1a;
+}
+
+/* Duckboards: slats nailed across two runners, laid along the floor */
+.duckboard-bed {
+  fill: none;
+  stroke: #120c07;
+  stroke-width: 28;
+}
+
+.duckboard-rail {
+  fill: none;
+  stroke: #3d2a16;
+  stroke-width: 4;
+}
+
+/* Upright planks shoring the far wall */
+.planks {
+  fill: url(#wt-plank);
+  stroke: #24180c;
+  stroke-width: 1;
+}
+
+.planks-dark {
+  filter: brightness(0.8);
+}
+
+.stakes {
+  fill: none;
+  stroke: #3a2512;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.sandbag {
+  fill: url(#wt-burlap);
+  stroke: #2a2014;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.sandbag-weave {
+  fill: url(#wt-weave);
+  opacity: 0.35;
+}
+
+.sandbag-seam {
+  fill: none;
+  stroke: #4a3c24;
+  stroke-width: 1;
+  stroke-dasharray: 2 1.5;
+}
+
+.sandbag-ears {
+  stroke: #2a2014;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.slats {
+  fill: #7c5c37;
+  stroke: #24180c;
+  stroke-width: 0.9;
+}
+
+.slats-dark {
+  fill: #5e4428;
 }

@@ -1166,7 +1166,7 @@
 }
 
 .trench-guns.guns-toward {
-  z-index: 4;
+  z-index: 5;
 }
 
 .trench-gun {
@@ -1176,6 +1176,11 @@
 }
 
 /* Down in a trench, a man shows only above its near edge */
+/* Over the sandbags in front of them, so their rifles rest across the top */
+.battle-unit.is-entrenched {
+  z-index: 4;
+}
+
 .battle-unit.is-entrenched .unit-body {
   clip-path: inset(-80% -80% var(--trench-edge) -80%);
 }

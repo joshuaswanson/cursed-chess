@@ -3,22 +3,39 @@ import { BOARD, MARGIN, REACH, SQ, frontFor } from "./trenchFront";
 import type { Sandbag } from "./trenchFront";
 import "./WorldTrenches.css";
 
-/** Sandbags laid in courses, each turned along the line it sits on */
+/**
+ * Sandbags laid in courses: burlap bags plumped in the middle, their tied
+ * ends pinched, a seam down each, lit from above
+ */
 function Sandbags({ bags }: { bags: Sandbag[] }) {
   return (
     <>
-      {bags.map((b, i) => (
-        <rect
-          key={i}
-          x={b.x}
-          y={b.y - 4.5}
-          width={b.w}
-          height={9}
-          rx={3.5}
-          className="sandbag"
-          transform={`rotate(${b.tilt.toFixed(1)} ${b.x} ${b.y})`}
-        />
-      ))}
+      {bags.map((b, i) => {
+        const w = b.w / 2;
+        const h = b.h / 2;
+        const body = `M${-w} ${-h * 0.35} Q${-w * 0.92} ${-h * 1.05} ${-w * 0.55} ${-h} Q0 ${-h * 1.25} ${w * 0.55} ${-h} Q${w * 0.92} ${-h * 1.05} ${w} ${-h * 0.35} Q${w * 1.12} 0 ${w} ${h * 0.4} Q${w * 0.9} ${h * 1.05} ${w * 0.5} ${h} Q0 ${h * 1.15} ${-w * 0.5} ${h} Q${-w * 0.9} ${h * 1.05} ${-w} ${h * 0.4} Q${-w * 1.12} 0 ${-w} ${-h * 0.35} Z`;
+        return (
+          <g
+            key={i}
+            transform={`translate(${b.x.toFixed(1)} ${b.y.toFixed(1)}) rotate(${b.tilt.toFixed(1)})`}
+          >
+            <path
+              d={body}
+              className="sandbag"
+              style={{ filter: `brightness(${0.82 + b.tone * 0.3})` }}
+            />
+            <path d={body} className="sandbag-weave" />
+            <path
+              d={`M${-w * 0.7} ${-h * 0.15} Q0 ${h * 0.1} ${w * 0.7} ${-h * 0.15}`}
+              className="sandbag-seam"
+            />
+            <path
+              d={`M${-w * 0.92} ${-h * 0.5} L${-w * 1.08} ${-h * 0.8} M${w * 0.92} ${-h * 0.5} L${w * 1.08} ${-h * 0.8}`}
+              className="sandbag-ears"
+            />
+          </g>
+        );
+      })}
     </>
   );
 }
@@ -64,6 +81,19 @@ function EarthDefs() {
       >
         <rect width="140" height="140" filter="url(#wt-soil)" />
       </pattern>
+      <linearGradient id="wt-burlap" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#b8a679" />
+        <stop offset="0.45" stopColor="#8f7d55" />
+        <stop offset="1" stopColor="#5b4d31" />
+      </linearGradient>
+      <pattern id="wt-weave" width="3" height="3" patternUnits="userSpaceOnUse">
+        <path d="M0 1.5 H3 M1.5 0 V3" stroke="#3b301d" strokeWidth="0.5" />
+      </pattern>
+      <linearGradient id="wt-plank" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor="#8a6a42" />
+        <stop offset="0.5" stopColor="#7a5c37" />
+        <stop offset="1" stopColor="#5f4628" />
+      </linearGradient>
       <radialGradient id="wt-crater">
         <stop offset="0" stopColor="#3a3f3e" />
         <stop offset="0.45" stopColor="#2c2a24" />
@@ -120,7 +150,18 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
           <path d={line.outline} className="trench-cut" />
           <path d={line.outline} className="earth-texture trench-floor" />
           <path d={line.centre} className="duckboard-bed" />
-          <path d={line.centre} className="duckboards" />
+          <path
+            d={line.centre}
+            className="duckboard-rail"
+            transform="translate(0 -9)"
+          />
+          <path
+            d={line.centre}
+            className="duckboard-rail"
+            transform="translate(0 9)"
+          />
+          <path d={line.slats[0]} className="slats" />
+          <path d={line.slats[1]} className="slats slats-dark" />
           {line.water.map((w, i) => (
             <ellipse
               key={i}
@@ -133,7 +174,8 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
           ))}
           <path d={line.farWall} className="far-wall" />
           <path d={line.farWall} className="earth-texture" />
-          <path d={line.wattle} className="wattle" />
+          <path d={line.boardsLight} className="planks" />
+          <path d={line.wattle} className="planks planks-dark" />
           <path d={line.stakes} className="stakes" />
           <path d={line.outline} className="trench-lip" />
         </g>

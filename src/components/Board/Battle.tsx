@@ -4,7 +4,7 @@ import type { Piece, SquareIndex } from "../../engine";
 import { DROP_MS } from "../../plugins/clashRoyale";
 import { AIM_MS, SHELL_FALL_MS, TRENCH_RANKS } from "../../plugins/trenches";
 import { shakeBoard } from "./useBoardEffects";
-import { TRENCH_EDGE } from "./trenchFront";
+import { BAG_TOP, TRENCH_EDGE } from "./trenchFront";
 import type { BattleEvent, BattleView, Unit } from "../../plugins/clashRoyale";
 import { pieceImage } from "../../utils/pieceImages";
 import { offsetBetween, visualCol, visualRow } from "./boardGeometry";
@@ -168,7 +168,8 @@ export function BattleUnit({
       style={
         {
           ...arrivalStyle(arrival, flipped, squareSize),
-          "--trench-edge": `${((0.95 - TRENCH_EDGE) / 0.9) * 100}%`,
+          // Hidden from the top of the sandbags down
+          "--trench-edge": `${((0.95 - TRENCH_EDGE + BAG_TOP) / 0.9) * 100}%`,
         } as Style
       }
     >

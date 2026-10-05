@@ -602,8 +602,12 @@ export function Board() {
               }
               entrenched={
                 overlays.trenches !== null &&
-                Object.values(TRENCH_RANKS).some(
-                  (t) => t.front === rankOf(sq) || t.back === rankOf(sq),
+                (Object.keys(TRENCH_RANKS) as Color[]).some(
+                  (color) =>
+                    // Only the trenches across the board hide the men in them
+                    (color === Color.White) === flipped &&
+                    (TRENCH_RANKS[color].front === rankOf(sq) ||
+                      TRENCH_RANKS[color].back === rankOf(sq)),
                 )
               }
             />

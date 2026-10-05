@@ -48,8 +48,13 @@ const toPath = (points: Point[], close = false) =>
  * floor, the near lip, and how high the near bank rises over it. The near
  * bank tops out at a man's waist when he stands in the middle of his square.
  */
-/** How far up the screen every trench line is drawn from the middle of its row of squares */
+/**
+ * How far up the screen a trench line is drawn from the middle of its row of
+ * squares. The far side's trenches sit high, their men down in them below the
+ * near edge; ours sit low enough that our men stand in them in full view.
+ */
 const LIFT = 25;
+const OUR_LIFT = 0;
 const FAR_LIP = -43;
 const FAR_WALL_FOOT = -22;
 const FLOOR = -9;
@@ -64,18 +69,30 @@ export interface Sandbag {
   x: number;
   y: number;
   w: number;
+  h: number;
   tilt: number;
+  /** How the burlap catches the light, 0 to 1 */
+  tone: number;
 }
+
+/** A sandbag's size in the drawing: long and fat, the way a filled bag sags */
+const BAG_W = 26;
+const BAG_H = 15;
+/** How far above a trench's near edge its sandbags stand, as a share of a square */
+export const BAG_TOP = 0.08;
 
 interface TrenchLine {
   key: string;
   outline: string;
   centre: string;
   water: { x: number; y: number; rx: number; ry: number }[];
-  /** The far wall's face, shored with stakes and wattle */
+  /** The far wall's face, shored with upright planks in two tones and heavy stakes */
   farWall: string;
   stakes: string;
   wattle: string;
+  boardsLight: string;
+  /** Duckboard slats, in two tones */
+  slats: [string, string];
   /** Behind the far lip: sandbags if the enemy lies that way, otherwise the spoil heap */
   farWorks: { bags: Sandbag[]; heap: string | null };
   /** The near bank, standing in front of the men: earth, with sandbags on it if the enemy lies this way */
@@ -92,17 +109,44 @@ function layBags(
   base: number,
 ): Sandbag[] {
   const bags: Sandbag[] = [];
+  const along = (x: number) => {
+    const i = Math.max(
+      0,
+      Math.min(edge.length - 2, Math.floor((x - edge[0].x) / STEP)),
+    );
+    const a = edge[i];
+    const b = edge[i + 1];
+    const t = (x - a.x) / (b.x - a.x || 1);
+    return {
+      y: a.y + (b.y - a.y) * t,
+      tilt: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI,
+    };
+  };
+  const end = edge[edge.length - 1].x;
+  // Laid by hand: each bag its own size, packed unevenly, the odd one missing
+  // or slumped, each course staggered over the one below
   for (let course = 0; course < courses; course++) {
-    for (let i = course % 2; i < edge.length - 2; i += 2) {
-      const a = edge[i];
-      const b = edge[i + 2];
-      const tilt = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
-      bags.push({
-        x: a.x + 2,
-        y: a.y + base - course * rise + (rand() - 0.5) * 1.5,
-        w: 11 + rand() * 3,
-        tilt: tilt + (rand() - 0.5) * 6,
-      });
+    let x = edge[0].x + (course % 2 ? BAG_W * 0.5 : 0) + rand() * 6;
+    while (x < end) {
+      const w = BAG_W * (0.8 + rand() * 0.4);
+      const h = BAG_H * (0.8 + rand() * 0.35);
+      if (rand() > (course > 0 ? 0.1 : 0.03)) {
+        const { y, tilt } = along(x + w / 2);
+        bags.push({
+          x: x + w / 2,
+          y:
+            y +
+            base -
+            course * rise +
+            (rand() - 0.5) * 3 +
+            (rand() < 0.08 ? 4 : 0),
+          w,
+          h,
+          tilt: tilt + (rand() - 0.5) * 12,
+          tone: rand(),
+        });
+      }
+      x += w * (0.78 + rand() * 0.12);
     }
   }
   return bags;
@@ -117,46 +161,74 @@ function layBags(
  */
 function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
   const rand = seeded(seed);
-  const centreY = MARGIN + row * SQ + SQ / 2 - LIFT;
+  const centreY = MARGIN + row * SQ + SQ / 2 - (enemyAbove ? OUR_LIFT : LIFT);
   const xs: number[] = [];
   for (let x = -REACH; x <= BOARD + REACH; x += STEP) xs.push(x);
-  const bays = new Map<number, number>();
-  const bayOffset = (bay: number) => {
-    if (bay >= 0 && bay < 8) return 0;
-    if (!bays.has(bay)) {
-      const swing = 7 + rand() * 13;
-      bays.set(bay, (bay % 2 ? 1 : -1) * swing + Math.sin(bay * 0.37) * 14);
+  // Off the board the bays are dug to no plan: each its own length, set back
+  // or forward by its own amount. On the board they line up with the squares.
+  const bayStarts: number[] = [];
+  const bayShift: number[] = [];
+  for (let x = 0; x > -REACH - 200;) {
+    x -= 55 + rand() * 120;
+    bayStarts.unshift(x);
+  }
+  for (let col = 0; col < 8; col++) bayStarts.push(col * SQ);
+  for (let x = BOARD; x < BOARD + REACH + 200; x += 55 + rand() * 120) {
+    bayStarts.push(x);
+  }
+  let shift = 0;
+  for (const start of bayStarts) {
+    const inside = start >= 0 && start < BOARD;
+    shift = inside
+      ? 0
+      : (shift > 0 ? -1 : 1) * (3 + rand() * 20) + (rand() - 0.5) * 10;
+    bayShift.push(shift);
+  }
+  const bayIndex = (x: number) => {
+    let lo = 0;
+    let hi = bayStarts.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (bayStarts[mid] <= x) lo = mid;
+      else hi = mid - 1;
     }
-    return bays.get(bay)!;
+    return lo;
   };
-  const TRAVERSE = 13;
+  // Traverses between squares, each its own depth and width, a few left out
+  const traverses = Array.from({ length: 7 }, () =>
+    rand() < 0.2 ? null : { depth: 5 + rand() * 12, half: 9 + rand() * 9 },
+  );
   const centreAt = (x: number) => {
-    const bay = Math.floor(x / SQ);
-    const into = x - bay * SQ;
-    const jog = 12;
-    const here = bayOffset(bay);
+    const bay = bayIndex(x);
+    const start = bayStarts[bay];
+    const length = (bayStarts[bay + 1] ?? start + SQ) - start;
+    const into = x - start;
+    const jog = Math.min(14, length * 0.25);
+    const here = bayShift[bay];
     let y = centreY + here;
-    if (into > SQ - jog) {
-      const t = (into - (SQ - jog)) / jog;
-      y += (bayOffset(bay + 1) - here) * t;
+    if (into > length - jog) {
+      const t = (into - (length - jog)) / jog;
+      y += ((bayShift[bay + 1] ?? here) - here) * t;
     }
-    // Between two squares of the board, the trench steps back around a traverse
     const edge = Math.round(x / SQ);
+    const traverse = edge >= 1 && edge <= 7 ? traverses[edge - 1] : null;
     const from = Math.abs(x - edge * SQ);
-    if (edge >= 1 && edge <= 7 && from < TRAVERSE) {
-      y -= 12 * (0.5 + 0.5 * Math.cos((from / TRAVERSE) * Math.PI));
+    if (traverse && from < traverse.half) {
+      y -=
+        traverse.depth *
+        (0.5 + 0.5 * Math.cos((from / traverse.half) * Math.PI));
     }
     return y;
   };
-  const wallsA = ragged(rand, xs.length, 5);
-  const wallsB = ragged(rand, xs.length, 5);
+  const wallsA = ragged(rand, xs.length, 7);
+  const wallsB = ragged(rand, xs.length, 7);
   const far: Point[] = [];
   const near: Point[] = [];
   xs.forEach((x, i) => {
     const c = centreAt(x);
     const board = onBoard(x);
-    const roughness = board ? 0.4 : 1;
-    const widen = board ? 0 : rand() * 5 - 3;
+    const roughness = board ? 0.7 : 1.3;
+    const widen = board ? 0 : rand() * 8 - 4;
     far.push({ x, y: c + FAR_LIP - widen + wallsA[i] * roughness });
     near.push({ x, y: c + NEAR_LIP + widen + wallsB[i] * roughness });
   });
@@ -166,25 +238,43 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
     y: centreAt(x) + FAR_WALL_FOOT + wallsA[i] * 0.3,
   }));
   const farWall = toPath([...far, ...[...farFoot].reverse()], true);
-  const stakes = far
-    .filter((_, i) => i % 3 === 0)
-    .map(
-      (p, i) =>
-        `M${p.x.toFixed(1)} ${(p.y + 1).toFixed(1)} L${(p.x + (rand() - 0.5) * 3).toFixed(1)} ${farFoot[i * 3].y.toFixed(1)}`,
-    )
-    .join(" ");
-  const wattle = [0.3, 0.55, 0.8]
-    .map((t) =>
-      toPath(
-        far.map((p, i) => ({ x: p.x, y: p.y + (farFoot[i].y - p.y) * t })),
-      ),
-    )
-    .join(" ");
+  // Upright planks shoring the far wall, in two tones so each board reads,
+  // with a heavy stake every few boards holding them back
+  // Planks of every width, some shorter, some leaning, the odd one gone
+  const boards: [string, string] = ["", ""];
+  let stakes = "";
+  const footAt = (x: number) =>
+    farFoot[
+      Math.min(farFoot.length - 1, Math.max(0, Math.round((x - xs[0]) / STEP)))
+    ].y;
+  const lipAt = (x: number) =>
+    far[Math.min(far.length - 1, Math.max(0, Math.round((x - xs[0]) / STEP)))]
+      .y;
+  let sinceStake = 0;
+  for (let x = xs[0]; x < xs[xs.length - 1];) {
+    const w = 7 + rand() * 7;
+    const gap = rand() < 0.08 ? w : 0;
+    if (!gap) {
+      const top = lipAt(x) + 1 + (rand() < 0.15 ? 3 + rand() * 5 : 0);
+      const foot = footAt(x) - (rand() < 0.1 ? 4 : 0);
+      const lean = (rand() - 0.5) * 3;
+      boards[rand() < 0.5 ? 0 : 1] +=
+        `M${x.toFixed(1)} ${top.toFixed(1)} h${w.toFixed(1)} L${(x + w + lean).toFixed(1)} ${foot.toFixed(1)} h${(-w).toFixed(1)} Z `;
+    }
+    sinceStake += w;
+    if (sinceStake > 45 + rand() * 50) {
+      sinceStake = 0;
+      stakes += `M${x.toFixed(1)} ${(lipAt(x) - 3 - rand() * 4).toFixed(1)} L${(x + (rand() - 0.5) * 4).toFixed(1)} ${(footAt(x) + 2).toFixed(1)} `;
+    }
+    x += w + 0.6 + gap;
+  }
+  const wattle = boards[1];
+  const boardsLight = boards[0];
 
   // Behind the far lip
   const heapLumps = ragged(rand, xs.length, 9);
   const farWorks = enemyAbove
-    ? { bags: layBags(far, rand, 2, 7, -4), heap: null }
+    ? { bags: layBags(far, rand, 2, 10, -6), heap: null }
     : {
         bags: [],
         heap: toPath(
@@ -209,7 +299,24 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
     y: p.y + NEAR_SPREAD + Math.abs(bankLumps[i]) * 0.8,
   }));
   const nearBank = toPath([...bankTop, ...[...bankFoot].reverse()], true);
-  const nearBags = enemyAbove ? [] : layBags(near, rand, 2, 6.5, -5);
+  const nearBags = enemyAbove ? [] : layBags(near, rand, 1, 10, -1);
+
+  // Duckboard slats laid across the floor, unevenly spaced, some skewed,
+  // broken, or missing, in two tones of wet wood
+  const slats: [string, string] = ["", ""];
+  for (let x = xs[0]; x < xs[xs.length - 1];) {
+    const w = 4.5 + rand() * 3;
+    if (rand() > 0.07) {
+      const y = centreAt(x) + FLOOR;
+      const broken = rand() < 0.08;
+      const top = y - 12 + (broken ? 5 : 0);
+      const bottom = y + 12 - (rand() < 0.08 ? 6 : 0);
+      const skew = (rand() - 0.5) * 3;
+      slats[rand() < 0.6 ? 0 : 1] +=
+        `M${(x + skew).toFixed(1)} ${top.toFixed(1)} h${w.toFixed(1)} L${(x + w - skew).toFixed(1)} ${bottom.toFixed(1)} h${(-w).toFixed(1)} Z `;
+    }
+    x += w + 1.6 + rand() * 2.4;
+  }
 
   const water: TrenchLine["water"] = [];
   for (let x = -REACH; x < BOARD + REACH; x += 30 + rand() * 90) {
@@ -231,6 +338,8 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
     farWall,
     stakes,
     wattle,
+    boardsLight,
+    slats,
     farWorks,
     nearBank,
     nearBags,
