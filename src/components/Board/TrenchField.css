@@ -11,8 +11,7 @@
   position: absolute;
 }
 
-.trench-field > .wire-cell,
-.trench-field > .fallen {
+.trench-field > .wire-cell {
   width: 12.5%;
   height: 12.5%;
 }
@@ -27,49 +26,6 @@
     scale: 0.3;
     opacity: 0;
   }
-}
-
-/* A helmet left in the mud where its owner fell */
-.fallen svg {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: 52%;
-  height: 40%;
-  overflow: visible;
-  animation: helmet-drop 0.5s ease-out both;
-}
-
-@keyframes helmet-drop {
-  from {
-    translate: 0 -40%;
-    opacity: 0;
-  }
-}
-
-.fallen-mud {
-  fill: rgba(30, 20, 10, 0.55);
-}
-
-.helmet-brim,
-.helmet-dome {
-  stroke: #15120c;
-  stroke-width: 1.6;
-}
-
-.helmet-brim.tommy,
-.helmet-dome.tommy {
-  fill: #6f6a44;
-}
-
-.helmet-dome.fritz {
-  fill: #5d6560;
-}
-
-.helmet-rim {
-  fill: none;
-  stroke: #2f3532;
-  stroke-width: 1.4;
 }
 
 /* Barbed wire on its posts */

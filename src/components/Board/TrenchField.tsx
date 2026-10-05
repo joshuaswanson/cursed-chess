@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Color } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import type { TrenchView } from "../../plugins/trenches";
 import { visualCol, visualRow } from "./boardGeometry";
@@ -44,53 +43,6 @@ function Wire({ sq }: { sq: SquareIndex }) {
   );
 }
 
-/** A soldier's helmet lying where he fell, half sunk in the mud */
-function Helmet({
-  fallen,
-  flipped,
-}: {
-  fallen: TrenchView["fallen"][number];
-  flipped: boolean;
-}) {
-  const style: Style = {
-    ...cellAt(fallen.sq, flipped),
-    "--x": `${20 + scatter(fallen.sq + 3) * 30}%`,
-    "--y": `${28 + scatter(fallen.sq + 9) * 30}%`,
-    rotate: `${fallen.tilt}deg`,
-  };
-  const ours = fallen.color === Color.White;
-  return (
-    <span className="fallen" style={style} aria-hidden>
-      <svg viewBox="0 0 40 30">
-        <ellipse cx="20" cy="22" rx="18" ry="5" className="fallen-mud" />
-        {ours ? (
-          <>
-            <ellipse
-              cx="20"
-              cy="17"
-              rx="17"
-              ry="6"
-              className="helmet-brim tommy"
-            />
-            <path
-              d="M9 17 Q10 4 20 4 Q30 4 31 17 Z"
-              className="helmet-dome tommy"
-            />
-          </>
-        ) : (
-          <>
-            <path
-              d="M5 20 Q4 14 9 13 Q10 3 21 3 Q32 3 32 13 Q37 15 35 20 Z"
-              className="helmet-dome fritz"
-            />
-            <path d="M7 17 Q20 15 34 17" className="helmet-rim" />
-          </>
-        )}
-      </svg>
-    </span>
-  );
-}
-
 /** A flare popping over no man's land, hanging in the rain and lighting it pale */
 function useFlares(): { id: number; x: number; drift: number }[] {
   const [flares, setFlares] = useState<
@@ -121,7 +73,7 @@ function useFlares(): { id: number; x: number; drift: number }[] {
 
 /**
  * What the fighting leaves on the board, between the ground and the pieces:
- * wire strung across no man's land, shell craters, the helmets of the fallen, and flares drifting down over it all
+ * wire strung across no man's land, shell craters, and flares drifting down over it all
  */
 export function TrenchField({
   view,
@@ -151,9 +103,6 @@ export function TrenchField({
           />
         );
       })}
-      {view.fallen.map((f) => (
-        <Helmet key={`f${f.sq}`} fallen={f} flipped={flipped} />
-      ))}
       {view.wire.map((sq) => (
         <span key={`w${sq}`} className="wire-cell" style={cellAt(sq, flipped)}>
           <Wire sq={sq} />

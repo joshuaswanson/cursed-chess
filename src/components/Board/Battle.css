@@ -1012,6 +1012,8 @@
 /* Steel helmets, sat on each piece's head */
 .unit-helmet {
   position: absolute;
+  transform-origin: 50% 70%;
+  rotate: var(--tilt, 0deg);
   z-index: 3;
   left: 50%;
   translate: -50% 0;
@@ -1030,7 +1032,7 @@
   left: 40%;
   top: 6%;
   width: 38%;
-  rotate: -14deg;
+  rotate: calc(-14deg + var(--tilt, 0deg));
 }
 
 .helmet-on-b {

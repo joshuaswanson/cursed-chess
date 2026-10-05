@@ -75,6 +75,8 @@ export const SHELL_FALL_MS = 900;
 const SHELL_HIT = { trench: 0.3, reserve: 0.5, open: 0.8 };
 const SHELL_DAMAGE = 2;
 const BLAST_HIT = { trench: 0.08, reserve: 0.2, open: 0.35 };
+/** The widest a crater grows as shell holes run together, in squares */
+const MAX_CRATER = 1.4;
 /** A shell that lands on the wire sometimes blows a gap in it */
 const WIRE_CUT_CHANCE = 0.35;
 /** Events stay visible to the board for this long */
@@ -869,7 +871,7 @@ export class TrenchesPlugin implements ModePlugin {
     for (const { sq } of landed) {
       if (NO_MANS_LAND.includes(rankOf(sq))) {
         // Shells burst where they fall, not in the middle of a square
-        this.craters.push({
+        this.blastCrater({
           x: fileOf(sq) + rand(0.1, 0.9),
           y: rankOf(sq) + rand(0.1, 0.9),
           r: rand(0.32, 0.62),
@@ -893,6 +895,38 @@ export class TrenchesPlugin implements ModePlugin {
         if (unit.hp <= 0) this.fall(board, s, sq, 0);
       }
     }
+  }
+
+  /**
+   * A new shell hole. Where it breaks into others, the blasts run together
+   * into one bigger crater, opened out to take in all of them.
+   */
+  private blastCrater(fresh: Crater): void {
+    let crater = fresh;
+    let merged = true;
+    while (merged) {
+      merged = false;
+      for (const other of this.craters) {
+        const gap = Math.hypot(other.x - crater.x, other.y - crater.y);
+        if (gap >= other.r + crater.r) continue;
+        // The smallest circle around both, a touch wider for the churned edge
+        const r = Math.min(
+          MAX_CRATER,
+          Math.max(crater.r, other.r, (gap + crater.r + other.r) / 2) * 1.05,
+        );
+        const t = gap > 0 ? (r - crater.r) / gap : 0;
+        crater = {
+          x: crater.x + (other.x - crater.x) * Math.min(1, Math.max(0, t)),
+          y: crater.y + (other.y - crater.y) * Math.min(1, Math.max(0, t)),
+          r,
+          seed: other.seed ^ crater.seed,
+        };
+        this.craters = this.craters.filter((c) => c !== other);
+        merged = true;
+        break;
+      }
+    }
+    this.craters.push(crater);
   }
 
   private relocate(board: Board, from: SquareIndex, to: SquareIndex): void {

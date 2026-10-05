@@ -185,7 +185,13 @@ export function BattleUnit({
           className="unit-img"
           draggable={false}
         />
-        {arms && <Helmet color={piece.color} type={piece.type} />}
+        {arms && (
+          <Helmet
+            color={piece.color}
+            type={piece.type}
+            tilt={helmetTilt(unit.id)}
+          />
+        )}
         {arms === "rifle" && (
           <Rifle
             key={firing?.id ?? "rest"}
@@ -587,12 +593,32 @@ function GunDefs({ scale }: { scale: number }) {
 }
 
 /** A soldier's steel helmet: the flat British one for your army, the German one for theirs */
-function Helmet({ color, type }: { color: Color; type: PieceType }) {
+/** Each man wears his helmet at his own slight angle */
+const helmetTilt = (id: number) => (((id * 7919) % 13) - 6) * 1.4;
+
+/** Pieces with a chin for a strap to go under; rooks, queens, and kings wear theirs with no strap showing */
+const STRAPPED = new Set<PieceType>([
+  PieceType.Pawn,
+  PieceType.Bishop,
+  PieceType.Knight,
+]);
+
+function Helmet({
+  color,
+  type,
+  tilt,
+}: {
+  color: Color;
+  type: PieceType;
+  tilt: number;
+}) {
   const tommy = color === Color.White;
+  const strapped = STRAPPED.has(type);
   return (
     <svg
       className={`unit-helmet helmet-on-${type}`}
       viewBox="0 0 44 26"
+      style={{ "--tilt": `${tilt}deg` } as Style}
       aria-hidden
     >
       <defs>
@@ -628,10 +654,12 @@ function Helmet({ color, type }: { color: Color; type: PieceType }) {
         <>
           {/* Its shadow on the head, and the chin strap hanging down */}
           <ellipse cx="22" cy="20" rx="14" ry="3.2" className="helmet-cast" />
-          <path
-            d="M11 18.6 Q13 23.6 22 24.6 Q31 23.6 33 18.6"
-            className="helmet-strap"
-          />
+          {strapped && (
+            <path
+              d="M14.5 18.4 Q15.5 24 22 25 Q28.5 24 29.5 18.4"
+              className="helmet-strap"
+            />
+          )}
           <ellipse
             cx="22"
             cy="18.6"
@@ -684,10 +712,12 @@ function Helmet({ color, type }: { color: Color; type: PieceType }) {
       ) : (
         <>
           <ellipse cx="22" cy="21.5" rx="14" ry="3" className="helmet-cast" />
-          <path
-            d="M9.6 20 Q12 25 22 25.8 Q32 25 34.4 20"
-            className="helmet-strap"
-          />
+          {strapped && (
+            <path
+              d="M13.6 19.6 Q15 25 22 25.8 Q29 25 30.4 19.6"
+              className="helmet-strap"
+            />
+          )}
           <path
             d="M3.6 22.4 Q4.6 16.2 8.2 13.2 C9.2 4.2 15 1.6 22 1.6 C29 1.6 34.8 4.2 35.8 13.2 Q39.4 16.2 40.4 22.4 Q31 19.8 22 19.9 Q13 19.8 3.6 22.4 Z"
             fill="url(#fritz-dome)"

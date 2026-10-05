@@ -421,12 +421,19 @@ function cratersOff(rows: number[], seed: number) {
     const row = inNoMansLand
       ? rows[Math.floor(rand() * rows.length)]
       : Math.floor(rand() * 8);
-    out.push({
+    const hole = {
       x,
       y: MARGIN + row * SQ + rand() * SQ,
       r: 14 + rand() * (inNoMansLand ? 36 : 22),
       seed: Math.floor(rand() * 1e9),
-    });
+    };
+    // Shell holes never half overlap; where two would, the ground holds one
+    if (
+      out.some((c) => Math.hypot(c.x - hole.x, c.y - hole.y) < c.r + hole.r)
+    ) {
+      continue;
+    }
+    out.push(hole);
   }
   return out;
 }
