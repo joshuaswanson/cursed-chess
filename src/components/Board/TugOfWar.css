@@ -129,14 +129,12 @@
   will-change: transform;
 }
 
-/* The slack rope lies under the rope in play, which fades out over it */
-.tug-coil.coil-lead {
-  z-index: 0;
-}
+/* The pile lies lowest, the slack rope over it, and the rope in play over
+   both, fading out over the slack rope it carries on into */
 
 .tug-coil {
   position: absolute;
-  z-index: 1;
+  z-index: 0;
   left: 50%;
   width: calc(var(--square-size, 72px) * 1.35);
   translate: -50% 0;
