@@ -154,87 +154,90 @@ function blob(cx: number, cy: number, rx: number, ry: number, seed: number) {
   return `${d} Z`;
 }
 
-const MUD_EDGE = blob(200, 65, 190, 58, 11);
-const MUD_WET = blob(200, 66, 120, 32, 23);
+const MUD_LIP = blob(250, 100, 236, 86, 11);
+const MUD_BOWL = blob(250, 104, 196, 66, 23);
+const MUD_PUDDLE = blob(258, 110, 104, 30, 37);
 const MUD_SPLATTER = (() => {
   const rand = seeded(5);
-  return Array.from({ length: 26 }, () => {
+  return Array.from({ length: 14 }, () => {
     const a = rand() * Math.PI * 2;
-    const reach = 1.02 + rand() * 0.22;
+    const reach = 1.04 + rand() * 0.16;
     return {
-      x: 200 + Math.cos(a) * 192 * reach,
-      y: 65 + Math.sin(a) * 60 * reach,
-      r: 1.5 + rand() * 4,
+      x: 250 + Math.cos(a) * 236 * reach,
+      y: 100 + Math.sin(a) * 86 * reach,
+      r: 2 + rand() * 4,
     };
   });
 })();
+const MUD_CLODS = [
+  { x: 120, y: 92, r: 9 },
+  { x: 372, y: 124, r: 7 },
+  { x: 330, y: 70, r: 5 },
+];
 
 /**
- * A churned mud pit where the halves meet: grainy dry mud at the edges, a
- * wet glossy middle, ruts where feet have skidded, and splatter flung out
+ * A pit of mud sunk into the arena where the halves meet: a raised lip of
+ * drier mud lit along its top, a dark wet bowl, and a puddle in the middle
+ * reflecting the sky
  */
 function MudPit() {
   return (
-    <svg
-      className="tug-mud"
-      viewBox="0 0 400 130"
-      preserveAspectRatio="none"
-      aria-hidden
-    >
+    <svg className="tug-mud" viewBox="0 0 500 200" aria-hidden>
       <defs>
-        <filter id="mud-grain" x="0" y="0" width="100%" height="100%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.09 0.25"
-            numOctaves="3"
-            seed="4"
-          />
-          <feColorMatrix values="0 0 0 0 0.16 0 0 0 0 0.09 0 0 0 0 0.03 0 0 0 1.4 -0.55" />
-          <feComposite in2="SourceGraphic" operator="in" />
-        </filter>
-        <radialGradient id="mud-body" cx="0.5" cy="0.5" r="0.55">
-          <stop offset="0" stopColor="#5a3818" />
-          <stop offset="0.7" stopColor="#74502a" />
-          <stop offset="1" stopColor="#8d6a3e" />
-        </radialGradient>
-        <radialGradient id="mud-wet" cx="0.45" cy="0.4" r="0.6">
-          <stop offset="0" stopColor="#3a220c" />
-          <stop offset="1" stopColor="#4d2f12" />
-        </radialGradient>
+        <linearGradient id="mud-lip" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#a17a48" />
+          <stop offset="1" stopColor="#7a5530" />
+        </linearGradient>
+        <linearGradient id="mud-bowl" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#3e2510" />
+          <stop offset="0.45" stopColor="#5a3818" />
+          <stop offset="1" stopColor="#6b4422" />
+        </linearGradient>
+        <linearGradient id="mud-puddle" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#6f7f7a" />
+          <stop offset="1" stopColor="#3e3a2a" />
+        </linearGradient>
       </defs>
-      {MUD_SPLATTER.map((s, i) => (
-        <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#6a4622" />
+      {MUD_SPLATTER.map((d, i) => (
+        <circle key={i} cx={d.x} cy={d.y} r={d.r} fill="#7a5530" />
       ))}
-      <path d={MUD_EDGE} fill="url(#mud-body)" />
-      <path d={MUD_EDGE} fill="#000" filter="url(#mud-grain)" />
-      <path d={MUD_WET} fill="url(#mud-wet)" />
-      {/* Ruts dragged through the mud by skidding feet */}
-      <g
-        fill="none"
-        stroke="#2e1a08"
-        strokeLinecap="round"
+      <path d={MUD_LIP} fill="url(#mud-lip)" stroke="#4a2c12" strokeWidth="3" />
+      <path d={MUD_BOWL} fill="url(#mud-bowl)" />
+      <path d={MUD_PUDDLE} fill="url(#mud-puddle)" />
+      <ellipse className="mud-ripple" cx="240" cy="108" rx="30" ry="8" />
+      <path
+        d="M196 100 Q240 92 290 98"
+        stroke="#cfe6ee"
         strokeOpacity="0.55"
-      >
-        <path d="M70 52 C110 46 150 50 175 58" strokeWidth="5" />
-        <path d="M80 80 C120 88 160 84 182 74" strokeWidth="4" />
-        <path d="M330 48 C290 44 255 50 228 60" strokeWidth="5" />
-        <path d="M318 84 C285 92 250 86 222 74" strokeWidth="4" />
-      </g>
-      <g fill="none" stroke="#a3804f" strokeLinecap="round" strokeOpacity="0.5">
-        <path d="M72 49 C112 43 150 47 175 55" strokeWidth="1.5" />
-        <path d="M330 45 C290 41 255 47 228 57" strokeWidth="1.5" />
-      </g>
-      {/* The wet middle catches the light */}
-      <ellipse cx="176" cy="54" rx="44" ry="7" fill="#fff" fillOpacity="0.16" />
-      <ellipse cx="236" cy="72" rx="26" ry="4" fill="#fff" fillOpacity="0.12" />
-      <ellipse
-        cx="160"
-        cy="52"
-        rx="14"
-        ry="2.6"
-        fill="#fff"
-        fillOpacity="0.32"
+        strokeWidth="4"
+        strokeLinecap="round"
+        fill="none"
       />
+      {MUD_CLODS.map((c, i) => (
+        <g key={i}>
+          <circle
+            cx={c.x}
+            cy={c.y + 2}
+            r={c.r}
+            fill="#2e1a08"
+            fillOpacity="0.5"
+          />
+          <circle
+            cx={c.x}
+            cy={c.y}
+            r={c.r}
+            fill="#7a5530"
+            stroke="#3e2510"
+            strokeWidth="1.5"
+          />
+          <circle
+            cx={c.x - c.r * 0.3}
+            cy={c.y - c.r * 0.35}
+            r={c.r * 0.35}
+            fill="#b08a58"
+          />
+        </g>
+      ))}
     </svg>
   );
 }

@@ -20,13 +20,32 @@
 /* A churned-up mud pit where the two halves meet */
 .tug-mud {
   position: absolute;
-  left: 22%;
-  right: 22%;
-  top: 41%;
-  bottom: 41%;
-  width: 56%;
-  height: 18%;
+  left: 18.75%;
+  top: 37.5%;
+  width: 62.5%;
+  height: 25%;
   overflow: visible;
+}
+
+/* A slow ripple spreading across the puddle */
+.mud-ripple {
+  fill: none;
+  stroke: #cfe6ee;
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: mud-ripple 3.2s ease-out infinite;
+}
+
+@keyframes mud-ripple {
+  from {
+    scale: 0.3;
+    opacity: 0.7;
+  }
+  to {
+    scale: 1.6;
+    opacity: 0;
+  }
 }
 
 .tug-center-line {
