@@ -224,6 +224,8 @@ export interface GameStore {
   introDone: boolean;
   /** Pieces are falling after gravity shifted, so nobody may move */
   gravityFalling: boolean;
+  /** The last side to miss a turn because none of its pieces could move */
+  skippedTurn: { id: number; color: Color } | null;
   /** A piece is on its way through a portal, so the clock waits for it to arrive */
   portalTravelling: boolean;
   siteTab: SiteTab;
@@ -414,7 +416,53 @@ function passTurnWithoutMoving(endDelayMs: number): void {
       pluginManager.getWinner() ??
       (status === GameStatus.Checkmate ? mover : null);
     endGameSoon(winner, endDelayMs);
+    return;
   }
+  skipStuckTurn();
+}
+
+/** A beat before a side with nothing to move is passed over, so the last move lands first */
+const SKIP_DELAY_MS = 700;
+
+/** Whether the side to move has any move at all, by the mode's rules */
+function canMove(state: GameStore): boolean {
+  const { game } = state;
+  return ALL_SQUARES.some(
+    (sq) =>
+      game.board.get(sq)?.color === game.turn &&
+      state.legalMovesFrom(sq).length > 0,
+  );
+}
+
+/**
+ * With the kings off the board there is no stalemate: a side that cannot move
+ * misses its turn, and the players are told. Only if neither side can move is
+ * the game a draw.
+ */
+function skipStuckTurn(): void {
+  const state = useGameStore.getState();
+  const { game, status, pluginManager } = state;
+  if (isGameOver(status) || pluginManager.isAutonomous()) return;
+  if (game.board.findKing(game.turn) !== null || canMove(state)) return;
+  const stuck = game.turn;
+  schedule(() => {
+    const now = useGameStore.getState();
+    if (now.game.turn !== stuck || isGameOver(now.status) || canMove(now)) {
+      return;
+    }
+    now.game.turn = opponent(stuck);
+    const otherCanMove = canMove(useGameStore.getState());
+    now.game.turn = stuck;
+    if (!otherCanMove) {
+      useGameStore.setState({ status: GameStatus.Stalemate });
+      endGameSoon(null);
+      return;
+    }
+    useGameStore.setState((s) => ({
+      skippedTurn: { id: (s.skippedTurn?.id ?? 0) + 1, color: stuck },
+    }));
+    passTurnWithoutMoving(GAME_END_DELAY_MS);
+  }, SKIP_DELAY_MS);
 }
 
 /** Alternates two lists, so both sides' reinforcements arrive together */
@@ -485,6 +533,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   autonomousTick: 0,
   introDone: true,
   gravityFalling: false,
+  skippedTurn: null,
   portalTravelling: false,
   siteTab: "Play",
   setSiteTab: (tab) => set({ siteTab: tab }),
@@ -730,6 +779,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (isNormalChess && game.history.length === NORMAL_CHESS_PLIES) {
       startCursedIntro();
     }
+    skipStuckTurn();
   },
 
   kick: (target) => {
@@ -886,6 +936,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       .filter((m) => !m.promotion || m.promotion === PieceType.Queen);
 
     // Mode rules can remove every move the engine allows
+    if (moves.length === 0 && game.board.findKing(game.turn) === null) {
+      skipStuckTurn();
+      return;
+    }
     if (moves.length === 0) {
       const status = game.isInCheck()
         ? GameStatus.Checkmate
@@ -1106,6 +1160,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       arrivalStyle: Math.random() < 0.5 ? "parachute" : "sprint",
       introDone: false,
       gravityFalling: false,
+      skippedTurn: null,
       portalTravelling: false,
       pluginManager: freshPluginManager(nextGame, mode.create()),
       turn: nextGame.turn,

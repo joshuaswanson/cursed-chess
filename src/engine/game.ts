@@ -389,6 +389,8 @@ export class Game {
     const inCheck = this.isInCheck();
 
     if (legalMoves.length === 0) {
+      // With no king to protect, a side that cannot move just misses its turn
+      if (this.board.findKing(this.turn) === null) return GameStatus.Active;
       return inCheck ? GameStatus.Checkmate : GameStatus.Stalemate;
     }
 

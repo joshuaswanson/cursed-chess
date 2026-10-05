@@ -143,6 +143,7 @@ export function Board() {
     kick,
     reinforcements,
     sidelineKings,
+    skippedTurn,
     sidelineBench,
     arrivalStyle,
     introDone,
@@ -683,6 +684,20 @@ export function Board() {
               flipped={flipped}
               squareSize={squareSize}
             />
+          )}
+          {skippedTurn && (
+            <div
+              key={skippedTurn.id}
+              className="reinforce-banner skip-banner"
+              role="status"
+            >
+              <span className="reinforce-title">No moves!</span>
+              <span className="reinforce-sub">
+                {skippedTurn.color === Color.White
+                  ? "None of your pieces can move, so your turn is skipped."
+                  : "The foe has nothing that can move. Your turn again!"}
+              </span>
+            </div>
           )}
           {reinforcements.length > 0 && (
             <ReinforcementBanner
