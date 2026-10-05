@@ -22,9 +22,9 @@ function Sandbags({ bags }: { bags: Sandbag[] }) {
             <path
               d={body}
               className="sandbag"
-              style={{ filter: `brightness(${0.82 + b.tone * 0.3})` }}
+              style={{ filter: `brightness(${0.75 + b.tone * 0.35})` }}
             />
-            <path d={body} className="sandbag-weave" />
+            <path d={body} className="sandbag-shade" />
             <path
               d={`M${-w * 0.7} ${-h * 0.15} Q0 ${h * 0.1} ${w * 0.7} ${-h * 0.15}`}
               className="sandbag-seam"
@@ -39,6 +39,30 @@ function Sandbags({ bags }: { bags: Sandbag[] }) {
     </>
   );
 }
+
+/** A photographic texture from the front, tiled across whatever it fills, at a size in the drawing's units */
+function PhotoPattern({
+  id,
+  file,
+  size,
+}: {
+  id: string;
+  file: string;
+  size: number;
+}) {
+  return (
+    <pattern id={id} width={size} height={size} patternUnits="userSpaceOnUse">
+      <image
+        href={`${TEXTURES}${file}.jpg`}
+        width={size}
+        height={size}
+        preserveAspectRatio="none"
+      />
+    </pattern>
+  );
+}
+
+const TEXTURES = `${import.meta.env.BASE_URL}textures/trenches/`;
 
 /** The turned-earth texture and the shell hole shading the front is drawn with */
 function EarthDefs() {
@@ -102,6 +126,16 @@ function EarthDefs() {
       <filter id="wt-soft" x="-5%" y="-50%" width="110%" height="200%">
         <feGaussianBlur stdDeviation="5" />
       </filter>
+      <PhotoPattern id="tx-mud" file="mud" size={240} />
+      <PhotoPattern id="tx-soil" file="soil" size={180} />
+      <PhotoPattern id="tx-planks" file="planks" size={110} />
+      <PhotoPattern id="tx-duck" file="duckboards" size={90} />
+      <PhotoPattern id="tx-hessian" file="hessian" size={22} />
+      <radialGradient id="wt-shade" cx="0.45" cy="0.3" r="0.75">
+        <stop offset="0" stopColor="#fff" stopOpacity="0.18" />
+        <stop offset="0.55" stopColor="#000" stopOpacity="0" />
+        <stop offset="1" stopColor="#000" stopOpacity="0.55" />
+      </radialGradient>
       <radialGradient id="wt-crater">
         <stop offset="0" stopColor="#3a3f3e" />
         <stop offset="0.45" stopColor="#2c2a24" />

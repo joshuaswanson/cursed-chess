@@ -1016,8 +1016,10 @@
   position: absolute;
   /* A little past the screen's edges, so a shake never shows what is behind */
   inset: -16px;
-  background-color: #4a3b2a;
-  background-size: 420px 420px;
+  background-color: #3e3a33;
+  background-size: 300px 300px;
+  /* Cold and washed out, under a sky that lets little light through */
+  filter: saturate(0.7) brightness(0.85) contrast(1.05);
 }
 
 /* Darker toward the edges, under a sky that lets little light through */

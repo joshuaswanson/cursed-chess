@@ -19,8 +19,8 @@
 
 /* Turned earth, clods and all */
 .earth-texture {
-  fill: url(#wt-earth);
-  opacity: 0.6;
+  fill: url(#tx-soil);
+  opacity: 0.85;
   mix-blend-mode: multiply;
 }
 
@@ -30,19 +30,21 @@
 
 /* The spoil thrown up behind a trench */
 .spoil {
-  fill: #5a4834;
+  fill: url(#tx-soil);
   stroke: #2a1f13;
   stroke-width: 1.5;
 }
 
 /* The cut: a dark wet floor */
 .trench-cut {
-  fill: #20170e;
+  fill: url(#tx-mud);
+  filter: brightness(0.45);
 }
 
 /* The far wall, lit from the front, shored with stakes and woven wattle */
 .far-wall {
-  fill: #6a5135;
+  fill: url(#tx-soil);
+  filter: brightness(0.7);
 }
 
 .trench-lip {
@@ -114,7 +116,7 @@
 
 /* Upright planks shoring the far wall */
 .planks {
-  fill: url(#wt-plank);
+  fill: url(#tx-planks);
   stroke: #24180c;
   stroke-width: 1;
 }
@@ -131,15 +133,15 @@
 }
 
 .sandbag {
-  fill: url(#wt-burlap);
+  fill: url(#tx-hessian);
   stroke: #2a2014;
   stroke-width: 1.4;
   stroke-linejoin: round;
 }
 
-.sandbag-weave {
-  fill: url(#wt-weave);
-  opacity: 0.35;
+/* Each bag rounded by the light: lit on top, in shadow underneath */
+.sandbag-shade {
+  fill: url(#wt-shade);
 }
 
 .sandbag-seam {
@@ -156,13 +158,13 @@
 }
 
 .slats {
-  fill: #7c5c37;
+  fill: url(#tx-duck);
   stroke: #24180c;
   stroke-width: 0.9;
 }
 
 .slats-dark {
-  fill: #5e4428;
+  filter: brightness(0.75);
 }
 
 /* Shadow pooled along the foot of both walls, where the light cannot reach */
@@ -189,4 +191,9 @@
   stroke-width: 9;
   stroke-linejoin: round;
   filter: drop-shadow(0 -3px 2px rgba(0, 0, 0, 0.6));
+}
+
+/* A grim, cold grade over the whole front: washed out, dark, wet */
+.world-trenches {
+  filter: saturate(0.7) brightness(0.92) contrast(1.05);
 }

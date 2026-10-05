@@ -1,0 +1,8 @@
+Textures from Poly Haven (https://polyhaven.com), released under CC0.
+
+mud.jpg           brown_mud_02
+soil.jpg          excavated_soil_wall
+planks.jpg        weathered_planks
+duckboards.jpg    weathered_brown_planks
+hessian.jpg       hessian_230
+helmet_metal.jpg  green_metal_rust

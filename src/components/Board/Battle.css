@@ -620,13 +620,13 @@
 /* A rifle held at the ready from the shoulder, turned toward wherever it points */
 .unit-rifle {
   position: absolute;
-  left: calc(var(--grip-x) - 104% * 0.14);
-  top: calc(var(--grip-y) - 11%);
-  width: 104%;
-  height: 22%;
+  left: calc(var(--grip-x) - 80% * 0.2);
+  top: calc(var(--grip-y) - 12.5%);
+  width: 80%;
+  height: 25%;
   z-index: 2;
   overflow: visible;
-  transform-origin: 14% 50%;
+  transform-origin: 20% 50%;
   rotate: var(--rest);
   filter: drop-shadow(0.03em 0.05em 0 rgba(10, 8, 4, 0.5));
 }
@@ -1224,4 +1224,11 @@
   border-radius: 2px;
   background: #3a2f22;
   color: #e6dfcc;
+}
+
+/* Painted steel, scuffed and rusting, its grain laid over the helmet's own colour */
+.unit-helmet .helmet-steel {
+  fill: url(#helmet-steel);
+  mix-blend-mode: luminosity;
+  opacity: 0.75;
 }

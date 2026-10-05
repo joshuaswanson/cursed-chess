@@ -237,47 +237,52 @@ function Rifle({
   return (
     <svg
       className={`unit-rifle${aim === null ? "" : thrust ? " thrusting" : " firing"}`}
-      viewBox="0 0 100 18"
+      viewBox="0 0 72 22"
       style={style}
       aria-hidden
     >
-      <path d="M22 11.5 Q46 17 70 11" className="rifle-sling" />
+      <path d="M16 15 Q32 22 50 14" className="rifle-sling" />
       <path
-        d="M0 6.2 L20 4.6 L29 6.6 L37 7.2 L37 10 L30 10.2 L22 11.6 L1.5 12.6 Z"
+        d="M1 7 Q1 4 4 4 L15 4.5 L22 7.5 L28 8 L28 13.5 L22 14 L15 16.5 L4 17.5 Q1 17.5 1 14.5 Z"
         className="rifle-wood"
       />
-      <path d="M3 8.8 L20 7.6" className="rifle-grain" />
+      <path d="M4 9 Q10 8 16 9 M4 13 Q10 12.5 15 13" className="rifle-grain" />
       <rect
-        x="36.5"
-        y="6.1"
-        width="14"
-        height="4.2"
-        rx="0.8"
+        x="27"
+        y="7"
+        width="12"
+        height="7.5"
+        rx="1.6"
         className="rifle-steel"
       />
-      <path d="M44 10.3 L42.5 13.2" className="rifle-bolt" />
-      <circle cx="42.3" cy="13.6" r="1.3" className="rifle-steel" />
+      <path d="M33.5 14.5 L32 18.5" className="rifle-bolt" />
+      <circle cx="31.6" cy="19" r="2" className="rifle-steel" />
+      <path d="M38 7.6 L58 8.4 L58 13.2 L38 14 Z" className="rifle-wood" />
+      <rect
+        x="57"
+        y="9.2"
+        width="10"
+        height="3.4"
+        rx="1.2"
+        className="rifle-steel"
+      />
       <rect
         x="45"
-        y="10"
-        width="5"
-        height="3.4"
+        y="7.3"
+        width="2.4"
+        height="7"
         rx="0.6"
-        className="rifle-steel"
+        className="rifle-band"
       />
-      <path d="M50 6.5 L83 7 L83 9.6 L50 10.2 Z" className="rifle-wood" />
       <rect
-        x="82"
-        y="7.4"
-        width="17"
-        height="1.8"
+        x="54"
+        y="7.8"
+        width="2.4"
+        height="6"
         rx="0.6"
-        className="rifle-steel"
+        className="rifle-band"
       />
-      <rect x="62" y="6.3" width="1.6" height="4.2" className="rifle-band" />
-      <rect x="77" y="6.6" width="1.6" height="3.6" className="rifle-band" />
-      <rect x="96" y="6.2" width="1.4" height="1.6" className="rifle-steel" />
-      <path d="M95 9.6 L116 8.4 L95 7.4 Z" className="rifle-blade" />
+      <path d="M65 9.6 L72 10.9 L65 12.2 Z" className="rifle-blade" />
     </svg>
   );
 }
@@ -286,7 +291,7 @@ function Rifle({
 const MG_PIVOT_AHEAD = 0.12;
 const MG_REACH = 0.62;
 /** How far from a rifleman's middle his muzzle sits, in squares */
-const RIFLE_REACH = 0.6;
+const RIFLE_REACH = 0.55;
 
 /** Which way is toward the enemy for a side, on screen: up the board for the side at the bottom */
 function towardEnemy(color: Color, flipped: boolean): { x: number; y: number } {
@@ -547,6 +552,19 @@ function Helmet({ color, type }: { color: Color; type: PieceType }) {
           <stop offset="0" stopColor="#837e54" />
           <stop offset="1" stopColor="#4e4b30" />
         </linearGradient>
+        <pattern
+          id="helmet-steel"
+          width="44"
+          height="26"
+          patternUnits="userSpaceOnUse"
+        >
+          <image
+            href={`${import.meta.env.BASE_URL}textures/trenches/helmet_metal.jpg`}
+            width="44"
+            height="44"
+            preserveAspectRatio="none"
+          />
+        </pattern>
         <linearGradient id="stahl-dome" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#8b9590" />
           <stop offset="0.55" stopColor="#5b6560" />
@@ -575,6 +593,17 @@ function Helmet({ color, type }: { color: Color; type: PieceType }) {
             fill="url(#brodie-dome)"
             className="helmet-edge"
           />
+          <path
+            d="M10 17 C10.5 6 15 3.5 22 3.5 C29 3.5 33.5 6 34 17 Z"
+            className="helmet-steel"
+          />
+          <ellipse
+            cx="22"
+            cy="17"
+            rx="20.5"
+            ry="4.4"
+            className="helmet-steel"
+          />
           <path d="M3.5 16.4 Q22 13 40.5 16.4" className="helmet-glint" />
           <circle cx="22" cy="4.4" r="1.1" className="helmet-rivet" />
           <path d="M14 10 Q16.5 6 22 5.8" className="helmet-shine" />
@@ -585,6 +614,10 @@ function Helmet({ color, type }: { color: Color; type: PieceType }) {
             d="M4 21 C3 16 6 14.2 9 13.6 C10 4.8 15 2 23 2 C31 2 35.6 5 36.6 12.2 L40.4 13.8 C41.4 15.2 40.8 17.2 39.2 17.6 C30 15.6 20 16 12.6 18 C9.4 19 6.2 21.4 4 21 Z"
             fill="url(#stahl-dome)"
             className="helmet-edge"
+          />
+          <path
+            d="M4 21 C3 16 6 14.2 9 13.6 C10 4.8 15 2 23 2 C31 2 35.6 5 36.6 12.2 L40.4 13.8 C41.4 15.2 40.8 17.2 39.2 17.6 C30 15.6 20 16 12.6 18 C9.4 19 6.2 21.4 4 21 Z"
+            className="helmet-steel"
           />
           <path d="M8.5 16.4 Q24 13.2 38.8 15.6" className="helmet-rim" />
           <circle cx="13.5" cy="10.8" r="1.7" className="helmet-lug" />
