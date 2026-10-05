@@ -17,7 +17,7 @@ interface Hum {
 let hum: Hum | null = null;
 
 /** The audio context, created on first use and resumed after the user interacts */
-function audio(): { ctx: AudioContext; out: GainNode } | null {
+export function audio(): { ctx: AudioContext; out: GainNode } | null {
   if (!enabled) return null;
   if (!ctx || !master) {
     ctx = new AudioContext();
@@ -43,7 +43,7 @@ function noise(c: AudioContext): AudioBuffer {
   return noiseBuffer;
 }
 
-function noiseSource(c: AudioContext): AudioBufferSourceNode {
+export function noiseSource(c: AudioContext): AudioBufferSourceNode {
   const src = c.createBufferSource();
   src.buffer = noise(c);
   src.loop = true;

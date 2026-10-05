@@ -20,6 +20,7 @@ import {
 } from "./components/BoringSite/BoringSite";
 import { useGameStore } from "./stores/gameStore";
 import { useGameLoop } from "./hooks/useGameLoop";
+import { music } from "./audio/music";
 import { useTheme } from "./theme/useTheme";
 import { themeVars } from "./theme/themes";
 import "./styles/global.css";
@@ -37,6 +38,11 @@ function App() {
 
   useEffect(() => {
     document.title = cursed ? "CURSED CHESS" : "Totally Normal Chess";
+  }, [cursed]);
+
+  // The soundtrack kicks in once the curse takes hold
+  useEffect(() => {
+    music.set(cursed);
   }, [cursed]);
 
   // Dev mode is available everywhere, including the plain site before the curse
