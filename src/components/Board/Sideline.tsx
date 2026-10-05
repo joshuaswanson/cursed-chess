@@ -125,7 +125,7 @@ export function Sideline({
   flipped,
   squareSize,
 }: {
-  /** FIFA's kings stay to coach; elsewhere they walk off and are gone */
+  /** FIFA's kings coach from the touchline; elsewhere they stand beside the board and watch */
   coaching: boolean;
   coaches: BenchedKing[];
   bench: BenchedPlayer[];
@@ -182,7 +182,16 @@ export function Sideline({
   return (
     <div ref={ref} className="sideline" aria-hidden>
       {coaches.map(({ sq, piece, delayMs }) => {
-        const spot = spotAt(half(piece.color), 0, coachRow);
+        // FIFA's coaches take their place on the touchline; elsewhere a king
+        // just walks straight off the side of the board along its own row
+        const spot =
+          coaching || sq === null
+            ? spotAt(half(piece.color), 0, coachRow)
+            : {
+                x: Math.max(-room, -gap - cell),
+                y:
+                  visualRow(sq, flipped) * squareSize + (squareSize - cell) / 2,
+              };
         // A king already off the board from the mode before is just there
         const style: Style = {
           ...place(spot),
@@ -195,7 +204,7 @@ export function Sideline({
         return (
           <div
             key={piece.color}
-            className={`sideline-member sideline-coach${coaching ? "" : " leaving"}`}
+            className="sideline-member sideline-coach"
             style={style}
           >
             <div

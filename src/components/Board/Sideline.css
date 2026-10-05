@@ -85,19 +85,6 @@
   }
 }
 
-/* A king who is not coaching keeps walking and is gone */
-.sideline-coach.leaving {
-  animation:
-    sideline-walk var(--dur) var(--delay) both,
-    sideline-leave 0.5s calc(var(--delay) + var(--dur) - 300ms) ease-in forwards;
-}
-
-@keyframes sideline-leave {
-  to {
-    opacity: 0;
-  }
-}
-
 /* Pacing up and down the touchline while play goes on */
 @keyframes sideline-pace {
   from {
