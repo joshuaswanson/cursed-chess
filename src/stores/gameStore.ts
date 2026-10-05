@@ -60,6 +60,8 @@ const MODE_CARD_MS = 4200;
 const INTRO_HOLD_MS = 4700;
 /** Lets the final move animate before the result banner covers the board */
 const GAME_END_DELAY_MS = 600;
+/** Long enough for a piece to go through a portal and land before the result shows */
+const PORTAL_END_DELAY_MS = 2400;
 /** A goal gets its celebration before the result banner */
 const GOAL_CELEBRATION_MS = 3600;
 const RESULT_MS = 2500;
@@ -725,12 +727,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }));
     }
 
-    if (processedMove.captured?.type === PieceType.King) {
-      set({ ...moveState, lastPortalMove: null, status: GameStatus.Checkmate });
-      endGameSoon(mover);
-      return;
-    }
-
     // Trace before turn end, which may move the portals
     const lastPortalMove = isPortalMove
       ? (pluginManager
@@ -743,6 +739,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
             !!processedMove.captured,
           ) ?? null)
       : null;
+
+    // A finishing move through a portal plays out before the result comes up
+    const endDelay = isPortalMove ? PORTAL_END_DELAY_MS : GAME_END_DELAY_MS;
+
+    if (processedMove.captured?.type === PieceType.King) {
+      set({ ...moveState, lastPortalMove, status: GameStatus.Checkmate });
+      endGameSoon(mover, endDelay);
+      return;
+    }
 
     pluginManager.invokeOnAfterMove(processedMove);
     pluginManager.invokeOnTurnEnd(mover);
@@ -776,7 +781,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const winner =
         pluginManager.getWinner() ??
         (status === GameStatus.Checkmate ? opponent(game.turn) : null);
-      endGameSoon(winner);
+      endGameSoon(winner, endDelay);
       return;
     }
 

@@ -1,4 +1,5 @@
-import { Color, PieceType, MoveFlag } from "../engine/types";
+import { Color, GameStatus, PieceType, MoveFlag } from "../engine/types";
+import type { Board } from "../engine/board";
 import type { Move, Piece, SquareIndex } from "../engine/types";
 import type {
   ModePlugin,
@@ -206,6 +207,96 @@ export class PortalChessPlugin implements ModePlugin {
           ? this.portalRedirects.get(`${m.from}-${m.to}`)
           : m;
       return landing !== undefined && this.keepsKingSafe(ctx, landing, color);
+    });
+  }
+
+  /**
+   * The engine only sees straight-line attacks, so a king threatened through a
+   * portal is put in check here, and in checkmate if no move gets it clear
+   */
+  modifyGameStatus(ctx: PluginContext, status: GameStatus): GameStatus {
+    if (this.portals.length === 0) return status;
+    if (status !== GameStatus.Active && status !== GameStatus.Check) {
+      return status;
+    }
+    const color = ctx.game.turn;
+    if (!this.kingCapturable(ctx.board, color)) return status;
+    return this.canEscape(ctx, color) ? GameStatus.Check : GameStatus.Checkmate;
+  }
+
+  /** Whether the foe could take this side's king next move, straight or through a portal */
+  private kingCapturable(board: Board, color: Color): boolean {
+    const kingSq = board.findKing(color);
+    if (kingSq === null) return false;
+    const foe = opponent(color);
+    if (isSquareAttacked(board, kingSq, foe)) return true;
+    for (const sq of ALL_SQUARES) {
+      const piece = board.get(sq);
+      if (!piece || piece.color !== foe) continue;
+      if (piece.type === PieceType.King) {
+        if (this.kingReachesThroughPortal(board, sq, kingSq)) return true;
+        continue;
+      }
+      for (const dir of SLIDING_DIRECTIONS[piece.type] ?? []) {
+        if (this.slideHitsThroughPortal(board, sq, dir) === kingSq) return true;
+      }
+    }
+    return false;
+  }
+
+  /** The first piece a slider meets after passing through a portal along a line, if any */
+  private slideHitsThroughPortal(
+    board: Board,
+    from: SquareIndex,
+    dir: number,
+  ): SquareIndex | null {
+    let sq = from + dir;
+    while (isValidSquare(sq) && !board.get(sq)) {
+      const exit = this.getPortalExit(sq);
+      if (exit !== null) {
+        if (board.get(exit)) return null;
+        let beyond = exit + dir;
+        while (isValidSquare(beyond) && !board.get(beyond)) beyond += dir;
+        return isValidSquare(beyond) ? beyond : null;
+      }
+      sq += dir;
+    }
+    return null;
+  }
+
+  /** Whether a king stepping into a neighboring portal would come out onto `target` */
+  private kingReachesThroughPortal(
+    board: Board,
+    from: SquareIndex,
+    target: SquareIndex,
+  ): boolean {
+    for (const step of QUEEN_DIRECTIONS) {
+      const exit = this.getPortalExit(from + step);
+      if (exit === null || board.get(exit)) continue;
+      if (exit + step === target) return true;
+    }
+    return false;
+  }
+
+  /** Whether any of this side's moves leaves its king safe from straight and portal attacks */
+  private canEscape(ctx: PluginContext, color: Color): boolean {
+    const saved = new Map(this.portalRedirects);
+    const moves = this.modifyLegalMoves(ctx, ctx.game.getLegalMoves(), color);
+    const redirects = new Map(this.portalRedirects);
+    this.portalRedirects = saved;
+    return moves.some((move) => {
+      const landing =
+        this.getPortalEntrance(move.to) !== null
+          ? redirects.get(`${move.from}-${move.to}`)
+          : move;
+      if (!landing) return false;
+      const clone = ctx.board.clone();
+      clone.remove(landing.from);
+      clone.put(
+        landing.to,
+        landing.promotion ? { type: landing.promotion, color } : landing.piece,
+      );
+      return !this.kingCapturable(clone, color);
     });
   }
 
