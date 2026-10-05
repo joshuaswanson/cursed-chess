@@ -89,6 +89,8 @@ export function useTugStruggle(
 
       const s = board.style;
       s.setProperty("--rope-shift", `${shift.toFixed(2)}px`);
+      // From -1, hauled fully up the screen, to 1, hauled fully down it
+      s.setProperty("--rope-pull", (shift / SHIFT_PX).toFixed(3));
       s.setProperty("--rope-thin", (1 - 0.42 * tension).toFixed(3));
       s.setProperty("--rope-long", (1 + 0.04 * tension).toFixed(3));
       s.setProperty(
@@ -108,6 +110,7 @@ export function useTugStruggle(
       cancelAnimationFrame(frame);
       for (const name of [
         "--rope-shift",
+        "--rope-pull",
         "--rope-thin",
         "--rope-long",
         "--lean-white",

@@ -86,11 +86,37 @@ function coilLobes() {
 }
 
 const COIL_LOBES = coilLobes();
+/** The rope dropping into the pile, before it starts to loop */
+const COIL_LEAD = COIL_LOBES.filter((lobe) => lobe.y < 7);
+const COIL_LOOPS = COIL_LOBES.filter((lobe) => lobe.y >= 7);
 
 /** A loose coil of rope, made of the same twisted strands as the rope it ends */
 function Coil({ end }: { end: "top" | "bottom" }) {
   const rx = COIL_ROPE * 0.53;
   const ry = COIL_ROPE * 0.31;
+  const strand = (lobe: (typeof COIL_LOBES)[number], i: number) => (
+    <g
+      key={i}
+      transform={`translate(${lobe.x.toFixed(2)} ${lobe.y.toFixed(2)}) rotate(${lobe.angle.toFixed(1)})`}
+    >
+      <ellipse
+        rx={rx}
+        ry={ry}
+        fill={lobe.tone}
+        stroke="#4a2c12"
+        strokeWidth="0.75"
+      />
+      <ellipse rx={rx} ry={ry} fill={`url(#coil-hl-${end})`} />
+      <ellipse rx={rx} ry={ry} fill="#1a0e04" fillOpacity={lobe.shade} />
+      <path
+        d={`M${-rx * 0.6} ${-ry * 0.1} Q0 ${-ry * 0.45} ${rx * 0.6} ${-ry * 0.1}`}
+        fill="none"
+        stroke="#f3dcae"
+        strokeWidth="0.45"
+        strokeOpacity="0.75"
+      />
+    </g>
+  );
   return (
     <svg className={`tug-coil coil-${end}`} viewBox="0 -12 100 72" aria-hidden>
       <defs>
@@ -100,29 +126,9 @@ function Coil({ end }: { end: "top" | "bottom" }) {
           <stop offset="1" stopColor="#000" stopOpacity="0.35" />
         </linearGradient>
       </defs>
-      {COIL_LOBES.map((lobe, i) => (
-        <g
-          key={i}
-          transform={`translate(${lobe.x.toFixed(2)} ${lobe.y.toFixed(2)}) rotate(${lobe.angle.toFixed(1)})`}
-        >
-          <ellipse
-            rx={rx}
-            ry={ry}
-            fill={lobe.tone}
-            stroke="#4a2c12"
-            strokeWidth="0.75"
-          />
-          <ellipse rx={rx} ry={ry} fill={`url(#coil-hl-${end})`} />
-          <ellipse rx={rx} ry={ry} fill="#1a0e04" fillOpacity={lobe.shade} />
-          <path
-            d={`M${-rx * 0.6} ${-ry * 0.1} Q0 ${-ry * 0.45} ${rx * 0.6} ${-ry * 0.1}`}
-            fill="none"
-            stroke="#f3dcae"
-            strokeWidth="0.45"
-            strokeOpacity="0.75"
-          />
-        </g>
-      ))}
+      {/* The loops wind tighter or pay out as rope runs in or out of the pile */}
+      <g className="coil-loops">{COIL_LOOPS.map(strand)}</g>
+      {COIL_LEAD.map(strand)}
     </svg>
   );
 }

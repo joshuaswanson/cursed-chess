@@ -125,6 +125,26 @@
   overflow: visible;
 }
 
+/* Rope running down the screen winds into the bottom pile, turning its loops
+   and swelling it, while the top pile pays rope out, turning back and
+   shrinking; running up the screen does the reverse */
+.coil-loops {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  /* The pile lies flat, squashed to 0.625 of its width, so it turns in the
+     ground plane: stretched round, rotated, and squashed back */
+  transform: scaleY(0.625) rotate(calc(var(--coil-wind, 0) * 140deg))
+    scaleY(1.6) scale(calc(1 + var(--coil-wind, 0) * 0.15));
+}
+
+.coil-bottom {
+  --coil-wind: var(--rope-pull, 0);
+}
+
+.coil-top {
+  --coil-wind: calc(var(--rope-pull, 0) * -1);
+}
+
 .coil-bottom {
   bottom: calc(var(--square-size, 72px) * -0.55);
 }
