@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
+import { isGameOver } from "../../engine";
 import type { Piece, SquareIndex } from "../../engine";
+import { useGameStore } from "../../stores/gameStore";
 import type { ZombieBounce, ZombieView } from "../../plugins/zombies";
 import { offsetBetween, visualRow } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
@@ -473,7 +475,14 @@ export interface ZombieAct {
    */
   contact?: number;
   biteIn?: number;
+  /** How long after the others this zombie gets going, so they do not all move as one */
+  stagger: number;
+  /** How long this bite takes from start to finish */
+  biteMs?: number;
 }
+
+/** The most each kind of act may wait behind the others */
+const STAGGER_MS = { rise: 500, shamble: 600, bite: 1200 };
 
 /** How far apart two touching pieces' centres stand, and a biter's with its teeth in, in squares */
 const TOUCHING = 0.42;
@@ -493,61 +502,117 @@ export function useZombieActs(
     const next = new Map<SquareIndex, ZombieAct>();
     for (const event of view?.events ?? []) {
       const from = event.from ?? event.to;
+      const stagger = event.lag * STAGGER_MS[event.kind];
       if (event.kind === "shamble") {
         next.set(event.to, {
           kind: "shamble",
           ...offsetBetween(from, event.to, flipped, squareSize),
+          stagger,
         });
       } else if (event.kind === "bite") {
         const toVictim = offsetBetween(event.to, from, flipped, squareSize);
         const apart = Math.hypot(toVictim.x, toVictim.y) / squareSize || 1;
+        // Each zombie takes its own time getting there; its victim shares it
+        const biteMs = ZOMBIE_BITE_MS * (0.85 + event.pace * 0.4);
         next.set(from, {
           kind: "bite",
           ...toVictim,
           contact: Math.max(0, (apart - TOUCHING) / apart),
           biteIn: Math.max(0, (apart - TEETH_IN) / apart),
+          stagger,
+          biteMs,
         });
         next.set(event.to, {
           kind: "bitten",
           ...offsetBetween(from, event.to, flipped, squareSize),
           was: event.victim,
+          stagger,
+          biteMs,
         });
       } else {
-        next.set(event.to, { kind: "rise", x: 0, y: 0, look: event.look });
+        next.set(event.to, {
+          kind: "rise",
+          x: 0,
+          y: 0,
+          look: event.look,
+          stagger,
+        });
       }
     }
     setActs(next);
   }
   useEffect(() => {
     if (acts.size === 0) return;
-    const kinds = [...acts.values()].map((act) => act.kind);
+    const all = [...acts.values()];
     const at = (ms: number, play: () => void) =>
       setTimeout(play, ZOMBIE_DELAY_MS + ms);
+    const lasts = (act: ZombieAct) =>
+      act.stagger +
+      (act.kind === "rise"
+        ? ZOMBIE_RISE_MS + 700
+        : act.kind === "shamble"
+          ? 1000
+          : act.biteMs!);
     const timers = [
-      at(ZOMBIE_RISE_MS + ZOMBIE_BITE_MS, () => setActs(new Map())),
+      at(Math.max(...all.map(lasts)) + 300, () => setActs(new Map())),
     ];
-    if (kinds.includes("rise")) {
-      timers.push(at(0, sfx.graveRise), at(ZOMBIE_RISE_MS * 0.55, sfx.groan));
-    }
-    if (kinds.includes("bite")) {
+    const rises = all.filter((act) => act.kind === "rise");
+    const bites = all.filter((act) => act.kind === "bite");
+    const shambles = all.filter((act) => act.kind === "shamble");
+    rises.forEach((act, n) => {
+      timers.push(at(act.stagger, sfx.graveRise));
+      if (n === 0) {
+        timers.push(at(act.stagger + ZOMBIE_RISE_MS * 0.55, sfx.zombie));
+      }
+    });
+    // Every bite lands on its own beat, with its own crunch and jolt
+    bites.forEach((act, n) => {
+      const biteMs = act.biteMs!;
       timers.push(
-        at(0, sfx.groan),
-        at(ZOMBIE_BITE_MS * BITE_CONTACT, () => {
+        at(act.stagger + biteMs * BITE_CONTACT, () => {
           sfx.bite();
           shakeBoard();
         }),
-        at(ZOMBIE_BITE_MS * BITE_RIP, sfx.tear),
-        at(ZOMBIE_BITE_MS * 0.86, sfx.groan),
+        at(act.stagger + biteMs * BITE_RIP, sfx.tear),
       );
-    } else if (kinds.includes("shamble")) {
-      timers.push(at(0, sfx.shuffle));
-      if (!kinds.includes("rise") && Math.random() < 0.5) {
-        timers.push(at(300, sfx.groan));
+      if (n < 2) {
+        timers.push(
+          at(act.stagger, sfx.growl),
+          at(act.stagger + biteMs * 0.86, sfx.groan),
+        );
+      }
+    });
+    if (bites.length === 0 && shambles.length > 0) {
+      const first = Math.min(...shambles.map((act) => act.stagger));
+      timers.push(at(first, sfx.shuffle));
+      if (rises.length === 0 && Math.random() < 0.6) {
+        timers.push(at(first + 300, sfx.zombie));
       }
     }
     return () => timers.forEach(clearTimeout);
   }, [acts]);
   return acts;
+}
+
+/** While any zombie walks the board, now and then one of them makes itself heard */
+export function useZombieAmbience(zombieCount: number): void {
+  const haunted = zombieCount > 0;
+  useEffect(() => {
+    if (!haunted) return;
+    let timer = 0;
+    const next = () => {
+      timer = window.setTimeout(
+        () => {
+          const { paused, status } = useGameStore.getState();
+          if (!paused && !isGameOver(status)) sfx.zombie();
+          next();
+        },
+        7000 + Math.random() * 8000,
+      );
+    };
+    next();
+    return () => clearTimeout(timer);
+  }, [haunted]);
 }
 
 /** A capturing piece knocked off the grave it just dug springs away with a boing */

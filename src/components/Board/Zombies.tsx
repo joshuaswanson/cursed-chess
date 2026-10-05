@@ -147,17 +147,20 @@ const CLODS = [
 /**
  * A grave on the board: a heap of fresh earth and a weathered headstone that
  * slams down when it is dug, trembles the round before its dead rise, and
- * sinks away once they are out
+ * fades away once they are out
  */
 export function Tombstone({
   look,
   stirring = false,
   rising = false,
   part = "whole",
+  staggerMs = 0,
 }: {
   look: number;
   stirring?: boolean;
   rising?: boolean;
+  /** How long this grave waits behind the others before its dead rise */
+  staggerMs?: number;
   /** While the dead rise, the stone stands behind them and the heap of earth in front */
   part?: "whole" | "stone" | "heap";
 }) {
@@ -165,7 +168,7 @@ export function Tombstone({
   const style: Style = {
     "--lean": `${LEANS[look] ?? 0}deg`,
     "--drop-delay": `${GRAVE_DROP_MS - 270}ms`,
-    "--delay": `${ZOMBIE_DELAY_MS}ms`,
+    "--delay": `${ZOMBIE_DELAY_MS + staggerMs}ms`,
     "--rise-ms": `${ZOMBIE_RISE_MS}ms`,
   };
   const state = rising ? " rising" : stirring ? " stirring" : "";
@@ -348,9 +351,9 @@ export function ZombiePiece({
     // One square's step toward the biter, however far off it is
     "--near-x": `calc(var(--square-size, 72px) * ${x / (Math.max(Math.abs(x), Math.abs(y)) || 1)})`,
     "--near-y": `calc(var(--square-size, 72px) * ${y / (Math.max(Math.abs(x), Math.abs(y)) || 1)})`,
-    "--delay": `${ZOMBIE_DELAY_MS}ms`,
+    "--delay": `${ZOMBIE_DELAY_MS + (act?.stagger ?? 0)}ms`,
     "--rise-ms": `${ZOMBIE_RISE_MS}ms`,
-    "--bite-ms": `${ZOMBIE_BITE_MS}ms`,
+    "--bite-ms": `${act?.biteMs ?? ZOMBIE_BITE_MS}ms`,
     "--phase": `${-((sq * 0.37) % 3)}s`,
   };
   const bitten = act?.kind === "bitten" && act.was;

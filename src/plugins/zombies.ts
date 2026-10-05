@@ -25,6 +25,8 @@ import {
 const RISE_AFTER_ROUNDS = 2;
 /** How many headstone designs there are to pick from */
 export const HEADSTONE_LOOKS = 4;
+/** How long the result waits after a zombie mates a king, so its final bite plays out first */
+export const ZOMBIE_FINISH_MS = 4800;
 /** How far a capturing piece may bounce off the fresh grave */
 const BOUNCE_REACH = 2;
 
@@ -46,6 +48,9 @@ export interface ZombieEvent {
   look?: number;
   /** The piece a zombie bit, as it was before it turned */
   victim?: Piece;
+  /** From 0 to 1, how far behind the others this act starts, and how slowly it plays */
+  lag: number;
+  pace: number;
 }
 
 /** A capturing piece knocked off the grave it just dug, from where it moved, via the grave, to where it landed */
@@ -100,6 +105,7 @@ export class ZombiesPlugin implements ModePlugin {
   private round = 0;
   private events: ZombieEvent[] = [];
   private bounce: ZombieBounce | null = null;
+  private winner: Color | null = null;
 
   onGameStart(): void {
     this.zombies.clear();
@@ -107,6 +113,12 @@ export class ZombiesPlugin implements ModePlugin {
     this.round = 0;
     this.events = [];
     this.bounce = null;
+    this.winner = null;
+  }
+
+  /** A zombie has mated a king and is walking over to bite it */
+  get finishingBite(): boolean {
+    return this.winner !== null;
   }
 
   /** Whether a zombie stands on a square */
@@ -317,15 +329,22 @@ export class ZombiesPlugin implements ModePlugin {
     this.graves = this.graves.filter((g) => !rising.includes(g));
     for (const grave of rising) {
       this.zombies.set(grave.sq, grave.type);
-      this.events.push({ kind: "rise", to: grave.sq, look: grave.look });
+      this.events.push({
+        kind: "rise",
+        to: grave.sq,
+        look: grave.look,
+        ...this.timing(),
+      });
     }
 
     // Zombies that rose this round need a moment before they act
     const acting = [...this.zombies.keys()].filter(
       (sq) => !rising.some((g) => g.sq === sq),
     );
+    // A zombie that shambles onto a square another has just left acts once, not again there
+    const arrived = new Set<SquareIndex>();
     for (const sq of acting) {
-      if (!this.zombies.has(sq)) continue;
+      if (!this.zombies.has(sq) || arrived.has(sq)) continue;
       const victim = this.biteTarget(board, sq);
       if (victim !== null) {
         this.bite(board, sq, victim);
@@ -336,7 +355,8 @@ export class ZombiesPlugin implements ModePlugin {
       const type = this.zombies.get(sq)!;
       this.zombies.delete(sq);
       this.zombies.set(to, type);
-      this.events.push({ kind: "shamble", from: sq, to });
+      arrived.add(to);
+      this.events.push({ kind: "shamble", from: sq, to, ...this.timing() });
     }
   }
 
@@ -375,10 +395,39 @@ export class ZombiesPlugin implements ModePlugin {
     return better[0]?.sq ?? null;
   }
 
+  /**
+   * A mated king gets its bite after all, so the player sees how they lost:
+   * one of the zombies that had it trapped walks over and bites it
+   */
+  private finish(board: Board, color: Color): void {
+    const menace = this.menace(board, color);
+    if (!menace) return;
+    this.round++;
+    this.events = [];
+    this.bite(board, menace.zombies[0], menace.king);
+    this.events[0] = { ...this.events[0], lag: 0, pace: 0.5 };
+    this.winner = opponent(color);
+  }
+
+  getWinner(): Color | null {
+    return this.winner;
+  }
+
+  /** A random start and speed for an act, so the undead never move as one */
+  private timing(): { lag: number; pace: number } {
+    return { lag: Math.random(), pace: Math.random() };
+  }
+
   /** The bitten piece turns */
   private bite(board: Board, from: SquareIndex, victim: SquareIndex): void {
     const piece = board.get(victim)!;
-    this.events.push({ kind: "bite", from, to: victim, victim: piece });
+    this.events.push({
+      kind: "bite",
+      from,
+      to: victim,
+      victim: piece,
+      ...this.timing(),
+    });
     board.remove(victim);
     this.zombies.set(victim, piece.type);
     this.graves = this.graves.filter((g) => g.sq !== victim);
@@ -386,6 +435,14 @@ export class ZombiesPlugin implements ModePlugin {
 
   /** A zombie that could bite the king to move is check, and with no way out, mate */
   modifyGameStatus(ctx: PluginContext, status: GameStatus): GameStatus {
+    if (this.winner !== null) return GameStatus.Checkmate;
+    // Bare kings can still be run down while the undead walk
+    if (
+      status === GameStatus.DrawInsufficientMaterial &&
+      this.zombies.size > 0
+    ) {
+      status = GameStatus.Active;
+    }
     if (status !== GameStatus.Active && status !== GameStatus.Check) {
       return status;
     }
@@ -393,6 +450,7 @@ export class ZombiesPlugin implements ModePlugin {
     const menaced = this.menace(ctx.board, color) !== null;
     const moves = this.modifyLegalMoves(ctx, ctx.game.getLegalMoves(), color);
     if (moves.length === 0) {
+      if (menaced) this.finish(ctx.board, color);
       return menaced || status === GameStatus.Check
         ? GameStatus.Checkmate
         : GameStatus.Stalemate;

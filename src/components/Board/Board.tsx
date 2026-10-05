@@ -46,6 +46,7 @@ import {
   useTugDrags,
   useZombieActs,
   useGraveBounce,
+  useZombieAmbience,
   DRAG_MS,
   RUNOFF_MS,
   CAPTURE_BURST_MS,
@@ -299,6 +300,11 @@ export function Board() {
     overlays.football?.shirts ?? {},
   );
   const zombieActs = useZombieActs(overlays.zombies, flipped, squareSize);
+  const zombiesActing = zombieActs.size > 0;
+  useEffect(() => {
+    useGameStore.setState({ zombiesActing });
+  }, [zombiesActing]);
+  useEffect(() => () => useGameStore.setState({ zombiesActing: false }), []);
   const graveBounce =
     overlays.zombies?.bounce &&
     lastMove?.to === overlays.zombies.bounce.via &&
@@ -306,6 +312,7 @@ export function Board() {
       ? overlays.zombies.bounce
       : null;
   useGraveBounce(graveBounce);
+  useZombieAmbience(Object.keys(overlays.zombies?.zombies ?? {}).length);
   const menace = overlays.zombies?.menace ?? null;
   const capture = useCaptureBurst(
     cursed && lastPortalMove === null && lastRecord?.move.captured
@@ -586,7 +593,14 @@ export function Board() {
           {grave ? (
             <Tombstone look={grave.look} stirring={grave.rounds <= 1} />
           ) : (
-            rising && <Tombstone look={rising.look ?? 0} rising part="stone" />
+            rising && (
+              <Tombstone
+                look={rising.look ?? 0}
+                rising
+                part="stone"
+                staggerMs={rising.stagger}
+              />
+            )
           )}
           {zombie !== undefined && (
             <ZombiePiece
@@ -601,7 +615,12 @@ export function Board() {
             />
           )}
           {!grave && rising && (
-            <Tombstone look={rising.look ?? 0} rising part="heap" />
+            <Tombstone
+              look={rising.look ?? 0}
+              rising
+              part="heap"
+              staggerMs={rising.stagger}
+            />
           )}
           {piece && !battle && !arrivals.has(sq) && !isLifted && !isDead && (
             <>

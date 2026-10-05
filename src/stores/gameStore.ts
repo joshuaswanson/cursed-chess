@@ -23,7 +23,7 @@ import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
 import { TugOfWarPlugin } from "../plugins/tugOfWar";
-import { ZombiesPlugin } from "../plugins/zombies";
+import { ZOMBIE_FINISH_MS, ZombiesPlugin } from "../plugins/zombies";
 import type { KickTarget } from "../plugins/football";
 import { benchKings, reinforce, returnKing } from "./reinforcements";
 import type {
@@ -237,6 +237,8 @@ export interface GameStore {
   skippedTurn: { id: number; color: Color; reason: "stuck" | "time" } | null;
   /** A piece is on its way through a portal, so the clock waits for it to arrive */
   portalTravelling: boolean;
+  /** The undead are rising, shambling, or biting, so the clocks wait for them to finish */
+  zombiesActing: boolean;
   siteTab: SiteTab;
   setSiteTab: (tab: SiteTab) => void;
 
@@ -381,7 +383,14 @@ function endGameSoon(
   winner: Color | null,
   delayMs: number = GAME_END_DELAY_MS,
 ): void {
-  schedule(() => useGameStore.getState().handleGameEnd(winner), delayMs);
+  // A king mated by zombies is bitten first, so the player sees how they lost
+  const zombies = useGameStore
+    .getState()
+    .pluginManager.find<ZombiesPlugin>("zombies");
+  const wait = zombies?.finishingBite
+    ? Math.max(delayMs, ZOMBIE_FINISH_MS)
+    : delayMs;
+  schedule(() => useGameStore.getState().handleGameEnd(winner), wait);
 }
 
 /** The plain chess site starts glitching, then the curse bursts through */
@@ -550,6 +559,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gravityFalling: false,
   skippedTurn: null,
   portalTravelling: false,
+  zombiesActing: false,
   siteTab: "Play",
   setSiteTab: (tab) => set({ siteTab: tab }),
 
@@ -923,7 +933,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       !moveTimerActive ||
       paused ||
       get().gravityFalling ||
-      get().portalTravelling
+      get().portalTravelling ||
+      get().zombiesActing
     ) {
       return;
     }
@@ -1207,6 +1218,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       gravityFalling: false,
       skippedTurn: null,
       portalTravelling: false,
+      zombiesActing: false,
       pluginManager: freshPluginManager(nextGame, mode.create()),
       turn: nextGame.turn,
       moveHistory: [...nextGame.history],
