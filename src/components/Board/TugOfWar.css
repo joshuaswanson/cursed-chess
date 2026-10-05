@@ -223,6 +223,14 @@
   filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.4));
 }
 
+/* The cloth swings about where it is tied to the rope as the rope jolts back
+   and forth; the knots stay wrapped round the rope */
+.tug-flag-swing {
+  transform-box: view-box;
+  transform-origin: 9px 20px;
+  rotate: var(--flag-swing, 0deg);
+}
+
 /* Sits on the other side of the rope from the flag */
 .tug-score {
   position: absolute;

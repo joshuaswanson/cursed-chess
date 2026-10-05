@@ -2,6 +2,11 @@ import { useEffect } from "react";
 
 /** How far the rope gives toward whichever team is winning, in pixels at full strength */
 const SHIFT_PX = 15;
+/** How the pennant swings on the rope: stiffness, how fast it settles, how hard the rope's jolts kick it, and how far it can go */
+const SWING_SPRING = 38;
+const SWING_DAMPING = 3.5;
+const SWING_KICK = 5;
+const SWING_MAX = 38;
 /** How quickly a team's pull comes on and dies away, in seconds */
 const RISE_S = 0.09;
 const FALL_S = 0.32;
@@ -43,6 +48,11 @@ export function useTugStruggle(
     const board = root.current?.closest<HTMLElement>(".board");
     if (!board) return;
     let last = performance.now() / 1000;
+    // The pennant swings on its knots like a weight on a spring, kicked by the rope's jolts
+    let swing = 0;
+    let swingSpeed = 0;
+    let ropeAt = 0;
+    let ropeSpeed = 0;
     const white = rest(last);
     const black = rest(last);
     let frame = 0;
@@ -76,8 +86,25 @@ export function useTugStruggle(
 
       const both = Math.min(white.strength, black.strength);
       const shake = both * (Math.random() - 0.5) * 3;
-      const toWhite = (white.strength - black.strength) * SHIFT_PX + shake;
-      const shift = flipped ? -toWhite : toWhite;
+      const steady =
+        (white.strength - black.strength) * SHIFT_PX * (flipped ? -1 : 1);
+      const shift = steady + shake * (flipped ? -1 : 1);
+
+      // The rope's jolts kick the pennant the other way, and it swings back and settles
+      const speed = dt > 0 ? (steady - ropeAt) / dt : 0;
+      const jolt = dt > 0 ? (speed - ropeSpeed) / dt : 0;
+      ropeAt = steady;
+      ropeSpeed = speed;
+      swingSpeed +=
+        (-SWING_SPRING * swing -
+          SWING_DAMPING * swingSpeed -
+          jolt * SWING_KICK) *
+        dt;
+      swing = Math.max(
+        -SWING_MAX,
+        Math.min(SWING_MAX, swing + swingSpeed * dt),
+      );
+      const flutter = both * (Math.random() - 0.5) * 6;
       const tension = Math.max(
         both,
         Math.max(white.strength, black.strength) * 0.25,
@@ -89,6 +116,7 @@ export function useTugStruggle(
 
       const s = board.style;
       s.setProperty("--rope-shift", `${shift.toFixed(2)}px`);
+      s.setProperty("--flag-swing", `${(swing + flutter).toFixed(2)}deg`);
       // From -1, hauled fully up the screen, to 1, hauled fully down it
       s.setProperty("--rope-pull", (shift / SHIFT_PX).toFixed(3));
       s.setProperty("--rope-thin", (1 - 0.42 * tension).toFixed(3));
@@ -110,6 +138,7 @@ export function useTugStruggle(
       cancelAnimationFrame(frame);
       for (const name of [
         "--rope-shift",
+        "--flag-swing",
         "--rope-pull",
         "--rope-thin",
         "--rope-long",
