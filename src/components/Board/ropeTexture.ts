@@ -1,7 +1,12 @@
 /** One repeat of the rope, 16 units wide: three strand turns packed close, each bulging past the core */
 const WIDTH = 16;
-const PITCH = 5.5;
+const PITCH = 9;
 const TILE = PITCH * 3;
+/** How far each strand leans off straight across the rope: steep, so it runs long along the rope's length */
+export const STRAND_LEAN = 62;
+/** Half a strand's length, enough to cross the rope at that lean, and its thickness */
+const STRAND_HALF = 16;
+const STRAND_THICK = 3.8;
 const TONES = ["#c9a066", "#b88d52", "#d6b077"];
 
 /**
@@ -30,12 +35,12 @@ export function fibrePaths(halfWidth: number, thickness: number): string[] {
 
 /** One turn of a strand slanting across the rope */
 function lobe(y: number, tone: string): string {
-  const at = `translate(${WIDTH / 2} ${y}) rotate(-38)`;
-  const [low, mid, high] = fibrePaths(9.5, 4.2);
+  const at = `translate(${WIDTH / 2} ${y}) rotate(-${STRAND_LEAN})`;
+  const [low, mid, high] = fibrePaths(STRAND_HALF, STRAND_THICK);
   return (
     `<g transform="${at}">` +
-    `<path d="${strandPath(9.5, 4.2)}" fill="${tone}" stroke="#4a2c12" stroke-width="0.8" stroke-linejoin="round"/>` +
-    `<path d="${strandPath(9.5, 4.2)}" fill="url(#hl)"/>` +
+    `<path d="${strandPath(STRAND_HALF, STRAND_THICK)}" fill="${tone}" stroke="#4a2c12" stroke-width="0.8" stroke-linejoin="round"/>` +
+    `<path d="${strandPath(STRAND_HALF, STRAND_THICK)}" fill="url(#hl)"/>` +
     `<path d="${low} ${high}" fill="none" stroke="#7a5228" stroke-width="0.45" stroke-opacity="0.8"/>` +
     `<path d="${mid}" fill="none" stroke="#f3dcae" stroke-width="0.55" stroke-opacity="0.85"/>` +
     `</g>`
@@ -49,7 +54,7 @@ function lobe(y: number, tone: string): string {
  * without a seam.
  */
 function tile(): string {
-  const lobes = [-2, -1, 0, 1, 2, 3, 4]
+  const lobes = [-3, -2, -1, 0, 1, 2, 3, 4, 5]
     .map((k) => lobe(k * PITCH, TONES[((k % 3) + 3) % 3]))
     .join("");
   return (

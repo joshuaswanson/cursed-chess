@@ -223,12 +223,12 @@
   filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.4));
 }
 
-/* The cloth swings about where it is tied to the rope as the rope jolts back
-   and forth; the knots stay wrapped round the rope */
+/* The fly end of the cloth sweeps up and down as the rope jolts back and
+   forth. The edge tied to the rope stays straight along it. */
 .tug-flag-swing {
   transform-box: view-box;
   transform-origin: 9px 20px;
-  rotate: var(--flag-swing, 0deg);
+  transform: skewY(var(--flag-swing, 0deg));
 }
 
 /* Sits on the other side of the rope from the flag */

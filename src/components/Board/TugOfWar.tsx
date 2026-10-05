@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { WIN_LINE } from "../../plugins/tugOfWar";
 import type { TugView } from "../../plugins/tugOfWar";
 import { sfx } from "../../audio/sfx";
-import { ROPE_TILE, fibrePaths, strandPath } from "./ropeTexture";
+import { ROPE_TILE, STRAND_LEAN, fibrePaths, strandPath } from "./ropeTexture";
 import { useTugStruggle } from "./tugStruggle";
 import "./TugOfWar.css";
 
@@ -29,11 +29,11 @@ const COIL_ROPE = 12.6;
 const STRAND_TONES = ["#c9a066", "#b88d52", "#d6b077"];
 /** Where the rope comes down into the pile, in the coil's drawing */
 const COIL_ENTRY = { x: 50, y: -10 };
-const LOBE_SPACING = COIL_ROPE * 0.27;
+const LOBE_SPACING = COIL_ROPE * 0.46;
 /** Share of the spiral a pile holds when neither team has pulled rope out of it or into it */
 const COIL_REST = 0.7;
 const COIL_GIVE = 0.3;
-const LEAD_POOL = 62;
+const LEAD_POOL = 26;
 
 /**
  * A pile of rope lying on the ground, drawn for the bottom end: uneven loops
@@ -43,7 +43,7 @@ const LEAD_POOL = 62;
  */
 function coilSpiral(): { x: number; y: number }[] {
   const points: { x: number; y: number }[] = [];
-  const turns = 2.4;
+  const turns = 1.9;
   const steps = 260;
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
@@ -53,7 +53,7 @@ function coilSpiral(): { x: number; y: number }[] {
     const r = (1 - 0.62 * t) * wobble;
     points.push({
       x: 50 + Math.cos(theta) * 40 * r,
-      y: 31 + Math.sin(theta) * 25 * r,
+      y: 31 + Math.sin(theta) * 31 * r,
     });
   }
   return points;
@@ -90,7 +90,7 @@ function slackCurve(
 
 /** The rope's lobes lean 38 degrees off its length */
 const lobeAngle = (dx: number, dy: number) =>
-  (Math.atan2(dy, dx) * 180) / Math.PI - 90 - 38;
+  (Math.atan2(dy, dx) * 180) / Math.PI - 90 - STRAND_LEAN;
 
 /** Strand lobes spaced evenly along the spiral, outermost first */
 function coilLobes() {
@@ -123,6 +123,16 @@ function coilLobes() {
 
 const COIL_LOOPS = coilLobes();
 
+const pathThrough = (points: { x: number; y: number }[]) =>
+  `M${points.map((p) => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" L")}`;
+const COIL_SPIRAL = coilSpiral();
+const SPIRAL_D = pathThrough(COIL_SPIRAL);
+const SPIRAL_LENGTH = COIL_SPIRAL.slice(1).reduce(
+  (sum, p, i) =>
+    sum + Math.hypot(p.x - COIL_SPIRAL[i].x, p.y - COIL_SPIRAL[i].y),
+  0,
+);
+
 /** One twisted strand lobe of the rope */
 function Strand({
   end,
@@ -135,8 +145,8 @@ function Strand({
   shade: number;
   innerRef?: (el: SVGGElement | null) => void;
 }) {
-  const half = COIL_ROPE * 0.6;
-  const thick = COIL_ROPE * 0.34;
+  const half = COIL_ROPE * 0.8;
+  const thick = COIL_ROPE * 0.27;
   const [low, mid, high] = fibrePaths(half, thick);
   const body = strandPath(half, thick);
   return (
@@ -178,33 +188,53 @@ function Coil({ end }: { end: "top" | "bottom" }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const loopRefs = useRef<(SVGGElement | null)[]>([]);
   const leadRefs = useRef<(SVGGElement | null)[]>([]);
+  /** The spiral's band and its outline, trimmed to the rope the pile holds */
+  const spiralRefs = useRef<(SVGPathElement | null)[]>([]);
+  /** The slack rope's band and its outline, redrawn as it moves */
+  const leadPathRefs = useRef<(SVGPathElement | null)[]>([]);
+  const maskId = `coil-band-${end}`;
 
   useEffect(() => {
     const board = svgRef.current?.closest<HTMLElement>(".board");
     let frame = 0;
     let shown = -1;
+    let shownShift = NaN;
     const draw = () => {
       const pull = parseFloat(
         board?.style.getPropertyValue("--rope-pull") || "0",
       );
+      // The pile stays put on the ground; only the rope coming down into it
+      // moves, following the rope's end as it is hauled back and forth
+      const shift = parseFloat(
+        board?.style.getPropertyValue("--rope-shift") || "0",
+      );
       // Rope moving down the screen piles into the bottom coil and comes out of the top one
       const held = COIL_REST + (end === "bottom" ? pull : -pull) * COIL_GIVE;
-      if (Math.abs(held - shown) > 0.004) {
+      if (
+        Math.abs(held - shown) > 0.004 ||
+        Math.abs(shift - shownShift) > 0.3
+      ) {
         shown = held;
-        // The pile stays put on the ground; only the rope coming down into it
-        // moves, following the rope's end as it is hauled back and forth
-        const shift = parseFloat(
-          board?.style.getPropertyValue("--rope-shift") || "0",
-        );
+        shownShift = shift;
         const unit =
           (svgRef.current?.getBoundingClientRect().width ?? 100) / 100;
         const entry = {
           x: COIL_ENTRY.x,
           y: COIL_ENTRY.y + (shift / unit) * (end === "bottom" ? 1 : -1),
         };
+
+        // Rope pulled out of the pile comes off its outside, so the spiral is
+        // trimmed from its outer end
+        const off = (1 - held) * SPIRAL_LENGTH;
+        for (const el of spiralRefs.current) {
+          el?.setAttribute(
+            "stroke-dasharray",
+            `0 ${off.toFixed(1)} ${SPIRAL_LENGTH.toFixed(1)}`,
+          );
+        }
         const last = COIL_LOOPS.length - 1;
         const from = (1 - held) * last;
-        const first = Math.ceil(from);
+        const first = Math.min(last, Math.ceil(from));
         loopRefs.current.forEach((el, i) => {
           if (!el) return;
           const lobe = COIL_LOOPS[i];
@@ -212,17 +242,14 @@ function Coil({ end }: { end: "top" | "bottom" }) {
             "transform",
             `translate(${lobe.x.toFixed(2)} ${lobe.y.toFixed(2)}) rotate(${lobe.angle.toFixed(1)})`,
           );
-          el.style.opacity =
-            i >= first
-              ? "1"
-              : i === first - 1
-                ? (1 - (first - from)).toFixed(2)
-                : "0";
+          el.style.opacity = i >= first - 1 ? "1" : "0";
         });
-        // The rope lies slack between the board and the outside loop, in a
-        // lazy S, its lobes spread evenly along the curve
-        const start = COIL_LOOPS[Math.min(first, last)];
+
+        // The rope lies slack between the board and the outside loop, in a lazy S
+        const start = COIL_LOOPS[first];
         const curve = slackCurve(entry, start);
+        const leadD = pathThrough(curve);
+        for (const el of leadPathRefs.current) el?.setAttribute("d", leadD);
         let placed = 0;
         let carried = LOBE_SPACING / 2;
         for (let i = 1; i < curve.length && placed < LEAD_POOL; i++) {
@@ -250,6 +277,34 @@ function Coil({ end }: { end: "top" | "bottom" }) {
     return () => cancelAnimationFrame(frame);
   }, [end]);
 
+  const band = (width: number, stroke: string, slot: number) => (
+    <>
+      <path
+        key={`spiral-${slot}`}
+        ref={(el) => {
+          spiralRefs.current[slot] = el;
+        }}
+        d={SPIRAL_D}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={width}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        key={`lead-${slot}`}
+        ref={(el) => {
+          leadPathRefs.current[slot] = el;
+        }}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={width}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </>
+  );
+
   return (
     <svg
       ref={svgRef}
@@ -263,30 +318,45 @@ function Coil({ end }: { end: "top" | "bottom" }) {
           <stop offset="0.45" stopColor="#fff" stopOpacity="0" />
           <stop offset="1" stopColor="#000" stopOpacity="0.35" />
         </linearGradient>
+        {/* The rope's own outline, so the strands never stray outside it */}
+        <mask
+          id={maskId}
+          maskUnits="userSpaceOnUse"
+          x="-30"
+          y="-60"
+          width="160"
+          height="140"
+        >
+          {band(COIL_ROPE, "#fff", 0)}
+        </mask>
       </defs>
-      {/* The inner loops were laid first, so the outer ones lie over them */}
-      {[...COIL_LOOPS.keys()].reverse().map((i) => (
-        <Strand
-          key={i}
-          end={end}
-          tone={COIL_LOOPS[i].tone}
-          shade={COIL_LOOPS[i].shade}
-          innerRef={(el) => {
-            loopRefs.current[i] = el;
-          }}
-        />
-      ))}
-      {Array.from({ length: LEAD_POOL }, (_, k) => (
-        <Strand
-          key={`lead-${k}`}
-          end={end}
-          tone={STRAND_TONES[k % STRAND_TONES.length]}
-          shade={0}
-          innerRef={(el) => {
-            leadRefs.current[k] = el;
-          }}
-        />
-      ))}
+      {band(COIL_ROPE + 1.6, "#4a2c12", 1)}
+      <g mask={`url(#${maskId})`}>
+        {band(COIL_ROPE, "#b88d52", 2)}
+        {/* The inner loops were laid first, so the outer ones lie over them */}
+        {[...COIL_LOOPS.keys()].reverse().map((i) => (
+          <Strand
+            key={i}
+            end={end}
+            tone={COIL_LOOPS[i].tone}
+            shade={COIL_LOOPS[i].shade}
+            innerRef={(el) => {
+              loopRefs.current[i] = el;
+            }}
+          />
+        ))}
+        {Array.from({ length: LEAD_POOL }, (_, k) => (
+          <Strand
+            key={`lead-${k}`}
+            end={end}
+            tone={STRAND_TONES[k % STRAND_TONES.length]}
+            shade={0}
+            innerRef={(el) => {
+              leadRefs.current[k] = el;
+            }}
+          />
+        ))}
+      </g>
     </svg>
   );
 }
@@ -468,12 +538,12 @@ const MUD_SPLATS = (() => {
   const rand = seeded(17);
   const splats: { d: string; drops: { x: number; y: number; r: number }[] }[] =
     [];
-  while (splats.length < 14) {
+  while (splats.length < 30) {
     const x = 40 + rand() * 720;
     const y = 40 + rand() * 720;
     if (Math.abs(x - 400) < 300 && Math.abs(y - 400) < 140) continue;
-    const size = 16 + rand() * 26;
-    const drops = Array.from({ length: 5 }, () => {
+    const size = 9 + rand() * 30;
+    const drops = Array.from({ length: 7 }, () => {
       const a = rand() * Math.PI * 2;
       const reach = size * (1.3 + rand() * 0.9);
       return {
