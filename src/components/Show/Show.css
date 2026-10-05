@@ -1213,39 +1213,95 @@
   text-shadow: 2px 2px 0 #1b1033;
 }
 
-/* --- Tug of war: a rope stretched across the card, yanked back and forth --- */
+/* --- Tug of war: your blue against their red, a rope yanked across the middle --- */
 
 [data-card-theme="tug"] .card-band {
-  background: linear-gradient(100deg, #2f6bff, #7cc35a 50%, #e8402f);
+  background: linear-gradient(100deg, #2f6bff 49.6%, #e8402f 50.4%);
 }
 
-.card-rope {
+.card-tug {
   position: absolute;
-  left: -5%;
-  right: -5%;
-  bottom: 8%;
-  width: 110%;
-  height: 3.2vh;
-  animation: card-rope-yank 0.9s cubic-bezier(0.4, 1.6, 0.5, 1) 0.3s 3 alternate;
+  inset: 0;
+  pointer-events: none;
+  animation: card-tug 1.8s 0.4s ease-in-out infinite;
 }
 
-.card-rope rect {
-  fill: #d9b277;
-  stroke: #2a1a10;
-  stroke-width: 3;
+@keyframes card-tug {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  20%,
+  40% {
+    translate: -3vw 0;
+  }
+  60%,
+  80% {
+    translate: 3vw 0;
+  }
 }
 
-.card-rope path {
-  fill: #e8402f;
-  stroke: #2a1a10;
-  stroke-width: 3;
+/* A chunky cartoon rope with its twist drawn as stripes */
+.card-tug-rope {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 14%;
+  height: 2.4vh;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: repeating-linear-gradient(
+    -55deg,
+    #e8c48a 0 1.2vh,
+    #b98a4e 1.2vh 1.8vh
+  );
 }
 
-@keyframes card-rope-yank {
+.card-tug-pennant {
+  position: absolute;
+  left: 50%;
+  bottom: calc(14% - 4.4vh);
+  width: 4.4vh;
+  translate: -50% 0;
+  transform-origin: 50% 0;
+  overflow: visible;
+  animation: pennant-swing 0.9s ease-in-out infinite alternate;
+}
+
+.card-tug-pennant path {
+  fill: #ffd23f;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.card-tug-pennant .stripe {
+  fill: #fff;
+  stroke: none;
+}
+
+@keyframes pennant-swing {
   from {
-    translate: -4vw 0;
+    rotate: -12deg;
   }
   to {
-    translate: 4vw 0;
+    rotate: 12deg;
+  }
+}
+
+/* Letters are yanked in from alternate ends */
+[data-card-theme="tug"] .card-letter {
+  animation-name: letter-yank;
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+[data-card-theme="tug"] .card-letter:nth-child(even) {
+  --from: 1;
+}
+
+@keyframes letter-yank {
+  from {
+    translate: calc(var(--from, -1) * 40vw) 0;
   }
 }
