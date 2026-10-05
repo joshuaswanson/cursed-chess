@@ -146,6 +146,15 @@ function chord(
   }
 }
 
+let rain: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
+
+function stopRain(): void {
+  if (!rain || !ctx) return;
+  rain.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
+  rain.src.stop(ctx.currentTime + 2);
+  rain = null;
+}
+
 function stopHum(): void {
   if (!hum || !ctx) return;
   const { oscillators, gain } = hum;
@@ -160,7 +169,10 @@ export const sfx = {
   setEnabled(on: boolean): void {
     enabled = on;
     localStorage.setItem(STORAGE_KEY, on ? "on" : "off");
-    if (!on) stopHum();
+    if (!on) {
+      stopHum();
+      stopRain();
+    }
     for (const listener of listeners) listener();
   },
 
@@ -1329,5 +1341,146 @@ export const sfx = {
       sfx.shriek,
     ];
     voices[Math.floor(Math.random() * voices.length)]();
+  },
+
+  /** A rifle shot: a sharp crack with a short boom behind it, and a ring down the line */
+  rifle(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const loudness = 0.5 + Math.random() * 0.4;
+    const crack = noiseSource(c);
+    const high = c.createBiquadFilter();
+    high.type = "highpass";
+    high.frequency.value = 1400 + Math.random() * 800;
+    const crackGain = c.createGain();
+    crackGain.gain.setValueAtTime(0.6 * loudness, t);
+    crackGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    crack.connect(high).connect(crackGain).connect(out);
+    crack.start(t, Math.random() * 0.5);
+    crack.stop(t + 0.08);
+    const boom = noiseSource(c);
+    const low = c.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.value = 420;
+    const boomGain = c.createGain();
+    boomGain.gain.setValueAtTime(0.7 * loudness, t);
+    boomGain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    boom.connect(low).connect(boomGain).connect(out);
+    boom.start(t, Math.random() * 0.5);
+    boom.stop(t + 0.38);
+  },
+
+  /** A machine gun burst: a rattle of rounds, each a crack and a thump */
+  machineGun(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    for (let round = 0; round < 6; round++) {
+      const at = t + round * 0.085 + Math.random() * 0.01;
+      const src = noiseSource(c);
+      const band = c.createBiquadFilter();
+      band.type = "bandpass";
+      band.frequency.value = 900 + Math.random() * 500;
+      band.Q.value = 0.8;
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.55, at);
+      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.07);
+      src.connect(band).connect(gain).connect(out);
+      src.start(at, Math.random() * 0.5);
+      src.stop(at + 0.08);
+      const thump = c.createOscillator();
+      thump.frequency.setValueAtTime(140, at);
+      thump.frequency.exponentialRampToValueAtTime(50, at + 0.06);
+      const thumpGain = c.createGain();
+      thumpGain.gain.setValueAtTime(0.3, at);
+      thumpGain.gain.exponentialRampToValueAtTime(0.001, at + 0.07);
+      thump.connect(thumpGain).connect(out);
+      thump.start(at);
+      thump.stop(at + 0.08);
+    }
+  },
+
+  /** Thunder: a crack overhead when the strike is close, then a long rolling rumble */
+  thunder(close: boolean): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const length = 2.5 + Math.random() * 1.5;
+    const roll = noiseSource(c);
+    const low = c.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.setValueAtTime(close ? 900 : 300, t);
+    low.frequency.exponentialRampToValueAtTime(90, t + length);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(
+      close ? 0.9 : 0.5,
+      t + (close ? 0.05 : 0.4),
+    );
+    // It rolls, swelling and fading as it echoes off the clouds
+    for (let at = 0.4; at < length - 0.5; at += 0.3 + Math.random() * 0.4) {
+      gain.gain.linearRampToValueAtTime(0.25 + Math.random() * 0.45, t + at);
+    }
+    gain.gain.exponentialRampToValueAtTime(0.001, t + length);
+    roll.connect(low).connect(gain).connect(out);
+    roll.start(t);
+    roll.stop(t + length + 0.05);
+    if (close) for (let i = 0; i < 6; i++) crackle(c, out, 1.6);
+  },
+
+  /** Steady rain hissing down, kept running until it is told to stop */
+  rain(on: boolean): void {
+    if (!on) {
+      stopRain();
+      return;
+    }
+    const a = audio();
+    if (!a || rain) return;
+    const { ctx: c, out } = a;
+    const src = noiseSource(c);
+    const high = c.createBiquadFilter();
+    high.type = "highpass";
+    high.frequency.value = 700;
+    const low = c.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.value = 7000;
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0, c.currentTime);
+    gain.gain.setTargetAtTime(0.07, c.currentTime, 0.8);
+    src.connect(high).connect(low).connect(gain).connect(out);
+    src.start();
+    rain = { src, gain };
+  },
+
+  /** A shell screaming in: a falling whistle that drops away just before it lands */
+  incoming(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const length = 0.85;
+    const tone = c.createOscillator();
+    tone.type = "sine";
+    tone.frequency.setValueAtTime(1500 + Math.random() * 300, t);
+    tone.frequency.exponentialRampToValueAtTime(420, t + length);
+    const wobble = c.createOscillator();
+    wobble.frequency.value = 7;
+    const depth = c.createGain();
+    depth.gain.value = 25;
+    wobble.connect(depth).connect(tone.frequency);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.09, t + 0.25);
+    gain.gain.setValueAtTime(0.09, t + length * 0.85);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + length);
+    tone.connect(gain).connect(out);
+    for (const node of [tone, wobble]) {
+      node.start(t);
+      node.stop(t + length + 0.05);
+    }
   },
 };
