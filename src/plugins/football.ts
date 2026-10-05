@@ -125,12 +125,10 @@ function keeperOf(board: Board, color: Color): SquareIndex | null {
 }
 
 /**
- * Chance a shot is on target by how many squares out it is taken. Close in it
- * is near certain; from your own half it almost never goes in.
+ * Chance a shot is on target by how many squares out it is taken. From right
+ * in front of goal it cannot miss; from your own half it almost never goes in.
  */
-const ACCURACY_BY_DISTANCE = [
-  0.95, 0.95, 0.92, 0.85, 0.65, 0.2, 0.08, 0.04, 0.02,
-];
+const ACCURACY_BY_DISTANCE = [1, 1, 1, 0.88, 0.65, 0.2, 0.08, 0.04, 0.02];
 
 function shotAccuracy(distance: number): number {
   return ACCURACY_BY_DISTANCE[
