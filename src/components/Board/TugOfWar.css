@@ -125,21 +125,6 @@
   overflow: visible;
 }
 
-/* How much rope is in each pile, as a share of its full spiral: running down
-   the screen fills the bottom pile and empties the top one, and up does the
-   reverse. Loops past that share, the innermost first, fade away. */
-.coil-lobe {
-  opacity: clamp(0, calc((var(--coil-len) - var(--along)) * 30), 1);
-}
-
-.coil-bottom {
-  --coil-len: calc(0.7 + var(--rope-pull, 0) * 0.3);
-}
-
-.coil-top {
-  --coil-len: calc(0.7 - var(--rope-pull, 0) * 0.3);
-}
-
 .coil-bottom {
   bottom: calc(var(--square-size, 72px) * -0.55);
 }

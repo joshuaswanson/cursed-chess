@@ -27,15 +27,22 @@ const FLAG_FOLDS = [
 /** The rope's width inside the coil's 100-unit-wide drawing, matching the rope beside it */
 const COIL_ROPE = 12.6;
 const STRAND_TONES = ["#c9a066", "#b88d52", "#d6b077"];
+/** Where the rope comes down into the pile, in the coil's drawing */
+const COIL_ENTRY = { x: 50, y: -10 };
+const LOBE_SPACING = COIL_ROPE * 0.5;
+/** Share of the spiral a pile holds when neither team has pulled rope out of it or into it */
+const COIL_REST = 0.7;
+const COIL_GIVE = 0.3;
+const LEAD_POOL = 16;
 
 /**
- * The centerline of a pile of rope lying on the ground, drawn for the bottom
- * end: the rope drops in from the top, then winds round in uneven loops that
- * tighten toward the middle, squashed because the pile lies flat
+ * A pile of rope lying on the ground, drawn for the bottom end: uneven loops
+ * that tighten toward the middle, squashed because the pile lies flat. The
+ * spiral runs from its outermost loop to the free end of the rope at the
+ * center.
  */
-function coilPath(): { x: number; y: number }[] {
+function coilSpiral(): { x: number; y: number }[] {
   const points: { x: number; y: number }[] = [];
-  for (let y = -10; y < 6; y += 1) points.push({ x: 50, y });
   const turns = 2.4;
   const steps = 260;
   for (let i = 0; i <= steps; i++) {
@@ -52,10 +59,13 @@ function coilPath(): { x: number; y: number }[] {
   return points;
 }
 
-/** Strand lobes spaced evenly along the coil, each turned to follow it */
+/** The rope's lobes lean 38 degrees off its length */
+const lobeAngle = (dx: number, dy: number) =>
+  (Math.atan2(dy, dx) * 180) / Math.PI - 90 - 38;
+
+/** Strand lobes spaced evenly along the spiral, outermost first */
 function coilLobes() {
-  const path = coilPath();
-  const spacing = COIL_ROPE * 0.5;
+  const path = coilSpiral();
   const lobes: {
     x: number;
     y: number;
@@ -67,57 +77,48 @@ function coilLobes() {
   for (let i = 1; i < path.length; i++) {
     const a = path[i - 1];
     const b = path[i];
-    const length = Math.hypot(b.x - a.x, b.y - a.y);
-    carried += length;
-    if (carried < spacing) continue;
+    carried += Math.hypot(b.x - a.x, b.y - a.y);
+    if (carried < LOBE_SPACING) continue;
     carried = 0;
-    const heading = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
     lobes.push({
       x: b.x,
       y: b.y,
-      // The rope's lobes lean 38 degrees off its length
-      angle: heading - 90 - 38,
+      angle: lobeAngle(b.x - a.x, b.y - a.y),
       tone: STRAND_TONES[lobes.length % STRAND_TONES.length],
-      // Loops lower in the pile sit in shadow
-      shade: 0.3 * (1 - i / path.length),
+      // The inner loops, laid first, sit lower in the pile and in shadow
+      shade: 0.3 * (i / path.length),
     });
   }
   return lobes;
 }
 
-const COIL_LOBES = coilLobes();
-/** The rope dropping into the pile, before it starts to loop */
-const COIL_LEAD = COIL_LOBES.filter((lobe) => lobe.y < 7);
-const COIL_LOOPS = COIL_LOBES.filter((lobe) => lobe.y >= 7);
+const COIL_LOOPS = coilLobes();
 
-/** A loose coil of rope, made of the same twisted strands as the rope it ends */
-function Coil({ end }: { end: "top" | "bottom" }) {
+/** One twisted strand lobe of the rope */
+function Strand({
+  end,
+  tone,
+  shade,
+  innerRef,
+}: {
+  end: string;
+  tone: string;
+  shade: number;
+  innerRef?: (el: SVGGElement | null) => void;
+}) {
   const rx = COIL_ROPE * 0.53;
   const ry = COIL_ROPE * 0.31;
-  const strand = (
-    lobe: (typeof COIL_LOBES)[number],
-    i: number,
-    along?: number,
-  ) => (
-    <g
-      key={i}
-      className={along === undefined ? undefined : "coil-lobe"}
-      style={
-        along === undefined
-          ? undefined
-          : ({ "--along": along.toFixed(3) } as React.CSSProperties)
-      }
-      transform={`translate(${lobe.x.toFixed(2)} ${lobe.y.toFixed(2)}) rotate(${lobe.angle.toFixed(1)})`}
-    >
+  return (
+    <g ref={innerRef}>
       <ellipse
         rx={rx}
         ry={ry}
-        fill={lobe.tone}
+        fill={tone}
         stroke="#4a2c12"
         strokeWidth="0.75"
       />
       <ellipse rx={rx} ry={ry} fill={`url(#coil-hl-${end})`} />
-      <ellipse rx={rx} ry={ry} fill="#1a0e04" fillOpacity={lobe.shade} />
+      <ellipse rx={rx} ry={ry} fill="#1a0e04" fillOpacity={shade} />
       <path
         d={`M${-rx * 0.6} ${-ry * 0.1} Q0 ${-ry * 0.45} ${rx * 0.6} ${-ry * 0.1}`}
         fill="none"
@@ -127,8 +128,84 @@ function Coil({ end }: { end: "top" | "bottom" }) {
       />
     </g>
   );
+}
+
+/**
+ * A loose coil of rope at one end of the tug of war. Its free end stays put in
+ * the middle of the pile; rope pulled out of the pile comes off its outside
+ * loops, and rope hauled into it winds fresh loops back round the outside.
+ * The rope runs down from the board to wherever the outside loop starts.
+ */
+function Coil({ end }: { end: "top" | "bottom" }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const loopRefs = useRef<(SVGGElement | null)[]>([]);
+  const leadRefs = useRef<(SVGGElement | null)[]>([]);
+
+  useEffect(() => {
+    const board = svgRef.current?.closest<HTMLElement>(".board");
+    let frame = 0;
+    let shown = -1;
+    const draw = () => {
+      const pull = parseFloat(
+        board?.style.getPropertyValue("--rope-pull") || "0",
+      );
+      // Rope moving down the screen piles into the bottom coil and comes out of the top one
+      const held = COIL_REST + (end === "bottom" ? pull : -pull) * COIL_GIVE;
+      if (Math.abs(held - shown) > 0.004) {
+        shown = held;
+        const last = COIL_LOOPS.length - 1;
+        const from = (1 - held) * last;
+        const first = Math.ceil(from);
+        loopRefs.current.forEach((el, i) => {
+          if (!el) return;
+          const lobe = COIL_LOOPS[i];
+          el.setAttribute(
+            "transform",
+            `translate(${lobe.x.toFixed(2)} ${lobe.y.toFixed(2)}) rotate(${lobe.angle.toFixed(1)})`,
+          );
+          el.style.opacity =
+            i >= first
+              ? "1"
+              : i === first - 1
+                ? (1 - (first - from)).toFixed(2)
+                : "0";
+        });
+        // The rope's run down to the outside loop, its lobes spread evenly along it
+        const start = COIL_LOOPS[Math.min(first, last)];
+        const dx = start.x - COIL_ENTRY.x;
+        const dy = start.y - COIL_ENTRY.y;
+        const count = Math.min(
+          LEAD_POOL,
+          Math.max(1, Math.round(Math.hypot(dx, dy) / LOBE_SPACING)),
+        );
+        const angle = lobeAngle(dx, dy).toFixed(1);
+        leadRefs.current.forEach((el, k) => {
+          if (!el) return;
+          if (k >= count) {
+            el.style.opacity = "0";
+            return;
+          }
+          const t = (k + 0.5) / count;
+          el.style.opacity = "1";
+          el.setAttribute(
+            "transform",
+            `translate(${(COIL_ENTRY.x + dx * t).toFixed(2)} ${(COIL_ENTRY.y + dy * t).toFixed(2)}) rotate(${angle})`,
+          );
+        });
+      }
+      frame = requestAnimationFrame(draw);
+    };
+    frame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(frame);
+  }, [end]);
+
   return (
-    <svg className={`tug-coil coil-${end}`} viewBox="0 -12 100 72" aria-hidden>
+    <svg
+      ref={svgRef}
+      className={`tug-coil coil-${end}`}
+      viewBox="0 -12 100 72"
+      aria-hidden
+    >
       <defs>
         <linearGradient id={`coil-hl-${end}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff" stopOpacity="0.3" />
@@ -136,14 +213,29 @@ function Coil({ end }: { end: "top" | "bottom" }) {
           <stop offset="1" stopColor="#000" stopOpacity="0.35" />
         </linearGradient>
       </defs>
-      {/* Rope paying out of the pile takes its innermost loops first; rope
-          running in winds them back toward the middle */}
-      <g>
-        {COIL_LOOPS.map((lobe, i) =>
-          strand(lobe, i, i / (COIL_LOOPS.length - 1)),
-        )}
-      </g>
-      {COIL_LEAD.map((lobe, i) => strand(lobe, i))}
+      {/* The inner loops were laid first, so the outer ones lie over them */}
+      {[...COIL_LOOPS.keys()].reverse().map((i) => (
+        <Strand
+          key={i}
+          end={end}
+          tone={COIL_LOOPS[i].tone}
+          shade={COIL_LOOPS[i].shade}
+          innerRef={(el) => {
+            loopRefs.current[i] = el;
+          }}
+        />
+      ))}
+      {Array.from({ length: LEAD_POOL }, (_, k) => (
+        <Strand
+          key={`lead-${k}`}
+          end={end}
+          tone={STRAND_TONES[k % STRAND_TONES.length]}
+          shade={0}
+          innerRef={(el) => {
+            leadRefs.current[k] = el;
+          }}
+        />
+      ))}
     </svg>
   );
 }
