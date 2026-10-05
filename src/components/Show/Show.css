@@ -571,10 +571,12 @@
   }
 }
 
+/* Lines that wrap come out even, so no word is left alone on the last one */
 .card-catch {
   position: relative;
   max-width: 80vw;
   margin: 0;
+  text-wrap: balance;
   font-family: var(--font-display);
   font-size: clamp(30px, 5.2vw, 78px);
   line-height: 1.05;
