@@ -522,7 +522,7 @@ export function useZombieActs(
           sfx.bite();
           shakeBoard();
         }),
-        at(ZOMBIE_BITE_MS * BITE_RIP, sfx.bite),
+        at(ZOMBIE_BITE_MS * BITE_RIP, sfx.tear),
         at(ZOMBIE_BITE_MS * 0.86, sfx.groan),
       );
     } else if (kinds.includes("shamble")) {

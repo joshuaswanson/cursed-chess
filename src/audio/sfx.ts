@@ -89,6 +89,39 @@ function creak(
   src.stop(at + length + 0.02);
 }
 
+/** A wet gurgling squelch: noise through a sweeping narrow band, wobbled fast */
+function squelch(
+  c: AudioContext,
+  out: AudioNode,
+  at: number,
+  length: number,
+  loudness: number,
+): void {
+  const src = noiseSource(c);
+  const band = c.createBiquadFilter();
+  band.type = "bandpass";
+  band.Q.value = 7;
+  band.frequency.setValueAtTime(700, at);
+  band.frequency.exponentialRampToValueAtTime(2000, at + length * 0.3);
+  band.frequency.exponentialRampToValueAtTime(450, at + length);
+  const gain = c.createGain();
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(loudness, at + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.001, at + length);
+  const gurgle = c.createGain();
+  gurgle.gain.value = 0.5;
+  const wobble = c.createOscillator();
+  wobble.frequency.value = 26 + Math.random() * 10;
+  const depth = c.createGain();
+  depth.gain.value = 0.5;
+  wobble.connect(depth).connect(gurgle.gain);
+  src.connect(band).connect(gurgle).connect(gain).connect(out);
+  src.start(at, Math.random() * 0.5);
+  src.stop(at + length + 0.02);
+  wobble.start(at);
+  wobble.stop(at + length + 0.02);
+}
+
 /** Several notes at once with a quick attack and a decay */
 function chord(
   c: AudioContext,
@@ -999,36 +1032,67 @@ export const sfx = {
     }
   },
 
-  /** Teeth sinking in: a crunch of snaps over a wet squelch and a dull thump */
+  /** Teeth sinking in: a clack of teeth, a gurgling squelch, flesh tearing, and a growl */
   bite(): void {
     const a = audio();
     if (!a) return;
     const { ctx: c, out } = a;
     const t = c.currentTime;
-    for (let i = 0; i < 5; i++) creak(c, out, t + i * 0.035, 0.9);
-    for (let i = 0; i < 4; i++) crackle(c, out, 1.4);
-    const squelch = noiseSource(c);
-    const band = c.createBiquadFilter();
-    band.type = "bandpass";
-    band.Q.value = 9;
-    band.frequency.setValueAtTime(1600, t + 0.05);
-    band.frequency.exponentialRampToValueAtTime(300, t + 0.35);
-    const squelchGain = c.createGain();
-    squelchGain.gain.setValueAtTime(0.0001, t);
-    squelchGain.gain.exponentialRampToValueAtTime(0.6, t + 0.08);
-    squelchGain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-    squelch.connect(band).connect(squelchGain).connect(out);
-    squelch.start(t, Math.random() * 0.5);
-    squelch.stop(t + 0.45);
-    const thump = c.createOscillator();
-    thump.frequency.setValueAtTime(110, t);
-    thump.frequency.exponentialRampToValueAtTime(40, t + 0.15);
-    const thumpGain = c.createGain();
-    thumpGain.gain.setValueAtTime(0.5, t);
-    thumpGain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-    thump.connect(thumpGain).connect(out);
-    thump.start(t);
-    thump.stop(t + 0.22);
+    for (const at of [0, 0.045]) {
+      const clack = noiseSource(c);
+      const band = c.createBiquadFilter();
+      band.type = "bandpass";
+      band.frequency.value = 3800;
+      band.Q.value = 5;
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.5, t + at);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + at + 0.018);
+      clack.connect(band).connect(gain).connect(out);
+      clack.start(t + at, Math.random() * 0.5);
+      clack.stop(t + at + 0.03);
+    }
+    squelch(c, out, t + 0.06, 0.4, 0.7);
+    for (let i = 0; i < 7; i++) crackle(c, out, 0.9);
+    const growl = c.createOscillator();
+    growl.type = "sawtooth";
+    growl.frequency.setValueAtTime(75, t + 0.05);
+    growl.frequency.linearRampToValueAtTime(58, t + 0.45);
+    const low = c.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.value = 420;
+    const growlGain = c.createGain();
+    growlGain.gain.setValueAtTime(0.0001, t + 0.05);
+    growlGain.gain.exponentialRampToValueAtTime(0.18, t + 0.12);
+    growlGain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    growl.connect(low).connect(growlGain).connect(out);
+    growl.start(t + 0.05);
+    growl.stop(t + 0.52);
+  },
+
+  /** Flesh torn away: a long ragged rip over a wet slurp */
+  tear(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const rip = noiseSource(c);
+    const high = c.createBiquadFilter();
+    high.type = "bandpass";
+    high.frequency.setValueAtTime(1400, t);
+    high.frequency.exponentialRampToValueAtTime(3200, t + 0.3);
+    high.Q.value = 1.2;
+    const ragged = c.createGain();
+    ragged.gain.setValueAtTime(0.0001, t);
+    // Stuttering bursts, like fibres giving way one after another
+    for (let at = 0; at < 0.32; at += 0.018 + Math.random() * 0.02) {
+      ragged.gain.setValueAtTime(0.1 + Math.random() * 0.3, t + at);
+      ragged.gain.setValueAtTime(0.02, t + at + 0.01);
+    }
+    ragged.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+    rip.connect(high).connect(ragged).connect(out);
+    rip.start(t, Math.random() * 0.5);
+    rip.stop(t + 0.4);
+    squelch(c, out, t + 0.12, 0.35, 0.5);
   },
 
   /** Earth churning as something digs its way up, then the headstone cracks */
