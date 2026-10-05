@@ -88,29 +88,28 @@
   left: 50%;
   top: -9%;
   bottom: -9%;
-  width: calc(var(--square-size, 72px) * 0.32);
+  width: calc(var(--square-size, 72px) * 0.21);
+  filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.3));
   translate: -50% 0;
   z-index: 2;
 }
 
-/* Twisted strands repeating up the rope, shaded so it reads as round */
+/* Twisted strands repeating up the rope. The rounded shading is cut to the
+   strands' own bumpy outline, so nothing paints between the bulges. */
 .tug-rope {
   position: absolute;
   inset: 0;
-  border-radius: 999px;
   background:
     linear-gradient(
       90deg,
-      rgba(40, 22, 8, 0.55) 0%,
-      rgba(40, 22, 8, 0) 26%,
-      rgba(255, 245, 220, 0.22) 42%,
-      rgba(255, 245, 220, 0) 58%,
-      rgba(40, 22, 8, 0.6) 100%
+      rgba(40, 22, 8, 0.45) 0%,
+      rgba(40, 22, 8, 0) 30%,
+      rgba(255, 245, 220, 0.2) 45%,
+      rgba(255, 245, 220, 0) 60%,
+      rgba(40, 22, 8, 0.5) 100%
     ),
     var(--rope) 0 0 / 100% auto repeat-y;
-  box-shadow:
-    0 0 0 1.5px #4a2c12,
-    4px 5px 0 rgba(42, 26, 16, 0.3);
+  mask: var(--rope) 0 0 / 100% auto repeat-y;
 }
 
 /* Each heave snaps the rope toward the side that won it, then it springs back */
