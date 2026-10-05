@@ -41,6 +41,8 @@ import {
   useSlideAnimation,
   useShotDives,
   useHeave,
+  useTugDrags,
+  DRAG_MS,
   usePlayCall,
   goalReaction,
   DIVE_MS,
@@ -214,6 +216,12 @@ export function Board() {
   }, [portalsDue, travel, slides, settlePortals]);
 
   useGravitySpin(shellRef, overlays.gravityDirection !== null);
+  const tugDrags = useTugDrags(
+    overlays.tug?.heave ?? 0,
+    overlays.tug?.dragged ?? [],
+    flipped,
+    squareSize,
+  );
   const tugYank = useHeave(
     overlays.tug?.heave ?? 0,
     overlays.tug?.heaveDir ?? 0,
@@ -386,38 +394,45 @@ export function Board() {
       const fall = gravityFalls.get(sq);
       const leap = kingLeaps.get(sq);
       const dive = shotDives.get(sq);
+      const hauled = tugDrags.get(sq);
       const pieceStyle = leap
         ? ({
             "--slide-from-x": `${leap.x}px`,
             "--slide-from-y": `${leap.y}px`,
             animation: "br-king-leap 0.75s cubic-bezier(0.3, 0, 0.3, 1) both",
           } as React.CSSProperties)
-        : slide
+        : hauled
           ? ({
-              "--slide-from-x": `${slide.x}px`,
-              "--slide-from-y": `${slide.y}px`,
-              animation: `slide-in ${SLIDE_MS}ms ease-out forwards`,
+              "--slide-from-x": `${hauled.x}px`,
+              "--slide-from-y": `${hauled.y}px`,
+              animation: `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) both`,
             } as React.CSSProperties)
-          : fall
+          : slide
             ? ({
-                "--grav-x": `${fall.x}px`,
-                "--grav-y": `${fall.y}px`,
-                animation: `gravity-drop ${fall.durationMs}ms ${fall.delayMs}ms both`,
+                "--slide-from-x": `${slide.x}px`,
+                "--slide-from-y": `${slide.y}px`,
+                animation: `slide-in ${SLIDE_MS}ms ease-out forwards`,
               } as React.CSSProperties)
-            : dive
+            : fall
               ? ({
-                  "--slide-from-x": `${dive.x}px`,
-                  "--slide-from-y": `${dive.y}px`,
-                  "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
-                  animation: `${dive.x === 0 && dive.y === 0 ? "fifa-jump" : "fifa-dive"} ${DIVE_MS}ms ${dive.delayMs}ms both`,
+                  "--grav-x": `${fall.x}px`,
+                  "--grav-y": `${fall.y}px`,
+                  animation: `gravity-drop ${fall.durationMs}ms ${fall.delayMs}ms both`,
                 } as React.CSSProperties)
-              : piece
-                ? goalReaction(
-                    overlays.football?.lastKick ?? null,
-                    sq,
-                    piece.color,
-                  )
-                : undefined;
+              : dive
+                ? ({
+                    "--slide-from-x": `${dive.x}px`,
+                    "--slide-from-y": `${dive.y}px`,
+                    "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
+                    animation: `${dive.x === 0 && dive.y === 0 ? "fifa-jump" : "fifa-dive"} ${DIVE_MS}ms ${dive.delayMs}ms both`,
+                  } as React.CSSProperties)
+                : piece
+                  ? goalReaction(
+                      overlays.football?.lastKick ?? null,
+                      sq,
+                      piece.color,
+                    )
+                  : undefined;
 
       // Pieces next to a detonating mine are shoved away from it
       const blastFrom = [...minesBlasting].find(

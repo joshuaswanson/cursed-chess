@@ -1,4 +1,4 @@
-import { Color, GameStatus } from "../engine/types";
+import { Color, GameStatus, PieceType } from "../engine/types";
 import type { Piece, SquareIndex } from "../engine/types";
 import type { Board } from "../engine/board";
 import type {
@@ -11,10 +11,6 @@ import { ALL_SQUARES, fileOf } from "../utils/squareUtils";
 
 /** The rope runs up the line between these two files */
 export const ROPE_FILES = [3, 4];
-/** How far the flag moves for each extra hand on the rope, in squares */
-const PULL_PER_HAND = 0.5;
-/** The most the flag can move in one heave */
-const MAX_HEAVE = 1;
 /** Drag the flag this many squares into your half to win */
 export const WIN_LINE = 3;
 
@@ -28,6 +24,8 @@ export interface TugView {
   heave: number;
   /** Which way the last heave went: 1 toward White, -1 toward Black */
   heaveDir: number;
+  /** Pieces the last heave dragged a square along with the rope */
+  dragged: { from: SquareIndex; to: SquareIndex }[];
 }
 
 const onRope = (sq: SquareIndex) => ROPE_FILES.includes(fileOf(sq));
@@ -47,12 +45,14 @@ export class TugOfWarPlugin implements ModePlugin {
   private flag = 0;
   private heave = 0;
   private heaveDir = 0;
+  private dragged: { from: SquareIndex; to: SquareIndex }[] = [];
   private winner: Color | null = null;
 
   onGameStart(): void {
     this.flag = 0;
     this.heave = 0;
     this.heaveDir = 0;
+    this.dragged = [];
     this.winner = null;
   }
 
@@ -67,16 +67,42 @@ export class TugOfWarPlugin implements ModePlugin {
     if (color !== Color.Black) return;
     const white = this.hands(ctx.board, Color.White);
     const black = this.hands(ctx.board, Color.Black);
-    const pull = Math.max(
-      -MAX_HEAVE,
-      Math.min(MAX_HEAVE, (white - black) * PULL_PER_HAND),
-    );
-    if (pull === 0) return;
+    if (white === black) return;
+    const pull = white > black ? 1 : -1;
     this.flag = Math.max(-WIN_LINE, Math.min(WIN_LINE, this.flag + pull));
     this.heave++;
-    this.heaveDir = Math.sign(pull);
+    this.heaveDir = pull;
+    this.dragged = this.dragAlong(ctx.board, pull);
     if (this.flag >= WIN_LINE) this.winner = Color.White;
     if (this.flag <= -WIN_LINE) this.winner = Color.Black;
+  }
+
+  /**
+   * Everyone on the rope is hauled a square the way it went: toward White's
+   * end is down the ranks. A piece only goes if the square is free, and a
+   * pawn is never hauled onto the first or last rank.
+   */
+  private dragAlong(
+    board: Board,
+    pull: number,
+  ): { from: SquareIndex; to: SquareIndex }[] {
+    const step = pull > 0 ? -16 : 16;
+    // Those nearest the end they are hauled toward go first, clearing the way
+    const holders = ALL_SQUARES.filter(
+      (sq) => onRope(sq) && board.get(sq),
+    ).sort((a, b) => (pull > 0 ? a - b : b - a));
+    const moves: { from: SquareIndex; to: SquareIndex }[] = [];
+    for (const from of holders) {
+      const to = from + step;
+      const piece = board.get(from)!;
+      const rank = to >> 4;
+      if (to < 0 || to > 0x77 || board.get(to)) continue;
+      if (piece.type === PieceType.Pawn && (rank === 0 || rank === 7)) continue;
+      board.remove(from);
+      board.put(to, piece);
+      moves.push({ from, to });
+    }
+    return moves;
   }
 
   modifyGameStatus(_ctx: PluginContext, status: GameStatus): GameStatus {
@@ -112,6 +138,7 @@ export class TugOfWarPlugin implements ModePlugin {
       black: this.hands(ctx.board, Color.Black),
       heave: this.heave,
       heaveDir: this.heaveDir,
+      dragged: this.dragged,
     };
     return [{ type: "tug-of-war", squares: [], data: view }];
   }

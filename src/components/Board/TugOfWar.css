@@ -275,6 +275,13 @@
   --side: -1;
 }
 
+/* Hauled a square along with the rope, overshooting a touch as it snaps taut */
+@keyframes tug-haul {
+  from {
+    translate: var(--slide-from-x) var(--slide-from-y);
+  }
+}
+
 /* Pieces on the rope are dragged along with every heave */
 .board.tug-heave .square.rope-square .piece-img {
   animation: rope-drag 0.7s cubic-bezier(0.3, 1.6, 0.5, 1);

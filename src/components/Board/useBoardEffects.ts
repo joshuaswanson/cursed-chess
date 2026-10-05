@@ -367,3 +367,37 @@ export function useHeave(
   }, [yank, heave]);
   return yank;
 }
+
+const DRAG_MS = 560;
+
+/** Pieces a tug of war heave just hauled a square, with where they were hauled from */
+export function useTugDrags(
+  heave: number,
+  dragged: { from: SquareIndex; to: SquareIndex }[],
+  flipped: boolean,
+  squareSize: number,
+): Map<SquareIndex, { x: number; y: number }> {
+  const [seen, setSeen] = useState(heave);
+  const [drags, setDrags] = useState<
+    Map<SquareIndex, { x: number; y: number }>
+  >(new Map());
+  if (heave !== seen) {
+    setSeen(heave);
+    setDrags(
+      new Map(
+        dragged.map(({ from, to }) => [
+          to,
+          offsetBetween(from, to, flipped, squareSize),
+        ]),
+      ),
+    );
+  }
+  useEffect(() => {
+    if (drags.size === 0) return;
+    const done = setTimeout(() => setDrags(new Map()), DRAG_MS + 100);
+    return () => clearTimeout(done);
+  }, [drags]);
+  return drags;
+}
+
+export { DRAG_MS };
