@@ -108,17 +108,17 @@ export const GAME_MODES: GameMode[] = [
     introHoldMs: MODE_CARD_MS + 5200,
   },
   {
-    name: "TUG OF WAR",
-    theme: "tug",
-    create: () => [new TugOfWarPlugin()],
-    durationSeconds: 75,
-    kingsSitOut: true,
-  },
-  {
     name: "FIFA",
     theme: "fifa",
     create: () => [new FootballPlugin()],
     durationSeconds: 60,
+    kingsSitOut: true,
+  },
+  {
+    name: "TUG OF WAR",
+    theme: "tug",
+    create: () => [new TugOfWarPlugin()],
+    durationSeconds: 75,
     kingsSitOut: true,
   },
   {
