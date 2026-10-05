@@ -396,6 +396,8 @@ export function Board() {
       const isLegalTarget = legalMoveSquares.includes(sq);
       const zombie = overlays.zombies?.zombies[sq];
       const grave = overlays.zombies?.graves.find((g) => g.sq === sq);
+      const zombieAct = zombieActs.get(sq);
+      const rising = zombieAct?.kind === "rise" ? zombieAct : null;
       const isLastMove =
         !battle && lastMove && (sq === lastMove.from || sq === lastMove.to);
       const isCheck =
@@ -572,9 +574,7 @@ export function Board() {
           {grave ? (
             <Tombstone look={grave.look} stirring={grave.rounds <= 1} />
           ) : (
-            zombieActs.get(sq)?.kind === "rise" && (
-              <Tombstone look={zombieActs.get(sq)!.look ?? 0} rising />
-            )
+            rising && <Tombstone look={rising.look ?? 0} rising part="stone" />
           )}
           {zombie !== undefined && (
             <ZombiePiece
@@ -587,6 +587,9 @@ export function Board() {
                   : undefined
               }
             />
+          )}
+          {!grave && rising && (
+            <Tombstone look={rising.look ?? 0} rising part="heap" />
           )}
           {piece && !battle && !arrivals.has(sq) && !isLifted && !isDead && (
             <>

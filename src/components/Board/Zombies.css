@@ -12,6 +12,11 @@
   overflow: visible;
 }
 
+/* The heap of earth a zombie climbs out from behind */
+.tombstone.grave-front {
+  z-index: 3;
+}
+
 .grave-shadow {
   fill: rgba(0, 0, 0, 0.35);
 }

@@ -153,10 +153,13 @@ export function Tombstone({
   look,
   stirring = false,
   rising = false,
+  part = "whole",
 }: {
   look: number;
   stirring?: boolean;
   rising?: boolean;
+  /** While the dead rise, the stone stands behind them and the heap of earth in front */
+  part?: "whole" | "stone" | "heap";
 }) {
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const style: Style = {
@@ -169,7 +172,7 @@ export function Tombstone({
   const outline = OUTLINES[look] ?? OUTLINES[0];
   return (
     <svg
-      className={`tombstone${state}`}
+      className={`tombstone${state}${part === "heap" ? " grave-front" : ""}`}
       viewBox="0 0 100 100"
       style={style}
       aria-hidden
@@ -207,42 +210,46 @@ export function Tombstone({
           <circle cx="2.6" cy="4.2" r="0.4" fill="#24160a" opacity="0.5" />
         </pattern>
       </defs>
-      <g className="headstone">
-        <path
-          d={outline}
-          transform="translate(4.5 -2.5)"
-          className="headstone-side"
-        />
-        <path
-          d={outline}
-          fill={`url(#${id}-stone)`}
-          className="headstone-face"
-        />
-        <path d={outline} fill={`url(#${id}-grain)`} />
-        <Details look={look} />
-        {(stirring || rising) && (
+      {part !== "heap" && (
+        <g className="headstone">
           <path
-            d="M50 10 L46 26 L54 36 L47 50 L55 62"
-            className="headstone-crack"
+            d={outline}
+            transform="translate(4.5 -2.5)"
+            className="headstone-side"
           />
-        )}
-      </g>
-      <g className="grave-mound">
-        <ellipse cx="50" cy="92" rx="46" ry="5" className="grave-shadow" />
-        <path d={MOUND} fill={`url(#${id}-earth)`} className="grave-earth" />
-        <path d={MOUND_LIT} className="grave-lit" />
-        <path d={MOUND} fill={`url(#${id}-crumbs)`} />
-        <ellipse cx="34" cy="86" rx="2.4" ry="1.6" className="grave-stone" />
-        <ellipse cx="66" cy="84" rx="1.8" ry="1.3" className="grave-stone" />
-        <ellipse cx="52" cy="89" rx="1.4" ry="1" className="grave-stone" />
-        {CLODS.map((d) => (
-          <path key={d} d={d} className="grave-clod" />
-        ))}
-        <path
-          d="M8 90 l-2 -6 M10 90 l1 -7 M12 90 l3 -5 M90 89 l-1 -6 M92 89 l2 -5"
-          className="grave-grass"
-        />
-      </g>
+          <path
+            d={outline}
+            fill={`url(#${id}-stone)`}
+            className="headstone-face"
+          />
+          <path d={outline} fill={`url(#${id}-grain)`} />
+          <Details look={look} />
+          {(stirring || rising) && (
+            <path
+              d="M50 10 L46 26 L54 36 L47 50 L55 62"
+              className="headstone-crack"
+            />
+          )}
+        </g>
+      )}
+      {part !== "stone" && (
+        <g className="grave-mound">
+          <ellipse cx="50" cy="92" rx="46" ry="5" className="grave-shadow" />
+          <path d={MOUND} fill={`url(#${id}-earth)`} className="grave-earth" />
+          <path d={MOUND_LIT} className="grave-lit" />
+          <path d={MOUND} fill={`url(#${id}-crumbs)`} />
+          <ellipse cx="34" cy="86" rx="2.4" ry="1.6" className="grave-stone" />
+          <ellipse cx="66" cy="84" rx="1.8" ry="1.3" className="grave-stone" />
+          <ellipse cx="52" cy="89" rx="1.4" ry="1" className="grave-stone" />
+          {CLODS.map((d) => (
+            <path key={d} d={d} className="grave-clod" />
+          ))}
+          <path
+            d="M8 90 l-2 -6 M10 90 l1 -7 M12 90 l3 -5 M90 89 l-1 -6 M92 89 l2 -5"
+            className="grave-grass"
+          />
+        </g>
+      )}
     </svg>
   );
 }
