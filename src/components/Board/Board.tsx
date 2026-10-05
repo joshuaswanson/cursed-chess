@@ -294,6 +294,7 @@ export function Board() {
       ? overlays.zombies.bounce
       : null;
   useGraveBounce(graveBounce);
+  const menace = overlays.zombies?.menace ?? null;
   const capture = useCaptureBurst(
     cursed && lastPortalMove === null && lastRecord?.move.captured
       ? lastRecord.move.to
@@ -418,6 +419,7 @@ export function Board() {
       if (sq === selectedSquare) className += " selected";
       if (isLastMove && !isDead) className += " last-move";
       if (isCheck) className += " in-check";
+      if (menace?.king === sq) className += " zombie-target";
       if (drag?.isDragging && isLegalTarget) className += " drag-target";
       if (isDeployTarget) className += " deploy-target";
       if (minesArmed.has(sq)) className += " mine-armed";
@@ -575,7 +577,16 @@ export function Board() {
             )
           )}
           {zombie !== undefined && (
-            <ZombiePiece type={zombie} sq={sq} act={zombieActs.get(sq)} />
+            <ZombiePiece
+              type={zombie}
+              sq={sq}
+              act={zombieActs.get(sq)}
+              reach={
+                menace?.zombies.includes(sq)
+                  ? offsetBetween(menace.king, sq, flipped, squareSize)
+                  : undefined
+              }
+            />
           )}
           {piece && !battle && !arrivals.has(sq) && !isLifted && !isDead && (
             <>

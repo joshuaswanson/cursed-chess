@@ -983,9 +983,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
     if (moves.length === 0) {
-      const status = game.isInCheck()
-        ? GameStatus.Checkmate
-        : GameStatus.Stalemate;
+      const status =
+        game.isInCheck() || get().status === GameStatus.Check
+          ? GameStatus.Checkmate
+          : GameStatus.Stalemate;
       set({ status });
       endGameSoon(status === GameStatus.Checkmate ? opponent(game.turn) : null);
       return;

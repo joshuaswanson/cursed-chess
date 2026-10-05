@@ -910,3 +910,47 @@
     rotate: 0deg;
   }
 }
+
+/* A zombie beside the king to move reaches for it, drooling, ready to bite at the end of the round */
+.zombie-menace {
+  z-index: 4;
+  animation: zombie-reach 0.9s ease-in-out infinite alternate;
+}
+
+.zombie-menace .zombie-body {
+  animation: zombie-strain 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes zombie-reach {
+  from {
+    translate: calc(var(--from-x) * 0.06) calc(var(--from-y) * 0.06);
+  }
+  to {
+    translate: calc(var(--from-x) * 0.22) calc(var(--from-y) * 0.22);
+  }
+}
+
+@keyframes zombie-strain {
+  from {
+    rotate: calc(var(--toward) * 6deg);
+    scale: 1;
+  }
+  to {
+    rotate: calc(var(--toward) * 16deg);
+    scale: 1.06 0.97;
+  }
+}
+
+/* The king it is reaching for trembles where it stands */
+.square.zombie-target .piece-img {
+  animation: king-dread 0.18s linear infinite alternate;
+}
+
+@keyframes king-dread {
+  from {
+    translate: -2px 0;
+  }
+  to {
+    translate: 2px -1px;
+  }
+}

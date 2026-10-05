@@ -57,6 +57,8 @@ export interface ZombieView {
   round: number;
   events: ZombieEvent[];
   bounce: ZombieBounce | null;
+  /** The king of the side to move, if a zombie stands next to it, and the zombies about to bite it */
+  menace: { king: SquareIndex; zombies: SquareIndex[] } | null;
 }
 
 const reach = (a: SquareIndex, b: SquareIndex) =>
@@ -68,6 +70,10 @@ const reach = (a: SquareIndex, b: SquareIndex) =>
  * each one shambles a square toward the nearest living piece of either army,
  * or bites a piece next to it and turns it into one of them. Either side can
  * put a zombie down by capturing it. A side whose king is bitten loses.
+ *
+ * Zombies bite at the end of every round, so a king may never end its side's
+ * move next to one. A king with a zombie beside it is in check: it must step
+ * away, or someone must put the zombie down. With no way out it is mated.
  */
 export class ZombiesPlugin implements ModePlugin {
   id = "zombies";
@@ -131,7 +137,34 @@ export class ZombiesPlugin implements ModePlugin {
         });
       }
     }
-    return kept;
+    return kept.filter((move) => this.leavesKingSafe(ctx.board, move, color));
+  }
+
+  /** The zombies standing next to a square, leaving out one put down this move */
+  private zombiesBeside(sq: SquareIndex, killed?: SquareIndex): SquareIndex[] {
+    return [...this.zombies.keys()].filter(
+      (z) => z !== killed && reach(z, sq) === 1,
+    );
+  }
+
+  /**
+   * Whether the mover's king ends the move clear of every zombie, and, for
+   * the pawn captures the engine never checked, out of check
+   */
+  private leavesKingSafe(board: Board, move: Move, color: Color): boolean {
+    const king =
+      move.piece.type === PieceType.King ? move.to : board.findKing(color);
+    if (king === null) return true;
+    const killed = this.zombies.has(move.to) ? move.to : undefined;
+    if (this.zombiesBeside(king, killed).length > 0) return false;
+    if (!(move.flags & MoveFlag.ModeMove)) return true;
+    const after = board.clone();
+    after.remove(move.from);
+    after.put(move.to, {
+      type: move.promotion ?? move.piece.type,
+      color: move.piece.color,
+    });
+    return !isSquareAttacked(after, king, opponent(color));
   }
 
   /** Whether a sliding or stepping move would pass over a zombie on its way */
@@ -201,7 +234,9 @@ export class ZombiesPlugin implements ModePlugin {
       board.put(sq, piece);
       const king = board.findKing(piece.color);
       const safe =
-        king === null || !isSquareAttacked(board, king, opponent(piece.color));
+        king === null ||
+        (!isSquareAttacked(board, king, opponent(piece.color)) &&
+          this.zombiesBeside(king).length === 0);
       board.remove(sq);
       board.put(from, piece);
       if (safe) return sq;
@@ -296,8 +331,28 @@ export class ZombiesPlugin implements ModePlugin {
     if (piece.type === PieceType.King) this.winner = opponent(piece.color);
   }
 
-  modifyGameStatus(_ctx: PluginContext, status: GameStatus): GameStatus {
-    return this.winner !== null ? GameStatus.Checkmate : status;
+  /** A zombie beside the king to move is check, and with no way out, mate */
+  modifyGameStatus(ctx: PluginContext, status: GameStatus): GameStatus {
+    if (this.winner !== null) return GameStatus.Checkmate;
+    if (status !== GameStatus.Active && status !== GameStatus.Check) {
+      return status;
+    }
+    const color = ctx.game.turn;
+    const menaced = this.menace(ctx.board, color) !== null;
+    const moves = this.modifyLegalMoves(ctx, ctx.game.getLegalMoves(), color);
+    if (moves.length === 0) {
+      return menaced || status === GameStatus.Check
+        ? GameStatus.Checkmate
+        : GameStatus.Stalemate;
+    }
+    return menaced ? GameStatus.Check : status;
+  }
+
+  private menace(board: Board, color: Color): ZombieView["menace"] {
+    const king = board.findKing(color);
+    if (king === null) return null;
+    const zombies = this.zombiesBeside(king);
+    return zombies.length > 0 ? { king, zombies } : null;
   }
 
   getWinner(): Color | null {
@@ -324,13 +379,14 @@ export class ZombiesPlugin implements ModePlugin {
     return piece.type === PieceType.King ? -50 : -1.5;
   }
 
-  getBoardOverlays(): BoardOverlay[] {
+  getBoardOverlays(ctx: PluginContext): BoardOverlay[] {
     const view: ZombieView = {
       zombies: Object.fromEntries(this.zombies),
       graves: this.graves.map((g) => ({ ...g })),
       round: this.round,
       events: this.events,
       bounce: this.bounce,
+      menace: this.menace(ctx.board, ctx.game.turn),
     };
     return [{ type: "zombies", squares: [...this.zombies.keys()], data: view }];
   }

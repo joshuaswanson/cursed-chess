@@ -131,20 +131,25 @@ export function ZombiePiece({
   type,
   sq,
   act,
+  reach,
 }: {
   type: PieceType;
   sq: number;
   act: ZombieAct | undefined;
+  /** Where the king it is about to bite stands, if it is next to one */
+  reach?: { x: number; y: number };
 }) {
   const image = zombieImage(type);
-  const x = act?.x ?? 0;
-  const y = act?.y ?? 0;
+  const menacing = !act && reach !== undefined;
+  const x = act?.x ?? reach?.x ?? 0;
+  const y = act?.y ?? reach?.y ?? 0;
   const style: Style = {
     "--from-x": `${x}px`,
     "--from-y": `${y}px`,
     "--side-x": `${50 + Math.sign(x) * 32}%`,
     "--side-y": `${45 + Math.sign(y) * 28}%`,
     "--away": `${-Math.sign(x) || 1}`,
+    "--toward": `${Math.sign(x)}`,
     "--delay": `${ZOMBIE_DELAY_MS}ms`,
     "--rise-ms": `${ZOMBIE_RISE_MS}ms`,
     "--bite-ms": `${ZOMBIE_BITE_MS}ms`,
@@ -152,7 +157,10 @@ export function ZombiePiece({
   };
   const bitten = act?.kind === "bitten" && act.was;
   return (
-    <div className={`zombie${act ? ` zombie-${act.kind}` : ""}`} style={style}>
+    <div
+      className={`zombie${act ? ` zombie-${act.kind}` : ""}${menacing ? " zombie-menace" : ""}`}
+      style={style}
+    >
       {act?.kind === "rise" && (
         <>
           <span className="rise-clods" aria-hidden>
