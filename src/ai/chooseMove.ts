@@ -70,7 +70,9 @@ function scoreMove(game: Game, move: Move, squareBonus: SquareBonus): number {
 
   const after = new Game(game.toFen());
   after.pawnRules = game.pawnRules;
-  if (!after.makeMove(move)) return -Infinity;
+  // Moves a mode allows beyond the engine's own rules, like a pawn taking a zombie
+  if (move.flags & MoveFlag.ModeMove) after.executeTrustedMove(move);
+  else if (!after.makeMove(move)) return -Infinity;
 
   const status = after.getStatus();
   if (status === GameStatus.Checkmate) return CHECKMATE_SCORE;
