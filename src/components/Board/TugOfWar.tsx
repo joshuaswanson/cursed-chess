@@ -23,6 +23,8 @@ const FLAG_FOLDS = [
   "M24 8 C22 18 26 26 24 34 M44 5 C46 15 42 27 45 36",
 ];
 
+const STRUGGLE = new Set(["tug-surge", "tug-lean-white", "tug-lean-black"]);
+
 /** How far down the board, in squares, a spot `toWhite` squares from the center line toward White sits */
 const fromTop = (toWhite: number, flipped: boolean) =>
   4 + (flipped ? -toWhite : toWhite);
@@ -42,6 +44,20 @@ export function TugLayer({
   useEffect(() => {
     if (view.heave > 0) sfx.heave();
   }, [view.heave]);
+
+  // A piece that steps onto the rope joins the struggle mid-cycle, in step
+  // with the rope and everyone else on it, by sharing one clock with them
+  useEffect(() => {
+    for (const animation of document.getAnimations()) {
+      if (
+        animation instanceof CSSAnimation &&
+        STRUGGLE.has(animation.animationName) &&
+        animation.startTime !== 0
+      ) {
+        animation.startTime = 0;
+      }
+    }
+  });
 
   const flagTop = fromTop(view.flag, flipped);
   // Which way the last heave went on screen: down is positive
