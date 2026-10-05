@@ -1,6 +1,6 @@
 import "./Logo.css";
 
-/** CURSED as a leaning, glitching gradient wordmark; CHESS in shaded block letters */
+/** CURSED as a leaning, glitching gradient wordmark; CHESS in plain block letters with the same outline and shadow */
 export function Logo() {
   return (
     <div className="logo" aria-label="Cursed Chess">

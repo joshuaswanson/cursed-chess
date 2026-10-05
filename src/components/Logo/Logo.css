@@ -72,9 +72,12 @@
   }
 }
 
+/* Outlined and shadowed exactly like CURSED, so the two words sit together */
 .logo-chess {
-  font-family: var(--font-shade);
   color: var(--paper);
-  letter-spacing: 0.02em;
-  text-shadow: 0.05em 0.05em 0 var(--plum-ink);
+  letter-spacing: -0.02em;
+  filter: drop-shadow(2px 0 0 var(--plum-ink))
+    drop-shadow(-2px 0 0 var(--plum-ink)) drop-shadow(0 2px 0 var(--plum-ink))
+    drop-shadow(0 -2px 0 var(--plum-ink))
+    drop-shadow(0.07em 0.07em 0 var(--plum-ink));
 }
