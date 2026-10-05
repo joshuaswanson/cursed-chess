@@ -125,6 +125,11 @@ export const GAME_MODES: GameMode[] = [
     kingsSitOut: true,
   },
   {
+    name: "MINEFIELD",
+    theme: "mines",
+    create: () => [new MinefieldPlugin()],
+  },
+  {
     name: "BATTLE ROYALE",
     theme: "royale",
     create: () => [new BattleRoyalePlugin()],
@@ -135,11 +140,6 @@ export const GAME_MODES: GameMode[] = [
     create: () => [new RallyPlugin()],
     noReinforcements: true,
     durationSeconds: 75,
-  },
-  {
-    name: "MINEFIELD",
-    theme: "mines",
-    create: () => [new MinefieldPlugin()],
   },
   {
     name: "KING OF THE HILL",
