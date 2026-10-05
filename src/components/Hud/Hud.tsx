@@ -64,9 +64,11 @@ function NowPlaying() {
     modeIndex < 0
       ? MODE_SECONDS
       : (GAME_MODES[modeIndex].durationSeconds ?? MODE_SECONDS);
-  // Modes the kings sit out have no clock; they run until someone wins
+  // Modes the kings sit out, and some others, have no clock; they run until someone wins
   const untimed =
-    devMode || (modeIndex >= 0 && GAME_MODES[modeIndex].kingsSitOut);
+    devMode ||
+    (modeIndex >= 0 &&
+      (GAME_MODES[modeIndex].kingsSitOut || GAME_MODES[modeIndex].untilWon));
   const fraction = untimed ? 1 : Math.max(0, Math.min(1, remaining / duration));
   const tagline = theme.tagline;
   const urgent = !untimed && remaining <= 5;

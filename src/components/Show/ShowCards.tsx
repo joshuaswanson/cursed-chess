@@ -128,6 +128,21 @@ function Flair({ theme }: { theme: ThemeId }) {
       );
     case "stratego":
       return <span className="card-stamp-ring" />;
+    case "trenches":
+      return (
+        <>
+          <span className="card-rain" />
+          <span className="card-flash" />
+          <svg
+            className="card-wire"
+            viewBox="0 0 400 20"
+            preserveAspectRatio="none"
+          >
+            <path d="M0 10 Q10 0 20 10 T40 10 T60 10 T80 10 T100 10 T120 10 T140 10 T160 10 T180 10 T200 10 T220 10 T240 10 T260 10 T280 10 T300 10 T320 10 T340 10 T360 10 T380 10 T400 10" />
+            <path d="M15 6 l4 -4 M55 14 l4 4 M95 6 l4 -4 M135 14 l4 4 M175 6 l4 -4 M215 14 l4 4 M255 6 l4 -4 M295 14 l4 4 M335 6 l4 -4 M375 14 l4 4" />
+          </svg>
+        </>
+      );
     case "zombies":
       return (
         <>
@@ -147,7 +162,10 @@ function Flair({ theme }: { theme: ThemeId }) {
           <span className="card-tug-ground" />
           <div className="card-tug">
             {TUG_TEAMS.map(({ color, line }) => (
-              <div key={color} className={`card-tug-team card-tug-team-${color}`}>
+              <div
+                key={color}
+                className={`card-tug-team card-tug-team-${color}`}
+              >
                 <span className="card-dust" />
                 {line.map((type, n) => (
                   <img

@@ -1,0 +1,83 @@
+/* --- Trenches: the front, running on off both sides of the board --- */
+
+.world-trenches {
+  position: absolute;
+  z-index: 0;
+  left: calc(var(--square-size) * var(--reach) * -1);
+  top: calc(var(--square-size) * var(--margin) * -1);
+  width: calc(var(--square-size) * (8 + 2 * var(--reach)));
+  height: calc(var(--square-size) * (8 + 2 * var(--margin)));
+  pointer-events: none;
+  /* Drawn once and kept, however much moves over it */
+  will-change: transform;
+}
+
+.parados {
+  fill: #574632;
+  stroke: #2e2418;
+  stroke-width: 1.5;
+}
+
+/* The cut itself: dark wet earth, its walls shored with timber */
+.trench-cut {
+  fill: #241a10;
+}
+
+.trench-wall {
+  fill: none;
+  stroke: #6b4f30;
+  stroke-width: 3.2;
+  stroke-linejoin: round;
+}
+
+/* Duckboards along the bottom, gaps and all */
+.duckboard-bed {
+  fill: none;
+  stroke: #17100a;
+  stroke-width: 16;
+}
+
+.duckboards {
+  fill: none;
+  stroke: #7a5d3a;
+  stroke-width: 13;
+  stroke-dasharray: 6 2.6;
+}
+
+.trench-water {
+  fill: #3f4748;
+  stroke: #5f6a6b;
+  stroke-width: 1;
+  opacity: 0.85;
+}
+
+.sandbag {
+  fill: #75674a;
+  stroke: #2a2014;
+  stroke-width: 1.4;
+}
+
+.comms-cut {
+  fill: none;
+  stroke: #241a10;
+  stroke-width: 30;
+  stroke-linejoin: round;
+}
+
+.comms-floor {
+  fill: none;
+  stroke: #6e5434;
+  stroke-width: 9;
+  stroke-dasharray: 5 2.4;
+  stroke-linejoin: round;
+}
+
+.world-wire {
+  fill: none;
+  stroke: #2b2925;
+  stroke-width: 1.8;
+}
+
+.world-post {
+  fill: #3b2b1a;
+}

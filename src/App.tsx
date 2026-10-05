@@ -11,6 +11,8 @@ import { Hud } from "./components/Hud/Hud";
 import { FoeRallyBar, YourRallyBar } from "./components/RallyPanel/RallyPanel";
 import { Backdrop } from "./components/Backdrop/Backdrop";
 import { SpaceTraffic } from "./components/Backdrop/SpaceTraffic";
+import { TrenchOrders } from "./components/Trenches/TrenchOrders";
+import { TrenchWeather } from "./components/Trenches/TrenchWeather";
 import { BoringPage } from "./components/BoringSite/BoringPages";
 import { PageFog } from "./components/Fog/Fog";
 import { Logo } from "./components/Logo/Logo";
@@ -97,6 +99,7 @@ function App() {
               <SkipBanner />
             </div>
             {cursed && <YourRallyBar />}
+            {cursed && theme.id === "trenches" && <TrenchOrders />}
           </div>
           {cursed ? <Hud /> : <BoringSidebar />}
         </main>
@@ -104,6 +107,7 @@ function App() {
       {!cursed && <BoringFooter />}
       <PageFog active={theme.id === "fog" && introDone} />
       {cursed && theme.id === "portals" && <SpaceTraffic />}
+      {cursed && theme.id === "trenches" && <TrenchWeather />}
       <PromotionDialog />
       <ShowCards />
       <CurseIntro />

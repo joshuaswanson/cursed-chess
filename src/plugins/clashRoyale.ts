@@ -87,6 +87,14 @@ export type BattleEvent =
       ranged: boolean;
       kill: boolean;
       hitMs: number;
+      /** A gunshot, from a rifle or a machine gun, drawn as a tracer */
+      weapon?: "rifle" | "mg";
+      /** The shot or blow went wide, landing this far off the target in squares */
+      miss?: boolean;
+      impact?: { x: number; y: number };
+      /** How long after the event the shot is fired, and which round of a burst it is */
+      delayMs?: number;
+      round?: number;
     }
   | {
       kind: "death";
@@ -102,11 +110,20 @@ export type BattleEvent =
       unitId: number;
       sq: SquareIndex;
       color: Color;
+    }
+  | {
+      /** An artillery shell coming down on a square */
+      kind: "shell";
+      id: number;
+      sq: SquareIndex;
+      delayMs: number;
     };
 
 export interface BattleView {
   units: Record<number, Unit>;
   events: BattleEvent[];
+  /** What each unit carries, by unit id, where pieces are armed */
+  arms?: Record<number, "rifle" | "mg">;
 }
 
 type Unstamped<E> = E extends BattleEvent ? Omit<E, "id"> : never;

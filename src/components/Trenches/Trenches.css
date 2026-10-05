@@ -1,0 +1,229 @@
+/* --- Trenches: your orders, and the weather over the front --- */
+
+.trench-orders {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 14px;
+  color: #efe6cf;
+  background:
+    radial-gradient(circle at 12px 12px, #2b2416 0 3px, transparent 4px) 0 0 /
+      calc(100% - 24px) calc(100% - 24px) no-repeat,
+    linear-gradient(90deg, #4c4430, #6b603f);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 5px 6px 0 var(--ink);
+}
+
+/* Stencilled on a khaki crate lid; it drains while the whistle recovers */
+.attack-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 22px;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff4dc;
+  background: linear-gradient(180deg, #a3301f, #6e1a10);
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  box-shadow: 4px 5px 0 var(--ink);
+  cursor: pointer;
+  transition:
+    translate 0.08s,
+    box-shadow 0.08s;
+}
+
+.attack-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 16, 10, 0.55);
+  transform-origin: 0 50%;
+  scale: var(--recharge, 0) 1;
+}
+
+.attack-button:hover:not(:disabled) {
+  translate: 0 -2px;
+  box-shadow: 4px 7px 0 var(--ink);
+}
+
+.attack-button:active:not(:disabled) {
+  translate: 2px 3px;
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.attack-button:focus-visible {
+  outline: 3px solid #f2c94c;
+  outline-offset: 3px;
+}
+
+.attack-button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.6) brightness(0.8);
+}
+
+/* A trench whistle */
+.attack-whistle {
+  position: relative;
+  z-index: 1;
+  width: 30px;
+  height: 18px;
+  border-radius: 9px 4px 4px 9px;
+  background: linear-gradient(#e6e9ee, #8c929b);
+  border: 2px solid var(--ink);
+}
+
+.attack-whistle::after {
+  content: "";
+  position: absolute;
+  right: -9px;
+  top: 3px;
+  width: 9px;
+  height: 7px;
+  background: #8c929b;
+  border: 2px solid var(--ink);
+  border-left: 0;
+}
+
+.trench-status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-ui);
+}
+
+.trench-status strong {
+  font-size: 17px;
+}
+
+.trench-status span {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.trench-warning {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  translate: 0 -50%;
+  padding: 6px 14px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: #fff4dc;
+  background: #8a1d12;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  animation: warning-pulse 0.5s ease-in-out 4 alternate;
+}
+
+@keyframes warning-pulse {
+  to {
+    scale: 1.08;
+    background: #c22a18;
+  }
+}
+
+/* Rain driving down over the whole front, in two sheets at different depths */
+.trench-weather {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.rain {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: -100%;
+  height: 200%;
+  will-change: transform;
+}
+
+.rain-far {
+  opacity: 0.22;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='140'%3E%3Cg stroke='%23c8d2d8' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M10 0 l-6 26'/%3E%3Cpath d='M48 50 l-6 26'/%3E%3Cpath d='M75 15 l-6 26'/%3E%3Cpath d='M28 90 l-6 26'/%3E%3Cpath d='M66 104 l-6 26'/%3E%3C/g%3E%3C/svg%3E")
+    0 0 / 90px 140px;
+  animation: rain-fall-far 0.9s linear infinite;
+}
+
+.rain-near {
+  opacity: 0.32;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='220'%3E%3Cg stroke='%23dfe7ea' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M20 0 l-10 46'/%3E%3Cpath d='M96 70 l-10 46'/%3E%3Cpath d='M140 20 l-10 46'/%3E%3Cpath d='M58 140 l-10 46'/%3E%3C/g%3E%3C/svg%3E")
+    0 0 / 160px 220px;
+  animation: rain-fall-near 0.5s linear infinite;
+}
+
+/* Each sheet falls exactly one tile, so the loop never shows */
+@keyframes rain-fall-far {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-24px, 140px);
+  }
+}
+
+@keyframes rain-fall-near {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-48px, 220px);
+  }
+}
+
+/* Lightning: a bolt in the sky, and the whole front flashing white */
+.lightning {
+  position: absolute;
+  inset: 0;
+  background: rgba(230, 236, 255, 0.55);
+  opacity: 0;
+  animation: lightning-flash 0.8s ease-out both;
+}
+
+.lightning .bolt {
+  position: absolute;
+  top: 0;
+  width: 60px;
+  height: 46%;
+  fill: #f6f8ff;
+  filter: drop-shadow(0 0 12px #cfd8ff);
+}
+
+@keyframes lightning-flash {
+  0% {
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.9;
+  }
+  14% {
+    opacity: 0.15;
+  }
+  22% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rain {
+    animation: none;
+  }
+
+  .lightning {
+    animation-duration: 0.2s;
+  }
+}

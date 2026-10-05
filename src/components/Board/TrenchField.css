@@ -1,0 +1,211 @@
+/* --- Trenches: the scarred ground between the board and the pieces --- */
+
+.trench-field {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.trench-field > * {
+  position: absolute;
+}
+
+.trench-field > .crater,
+.trench-field > .gun-nest,
+.trench-field > .wire-cell,
+.trench-field > .fallen {
+  width: 12.5%;
+  height: 12.5%;
+}
+
+/* A shell hole: a churned rim around brown standing water */
+.crater {
+  background:
+    radial-gradient(
+      ellipse 34% 28% at 50% 54%,
+      #3a3a32 0 40%,
+      #4b4a3e 58%,
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 46% 40% at 50% 54%,
+      #2a1d10 0 64%,
+      #6a5236 70%,
+      #4a3622 80%,
+      transparent 86%
+    );
+  opacity: 0.95;
+  animation: crater-open 0.4s ease-out both;
+}
+
+@keyframes crater-open {
+  from {
+    scale: 0.3;
+    opacity: 0;
+  }
+}
+
+/* A horseshoe of sandbags around the machine gun */
+.gun-nest {
+  border-radius: 50% 50% 18% 18%;
+  border: 0.32em solid transparent;
+  background: radial-gradient(
+    ellipse 50% 50%,
+    transparent 52%,
+    #8f7e58 54% 70%,
+    #2a2014 72%,
+    transparent 76%
+  );
+  scale: 1.2 0.9;
+}
+
+.gun-nest.faces-down {
+  rotate: 180deg;
+}
+
+/* A helmet left in the mud where its owner fell */
+.fallen svg {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 52%;
+  height: 40%;
+  overflow: visible;
+  animation: helmet-drop 0.5s ease-out both;
+}
+
+@keyframes helmet-drop {
+  from {
+    translate: 0 -40%;
+    opacity: 0;
+  }
+}
+
+.fallen-mud {
+  fill: rgba(30, 20, 10, 0.55);
+}
+
+.helmet-brim,
+.helmet-dome {
+  stroke: #15120c;
+  stroke-width: 1.6;
+}
+
+.helmet-brim.tommy,
+.helmet-dome.tommy {
+  fill: #6f6a44;
+}
+
+.helmet-dome.fritz {
+  fill: #5d6560;
+}
+
+.helmet-rim {
+  fill: none;
+  stroke: #2f3532;
+  stroke-width: 1.4;
+}
+
+/* Barbed wire on its posts */
+.wire-coil {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.wire-post {
+  stroke: #3b2b1a;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.wire-strand {
+  fill: none;
+  stroke: #2c2a26;
+  stroke-width: 2.2;
+}
+
+.wire-glint {
+  stroke: #8b877c;
+  stroke-width: 0.8;
+  stroke-dasharray: 6 9;
+}
+
+.wire-barb {
+  stroke: #2c2a26;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+/* A flare: it climbs from the line, then hangs and sinks, its cold light spreading over the mud */
+.trench-field > .flare {
+  inset: 0;
+  overflow: visible;
+}
+
+.flare i {
+  position: absolute;
+  left: var(--x);
+  top: 50%;
+  width: 1.4%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fffbe6;
+  box-shadow:
+    0 0 10px 4px rgba(255, 250, 220, 0.9),
+    0 0 40px 16px rgba(220, 230, 200, 0.35);
+  animation: flare-arc 6s ease-out both;
+}
+
+.flare::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--x) - 35%);
+  top: 5%;
+  width: 70%;
+  height: 90%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(230, 240, 210, 0.22),
+    transparent
+  );
+  mix-blend-mode: screen;
+  animation: flare-light 6s ease-out both;
+}
+
+@keyframes flare-arc {
+  0% {
+    translate: 0 300%;
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  22% {
+    translate: calc(var(--drift) * 2) -1400%;
+  }
+  85% {
+    translate: calc(var(--drift) * 6) -300%;
+    opacity: 1;
+  }
+  100% {
+    translate: calc(var(--drift) * 7) 0%;
+    opacity: 0;
+  }
+}
+
+@keyframes flare-light {
+  0%,
+  15% {
+    opacity: 0;
+  }
+  25%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

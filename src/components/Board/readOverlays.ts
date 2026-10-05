@@ -6,6 +6,7 @@ import type { BattleView } from "../../plugins/clashRoyale";
 import type { FootballView } from "../../plugins/football";
 import type { TugView } from "../../plugins/tugOfWar";
 import type { ZombieView } from "../../plugins/zombies";
+import type { TrenchView } from "../../plugins/trenches";
 
 export interface PortalPair {
   a: SquareIndex;
@@ -22,6 +23,7 @@ export interface BoardOverlays {
   football: FootballView | null;
   tug: TugView | null;
   zombies: ZombieView | null;
+  trenches: TrenchView | null;
   hillSquares: SquareIndex[];
   /** Rounds each side has held the hill in a row, and how many it takes to win */
   hillStreak: { white: number; black: number; needed: number };
@@ -45,6 +47,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     football: null,
     tug: null,
     zombies: null,
+    trenches: null,
     hillSquares: [],
     hillStreak: { white: 0, black: 0, needed: 3 },
     battleRoyale: null,
@@ -116,6 +119,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
         break;
       case "minefield":
         result.pendingExplosions = overlay.squares;
+        break;
+      case "trenches":
+        result.trenches = overlay.data as TrenchView;
         break;
       case "zombies":
         result.zombies = overlay.data as ZombieView;

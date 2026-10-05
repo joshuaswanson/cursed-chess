@@ -441,8 +441,8 @@ export const ZOMBIE_BITE_MS = 3400;
 const BITE_CONTACT = 0.47;
 const BITE_RIP = 0.67;
 
-/** The board jolts as teeth sink in */
-function shakeBoard(): void {
+/** The board jolts, as teeth sink in or a shell lands */
+export function shakeBoard(): void {
   document
     .querySelector<HTMLElement>(".board-shell")
     ?.animate(

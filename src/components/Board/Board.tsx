@@ -25,6 +25,9 @@ import { Sideline } from "./Sideline";
 import { HillThrone } from "./HillThrone";
 import { TugLayer } from "./TugOfWar";
 import { Tombstone, ZombiePiece } from "./Zombies";
+import type { TrenchView } from "../../plugins/trenches";
+import { TrenchField } from "./TrenchField";
+import { WorldTrenches } from "./WorldTrenches";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
 import { BoardFog } from "../Fog/Fog";
@@ -64,6 +67,17 @@ const FILES = "abcdefgh";
 const PORTAL_SETTLE_MS = 150;
 
 /** Warns that gravity is turning: the arrow starts at the new fall direction and swings down with the board */
+/** How a unit in the trenches stands: caught on the wire, charging, or just holding */
+function trenchStance(
+  view: TrenchView | null,
+  unitId: number | undefined,
+): "snagged" | "charging" | undefined {
+  if (!view || unitId === undefined) return undefined;
+  if (view.snagged.includes(unitId)) return "snagged";
+  if (view.charging.includes(unitId)) return "charging";
+  return undefined;
+}
+
 /** A one-square step from one square toward another, however far apart they are */
 function oneSquareToward(
   target: number,
@@ -580,6 +594,7 @@ export function Board() {
               view={battle}
               flipped={flipped}
               squareSize={squareSize}
+              stance={trenchStance(overlays.trenches, battle.units[sq]?.id)}
             />
           )}
           {piece && arrivals.has(sq) && (
@@ -743,6 +758,7 @@ export function Board() {
           onPointerUp={onPointerUp}
         >
           {lakes.size > 0 && <WorldRiver rows={riverRanks.size} />}
+          {overlays.trenches && <WorldTrenches flipped={flipped} />}
           {lakes.size > 0 && (
             <Battlefield
               riverRows={[...riverRanks].map((r) => (flipped ? r : 7 - r))}
@@ -760,6 +776,9 @@ export function Board() {
               flipped={flipped}
               delayMs={heaveDelay}
             />
+          )}
+          {overlays.trenches && (
+            <TrenchField view={overlays.trenches} flipped={flipped} />
           )}
           {hill.length > 0 && (
             <HillThrone

@@ -1509,3 +1509,92 @@
     clip-path: inset(-20% -20% -20% -20%);
   }
 }
+
+/* --- Trenches: a mud-caked band under driving rain, wire along its foot, a flash of lightning --- */
+
+[data-card-theme="trenches"] .card-band {
+  background:
+    radial-gradient(
+      ellipse 20% 60% at 15% 70%,
+      rgba(20, 14, 8, 0.5),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 25% 50% at 80% 30%,
+      rgba(20, 14, 8, 0.45),
+      transparent 70%
+    ),
+    linear-gradient(100deg, #3b3022, #5a4a34 50%, #3b3022);
+}
+
+[data-card-theme="trenches"] .card-letter {
+  color: #e6dcc2;
+  animation-name: letter-thud;
+}
+
+@keyframes letter-thud {
+  from {
+    translate: 0 -120%;
+    opacity: 0;
+  }
+  60% {
+    translate: 0 6%;
+    opacity: 1;
+  }
+}
+
+.card-rain {
+  position: absolute;
+  inset: -50% 0 0;
+  height: 200%;
+  opacity: 0.45;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='160'%3E%3Cg stroke='%23d8e0e4' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M20 0 l-10 40'/%3E%3Cpath d='M80 60 l-10 40'/%3E%3Cpath d='M110 110 l-10 40'/%3E%3Cpath d='M50 120 l-10 40'/%3E%3C/g%3E%3C/svg%3E")
+    0 0 / 120px 160px;
+  animation: card-rain 0.45s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes card-rain {
+  to {
+    transform: translate(-40px, 160px);
+  }
+}
+
+.card-flash {
+  position: absolute;
+  inset: 0;
+  background: rgba(235, 240, 255, 0.85);
+  opacity: 0;
+  animation: card-flash 0.9s 0.35s ease-out both;
+  pointer-events: none;
+}
+
+@keyframes card-flash {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.9;
+  }
+  18% {
+    opacity: 0.1;
+  }
+  28% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.card-wire {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6%;
+  width: 100%;
+  height: 3vh;
+  fill: none;
+  stroke: #1d1a16;
+  stroke-width: 2.2;
+}

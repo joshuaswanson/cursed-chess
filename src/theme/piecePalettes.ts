@@ -54,6 +54,11 @@ export const PIECE_PALETTES: Partial<
     light: ["#fbf6e6", "#ddd2b0", "#9e9170"],
     dark: ["#9a7fb8", "#4d3570", "#1a0f2a"],
   },
+  // Muddied khaki against field grey
+  trenches: {
+    light: ["#e2d6ac", "#a8955e", "#4f4528"],
+    dark: ["#a7afb1", "#5c676b", "#22292c"],
+  },
   stratego: {
     light: ["#e9f0ff", "#86a6e2", "#2b569c"],
     dark: ["#ffb4ab", "#d1352e", "#560e0a"],

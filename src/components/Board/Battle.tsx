@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { Color, PieceType } from "../../engine";
 import type { Piece, SquareIndex } from "../../engine";
 import { DROP_MS } from "../../plugins/clashRoyale";
+import { AIM_MS, SHELL_FALL_MS } from "../../plugins/trenches";
+import { shakeBoard } from "./useBoardEffects";
 import type { BattleEvent, BattleView, Unit } from "../../plugins/clashRoyale";
 import { pieceImage } from "../../utils/pieceImages";
 import { offsetBetween, visualCol, visualRow } from "./boardGeometry";
@@ -72,18 +74,23 @@ function actionStyle(
 ): Style | undefined {
   if (!event) return undefined;
   const dir = heading(event.from, event.to, flipped);
+  const fired = event.delayMs ?? 0;
   if (event.targetId === unit.id) {
+    // A shot that went wide makes the target duck instead
+    if (event.miss) {
+      return { animation: `unit-duck 300ms ${fired + event.hitMs}ms ease-out` };
+    }
     return {
       "--knock-x": px(dir.x * squareSize * 0.16),
       "--knock-y": px(dir.y * squareSize * 0.16),
-      animation: `unit-flinch 420ms ${event.hitMs}ms ease-out both`,
+      animation: `unit-flinch 420ms ${fired + event.hitMs}ms ease-out both`,
     };
   }
   if (event.ranged) {
     return {
-      "--kick-x": px(-dir.x * squareSize * 0.1),
-      "--kick-y": px(-dir.y * squareSize * 0.1),
-      animation: "unit-recoil 320ms ease-out",
+      "--kick-x": px(-dir.x * squareSize * (event.weapon ? 0.06 : 0.1)),
+      "--kick-y": px(-dir.y * squareSize * (event.weapon ? 0.06 : 0.1)),
+      animation: `unit-recoil ${event.weapon ? 160 : 320}ms ${fired}ms ease-out`,
     };
   }
   const reach = Math.max(0.38, squaresApart(event) - 0.62);
@@ -114,15 +121,19 @@ export function BattleUnit({
   view,
   flipped,
   squareSize,
+  stance,
 }: {
   sq: SquareIndex;
   piece: Piece;
   view: BattleView;
   flipped: boolean;
   squareSize: number;
+  /** Charging across open ground, or caught on the wire */
+  stance?: "charging" | "snagged";
 }) {
   const unit = view.units[sq];
   if (!unit) return null;
+  const arms = view.arms?.[unit.id];
 
   let arrival: ArrivalEvent | undefined;
   let action: AttackEvent | undefined;
@@ -139,9 +150,13 @@ export function BattleUnit({
   }
 
   const tower = piece.type === PieceType.King;
+  const firing =
+    action?.unitId === unit.id && action.weapon === "rifle"
+      ? action
+      : undefined;
   return (
     <div
-      className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}`}
+      className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}`}
       style={arrivalStyle(arrival, flipped, squareSize)}
     >
       <span className="unit-base" />
@@ -156,12 +171,168 @@ export function BattleUnit({
           className="unit-img"
           draggable={false}
         />
+        {arms === "rifle" && (
+          <Rifle
+            key={firing?.id ?? "rest"}
+            rest={readyAngle(piece.color, flipped)}
+            aim={firing ? aimAngle(firing, flipped) : null}
+            fireMs={Math.max(0, (firing?.delayMs ?? 0) - AIM_MS)}
+          />
+        )}
       </div>
+      {arms === "mg" && <MachineGun color={piece.color} />}
       {(tower || unit.hp < unit.maxHp) && (
         <HealthBar unit={unit} tower={tower} />
       )}
     </div>
   );
+}
+
+/**
+ * A rifle held at the ready, pointed toward the enemy line, that swings onto
+ * its target and kicks as it fires
+ */
+function Rifle({
+  rest,
+  aim,
+  fireMs,
+}: {
+  rest: number;
+  aim: number | null;
+  fireMs: number;
+}) {
+  const style: Style = {
+    "--rest": `${rest}deg`,
+    "--aim": `${aim ?? rest}deg`,
+    "--fire": `${fireMs}ms`,
+  };
+  return (
+    <svg
+      className={`unit-rifle${aim === null ? "" : " firing"}`}
+      viewBox="0 0 50 12"
+      style={style}
+      aria-hidden
+    >
+      <path
+        d="M0 4 L12 2.5 L16 4.2 L42 4.2 L42 6.8 L17 6.8 L13 9 L1 9.5 Z"
+        className="rifle-stock"
+      />
+      <path d="M26 5.5 L46 5.5" className="rifle-barrel" />
+      <path d="M44 5.5 L50 5.5" className="rifle-bayonet" />
+    </svg>
+  );
+}
+
+/** The machine gun on its tripod in front of the gunner, pointed at the enemy line */
+function MachineGun({ color }: { color: Color }) {
+  return (
+    <svg
+      className={`unit-mg mg-${team(color)}`}
+      viewBox="0 0 40 40"
+      aria-hidden
+    >
+      <path d="M12 34 L20 22 L28 34" className="mg-legs" />
+      <rect x="15.5" y="15" width="9" height="11" rx="2" className="mg-body" />
+      <rect x="18.5" y="2" width="3" height="14" rx="1" className="mg-barrel" />
+      <rect x="17" y="4" width="6" height="7" rx="1.5" className="mg-jacket" />
+      <rect x="24.5" y="18" width="6" height="5" rx="1" className="mg-belt" />
+    </svg>
+  );
+}
+
+/**
+ * A rifle or machine gun round: a muzzle flash, a tracer streaking to the
+ * target, and either a hit or a spray of mud where it went wide
+ */
+function Gunshot({
+  event,
+  flipped,
+  squareSize,
+}: {
+  event: AttackEvent;
+  flipped: boolean;
+  squareSize: number;
+}) {
+  const fired = event.delayMs ?? 0;
+  const impact = event.impact ?? { x: 0, y: 0 };
+  const sign = flipped ? -1 : 1;
+  const start = {
+    x: (visualCol(event.from, flipped) + 0.5) * squareSize,
+    y: (visualRow(event.from, flipped) + 0.5) * squareSize,
+  };
+  const end = {
+    x: (visualCol(event.to, flipped) + 0.5 + impact.x * sign) * squareSize,
+    y: (visualRow(event.to, flipped) + 0.5 + impact.y * sign) * squareSize,
+  };
+  const length = Math.hypot(end.x - start.x, end.y - start.y);
+  const angle = Math.atan2(end.y - start.y, end.x - start.x);
+  const landed = { animationDelay: `${fired + event.hitMs}ms` };
+  const at = (p: { x: number; y: number }): Style => ({
+    left: px(p.x),
+    top: px(p.y),
+  });
+  // Hit marks fill a square's worth of room, centred on where the round lands
+  const around = (p: { x: number; y: number }): Style => ({
+    left: px(p.x - squareSize / 2),
+    top: px(p.y - squareSize / 2),
+  });
+  return (
+    <>
+      <span
+        className={`muzzle-flash weapon-${event.weapon}`}
+        style={css({
+          ...at(start),
+          rotate: `${angle}rad`,
+          animationDelay: `${fired}ms`,
+        })}
+      />
+      <span
+        className={`tracer weapon-${event.weapon}`}
+        style={css({
+          ...at(start),
+          transform: `rotate(${angle}rad)`,
+          "--length": px(length),
+          "--angle": `${angle}rad`,
+          animationDelay: `${fired}ms`,
+          animationDuration: `${event.hitMs}ms`,
+        })}
+      />
+      {event.miss ? (
+        <span
+          className="mud-splash"
+          style={css({ ...around(end), ...landed })}
+        />
+      ) : (
+        <>
+          <span
+            className="hit-spark"
+            style={css({ ...around(end), ...landed })}
+          />
+          <span
+            className={`hit-number${event.kill ? " is-kill" : ""}`}
+            style={css({
+              ...around(end),
+              ...landed,
+              "--drift": `${((event.id % 5) - 2) * 6}%`,
+            })}
+          >
+            -{event.damage}
+          </span>
+        </>
+      )}
+    </>
+  );
+}
+
+/** Which way a rifle points while its man waits: up the board at the enemy line, a little off straight */
+function readyAngle(color: Color, flipped: boolean): number {
+  return (color === Color.White) !== flipped ? -70 : 110;
+}
+
+/** The angle, in degrees, from a shooter to where his round is going */
+function aimAngle(event: AttackEvent, flipped: boolean): number {
+  const dir = heading(event.from, event.to, flipped);
+  return (Math.atan2(dir.y, dir.x) * 180) / Math.PI;
 }
 
 /** Contact lands this far into the sword swing */
@@ -294,6 +465,11 @@ function Effect({
 
   switch (event.kind) {
     case "attack": {
+      if (event.weapon) {
+        return (
+          <Gunshot event={event} flipped={flipped} squareSize={squareSize} />
+        );
+      }
       const travel = offsetBetween(event.to, event.from, flipped, squareSize);
       const hitAt = { animationDelay: `${event.hitMs}ms` };
       return (
@@ -322,17 +498,24 @@ function Effect({
           ) : (
             <Sword event={event} flipped={flipped} />
           )}
-          <span className="hit-spark" style={{ ...cell(event.to), ...hitAt }} />
-          <span
-            className={`hit-number${event.kill ? " is-kill" : ""}`}
-            style={css({
-              ...cell(event.to),
-              ...hitAt,
-              "--drift": `${((event.id % 5) - 2) * 6}%`,
-            })}
-          >
-            -{event.damage}
-          </span>
+          {!event.miss && (
+            <>
+              <span
+                className="hit-spark"
+                style={{ ...cell(event.to), ...hitAt }}
+              />
+              <span
+                className={`hit-number${event.kill ? " is-kill" : ""}`}
+                style={css({
+                  ...cell(event.to),
+                  ...hitAt,
+                  "--drift": `${((event.id % 5) - 2) * 6}%`,
+                })}
+              >
+                -{event.damage}
+              </span>
+            </>
+          )}
         </>
       );
     }
@@ -359,6 +542,36 @@ function Effect({
         </>
       );
     }
+    case "shell": {
+      const lands = { animationDelay: `${event.delayMs + SHELL_FALL_MS}ms` };
+      return (
+        <>
+          <span
+            className="shell-shadow"
+            style={{
+              ...cell(event.sq),
+              animationDelay: `${event.delayMs}ms`,
+              animationDuration: `${SHELL_FALL_MS}ms`,
+            }}
+          />
+          <span
+            className="shell-flash"
+            style={{ ...cell(event.sq), ...lands }}
+          />
+          <span className="shell-plume" style={{ ...cell(event.sq), ...lands }}>
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+          <span
+            className="shell-smoke"
+            style={{ ...cell(event.sq), ...lands }}
+          />
+        </>
+      );
+    }
     case "deploy":
       return (
         <>
@@ -380,16 +593,32 @@ function Effect({
 function playEvent(event: BattleEvent): void {
   const later = (ms: number, play: () => void) => setTimeout(play, ms);
   switch (event.kind) {
-    case "attack":
-      if (event.ranged) sfx.bowShot();
-      else sfx.swing();
-      later(event.hitMs, () => sfx.hit(event.kill));
+    case "attack": {
+      const fired = event.delayMs ?? 0;
+      if (event.weapon === "mg") {
+        if (event.round === 0) sfx.machineGun();
+      } else if (event.weapon === "rifle") {
+        later(fired, sfx.rifle);
+      } else if (event.ranged) {
+        sfx.bowShot();
+      } else {
+        sfx.swing();
+      }
+      if (!event.miss) later(fired + event.hitMs, () => sfx.hit(event.kill));
       break;
+    }
     case "death":
       later(event.delayMs, () => sfx.knockout());
       break;
     case "deploy":
       sfx.drop(DROP_MS / 1000);
+      break;
+    case "shell":
+      later(event.delayMs, sfx.incoming);
+      later(event.delayMs + SHELL_FALL_MS, () => {
+        sfx.boom();
+        shakeBoard();
+      });
       break;
   }
 }

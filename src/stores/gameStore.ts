@@ -24,6 +24,7 @@ import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
 import { TugOfWarPlugin } from "../plugins/tugOfWar";
 import { ZOMBIE_FINISH_MS, ZombiesPlugin } from "../plugins/zombies";
+import { TrenchesPlugin } from "../plugins/trenches";
 import type { KickTarget } from "../plugins/football";
 import { benchKings, reinforce, returnKing } from "./reinforcements";
 import type {
@@ -98,6 +99,8 @@ export interface GameMode {
    * it to the troops. These have no clock: they run until one side wins.
    */
   kingsSitOut?: boolean;
+  /** Modes with no clock that run until one side wins, kings and all */
+  untilWon?: boolean;
 }
 
 export const GAME_MODES: GameMode[] = [
@@ -170,6 +173,13 @@ export const GAME_MODES: GameMode[] = [
     name: "ZOMBIES",
     theme: "zombies",
     create: () => [new ZombiesPlugin()],
+  },
+  {
+    name: "TRENCHES",
+    theme: "trenches",
+    create: () => [new TrenchesPlugin()],
+    noReinforcements: true,
+    untilWon: true,
   },
 ];
 
@@ -286,6 +296,8 @@ export interface GameStore {
   handleGameEnd: (winner: Color | null) => void;
   setDeployPieceType: (type: PieceType | null) => void;
   deployPiece: (square: SquareIndex) => boolean;
+  /** Blows the whistle in Trenches, sending your front line over the top */
+  trenchAttack: () => boolean;
   showAnnouncement: (
     text: string,
     durationMs?: number,
@@ -904,6 +916,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setDeployPieceType: (type) => set({ deployPieceType: type }),
 
+  trenchAttack: () => {
+    const { game, pluginManager, paused } = get();
+    const trenches = pluginManager.find<TrenchesPlugin>("trenches");
+    if (!trenches || paused) return false;
+    const ordered = trenches.attack(game.board, Color.White);
+    if (ordered) set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
+    return ordered;
+  },
+
   deployPiece: (square) => {
     const { game, pluginManager, deployPieceType, paused } = get();
     if (!deployPieceType || paused) return false;
@@ -1068,7 +1089,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { paused, modeTimeRemaining, devMode } = get();
     if (paused || devMode) return;
     // Modes the kings sit out run until one side wins them, with no clock
-    if (GAME_MODES[get().currentModeIndex]?.kingsSitOut) return;
+    const mode = GAME_MODES[get().currentModeIndex];
+    if (mode?.kingsSitOut || mode?.untilWon) return;
     const next = Math.max(0, modeTimeRemaining - 1);
     set({ modeTimeRemaining: next });
     if (next > 0) return;

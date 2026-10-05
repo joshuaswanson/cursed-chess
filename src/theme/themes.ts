@@ -11,7 +11,8 @@ export type ThemeId =
   | "hex"
   | "stratego"
   | "tug"
-  | "zombies";
+  | "zombies"
+  | "trenches";
 
 /** Which animated scene sits behind the board */
 export type BackdropKind = ThemeId;
@@ -225,6 +226,21 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#8e8a72",
     dark: "#5b5a48",
     text: "#e8f2d8",
+  },
+  trenches: {
+    id: "trenches",
+    title: "Trenches",
+    tagline:
+      "The pieces dig in and fight on their own. Press Attack to send your front line over the top, through the wire, for the enemy trench.",
+    catchphrase: "All Quiet on the Chesstern Front",
+    sky: ["#0b0d0f", "#1d2226", "#3a3227"],
+    accent: "#c9a44a",
+    accent2: "#8a2a1e",
+    ink: "#0b0c0d",
+    frame: "#3a2f22",
+    light: "#7d6a50",
+    dark: "#5a4a36",
+    text: "#e6dfcc",
   },
 };
 
