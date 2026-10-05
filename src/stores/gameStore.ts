@@ -224,6 +224,8 @@ export interface GameStore {
   introDone: boolean;
   /** Pieces are falling after gravity shifted, so nobody may move */
   gravityFalling: boolean;
+  /** A piece is on its way through a portal, so the clock waits for it to arrive */
+  portalTravelling: boolean;
   siteTab: SiteTab;
   setSiteTab: (tab: SiteTab) => void;
 
@@ -483,6 +485,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   autonomousTick: 0,
   introDone: true,
   gravityFalling: false,
+  portalTravelling: false,
   siteTab: "Play",
   setSiteTab: (tab) => set({ siteTab: tab }),
 
@@ -848,7 +851,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   tickTimer: () => {
     const { turn, moveTimerActive, paused, devMode, pluginManager } = get();
-    if (!moveTimerActive || paused || get().gravityFalling) return;
+    if (
+      !moveTimerActive ||
+      paused ||
+      get().gravityFalling ||
+      get().portalTravelling
+    ) {
+      return;
+    }
     // A mine going off holds the clock, so nobody moves until the blast has played out
     const minefield = pluginManager.find<MinefieldPlugin>("minefield");
     if (minefield && minefield.pendingExplosions.size > 0) return;
@@ -1096,6 +1106,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       arrivalStyle: Math.random() < 0.5 ? "parachute" : "sprint",
       introDone: false,
       gravityFalling: false,
+      portalTravelling: false,
       pluginManager: freshPluginManager(nextGame, mode.create()),
       turn: nextGame.turn,
       moveHistory: [...nextGame.history],

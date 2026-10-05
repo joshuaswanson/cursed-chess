@@ -198,6 +198,13 @@ export function Board() {
     if (openingPortals.size > 0) sfx.portalOpen();
   }, [openingPortals]);
 
+  // Nobody's clock runs while a piece is still on its way through a portal
+  const travelling = travel !== null;
+  useEffect(() => {
+    useGameStore.setState({ portalTravelling: travelling });
+  }, [travelling]);
+  useEffect(() => () => useGameStore.setState({ portalTravelling: false }), []);
+
   // Portals only move once the last move has finished sliding or flying
   const portalsDue =
     pluginManager.find<PortalChessPlugin>("portal-chess")?.respawnDue ?? false;
