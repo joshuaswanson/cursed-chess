@@ -12,8 +12,8 @@ import "./Sideline.css";
 type Style = React.CSSProperties & Record<`--${string}`, string | number>;
 
 const BENCH_WALK_MS = 1100;
-/** How much of a square each touchline spot takes */
-const CELL = 0.72;
+/** How much of a square each touchline spot takes, so the players stand as big as their coach */
+const CELL = 1;
 /** The board frame's width beyond the squares, kept clear of the touchline */
 const FRAME = 0.32;
 /** Breathing room left at the screen's edge */
@@ -159,12 +159,18 @@ export function Sideline({
       (4 * squareSize - rows * cell) / 2 +
       row * cell,
   });
-  // Seats in the order they fill: down the column beside the coach, then the next one out
-  const seat = (n: number) => {
-    const perColumn = rows - 1;
-    const column = Math.floor(n / perColumn);
-    const row = n % perColumn;
-    return { column, row: row >= coachRow ? row + 1 : row };
+  // Seats in the order they fill: down the column beside the coach, then the
+  // next one out. The spots either side of halfway are kept clear for the
+  // fourth official's board.
+  const seat = (side: "near" | "far", n: number) => {
+    const halfway = side === "far" ? rows - 1 : 0;
+    const free = Array.from({ length: rows }, (_, row) => row).filter(
+      (row) => row !== coachRow && row !== halfway,
+    );
+    return {
+      column: Math.floor(n / free.length),
+      row: free[n % free.length],
+    };
   };
 
   const walkFrom = (
@@ -223,7 +229,7 @@ export function Sideline({
       })}
       {bench.map(({ piece, takenOn, number }, i) => {
         const side = half(piece.color);
-        const { column, row } = seat(seats[side]++);
+        const { column, row } = seat(side, seats[side]++);
         const spot = spotAt(side, column, row);
         const style: Style = {
           ...place(spot),
