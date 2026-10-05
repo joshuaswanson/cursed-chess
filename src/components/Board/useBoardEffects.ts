@@ -434,9 +434,26 @@ export { DRAG_MS };
 /** How long after the round ends the undead stir, so the last move lands first */
 export const ZOMBIE_DELAY_MS = SLIDE_MS + 250;
 export const ZOMBIE_RISE_MS = 2600;
-export const ZOMBIE_BITE_MS = 2800;
-/** When in a bite the teeth go in */
-const BITE_CONTACT = 0.48;
+export const ZOMBIE_BITE_MS = 3400;
+/** When in a bite the teeth go in, and when the zombie rips away */
+const BITE_CONTACT = 0.47;
+const BITE_RIP = 0.67;
+
+/** The board jolts as teeth sink in */
+function shakeBoard(): void {
+  document
+    .querySelector<HTMLElement>(".board-shell")
+    ?.animate(
+      [
+        { translate: "0 0" },
+        { translate: "-6px 3px" },
+        { translate: "5px -3px" },
+        { translate: "-3px 2px" },
+        { translate: "0 0" },
+      ],
+      { duration: 340, easing: "ease-out", composite: "add" },
+    );
+}
 
 export interface ZombieAct {
   kind: "rise" | "shamble" | "bite" | "bitten";
@@ -501,7 +518,12 @@ export function useZombieActs(
     if (kinds.includes("bite")) {
       timers.push(
         at(0, sfx.groan),
-        at(ZOMBIE_BITE_MS * BITE_CONTACT, sfx.bite),
+        at(ZOMBIE_BITE_MS * BITE_CONTACT, () => {
+          sfx.bite();
+          shakeBoard();
+        }),
+        at(ZOMBIE_BITE_MS * BITE_RIP, sfx.bite),
+        at(ZOMBIE_BITE_MS * 0.86, sfx.groan),
       );
     } else if (kinds.includes("shamble")) {
       timers.push(at(0, sfx.shuffle));
