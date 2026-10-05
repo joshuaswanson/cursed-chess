@@ -33,7 +33,7 @@ const LOBE_SPACING = COIL_ROPE * 0.5;
 /** Share of the spiral a pile holds when neither team has pulled rope out of it or into it */
 const COIL_REST = 0.7;
 const COIL_GIVE = 0.3;
-const LEAD_POOL = 16;
+const LEAD_POOL = 34;
 
 /**
  * A pile of rope lying on the ground, drawn for the bottom end: uneven loops
@@ -57,6 +57,35 @@ function coilSpiral(): { x: number; y: number }[] {
     });
   }
   return points;
+}
+
+/**
+ * Slack rope lying on the ground from where it leaves the board to the pile's
+ * outside loop: a loose S that swings out to one side, then back the other
+ */
+function slackCurve(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+): { x: number; y: number }[] {
+  const swing = to.x >= from.x ? -24 : 24;
+  const c1 = { x: from.x + swing, y: from.y + 20 };
+  const c2 = { x: to.x - swing * 0.9, y: to.y - 18 };
+  return Array.from({ length: 60 }, (_, i) => {
+    const t = i / 59;
+    const u = 1 - t;
+    return {
+      x:
+        u * u * u * from.x +
+        3 * u * u * t * c1.x +
+        3 * u * t * t * c2.x +
+        t * t * t * to.x,
+      y:
+        u * u * u * from.y +
+        3 * u * u * t * c1.y +
+        3 * u * t * t * c2.y +
+        t * t * t * to.y,
+    };
+  });
 }
 
 /** The rope's lobes lean 38 degrees off its length */
@@ -181,28 +210,30 @@ function Coil({ end }: { end: "top" | "bottom" }) {
                 ? (1 - (first - from)).toFixed(2)
                 : "0";
         });
-        // The rope's run down to the outside loop, its lobes spread evenly along it
+        // The rope lies slack between the board and the outside loop, in a
+        // lazy S, its lobes spread evenly along the curve
         const start = COIL_LOOPS[Math.min(first, last)];
-        const dx = start.x - entry.x;
-        const dy = start.y - entry.y;
-        const count = Math.min(
-          LEAD_POOL,
-          Math.max(1, Math.round(Math.hypot(dx, dy) / LOBE_SPACING)),
-        );
-        const angle = lobeAngle(dx, dy).toFixed(1);
-        leadRefs.current.forEach((el, k) => {
-          if (!el) return;
-          if (k >= count) {
-            el.style.opacity = "0";
-            return;
-          }
-          const t = (k + 0.5) / count;
+        const curve = slackCurve(entry, start);
+        let placed = 0;
+        let carried = LOBE_SPACING / 2;
+        for (let i = 1; i < curve.length && placed < LEAD_POOL; i++) {
+          const a = curve[i - 1];
+          const b = curve[i];
+          carried += Math.hypot(b.x - a.x, b.y - a.y);
+          if (carried < LOBE_SPACING) continue;
+          carried = 0;
+          const el = leadRefs.current[placed++];
+          if (!el) continue;
           el.style.opacity = "1";
           el.setAttribute(
             "transform",
-            `translate(${(entry.x + dx * t).toFixed(2)} ${(entry.y + dy * t).toFixed(2)}) rotate(${angle})`,
+            `translate(${b.x.toFixed(2)} ${b.y.toFixed(2)}) rotate(${lobeAngle(b.x - a.x, b.y - a.y).toFixed(1)})`,
           );
-        });
+        }
+        for (let k = placed; k < LEAD_POOL; k++) {
+          const el = leadRefs.current[k];
+          if (el) el.style.opacity = "0";
+        }
       }
       frame = requestAnimationFrame(draw);
     };
