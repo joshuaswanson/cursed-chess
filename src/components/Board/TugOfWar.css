@@ -12,6 +12,11 @@
   pointer-events: none;
 }
 
+/* The rope and flag pass over the pieces holding them */
+.tug-layer.tug-rope-layer {
+  z-index: 3;
+}
+
 /* A churned-up mud pit where the two halves meet */
 .tug-mud {
   position: absolute;
@@ -120,7 +125,7 @@
 /* Each heave snaps the rope toward the side that won it, then it springs back */
 /* Between heaves the two teams fight over the rope: it lurches one way,
    trembles while both strain, then gets hauled back the other way */
-.tug-rope {
+.tug-rope-layer.contested .tug-rope {
   animation: tug-surge var(--tug-cycle) linear infinite;
 }
 
@@ -146,7 +151,7 @@
   transition: top 0.7s cubic-bezier(0.3, 1.5, 0.5, 1);
 }
 
-.tug-flag-body {
+.tug-rope-layer.contested .tug-flag-body {
   animation: tug-surge var(--tug-cycle) linear infinite;
 }
 
@@ -200,12 +205,15 @@
   --side: 1;
   left: calc(var(--side) * var(--flip, 1) * var(--square-size, 72px) * 0.27);
   rotate: calc(var(--side) * var(--flip, 1) * -9deg);
+}
+
+.board.tug-contested .square.rope-square .piece-img {
   animation:
     tug-surge var(--tug-cycle) linear infinite,
     tug-lean-white var(--tug-cycle) linear infinite;
 }
 
-[data-theme="tug"] .square.rope-black .piece-img {
+.board.tug-contested .square.rope-black .piece-img {
   animation:
     tug-surge var(--tug-cycle) linear infinite,
     tug-lean-black var(--tug-cycle) linear infinite;
@@ -234,7 +242,7 @@
 
 @keyframes tug-surge {
   0% {
-    translate: 0 calc(0.0px * var(--flip, 1));
+    translate: 0 calc(0px * var(--flip, 1));
   }
   5% {
     translate: 0 calc(11.9px * var(--flip, 1));
@@ -297,7 +305,7 @@
     translate: 0 calc(5.4px * var(--flip, 1));
   }
   58% {
-    translate: 0 calc(8.0px * var(--flip, 1));
+    translate: 0 calc(8px * var(--flip, 1));
   }
   60% {
     translate: 0 calc(6.1px * var(--flip, 1));
@@ -309,10 +317,10 @@
     translate: 0 calc(5.8px * var(--flip, 1));
   }
   70% {
-    translate: 0 calc(7.0px * var(--flip, 1));
+    translate: 0 calc(7px * var(--flip, 1));
   }
   74% {
-    translate: 0 calc(0.0px * var(--flip, 1));
+    translate: 0 calc(0px * var(--flip, 1));
   }
   78% {
     translate: 0 calc(-10.5px * var(--flip, 1));
@@ -324,7 +332,7 @@
     translate: 0 calc(-11.2px * var(--flip, 1));
   }
   84% {
-    translate: 0 calc(-9.0px * var(--flip, 1));
+    translate: 0 calc(-9px * var(--flip, 1));
   }
   87% {
     translate: 0 calc(-10.7px * var(--flip, 1));
@@ -336,7 +344,7 @@
     translate: 0 calc(-2.5px * var(--flip, 1));
   }
   100% {
-    translate: 0 calc(0.0px * var(--flip, 1));
+    translate: 0 calc(0px * var(--flip, 1));
   }
 }
 

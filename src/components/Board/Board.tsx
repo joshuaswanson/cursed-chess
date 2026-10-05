@@ -567,6 +567,9 @@ export function Board() {
   const boardClass =
     "board" +
     (tugYank !== 0 ? " tug-heave" : "") +
+    (overlays.tug && overlays.tug.white > 0 && overlays.tug.black > 0
+      ? " tug-contested"
+      : "") +
     (overlays.hasFog ? " fog-active" : "") +
     (overlays.portalPairs.length > 0 ? " portal-active" : "") +
     (overlays.gravityDirection ? " gravity-active" : "") +

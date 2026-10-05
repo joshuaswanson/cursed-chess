@@ -51,98 +51,108 @@ export function TugLayer({
     { toWhite: -WIN_LINE, team: "black" },
   ];
 
+  // The struggle only plays out when both teams have someone on the rope
+  const contested = view.white > 0 && view.black > 0;
+
   return (
-    <div className="tug-layer" aria-hidden>
-      <span className="tug-mud" />
-      <span className="tug-center-line" />
-      {lines.map(({ toWhite, team }) => (
-        <span
-          key={team}
-          className={`tug-win-line win-${team}`}
-          style={{ top: `${fromTop(toWhite, flipped) * 12.5}%` }}
-        >
-          <span className="tug-win-label">
-            {team === "white" ? "Your win line" : "Their win line"}
+    <>
+      <div className="tug-layer" aria-hidden>
+        <span className="tug-mud" />
+        <span className="tug-center-line" />
+        {lines.map(({ toWhite, team }) => (
+          <span
+            key={team}
+            className={`tug-win-line win-${team}`}
+            style={{ top: `${fromTop(toWhite, flipped) * 12.5}%` }}
+          >
+            <span className="tug-win-label">
+              {team === "white" ? "Your win line" : "Their win line"}
+            </span>
           </span>
-        </span>
-      ))}
-      <div
-        key={view.heave}
-        className={`tug-rope-wrap${view.heave > 0 ? " heaving" : ""}`}
-        style={{ "--yank": yank } as Style}
-      >
-        <div className="tug-rope" style={{ "--rope": ROPE_TILE } as Style} />
+        ))}
       </div>
-      <div className="tug-flag" style={{ top: `${flagTop * 12.5}%` }}>
+      <div
+        className={`tug-layer tug-rope-layer${contested ? " contested" : ""}`}
+        aria-hidden
+      >
         <div
           key={view.heave}
-          className={`tug-flag-body${view.heave > 0 ? " heaving" : ""}`}
+          className={`tug-rope-wrap${view.heave > 0 ? " heaving" : ""}`}
           style={{ "--yank": yank } as Style}
         >
-          <svg viewBox="0 0 70 44" className="tug-flag-cloth">
-            {/* The cloth ripples between two shapes as it flies off the rope */}
-            <path
-              d={FLAG_WAVES[0]}
-              fill="#e8402f"
-              stroke="#2a1a10"
-              strokeWidth="2.4"
-              strokeLinejoin="round"
-            >
-              <animate
-                attributeName="d"
-                values={`${FLAG_WAVES[0]};${FLAG_WAVES[1]};${FLAG_WAVES[0]}`}
-                dur="1.1s"
-                repeatCount="indefinite"
-              />
-            </path>
-            <path d={FLAG_STRIPE[0]} fill="#ffffff">
-              <animate
-                attributeName="d"
-                values={`${FLAG_STRIPE[0]};${FLAG_STRIPE[1]};${FLAG_STRIPE[0]}`}
-                dur="1.1s"
-                repeatCount="indefinite"
-              />
-            </path>
-            <path
-              d={FLAG_FOLDS[0]}
-              fill="none"
-              stroke="#000"
-              strokeOpacity="0.22"
-              strokeWidth="3"
-            >
-              <animate
-                attributeName="d"
-                values={`${FLAG_FOLDS[0]};${FLAG_FOLDS[1]};${FLAG_FOLDS[0]}`}
-                dur="1.1s"
-                repeatCount="indefinite"
-              />
-            </path>
-            {[8, 32].map((y) => (
-              <g key={y}>
-                <ellipse
-                  cx="9"
-                  cy={y}
-                  rx="7"
-                  ry="3.4"
-                  fill="#e8402f"
-                  stroke="#2a1a10"
-                  strokeWidth="2"
+          <div className="tug-rope" style={{ "--rope": ROPE_TILE } as Style} />
+        </div>
+        <div className="tug-flag" style={{ top: `${flagTop * 12.5}%` }}>
+          <div
+            key={view.heave}
+            className={`tug-flag-body${view.heave > 0 ? " heaving" : ""}`}
+            style={{ "--yank": yank } as Style}
+          >
+            <svg viewBox="0 0 70 44" className="tug-flag-cloth">
+              {/* The cloth ripples between two shapes as it flies off the rope */}
+              <path
+                d={FLAG_WAVES[0]}
+                fill="#e8402f"
+                stroke="#2a1a10"
+                strokeWidth="2.4"
+                strokeLinejoin="round"
+              >
+                <animate
+                  attributeName="d"
+                  values={`${FLAG_WAVES[0]};${FLAG_WAVES[1]};${FLAG_WAVES[0]}`}
+                  dur="1.1s"
+                  repeatCount="indefinite"
                 />
-                <path
-                  d={`M9 ${y} l-4 6 M9 ${y} l3 6`}
-                  stroke="#2a1a10"
-                  strokeWidth="2"
-                  strokeLinecap="round"
+              </path>
+              <path d={FLAG_STRIPE[0]} fill="#ffffff">
+                <animate
+                  attributeName="d"
+                  values={`${FLAG_STRIPE[0]};${FLAG_STRIPE[1]};${FLAG_STRIPE[0]}`}
+                  dur="1.1s"
+                  repeatCount="indefinite"
                 />
-              </g>
-            ))}
-          </svg>
-          <span className="tug-score">
-            <b className="you">{view.white}</b> vs{" "}
-            <b className="foe">{view.black}</b>
-          </span>
+              </path>
+              <path
+                d={FLAG_FOLDS[0]}
+                fill="none"
+                stroke="#000"
+                strokeOpacity="0.22"
+                strokeWidth="3"
+              >
+                <animate
+                  attributeName="d"
+                  values={`${FLAG_FOLDS[0]};${FLAG_FOLDS[1]};${FLAG_FOLDS[0]}`}
+                  dur="1.1s"
+                  repeatCount="indefinite"
+                />
+              </path>
+              {[8, 32].map((y) => (
+                <g key={y}>
+                  <ellipse
+                    cx="9"
+                    cy={y}
+                    rx="7"
+                    ry="3.4"
+                    fill="#e8402f"
+                    stroke="#2a1a10"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d={`M9 ${y} l-4 6 M9 ${y} l3 6`}
+                    stroke="#2a1a10"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </g>
+              ))}
+            </svg>
+            <span className="tug-score">
+              <b className="you">{view.white}</b> vs{" "}
+              <b className="foe">{view.black}</b>
+            </span>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
