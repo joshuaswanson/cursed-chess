@@ -91,7 +91,9 @@ export class TugOfWarPlugin implements ModePlugin {
     _ctx: PluginContext,
     square: SquareIndex,
   ): SquareModifier[] {
-    return onRope(square) ? [{ className: "rope-square" }] : [];
+    if (!onRope(square)) return [];
+    const side = fileOf(square) === ROPE_FILES[0] ? "rope-d" : "rope-e";
+    return [{ className: `rope-square ${side}` }];
   }
 
   /** The computer wants its pieces on the rope, and more so the closer the flag is to its own end */

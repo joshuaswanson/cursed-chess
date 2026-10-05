@@ -113,6 +113,20 @@
 }
 
 /* Each heave snaps the rope toward the side that won it, then it springs back */
+/* Between heaves the two teams strain against each other and the rope sways */
+.tug-rope-wrap {
+  animation: rope-sway 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes rope-sway {
+  from {
+    translate: -50% -5px;
+  }
+  to {
+    translate: -50% 5px;
+  }
+}
+
 .tug-rope-wrap.heaving {
   animation: rope-yank 0.7s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
@@ -133,6 +147,19 @@
   width: calc(var(--square-size, 72px) * 1.15);
   translate: -12% -50%;
   transition: top 0.7s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.tug-flag-body {
+  animation: strain-sway 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes strain-sway {
+  from {
+    translate: 0 -5px;
+  }
+  to {
+    translate: 0 5px;
+  }
 }
 
 .tug-flag-body.heaving {
@@ -176,6 +203,19 @@
 
 .tug-score .foe {
   color: #e8402f;
+}
+
+/* Pieces on the rope step in to grip it from either side, lean back away from
+   it, and sway with it as both teams strain */
+[data-theme="tug"] .square.rope-square .piece-img {
+  --side: 1;
+  left: calc(var(--side) * var(--flip, 1) * var(--square-size, 72px) * 0.27);
+  rotate: calc(var(--side) * var(--flip, 1) * -9deg);
+  animation: strain-sway 2.6s ease-in-out infinite alternate;
+}
+
+[data-theme="tug"] .square.rope-e .piece-img {
+  --side: -1;
 }
 
 /* Pieces on the rope are dragged along with every heave */

@@ -581,6 +581,7 @@ export function Board() {
   const { gravityAngle } = overlays;
   const boardStyle = {
     "--yank": tugYank,
+    "--flip": flipped ? -1 : 1,
     ...(deployPieceType && {
       "--deploy-preview": `url(${pieceImage({ type: deployPieceType, color: Color.White })})`,
     }),
