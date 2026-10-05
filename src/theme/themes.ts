@@ -140,7 +140,8 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   hill: {
     id: "hill",
     title: "King of the hill",
-    tagline: "Hold three of the four center squares for three rounds.",
+    tagline:
+      "Have more pieces on the center than the foe to control it. Hold it three rounds in a row to win.",
     catchphrase: "Control the center!",
     sky: ["#ff9a1f", "#ffcf3f", "#fff2a8"],
     accent: "#c4320a",

@@ -674,8 +674,6 @@ export function Board() {
               left={Math.min(...hill.map((sq) => colOnScreen(sq, flipped)))}
               top={Math.min(...hill.map((sq) => rowOnScreen(sq, flipped)))}
               leader={hillLeader}
-              yours={hillWhite}
-              theirs={hillBlack}
               streak={overlays.hillStreak}
             />
           )}

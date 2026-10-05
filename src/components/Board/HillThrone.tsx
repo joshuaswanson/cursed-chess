@@ -10,35 +10,33 @@ const SPARKLES = [
 ];
 
 /**
- * The hill in the middle of the board. It powers up as you get more pieces on
- * it: a glow, then turning rays and sparkles, then a shine and a blazing
- * crown. Pips under the crown light for each round a side has held it.
+ * The hill in the middle of the board. Once you control it, with more pieces
+ * on it than the foe, it powers up with every round you hold it: a glow, then
+ * turning rays and sparkles, then a shine and a blazing crown. Pips under the
+ * crown light for each round a side has held it.
  */
 export function HillThrone({
   left,
   top,
   leader,
-  yours,
-  theirs,
   streak,
 }: {
   left: number;
   top: number;
   leader: "white" | "black" | null;
-  yours: number;
-  theirs: number;
   streak: { white: number; black: number; needed: number };
 }) {
   const holding = leader === "black" ? "black" : "white";
   const held = holding === "black" ? streak.black : streak.white;
-  const power = leader === "black" ? 0 : yours;
+  // Glows once you control it, and blazes brighter with each round you hold it
+  const power = leader === "white" ? Math.min(4, 1 + streak.white) : 0;
   return (
     <>
       <div
         className={
           `hill-throne power-${power}` +
           (leader ? ` held-${leader}` : "") +
-          (Math.max(yours, theirs) >= 3 ? " dominated" : "")
+          (leader ? " dominated" : "")
         }
         style={
           {

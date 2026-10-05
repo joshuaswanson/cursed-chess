@@ -15,14 +15,14 @@ const HILL_SQUARES: SquareIndex[] = [
   ((4 << 4) | 4) as SquareIndex, // e5
 ];
 
-const DOMINATION_THRESHOLD = 3; // need 3+ of 4 squares
-const DOMINATION_TURNS = 3; // hold for 3 rounds to win
+/** Rounds in a row a side must control the hill to win */
+const DOMINATION_TURNS = 3;
 
 export class KingOfTheHillPlugin implements ModePlugin {
   id = "king-of-hill";
   name = "King of the Hill";
   description =
-    "Control the center 4 squares. Dominate 3+ for 3 rounds to win!";
+    "Control the center by having more pieces on it than the foe. Hold it for 3 rounds in a row to win!";
 
   private whiteControl = 0;
   private blackControl = 0;
@@ -54,11 +54,11 @@ export class KingOfTheHillPlugin implements ModePlugin {
     this.whiteControl = white;
     this.blackControl = black;
 
-    // Track domination streaks
-    if (white >= DOMINATION_THRESHOLD) {
+    // Whoever has more pieces on the hill controls it; a tie breaks both streaks
+    if (white > black) {
       this.whiteDomination++;
       this.blackDomination = 0;
-    } else if (black >= DOMINATION_THRESHOLD) {
+    } else if (black > white) {
       this.blackDomination++;
       this.whiteDomination = 0;
     } else {
