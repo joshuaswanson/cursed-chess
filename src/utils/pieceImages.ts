@@ -59,19 +59,35 @@ export function pieceImage(piece: Piece): string {
   return (body && themed(name, theme!, body)) || `${PARTY}${name}.svg`;
 }
 
-/** The rotting grey green the undead turn, whatever army they came from */
-const ZOMBIE_BODY = ["#b8c393", "#6c784a", "#262d16"];
+/** The sickly green the undead turn, whatever army they came from, palest where the light falls */
+const ZOMBIE_BODY = ["#d4e6a5", "#93b062", "#4d6233"];
 
 /**
- * Decay painted into a zombie's flesh: dark rot and purple bruising spread
- * through it, pale mould specks, weeping sores, and grime caked on the base.
- * It fills the body only, so the piece's outline stays crisp.
+ * Decay painted into a zombie's flesh, filling the body only: soft rot
+ * blotches, dark veins, a stitched scar, a torn patch down to the bone, a
+ * rotted-through hole, and grime caked on the base. The features sit where
+ * every piece has body, in the artwork's 45 unit square.
  */
-const ROT_FILL = `<filter id="rot" x="0" y="0" width="1" height="1"><feTurbulence type="fractalNoise" baseFrequency="0.16" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.05 -4 0 0 0 1.8"/></filter><filter id="bruise" x="0" y="0" width="1" height="1"><feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="2" seed="9"/><feColorMatrix values="0 0 0 0 0.33 0 0 0 0 0.12 0 0 0 0 0.27 0 -5 0 0 1.95"/></filter><filter id="mould" x="0" y="0" width="1" height="1"><feTurbulence type="fractalNoise" baseFrequency="0.4" numOctaves="1" seed="2"/><feColorMatrix values="0 0 0 0 0.8 0 0 0 0 0.84 0 0 0 0 0.55 0 0 5 0 -2.9"/></filter><linearGradient id="grime" gradientUnits="userSpaceOnUse" x1="0" y1="28" x2="0" y2="42"><stop offset="0" stop-color="#141808" stop-opacity="0"/><stop offset="1" stop-color="#141808" stop-opacity="0.6"/></linearGradient><pattern id="rotten" patternUnits="userSpaceOnUse" width="45" height="45"><rect width="45" height="45" fill="url(#body)"/><rect width="45" height="45" filter="url(#rot)"/><rect width="45" height="45" filter="url(#bruise)"/><rect width="45" height="45" filter="url(#mould)"/><rect width="45" height="45" fill="url(#grime)"/><g fill="#3a0e10" stroke="#b9a070" stroke-width="0.5"><ellipse cx="18.5" cy="30" rx="1.7" ry="1.3"/><ellipse cx="27" cy="22" rx="1.2" ry="1.5"/><ellipse cx="25" cy="35" rx="1.4" ry="1"/><ellipse cx="21" cy="15" rx="0.9" ry="1.1"/></g></pattern>`;
+const ROT_FILL =
+  `<filter id="rot" x="0" y="0" width="1" height="1"><feTurbulence type="fractalNoise" baseFrequency="0.12" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 0.2 0 0 0 0 0.26 0 0 0 0 0.09 -3.5 0 0 0 1.6"/></filter>` +
+  `<linearGradient id="grime" gradientUnits="userSpaceOnUse" x1="0" y1="30" x2="0" y2="42"><stop offset="0" stop-color="#1a2208" stop-opacity="0"/><stop offset="1" stop-color="#1a2208" stop-opacity="0.65"/></linearGradient>` +
+  `<pattern id="rotten" patternUnits="userSpaceOnUse" width="45" height="45">` +
+  `<rect width="45" height="45" fill="url(#body)"/>` +
+  `<rect width="45" height="45" filter="url(#rot)" opacity="0.75"/>` +
+  `<rect width="45" height="45" fill="url(#grime)"/>` +
+  `<path d="M11 19 q3 2 5 1 t5 3 M16 20 q1 3 3 4 M31 13 q-2 3 -1 6 t-3 4 M30 18 q2 1 3 3 M14 36 q2 -2 4 -1" fill="none" stroke="#5b2d55" stroke-width="0.55" stroke-linecap="round" opacity="0.75"/>` +
+  `<path d="M12 31.5 L33 25.5" stroke="#4a1418" stroke-width="1.2" stroke-linecap="round"/>` +
+  `<path d="M14.6 29.6 l0.9 2.6 M18.3 28.6 l0.9 2.6 M22 27.5 l0.9 2.6 M25.7 26.5 l0.9 2.6 M29.4 25.4 l0.9 2.6" stroke="#efe4c4" stroke-width="0.6" stroke-linecap="round"/>` +
+  `<path d="M24.3 34 l2.4 -1.6 l3.2 0.4 l1.6 1.6 l-0.8 2.2 l-3.4 0.8 l-2.6 -1.2 Z" fill="#3a0d10" stroke="#a8875e" stroke-width="0.5" stroke-linejoin="round"/>` +
+  `<path d="M25.6 36 l4.4 -2.6" stroke="#efe6cc" stroke-width="0.9" stroke-linecap="round"/>` +
+  `<circle cx="18" cy="16" r="1.3" fill="#1d1206" stroke="#8a7a3a" stroke-width="0.5"/>` +
+  `</pattern>` +
+  // Warps the whole piece a touch, so its outline sags and runs like it is rotting away
+  `<filter id="decay" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.3" numOctaves="2" seed="7" result="warp"/><feDisplacementMap in="SourceGraphic" in2="warp" scale="1.2" xChannelSelector="R" yChannelSelector="G"/></filter>`;
 
 const rotted = new Map<string, string>();
 
-/** A piece as a zombie: the light army's artwork gone grey green and rotten through */
+/** A piece as a zombie: the light army's artwork gone green and rotten through */
 export function zombieImage(type: Piece["type"]): string {
   const name = `w${type.toUpperCase()}`;
   const cached = rotted.get(name);
@@ -79,9 +95,13 @@ export function zombieImage(type: Piece["type"]): string {
   const svg = artwork.get(name);
   if (!svg) return `${PARTY}${name}.svg`;
   const rotten = recolor(svg, ZOMBIE_BODY)
-    .replace("</defs>", `${ROT_FILL}</defs>`)
     .replace(/fill="url\(#body\)"/g, 'fill="url(#rotten)"')
-    .replace(/stroke="#1b1033"/g, 'stroke="#141c0a"');
+    .replace("</defs>", `${ROT_FILL}</defs>`)
+    .replace(/stroke="#1b1033"/g, 'stroke="#1b2a0e"')
+    .replace(
+      /<\/defs>([\s\S]*)<\/svg>\s*$/,
+      '</defs><g filter="url(#decay)">$1</g></svg>',
+    );
   const url = `data:image/svg+xml,${encodeURIComponent(rotten)}`;
   rotted.set(name, url);
   return url;
