@@ -153,6 +153,17 @@ function Coil({ end }: { end: "top" | "bottom" }) {
       const held = COIL_REST + (end === "bottom" ? pull : -pull) * COIL_GIVE;
       if (Math.abs(held - shown) > 0.004) {
         shown = held;
+        // The pile stays put on the ground; only the rope coming down into it
+        // moves, following the rope's end as it is hauled back and forth
+        const shift = parseFloat(
+          board?.style.getPropertyValue("--rope-shift") || "0",
+        );
+        const unit =
+          (svgRef.current?.getBoundingClientRect().width ?? 100) / 100;
+        const entry = {
+          x: COIL_ENTRY.x,
+          y: COIL_ENTRY.y + (shift / unit) * (end === "bottom" ? 1 : -1),
+        };
         const last = COIL_LOOPS.length - 1;
         const from = (1 - held) * last;
         const first = Math.ceil(from);
@@ -172,8 +183,8 @@ function Coil({ end }: { end: "top" | "bottom" }) {
         });
         // The rope's run down to the outside loop, its lobes spread evenly along it
         const start = COIL_LOOPS[Math.min(first, last)];
-        const dx = start.x - COIL_ENTRY.x;
-        const dy = start.y - COIL_ENTRY.y;
+        const dx = start.x - entry.x;
+        const dy = start.y - entry.y;
         const count = Math.min(
           LEAD_POOL,
           Math.max(1, Math.round(Math.hypot(dx, dy) / LOBE_SPACING)),
@@ -189,7 +200,7 @@ function Coil({ end }: { end: "top" | "bottom" }) {
           el.style.opacity = "1";
           el.setAttribute(
             "transform",
-            `translate(${(COIL_ENTRY.x + dx * t).toFixed(2)} ${(COIL_ENTRY.y + dy * t).toFixed(2)}) rotate(${angle})`,
+            `translate(${(entry.x + dx * t).toFixed(2)} ${(entry.y + dy * t).toFixed(2)}) rotate(${angle})`,
           );
         });
       }

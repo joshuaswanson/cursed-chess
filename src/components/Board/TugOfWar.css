@@ -114,14 +114,14 @@
    strands' own bumpy outline, so nothing paints between the bulges. */
 /* The rope's loose ends lie piled on the ground past each end of the board,
    and the pulled rope runs into them */
-/* Drawn over the rope's ends, which tuck under the first strand of each coil,
-   and dragged along with the rope so the two never come apart */
+/* Drawn over the rope's ends, which tuck under the first strand of each coil.
+   The pile itself stays put on the ground. */
 .tug-coil {
   position: absolute;
   z-index: 1;
   left: 50%;
   width: calc(var(--square-size, 72px) * 1.35);
-  translate: -50% var(--rope-shift, 0px);
+  translate: -50% 0;
   overflow: visible;
 }
 
