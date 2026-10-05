@@ -167,15 +167,19 @@ export function Sideline({
     return { column, row: row >= coachRow ? row + 1 : row };
   };
 
-  const walkFrom = (sq: SquareIndex, spot: { x: number; y: number }) => ({
-    "--from-x": `${Math.round((visualCol(sq, flipped) + 0.5) * squareSize - (spot.x + cell / 2))}px`,
-    "--from-y": `${Math.round((visualRow(sq, flipped) + 0.5) * squareSize - (spot.y + cell / 2))}px`,
+  const walkFrom = (
+    sq: SquareIndex,
+    spot: { x: number; y: number },
+    size = cell,
+  ) => ({
+    "--from-x": `${Math.round((visualCol(sq, flipped) + 0.5) * squareSize - (spot.x + size / 2))}px`,
+    "--from-y": `${Math.round((visualRow(sq, flipped) + 0.5) * squareSize - (spot.y + size / 2))}px`,
   });
-  const place = (spot: { x: number; y: number }) => ({
+  const place = (spot: { x: number; y: number }, size = cell) => ({
     left: `${Math.round(spot.x)}px`,
     top: `${Math.round(spot.y)}px`,
-    width: `${Math.round(cell)}px`,
-    height: `${Math.round(cell)}px`,
+    width: `${Math.round(size)}px`,
+    height: `${Math.round(size)}px`,
   });
   const seats = { near: 0, far: 0 };
 
@@ -184,20 +188,21 @@ export function Sideline({
       {coaches.map(({ sq, piece, delayMs }) => {
         // FIFA's coaches take their place on the touchline; elsewhere a king
         // just walks straight off the side of the board along its own row
-        const spot =
-          coaching || sq === null
-            ? spotAt(half(piece.color), 0, coachRow)
-            : {
-                x: Math.max(-room, -gap - cell),
-                y:
-                  visualRow(sq, flipped) * squareSize + (squareSize - cell) / 2,
-              };
+        // Kings stand at the same size as the pieces on the board
+        const touchline = spotAt(half(piece.color), 0, coachRow);
+        const spot = {
+          x: Math.max(-room, -gap - squareSize),
+          y:
+            coaching || sq === null
+              ? touchline.y + (cell - squareSize) / 2
+              : visualRow(sq, flipped) * squareSize,
+        };
         // A king already off the board from the mode before is just there
         const style: Style = {
-          ...place(spot),
+          ...place(spot, squareSize),
           ...(sq === null
             ? { "--from-x": "0px", "--from-y": "0px" }
-            : walkFrom(sq, spot)),
+            : walkFrom(sq, spot, squareSize)),
           "--delay": `${delayMs}ms`,
           "--dur": `${sq === null ? 0 : KING_DEPART_MS}ms`,
         };
