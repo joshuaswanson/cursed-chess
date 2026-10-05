@@ -16,18 +16,6 @@
   height: 12.5%;
 }
 
-/* A new shell hole opens with the blast */
-.shell-hole.fresh {
-  animation: crater-open 0.4s ease-out both;
-}
-
-@keyframes crater-open {
-  from {
-    scale: 0.3;
-    opacity: 0;
-  }
-}
-
 /* Barbed wire on its posts */
 .wire-coil {
   width: 100%;

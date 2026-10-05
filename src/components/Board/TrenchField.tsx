@@ -93,7 +93,6 @@ export function TrenchField({
           <ShellHole
             key={c.seed}
             seed={c.seed}
-            className="fresh"
             style={{
               left: `${(left - c.r) * 12.5}%`,
               top: `${(top - c.r) * 12.5}%`,
