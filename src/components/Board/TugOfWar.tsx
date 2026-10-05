@@ -389,19 +389,24 @@ function blob(cx: number, cy: number, rx: number, ry: number, seed: number) {
   return `${d} Z`;
 }
 
-const MUD_SHAPE = blob(250, 100, 222, 80, 11);
-const MUD_WET = blob(252, 104, 150, 50, 23);
-const MUD_PUDDLE = blob(258, 108, 92, 26, 37);
+const MUD_SHAPE = blob(100, 250, 80, 222, 11);
+const MUD_WET = blob(104, 252, 50, 150, 23);
+const MUD_PUDDLE = blob(108, 258, 26, 92, 37);
 
 /**
- * A churned mud pit where the halves meet. The surface is noise lit from the
+ * A churned mud pit running along the rope, where the pullers dig in. The surface is noise lit from the
  * top left, so it has real lumps and hollows with a wet sheen on top; the
  * edges are ragged and soft, the middle is darker and wetter, and a murky
  * puddle sits in it reflecting the sky.
  */
 function MudPit() {
   return (
-    <svg className="tug-mud" viewBox="0 0 500 200" aria-hidden>
+    <svg
+      className="tug-mud"
+      viewBox="0 0 200 500"
+      preserveAspectRatio="none"
+      aria-hidden
+    >
       <defs>
         <filter id="mud-surface" x="-10%" y="-20%" width="120%" height="140%">
           <feTurbulence
@@ -485,15 +490,15 @@ function MudPit() {
         strokeLinecap="round"
         filter="url(#mud-edge)"
       >
-        <path d="M70 78 C120 70 170 76 200 90" strokeWidth="9" />
-        <path d="M86 128 C130 138 172 132 202 116" strokeWidth="7" />
-        <path d="M432 76 C380 70 330 78 300 92" strokeWidth="9" />
-        <path d="M416 130 C372 140 330 132 300 116" strokeWidth="7" />
+        <path d="M78 70 C70 120 76 170 90 200" strokeWidth="9" />
+        <path d="M128 86 C138 130 132 172 116 202" strokeWidth="7" />
+        <path d="M76 432 C70 380 78 330 92 300" strokeWidth="9" />
+        <path d="M130 416 C140 372 132 330 116 300" strokeWidth="7" />
       </g>
       <path d={MUD_PUDDLE} fill="url(#mud-water)" filter="url(#mud-edge)" />
-      <ellipse className="mud-ripple" cx="248" cy="108" rx="28" ry="7" />
+      <ellipse className="mud-ripple" cx="108" cy="248" rx="7" ry="28" />
       <path
-        d="M206 100 Q246 93 294 99"
+        d="M100 206 Q93 246 99 294"
         stroke="#dff0f4"
         strokeOpacity="0.45"
         strokeWidth="3"
@@ -508,7 +513,7 @@ function MudPit() {
 /** A few turns of red cord bound tight round the rope, tying a corner of the pennant to it */
 function Lashing({ y }: { y: number }) {
   return (
-    <g>
+    <g className="tug-lashing">
       {[-3, 0, 3].map((dy) => (
         <g key={dy}>
           <rect
@@ -541,7 +546,7 @@ const MUD_SPLATS = (() => {
   while (splats.length < 30) {
     const x = 40 + rand() * 720;
     const y = 40 + rand() * 720;
-    if (Math.abs(x - 400) < 300 && Math.abs(y - 400) < 140) continue;
+    if (Math.abs(x - 400) < 140 && Math.abs(y - 400) < 300) continue;
     const size = 9 + rand() * 30;
     const drops = Array.from({ length: 7 }, () => {
       const a = rand() * Math.PI * 2;
