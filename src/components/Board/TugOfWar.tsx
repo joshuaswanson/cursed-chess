@@ -47,7 +47,12 @@ function Coil({ end }: { end: "top" | "bottom" }) {
   );
 }
 
-const STRUGGLE = new Set(["tug-surge", "tug-lean-white", "tug-lean-black"]);
+const STRUGGLE = new Set([
+  "tug-surge",
+  "tug-stretch",
+  "tug-lean-white",
+  "tug-lean-black",
+]);
 
 /** How far down the board, in squares, a spot `toWhite` squares from the center line toward White sits */
 const fromTop = (toWhite: number, flipped: boolean) =>

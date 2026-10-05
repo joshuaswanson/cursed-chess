@@ -145,7 +145,29 @@
 /* Between heaves the two teams fight over the rope: it lurches one way,
    trembles while both strain, then gets hauled back the other way */
 .tug-rope-layer.contested .tug-rope {
-  animation: tug-surge var(--tug-cycle) linear infinite;
+  animation:
+    tug-surge var(--tug-cycle) linear infinite,
+    tug-stretch var(--tug-cycle) linear infinite;
+}
+
+/* A heave snaps the rope thin and long, then it springs back like elastic */
+.tug-rope-wrap.heaving .tug-rope {
+  animation: rope-spring 0.9s ease-out;
+}
+
+@keyframes rope-spring {
+  15% {
+    scale: 0.55 1.07;
+  }
+  35% {
+    scale: 1.25 0.97;
+  }
+  55% {
+    scale: 0.85 1.02;
+  }
+  75% {
+    scale: 1.08 0.995;
+  }
 }
 
 .tug-rope-wrap.heaving {
@@ -781,6 +803,151 @@
   }
   100% {
     rotate: calc(var(--side) * var(--flip, 1) * -9deg);
+    scale: 1 1;
+  }
+}
+
+/* The rope thins and its twist draws out the harder both teams pull */
+@keyframes tug-stretch {
+  0% {
+    scale: 1 1;
+  }
+  3% {
+    scale: 0.771 1.027;
+  }
+  4.8% {
+    scale: 0.785 1.025;
+  }
+  6.7% {
+    scale: 0.799 1.023;
+  }
+  8.5% {
+    scale: 0.776 1.026;
+  }
+  10.3% {
+    scale: 0.813 1.022;
+  }
+  12.2% {
+    scale: 0.79 1.024;
+  }
+  14% {
+    scale: 0.797 1.024;
+  }
+  19% {
+    scale: 0.947 1.006;
+  }
+  22% {
+    scale: 0.718 1.033;
+  }
+  23.8% {
+    scale: 0.714 1.033;
+  }
+  25.5% {
+    scale: 0.702 1.035;
+  }
+  27.2% {
+    scale: 0.732 1.031;
+  }
+  29.0% {
+    scale: 0.709 1.034;
+  }
+  30.8% {
+    scale: 0.735 1.031;
+  }
+  32.5% {
+    scale: 0.719 1.033;
+  }
+  34.2% {
+    scale: 0.725 1.032;
+  }
+  36% {
+    scale: 0.753 1.029;
+  }
+  40% {
+    scale: 0.894 1.012;
+  }
+  42% {
+    scale: 0.806 1.023;
+  }
+  44% {
+    scale: 0.929 1.008;
+  }
+  47% {
+    scale: 0.841 1.019;
+  }
+  48.6% {
+    scale: 0.843 1.018;
+  }
+  50.2% {
+    scale: 0.869 1.015;
+  }
+  51.8% {
+    scale: 0.836 1.019;
+  }
+  53.4% {
+    scale: 0.846 1.018;
+  }
+  55% {
+    scale: 0.868 1.015;
+  }
+  58% {
+    scale: 0.894 1.012;
+  }
+  62% {
+    scale: 0.7 1.035;
+  }
+  63.6% {
+    scale: 0.7 1.035;
+  }
+  65.2% {
+    scale: 0.7 1.035;
+  }
+  66.8% {
+    scale: 0.718 1.033;
+  }
+  68.4% {
+    scale: 0.734 1.031;
+  }
+  70% {
+    scale: 0.735 1.031;
+  }
+  73% {
+    scale: 0.841 1.019;
+  }
+  75% {
+    scale: 0.788 1.025;
+  }
+  77% {
+    scale: 0.929 1.008;
+  }
+  78.8% {
+    scale: 0.908 1.011;
+  }
+  80.6% {
+    scale: 0.966 1.004;
+  }
+  82.4% {
+    scale: 0.926 1.009;
+  }
+  84.2% {
+    scale: 0.963 1.004;
+  }
+  86% {
+    scale: 0.956 1.005;
+  }
+  89% {
+    scale: 0.788 1.025;
+  }
+  91.0% {
+    scale: 0.779 1.026;
+  }
+  93.0% {
+    scale: 0.79 1.024;
+  }
+  95% {
+    scale: 0.824 1.021;
+  }
+  100% {
     scale: 1 1;
   }
 }
