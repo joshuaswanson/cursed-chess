@@ -94,9 +94,19 @@ const COIL_LOOPS = COIL_LOBES.filter((lobe) => lobe.y >= 7);
 function Coil({ end }: { end: "top" | "bottom" }) {
   const rx = COIL_ROPE * 0.53;
   const ry = COIL_ROPE * 0.31;
-  const strand = (lobe: (typeof COIL_LOBES)[number], i: number) => (
+  const strand = (
+    lobe: (typeof COIL_LOBES)[number],
+    i: number,
+    along?: number,
+  ) => (
     <g
       key={i}
+      className={along === undefined ? undefined : "coil-lobe"}
+      style={
+        along === undefined
+          ? undefined
+          : ({ "--along": along.toFixed(3) } as React.CSSProperties)
+      }
       transform={`translate(${lobe.x.toFixed(2)} ${lobe.y.toFixed(2)}) rotate(${lobe.angle.toFixed(1)})`}
     >
       <ellipse
@@ -126,9 +136,14 @@ function Coil({ end }: { end: "top" | "bottom" }) {
           <stop offset="1" stopColor="#000" stopOpacity="0.35" />
         </linearGradient>
       </defs>
-      {/* The loops wind tighter or pay out as rope runs in or out of the pile */}
-      <g className="coil-loops">{COIL_LOOPS.map(strand)}</g>
-      {COIL_LEAD.map(strand)}
+      {/* Rope paying out of the pile takes its innermost loops first; rope
+          running in winds them back toward the middle */}
+      <g>
+        {COIL_LOOPS.map((lobe, i) =>
+          strand(lobe, i, i / (COIL_LOOPS.length - 1)),
+        )}
+      </g>
+      {COIL_LEAD.map((lobe, i) => strand(lobe, i))}
     </svg>
   );
 }
