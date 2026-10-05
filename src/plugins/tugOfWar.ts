@@ -58,7 +58,8 @@ export class TugOfWarPlugin implements ModePlugin {
   description =
     "Pieces on the two center files hold the rope. More hands hauls the flag your way.";
 
-  private flag = 0;
+  /** Where the flag is, in squares from the center line; positive is toward White's end */
+  flag = 0;
   /** Counts up with every heave */
   heave = 0;
   /** Which way the last heave went: 1 toward White, -1 toward Black */

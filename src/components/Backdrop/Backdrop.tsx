@@ -5,7 +5,7 @@ import { PRESETS } from "./particles";
 import { useParticleCanvas } from "./useParticleCanvas";
 import { BattleLand } from "./BattleLand";
 import { Stands } from "./Stands";
-import { Fairground } from "./Fairground";
+import { TugField } from "./TugField";
 import "./Backdrop.css";
 
 /** How long the spirals take to slow, stop, and wind up the other way */
@@ -153,7 +153,7 @@ function Scene({ theme }: { theme: ThemeId }) {
         </>
       );
     case "tug":
-      return <Fairground />;
+      return <TugField />;
     case "stratego":
       return <BattleLand />;
     default:
