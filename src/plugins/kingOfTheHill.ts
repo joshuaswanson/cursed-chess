@@ -15,14 +15,14 @@ const HILL_SQUARES: SquareIndex[] = [
   ((4 << 4) | 4) as SquareIndex, // e5
 ];
 
-/** Rounds in a row a side must control the hill to win */
+/** Turns in a row a side must end holding the hill to win */
 const DOMINATION_TURNS = 3;
 
 export class KingOfTheHillPlugin implements ModePlugin {
   id = "king-of-hill";
   name = "King of the Hill";
   description =
-    "Control the center by having more pieces on it than the foe. Hold it for 3 rounds in a row to win!";
+    "Control the center by having more pieces on it than the foe. Hold it for 3 turns in a row to win!";
 
   private whiteControl = 0;
   private blackControl = 0;
@@ -38,9 +38,12 @@ export class KingOfTheHillPlugin implements ModePlugin {
     this.winner = null;
   }
 
+  /**
+   * Checked after every turn. A side's streak grows each time it ends its own
+   * turn holding the hill, and is lost the moment any turn ends without it on
+   * top, so it has to hold on through the foe's turns in between as well.
+   */
   onTurnEnd(ctx: PluginContext, color: Color): void {
-    if (color !== Color.Black) return;
-
     // Count who controls the hill
     let white = 0;
     let black = 0;
@@ -56,10 +59,10 @@ export class KingOfTheHillPlugin implements ModePlugin {
 
     // Whoever has more pieces on the hill controls it; a tie breaks both streaks
     if (white > black) {
-      this.whiteDomination++;
+      if (color === Color.White) this.whiteDomination++;
       this.blackDomination = 0;
     } else if (black > white) {
-      this.blackDomination++;
+      if (color === Color.Black) this.blackDomination++;
       this.whiteDomination = 0;
     } else {
       this.whiteDomination = 0;
