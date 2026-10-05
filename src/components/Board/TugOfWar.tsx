@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { WIN_LINE } from "../../plugins/tugOfWar";
 import type { TugView } from "../../plugins/tugOfWar";
 import { sfx } from "../../audio/sfx";
-import { ROPE_TILE } from "./ropeTexture";
+import { ROPE_TILE, fibrePaths, strandPath } from "./ropeTexture";
 import { useTugStruggle } from "./tugStruggle";
 import "./TugOfWar.css";
 
@@ -29,11 +29,11 @@ const COIL_ROPE = 12.6;
 const STRAND_TONES = ["#c9a066", "#b88d52", "#d6b077"];
 /** Where the rope comes down into the pile, in the coil's drawing */
 const COIL_ENTRY = { x: 50, y: -10 };
-const LOBE_SPACING = COIL_ROPE * 0.5;
+const LOBE_SPACING = COIL_ROPE * 0.38;
 /** Share of the spiral a pile holds when neither team has pulled rope out of it or into it */
 const COIL_REST = 0.7;
 const COIL_GIVE = 0.3;
-const LEAD_POOL = 34;
+const LEAD_POOL = 44;
 
 /**
  * A pile of rope lying on the ground, drawn for the bottom end: uneven loops
@@ -135,25 +135,34 @@ function Strand({
   shade: number;
   innerRef?: (el: SVGGElement | null) => void;
 }) {
-  const rx = COIL_ROPE * 0.53;
-  const ry = COIL_ROPE * 0.31;
+  const half = COIL_ROPE * 0.6;
+  const thick = COIL_ROPE * 0.34;
+  const [low, mid, high] = fibrePaths(half, thick);
+  const body = strandPath(half, thick);
   return (
     <g ref={innerRef}>
-      <ellipse
-        rx={rx}
-        ry={ry}
+      <path
+        d={body}
         fill={tone}
         stroke="#4a2c12"
-        strokeWidth="0.75"
+        strokeWidth="0.7"
+        strokeLinejoin="round"
       />
-      <ellipse rx={rx} ry={ry} fill={`url(#coil-hl-${end})`} />
-      <ellipse rx={rx} ry={ry} fill="#1a0e04" fillOpacity={shade} />
+      <path d={body} fill={`url(#coil-hl-${end})`} />
+      <path d={body} fill="#1a0e04" fillOpacity={shade} />
       <path
-        d={`M${-rx * 0.6} ${-ry * 0.1} Q0 ${-ry * 0.45} ${rx * 0.6} ${-ry * 0.1}`}
+        d={`${low} ${high}`}
+        fill="none"
+        stroke="#7a5228"
+        strokeWidth="0.4"
+        strokeOpacity="0.8"
+      />
+      <path
+        d={mid}
         fill="none"
         stroke="#f3dcae"
         strokeWidth="0.45"
-        strokeOpacity="0.75"
+        strokeOpacity="0.85"
       />
     </g>
   );

@@ -4,15 +4,40 @@ const PITCH = 8;
 const TILE = PITCH * 3;
 const TONES = ["#c9a066", "#b88d52", "#d6b077"];
 
-/** One turn of a strand: a fat lobe slanting across the rope */
+/**
+ * One turn of a strand, in its own frame with the rope's width along x: a
+ * wispy S that swells in the middle and tapers to a point at each edge, where
+ * it tucks behind the next turn
+ */
+export function strandPath(halfWidth: number, thickness: number): string {
+  const w = halfWidth;
+  const t = thickness;
+  return (
+    `M${-w} 0 C${-w * 0.35} ${-t * 1.9} ${w * 0.15} ${-t * 0.2} ${w} ${-t * 0.35} ` +
+    `C${w * 0.35} ${t * 1.9} ${-w * 0.15} ${t * 0.2} ${-w} 0 Z`
+  );
+}
+
+/** Fibres running along a strand turn, following its S */
+export function fibrePaths(halfWidth: number, thickness: number): string[] {
+  const w = halfWidth;
+  const t = thickness;
+  return [-0.45, 0, 0.45].map(
+    (k) =>
+      `M${-w * 0.8} ${t * k * 0.6} C${-w * 0.3} ${t * (k - 1.1)} ${w * 0.2} ${t * (k * 0.5)} ${w * 0.8} ${t * (k * 0.6 - 0.3)}`,
+  );
+}
+
+/** One turn of a strand slanting across the rope */
 function lobe(y: number, tone: string): string {
   const at = `translate(${WIDTH / 2} ${y}) rotate(-38)`;
+  const [low, mid, high] = fibrePaths(9.5, 4.2);
   return (
     `<g transform="${at}">` +
-    `<ellipse rx="8.5" ry="5" fill="${tone}" stroke="#4a2c12" stroke-width="0.9"/>` +
-    `<ellipse rx="8.5" ry="5" fill="url(#hl)"/>` +
-    `<path d="M-6.5 -1.6 Q0 -2.6 6.5 -1.6 M-7 1.2 Q0 0.4 7 1.2" fill="none" stroke="#7a5228" stroke-width="0.45" stroke-opacity="0.75"/>` +
-    `<path d="M-5 -0.3 Q0 -1.1 5 -0.3" fill="none" stroke="#f3dcae" stroke-width="0.5" stroke-opacity="0.8"/>` +
+    `<path d="${strandPath(9.5, 4.2)}" fill="${tone}" stroke="#4a2c12" stroke-width="0.8" stroke-linejoin="round"/>` +
+    `<path d="${strandPath(9.5, 4.2)}" fill="url(#hl)"/>` +
+    `<path d="${low} ${high}" fill="none" stroke="#7a5228" stroke-width="0.45" stroke-opacity="0.8"/>` +
+    `<path d="${mid}" fill="none" stroke="#f3dcae" stroke-width="0.55" stroke-opacity="0.85"/>` +
     `</g>`
   );
 }
