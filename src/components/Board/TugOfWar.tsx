@@ -145,12 +145,12 @@ const SPIRAL_PIECES = piecesAlong(COIL_SPIRAL).reverse();
 
 /** One short piece of the rope, filled with the rope's own texture */
 function RopePiece({
-  end,
+  fill,
   phase,
   transform,
   innerRef,
 }: {
-  end: string;
+  fill: string;
   phase: number;
   transform?: string;
   innerRef?: (el: SVGGElement | null) => void;
@@ -162,7 +162,7 @@ function RopePiece({
         y={phase.toFixed(2)}
         width={COIL_ROPE}
         height={PIECE + 0.7}
-        fill={`url(#rope-${end})`}
+        fill={`url(#${fill})`}
       />
     </g>
   );
@@ -181,7 +181,7 @@ function Coil({ end }: { end: "top" | "bottom" }) {
   const leadRefs = useRef<(SVGGElement | null)[]>([]);
 
   useEffect(() => {
-    const board = svgRef.current?.closest<HTMLElement>(".board");
+    const board = svgRef.current?.closest<HTMLElement>(".tug-layer");
     let frame = 0;
     let shown = -1;
     let shownShift = NaN;
@@ -241,16 +241,18 @@ function Coil({ end }: { end: "top" | "bottom" }) {
     return () => cancelAnimationFrame(frame);
   }, [end]);
 
-  return (
+  // The pile and the rope leading into it are drawn on separate layers, so
+  // the lead moving every frame never redraws the whole pile
+  const layer = (part: "pile" | "lead") => (
     <svg
-      ref={svgRef}
+      ref={part === "pile" ? svgRef : undefined}
       className={`tug-coil coil-${end}`}
       viewBox="0 -12 100 72"
       aria-hidden
     >
       <defs>
         <pattern
-          id={`rope-${end}`}
+          id={`rope-${end}-${part}`}
           patternUnits="userSpaceOnUse"
           width={COIL_ROPE}
           height={TILE_STEP}
@@ -263,28 +265,35 @@ function Coil({ end }: { end: "top" | "bottom" }) {
           />
         </pattern>
       </defs>
-      {SPIRAL_PIECES.map((piece, n) => (
-        <RopePiece
-          key={n}
-          end={end}
-          phase={piece.phase}
-          transform={piece.transform}
-          innerRef={(el) => {
-            pieceRefs.current[n] = el;
-          }}
-        />
-      ))}
-      {Array.from({ length: LEAD_POOL }, (_, k) => (
-        <RopePiece
-          key={`lead-${k}`}
-          end={end}
-          phase={0}
-          innerRef={(el) => {
-            leadRefs.current[k] = el;
-          }}
-        />
-      ))}
+      {part === "pile"
+        ? SPIRAL_PIECES.map((piece, n) => (
+            <RopePiece
+              key={n}
+              fill={`rope-${end}-pile`}
+              phase={piece.phase}
+              transform={piece.transform}
+              innerRef={(el) => {
+                pieceRefs.current[n] = el;
+              }}
+            />
+          ))
+        : Array.from({ length: LEAD_POOL }, (_, k) => (
+            <RopePiece
+              key={k}
+              fill={`rope-${end}-lead`}
+              phase={0}
+              innerRef={(el) => {
+                leadRefs.current[k] = el;
+              }}
+            />
+          ))}
     </svg>
+  );
+  return (
+    <>
+      {layer("pile")}
+      {layer("lead")}
+    </>
   );
 }
 
@@ -621,7 +630,12 @@ export function TugLayer({
         >
           <Coil end="top" />
           <Coil end="bottom" />
-          <div className="tug-rope" style={{ "--rope": ROPE_TILE } as Style} />
+          <div className="tug-rope-shadow">
+            <div
+              className="tug-rope"
+              style={{ "--rope": ROPE_TILE } as Style}
+            />
+          </div>
         </div>
         {(["cloth", "knots"] as const).map((part) => (
           <div

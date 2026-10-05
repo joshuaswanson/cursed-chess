@@ -106,7 +106,6 @@
   top: -9%;
   bottom: -9%;
   width: calc(var(--square-size, 72px) * 0.17);
-  filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.3));
   translate: -50% 0;
   z-index: 2;
 }
@@ -117,6 +116,19 @@
    and the pulled rope runs into them */
 /* Drawn over the rope's ends, which tuck under the first strand of each coil.
    The pile itself stays put on the ground. */
+/* The rope and each coil cast their shadows on their own layers, so the
+   rope moving every frame never redraws the coils */
+.tug-rope-shadow {
+  position: absolute;
+  inset: 0;
+  filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.3));
+}
+
+.tug-coil {
+  filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.3));
+  will-change: transform;
+}
+
 .tug-coil {
   position: absolute;
   z-index: 1;
@@ -157,6 +169,7 @@
 .tug-rope {
   translate: 0 var(--rope-shift, 0px);
   scale: var(--rope-thin, 1) var(--rope-long, 1);
+  will-change: translate, scale;
 }
 
 /* A heave snaps the rope thin and long, then it springs back like elastic */

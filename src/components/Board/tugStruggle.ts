@@ -36,8 +36,8 @@ function startPull(team: Team, now: number): void {
  * The idle tug of war: each team pulls on its own random timer, so sometimes
  * one heaves while the other holds and the rope gives its way, and sometimes
  * both heave at once and the rope stretches thin and shakes between them.
- * Writes the state to CSS variables on the board for the rope, flag, and
- * pieces to follow.
+ * Writes the state to CSS variables on the rope's layer and the pieces on the
+ * rope for them to follow.
  */
 export function useTugStruggle(
   root: React.RefObject<HTMLElement | null>,
@@ -45,8 +45,15 @@ export function useTugStruggle(
   flipped: boolean,
 ): void {
   useEffect(() => {
-    const board = root.current?.closest<HTMLElement>(".board");
-    if (!board) return;
+    const layer = root.current;
+    const board = layer?.closest<HTMLElement>(".board");
+    if (!layer || !board) return;
+    // Only the rope's layer and the pieces gripping it follow the struggle, so
+    // the rest of the board is left alone every frame
+    const targets = () => [
+      layer,
+      ...board.querySelectorAll<HTMLElement>(".rope-square .piece-img"),
+    ];
     let last = performance.now() / 1000;
     // The pennant swings on its knots like a weight on a spring, kicked by the rope's jolts
     let swing = 0;
@@ -114,23 +121,27 @@ export function useTugStruggle(
         9 + 11 * own - 7 * Math.max(0, rival - own);
       const squash = (own: number) => 1 - 0.08 * own;
 
-      const s = board.style;
-      s.setProperty("--rope-shift", `${shift.toFixed(2)}px`);
-      s.setProperty("--flag-swing", `${(swing + flutter).toFixed(2)}deg`);
-      // From -1, hauled fully up the screen, to 1, hauled fully down it
-      s.setProperty("--rope-pull", (shift / SHIFT_PX).toFixed(3));
-      s.setProperty("--rope-thin", (1 - 0.42 * tension).toFixed(3));
-      s.setProperty("--rope-long", (1 + 0.04 * tension).toFixed(3));
-      s.setProperty(
-        "--lean-white",
-        `${lean(white.strength, black.strength).toFixed(2)}deg`,
-      );
-      s.setProperty(
-        "--lean-black",
-        `${lean(black.strength, white.strength).toFixed(2)}deg`,
-      );
-      s.setProperty("--squash-white", squash(white.strength).toFixed(3));
-      s.setProperty("--squash-black", squash(black.strength).toFixed(3));
+      const vars: [string, string][] = [
+        ["--rope-shift", `${shift.toFixed(2)}px`],
+        ["--flag-swing", `${(swing + flutter).toFixed(2)}deg`],
+        // From -1, hauled fully up the screen, to 1, hauled fully down it
+        ["--rope-pull", (shift / SHIFT_PX).toFixed(3)],
+        ["--rope-thin", (1 - 0.42 * tension).toFixed(3)],
+        ["--rope-long", (1 + 0.04 * tension).toFixed(3)],
+        [
+          "--lean-white",
+          `${lean(white.strength, black.strength).toFixed(2)}deg`,
+        ],
+        [
+          "--lean-black",
+          `${lean(black.strength, white.strength).toFixed(2)}deg`,
+        ],
+        ["--squash-white", squash(white.strength).toFixed(3)],
+        ["--squash-black", squash(black.strength).toFixed(3)],
+      ];
+      for (const el of targets()) {
+        for (const [name, value] of vars) el.style.setProperty(name, value);
+      }
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -147,7 +158,7 @@ export function useTugStruggle(
         "--squash-white",
         "--squash-black",
       ]) {
-        board.style.removeProperty(name);
+        for (const el of targets()) el.style.removeProperty(name);
       }
     };
   }, [root, contested, flipped]);
