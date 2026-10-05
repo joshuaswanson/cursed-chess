@@ -164,3 +164,29 @@
 .slats-dark {
   fill: #5e4428;
 }
+
+/* Shadow pooled along the foot of both walls, where the light cannot reach */
+.trench-occlusion {
+  fill: none;
+  stroke: rgba(4, 2, 0, 0.8);
+  stroke-width: 26;
+  filter: url(#wt-soft);
+}
+
+/* The ground's edge, catching the light as it breaks off into the cut */
+.lip-rim {
+  fill: none;
+  stroke: #8f7756;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* The crumbling near lip of our own trenches, just in front of the men's boots */
+.near-crumb {
+  fill: none;
+  stroke: #4c3b28;
+  stroke-width: 9;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 -3px 2px rgba(0, 0, 0, 0.6));
+}

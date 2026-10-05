@@ -94,6 +94,14 @@ function EarthDefs() {
         <stop offset="0.5" stopColor="#7a5c37" />
         <stop offset="1" stopColor="#5f4628" />
       </linearGradient>
+      <linearGradient id="wt-depth" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#000" stopOpacity="0" />
+        <stop offset="0.5" stopColor="#000" stopOpacity="0.25" />
+        <stop offset="1" stopColor="#000" stopOpacity="0.65" />
+      </linearGradient>
+      <filter id="wt-soft" x="-5%" y="-50%" width="110%" height="200%">
+        <feGaussianBlur stdDeviation="5" />
+      </filter>
       <radialGradient id="wt-crater">
         <stop offset="0" stopColor="#3a3f3e" />
         <stop offset="0.45" stopColor="#2c2a24" />
@@ -177,6 +185,13 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
           <path d={line.boardsLight} className="planks" />
           <path d={line.wattle} className="planks planks-dark" />
           <path d={line.stakes} className="stakes" />
+          {/* Darker the deeper the wall goes, out of the light */}
+          <path d={line.farWall} fill="url(#wt-depth)" />
+          <g clipPath={`url(#wt-inside-${line.key})`}>
+            <path d={line.outline} className="trench-occlusion" />
+          </g>
+          <path d={line.farLip} className="lip-rim" />
+          <path d={line.nearLip} className="lip-rim" />
           <path d={line.outline} className="trench-lip" />
         </g>
       ))}
@@ -210,6 +225,12 @@ export function WorldTrenchesFront({ flipped }: { flipped: boolean }) {
     >
       {scene.lines.map((line) => (
         <g key={line.key}>
+          {line.ours && (
+            <>
+              <path d={line.nearLip} className="near-crumb" />
+              <path d={line.nearLip} className="lip-rim" />
+            </>
+          )}
           <Sandbags bags={line.nearBags} />
         </g>
       ))}

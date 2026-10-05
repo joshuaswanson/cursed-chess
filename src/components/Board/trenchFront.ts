@@ -58,6 +58,9 @@ const OUR_LIFT = 0;
 const FAR_LIP = -43;
 const FAR_WALL_FOOT = -22;
 const FLOOR = -9;
+/** Our trenches are seen from behind the men: the far wall runs down to their boots, where the floor is */
+const OUR_FAR_WALL_FOOT = 8;
+const OUR_FLOOR = 32;
 const NEAR_LIP = 47;
 /** Where a trench's near edge crosses the squares of its row, as a share of the square: men in it are hidden below that */
 export const TRENCH_EDGE = (SQ / 2 - LIFT + NEAR_LIP) / SQ;
@@ -91,6 +94,11 @@ interface TrenchLine {
   stakes: string;
   wattle: string;
   boardsLight: string;
+  /** The lip of ground along each edge */
+  farLip: string;
+  nearLip: string;
+  /** One of our own trenches, seen from behind the men in it */
+  ours: boolean;
   /** Duckboard slats, in two tones */
   slats: [string, string];
   /** Behind the far lip: sandbags if the enemy lies that way, otherwise the spoil heap */
@@ -162,6 +170,8 @@ function layBags(
 function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
   const rand = seeded(seed);
   const centreY = MARGIN + row * SQ + SQ / 2 - (enemyAbove ? OUR_LIFT : LIFT);
+  const floor = enemyAbove ? OUR_FLOOR : FLOOR;
+  const farWallFoot = enemyAbove ? OUR_FAR_WALL_FOOT : FAR_WALL_FOOT;
   const xs: number[] = [];
   for (let x = -REACH; x <= BOARD + REACH; x += STEP) xs.push(x);
   // Off the board the bays are dug to no plan: each its own length, set back
@@ -235,7 +245,7 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
 
   const farFoot = xs.map((x, i) => ({
     x,
-    y: centreAt(x) + FAR_WALL_FOOT + wallsA[i] * 0.3,
+    y: centreAt(x) + farWallFoot + wallsA[i] * 0.3,
   }));
   const farWall = toPath([...far, ...[...farFoot].reverse()], true);
   // Upright planks shoring the far wall, in two tones so each board reads,
@@ -307,7 +317,7 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
   for (let x = xs[0]; x < xs[xs.length - 1];) {
     const w = 4.5 + rand() * 3;
     if (rand() > 0.07) {
-      const y = centreAt(x) + FLOOR;
+      const y = centreAt(x) + floor;
       const broken = rand() < 0.08;
       const top = y - 12 + (broken ? 5 : 0);
       const bottom = y + 12 - (rand() < 0.08 ? 6 : 0);
@@ -323,7 +333,7 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
     if (rand() < 0.45) {
       water.push({
         x,
-        y: centreAt(x) + FLOOR + (rand() - 0.5) * 8,
+        y: centreAt(x) + floor + (rand() - 0.5) * 8,
         rx: 10 + rand() * 18,
         ry: 3 + rand() * 4,
       });
@@ -333,7 +343,10 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
   return {
     key: `t${row}`,
     outline: toPath([...far, ...[...near].reverse()], true),
-    centre: toPath(xs.map((x) => ({ x, y: centreAt(x) + FLOOR }))),
+    centre: toPath(xs.map((x) => ({ x, y: centreAt(x) + floor }))),
+    farLip: toPath(far),
+    nearLip: toPath(near),
+    ours: enemyAbove,
     water,
     farWall,
     stakes,
