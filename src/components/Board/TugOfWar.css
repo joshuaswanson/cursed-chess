@@ -129,6 +129,11 @@
   will-change: transform;
 }
 
+/* The slack rope lies under the rope in play, which fades out over it */
+.tug-coil.coil-lead {
+  z-index: 0;
+}
+
 .tug-coil {
   position: absolute;
   z-index: 1;
@@ -160,7 +165,22 @@
       rgba(40, 22, 8, 0.5) 100%
     ),
     var(--rope) 0 0 / 100% auto repeat-y;
-  mask: var(--rope) 0 0 / 100% auto repeat-y;
+  /* Faded out at each end over the slack rope that carries on beneath it */
+  --rope-fade: calc(var(--square-size, 72px) * 0.17 * 1.4);
+  --rope-ends: linear-gradient(
+    #0000,
+    #000 var(--rope-fade),
+    #000 calc(100% - var(--rope-fade)),
+    #0000
+  );
+  -webkit-mask:
+    var(--rope) 0 0 / 100% auto repeat-y,
+    var(--rope-ends);
+  -webkit-mask-composite: source-in;
+  mask:
+    var(--rope) 0 0 / 100% auto repeat-y,
+    var(--rope-ends);
+  mask-composite: intersect;
 }
 
 /* Each heave snaps the rope toward the side that won it, then it springs back */

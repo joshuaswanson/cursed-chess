@@ -34,8 +34,12 @@ const COIL_ROPE = 12.6;
 const TILE_STEP = COIL_ROPE * ROPE_TILE_RATIO;
 /** The rope is laid along the coil in pieces this long, overlapping a touch so no seam shows */
 const PIECE = 2.4;
-/** How far the slack rope starts back under the end of the rope in play, so the two overlap with no gap */
-const COIL_TUCK = 2;
+/**
+ * How far, in rope widths, the rope in play fades out at each end. The slack
+ * rope starts that far back under it, carrying on the same strands, so the one
+ * melts into the other.
+ */
+const ROPE_FADE_WIDTHS = 1.4;
 /** Share of the spiral a pile holds when neither team has pulled rope out of it or into it */
 const COIL_REST = 0.6;
 /** How much of the spiral feeds in or out as the rope gives during the struggle, and as it is hauled to a win line */
@@ -124,12 +128,16 @@ function arcLengths(points: Point[]): number[] {
 function piecesAlong(
   points: Point[],
   startAt = 0,
-  widthAt: (along: number) => number = () => 1,
+  widthAt: (along: number, total: number) => number = () => 1,
+  backward = false,
 ) {
   const along = arcLengths(points);
+  const total = along[along.length - 1];
   const pieces: { transform: string; at: number; phase: number }[] = [];
   let i = 1;
-  for (let at = 0; at < along[along.length - 1]; at += PIECE) {
+  // Laid backward, each piece covers the stretch behind it, so one more is needed to reach the end
+  const reach = total + (backward ? PIECE : 0);
+  for (let at = 0; at < reach; at += PIECE) {
     while (i < points.length - 1 && along[i] < at) i++;
     const a = points[i - 1];
     const b = points[i];
@@ -137,12 +145,13 @@ function piecesAlong(
     const x = a.x + (b.x - a.x) * k;
     const y = a.y + (b.y - a.y) * k;
     const angle = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI - 90;
-    const phase = (((startAt + at) % TILE_STEP) + TILE_STEP) % TILE_STEP;
-    const width = widthAt(at / (along[along.length - 1] || 1));
+    const raw = backward ? startAt - at : startAt + at;
+    const phase = ((raw % TILE_STEP) + TILE_STEP) % TILE_STEP;
+    const width = widthAt(Math.min(at, total), total);
     pieces.push({
       at,
       phase,
-      transform: `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${angle.toFixed(1)}) scale(${width.toFixed(3)} 1) translate(${(-COIL_ROPE / 2).toFixed(2)} ${(-phase).toFixed(2)})`,
+      transform: `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${angle.toFixed(1)}) scale(${width.toFixed(3)} ${backward ? -1 : 1}) translate(${(-COIL_ROPE / 2).toFixed(2)} ${(-phase).toFixed(2)})`,
     });
   }
   return pieces;
@@ -246,14 +255,13 @@ function Coil({ end, hauled }: { end: "top" | "bottom"; hauled: number }) {
       const box = svg.getBoundingClientRect();
       const ends = rope.getBoundingClientRect();
       const unit = box.width / 100;
+      const tuck = (rope.offsetWidth * ROPE_FADE_WIDTHS) / unit;
       const entry = {
         x: ((ends.left + ends.right) / 2 - box.left) / unit,
         y:
           (end === "bottom"
             ? (ends.bottom - box.top) / unit
-            : (box.bottom - ends.top) / unit) -
-          12 -
-          COIL_TUCK,
+            : (box.bottom - ends.top) / unit) - 12,
       };
       if (
         Math.abs(held - shown) > 0.003 ||
@@ -278,19 +286,33 @@ function Coil({ end, hauled }: { end: "top" | "bottom"; hauled: number }) {
           found < 0 ? COIL_SPIRAL.length - 1 : found,
           COIL_SPIRAL.length - 2,
         );
-        const curve = slackCurve(entry, COIL_SPIRAL[i], spiralHeading(i));
-        // The slack rope eases from the rope in play's thickness to the pile's
+        // Straight on under the fading end of the rope in play, then the slack
+        const under = Array.from({ length: 6 }, (_, k) => ({
+          x: entry.x,
+          y: entry.y - tuck + (tuck * k) / 6,
+        }));
+        const curve = [
+          ...under,
+          ...slackCurve(entry, COIL_SPIRAL[i], spiralHeading(i)),
+        ];
+        // Under the rope in play it matches its thickness, then eases to the pile's
+        const widthAt = (at: number, total: number) => {
+          const t = Math.max(0, (at - tuck) / (total - tuck || 1));
+          const eased = t * t * (3 - 2 * t);
+          return thin + (1 - thin) * eased;
+        };
+        // The strands carry on from the rope in play's own. Its texture runs
+        // down the screen from its top, and the top coil is drawn upside
+        // down, so that coil lays them backward to keep them the right way up.
         const tile = rope.offsetWidth * ROPE_TILE_RATIO;
-        const ropeEnd =
-          end === "bottom" ? (rope.offsetHeight % tile) / tile : 0;
-        const lead = piecesAlong(
-          curve,
-          ropeEnd * TILE_STEP - COIL_TUCK,
-          (t) => {
-            const eased = t * t * (3 - 2 * t);
-            return thin + (1 - thin) * eased;
-          },
-        );
+        const lead =
+          end === "bottom"
+            ? piecesAlong(
+                curve,
+                ((rope.offsetHeight % tile) / tile) * TILE_STEP - tuck,
+                widthAt,
+              )
+            : piecesAlong(curve, tuck, widthAt, true);
         leadRefs.current.forEach((el, k) => {
           if (!el) return;
           const piece = lead[k];
@@ -314,7 +336,7 @@ function Coil({ end, hauled }: { end: "top" | "bottom"; hauled: number }) {
   const layer = (part: "pile" | "lead") => (
     <svg
       ref={part === "pile" ? svgRef : undefined}
-      className={`tug-coil coil-${end}`}
+      className={`tug-coil coil-${end} coil-${part}`}
       viewBox="0 -12 100 72"
       aria-hidden
     >
