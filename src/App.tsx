@@ -6,6 +6,7 @@ import { ShowCards } from "./components/Show/ShowCards";
 import { CurseIntro } from "./components/Show/CurseIntro";
 import { HexWarp } from "./components/HexWarp/HexWarp";
 import { MoveCountdown } from "./components/Countdown/MoveCountdown";
+import { SkipBanner } from "./components/Board/SkipBanner";
 import { Hud } from "./components/Hud/Hud";
 import { FoeRallyBar, YourRallyBar } from "./components/RallyPanel/RallyPanel";
 import { Backdrop } from "./components/Backdrop/Backdrop";
@@ -93,6 +94,7 @@ function App() {
             <div className="board-stack">
               {board}
               <MoveCountdown />
+              <SkipBanner />
             </div>
             {cursed && <YourRallyBar />}
           </div>

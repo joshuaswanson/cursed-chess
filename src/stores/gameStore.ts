@@ -108,6 +108,20 @@ export const GAME_MODES: GameMode[] = [
     introHoldMs: MODE_CARD_MS + 5200,
   },
   {
+    name: "TUG OF WAR",
+    theme: "tug",
+    create: () => [new TugOfWarPlugin()],
+    durationSeconds: 75,
+    kingsSitOut: true,
+  },
+  {
+    name: "FIFA",
+    theme: "fifa",
+    create: () => [new FootballPlugin()],
+    durationSeconds: 60,
+    kingsSitOut: true,
+  },
+  {
     name: "BATTLE ROYALE",
     theme: "royale",
     create: () => [new BattleRoyalePlugin()],
@@ -131,13 +145,6 @@ export const GAME_MODES: GameMode[] = [
     kingsSitOut: true,
   },
   {
-    name: "FIFA",
-    theme: "fifa",
-    create: () => [new FootballPlugin()],
-    durationSeconds: 60,
-    kingsSitOut: true,
-  },
-  {
     name: "GRAVITY",
     theme: "gravity",
     create: () => [new GravityPlugin()],
@@ -149,13 +156,6 @@ export const GAME_MODES: GameMode[] = [
     durationSeconds: 60,
     introHoldMs: HEX_MORPH_DONE_MS,
     isHex: true,
-  },
-  {
-    name: "TUG OF WAR",
-    theme: "tug",
-    create: () => [new TugOfWarPlugin()],
-    durationSeconds: 75,
-    kingsSitOut: true,
   },
   {
     name: "STRATEGO",
@@ -224,8 +224,8 @@ export interface GameStore {
   introDone: boolean;
   /** Pieces are falling after gravity shifted, so nobody may move */
   gravityFalling: boolean;
-  /** The last side to miss a turn because none of its pieces could move */
-  skippedTurn: { id: number; color: Color } | null;
+  /** The last side to miss a turn, because none of its pieces could move or its time ran out */
+  skippedTurn: { id: number; color: Color; reason: "stuck" | "time" } | null;
   /** A piece is on its way through a portal, so the clock waits for it to arrive */
   portalTravelling: boolean;
   siteTab: SiteTab;
@@ -459,7 +459,11 @@ function skipStuckTurn(): void {
       return;
     }
     useGameStore.setState((s) => ({
-      skippedTurn: { id: (s.skippedTurn?.id ?? 0) + 1, color: stuck },
+      skippedTurn: {
+        id: (s.skippedTurn?.id ?? 0) + 1,
+        color: stuck,
+        reason: "stuck",
+      },
     }));
     passTurnWithoutMoving(GAME_END_DELAY_MS);
   }, SKIP_DELAY_MS);
@@ -923,6 +927,30 @@ export const useGameStore = create<GameStore>((set, get) => ({
   // Black's move comes from the AI. A human who runs out of time gets a random move.
   expireTimer: () => {
     const { isHexMode, hexGame, game } = get();
+    // A player who runs out of time just misses their move
+    const playersTurn = (isHexMode ? hexGame?.turn : game.turn) === Color.White;
+    if (playersTurn) {
+      set((s) => ({
+        skippedTurn: {
+          id: (s.skippedTurn?.id ?? 0) + 1,
+          color: Color.White,
+          reason: "time",
+        },
+      }));
+      if (isHexMode && hexGame) {
+        hexGame.turn = Color.Black;
+        set({
+          turn: Color.Black,
+          selectedHex: null,
+          legalHexMoves: [],
+          timeBlack: AI_MOVE_SECONDS,
+          moveTimerActive: true,
+        });
+      } else {
+        passTurnWithoutMoving(GAME_END_DELAY_MS);
+      }
+      return;
+    }
     if (isHexMode) {
       const move = hexGame?.getBestMove(PIECE_VALUE);
       if (move) get().makeHexMove(move.from, move.to, move.promotion);
