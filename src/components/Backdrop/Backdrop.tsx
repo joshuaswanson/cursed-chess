@@ -6,6 +6,7 @@ import { useParticleCanvas } from "./useParticleCanvas";
 import { BattleLand } from "./BattleLand";
 import { Stands } from "./Stands";
 import { TugField } from "./TugField";
+import { Graveyard } from "./Graveyard";
 import "./Backdrop.css";
 
 /** How long the spirals take to slow, stop, and wind up the other way */
@@ -152,6 +153,8 @@ function Scene({ theme }: { theme: ThemeId }) {
           </div>
         </>
       );
+    case "zombies":
+      return <Graveyard />;
     case "tug":
       return <TugField />;
     case "stratego":

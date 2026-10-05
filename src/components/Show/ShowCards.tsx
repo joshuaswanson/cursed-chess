@@ -113,6 +113,19 @@ function Flair({ theme }: { theme: ThemeId }) {
       );
     case "stratego":
       return <span className="card-stamp-ring" />;
+    case "zombies":
+      return (
+        <>
+          <span className="card-moon" />
+          <svg
+            className="card-ooze"
+            viewBox="0 0 400 40"
+            preserveAspectRatio="none"
+          >
+            <path d="M0 0 H400 V12 Q390 12 388 26 Q386 34 382 26 Q378 12 360 12 Q340 12 336 30 Q333 40 329 30 Q325 12 300 12 Q270 12 268 22 Q266 28 262 22 Q258 12 220 12 Q190 12 186 34 Q183 42 179 34 Q175 12 140 12 Q110 12 106 24 Q104 30 100 24 Q96 12 60 12 Q30 12 26 32 Q23 40 19 32 Q15 12 0 12 Z" />
+          </svg>
+        </>
+      );
     case "tug":
       return (
         <div className="card-tug">

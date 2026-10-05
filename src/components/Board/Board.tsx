@@ -24,6 +24,7 @@ import { PortalArrows } from "./PortalArrows";
 import { Sideline } from "./Sideline";
 import { HillThrone } from "./HillThrone";
 import { TugLayer } from "./TugOfWar";
+import { Tombstone, ZombiePiece } from "./Zombies";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
 import { BoardFog } from "../Fog/Fog";
@@ -43,6 +44,7 @@ import {
   useShotDives,
   useHeave,
   useTugDrags,
+  useZombieActs,
   DRAG_MS,
   RUNOFF_MS,
   CAPTURE_BURST_MS,
@@ -278,6 +280,7 @@ export function Board() {
     moveHistory.length,
     overlays.football?.shirts ?? {},
   );
+  const zombieActs = useZombieActs(overlays.zombies, flipped, squareSize);
   const capture = useCaptureBurst(
     cursed && lastPortalMove === null && lastRecord?.move.captured
       ? lastRecord.move.to
@@ -377,6 +380,8 @@ export function Board() {
         squareMods.some((m) => m.className === "mine-exploded") &&
         (minesBlasting.has(sq) || !overlays.pendingExplosions.includes(sq));
       const isLegalTarget = legalMoveSquares.includes(sq);
+      const zombie = overlays.zombies?.zombies[sq];
+      const grave = overlays.zombies?.graves.find((g) => g.sq === sq);
       const isLastMove =
         !battle && lastMove && (sq === lastMove.from || sq === lastMove.to);
       const isCheck =
@@ -506,7 +511,11 @@ export function Board() {
           {closingColor && <Portal color={closingColor} state="despawn" />}
 
           {isLegalTarget && !drag?.isDragging && (
-            <div className={piece ? "capture-hint" : "move-hint"} />
+            <div
+              className={
+                piece || zombie !== undefined ? "capture-hint" : "move-hint"
+              }
+            />
           )}
 
           {doomed.has(sq) && <DoomedTile sq={sq} progress={dangerProgress} />}
@@ -529,6 +538,10 @@ export function Board() {
               flipped={flipped}
               squareSize={squareSize}
             />
+          )}
+          {grave && <Tombstone stirring={grave.rounds <= 1} />}
+          {zombie !== undefined && (
+            <ZombiePiece type={zombie} act={zombieActs.get(sq)} />
           )}
           {piece && !battle && !arrivals.has(sq) && !isLifted && !isDead && (
             <>

@@ -54,3 +54,12 @@ export function pieceImage(piece: Piece): string {
   const body = palette?.[piece.color === Color.White ? "light" : "dark"];
   return (body && themed(name, theme!, body)) || `${PARTY}${name}.svg`;
 }
+
+/** The rotting green the undead turn, whatever army they came from */
+const ZOMBIE_BODY = ["#c6e39a", "#6f9a48", "#22391a"];
+
+/** A piece as a zombie: the light army's artwork gone sickly green */
+export function zombieImage(type: Piece["type"]): string {
+  const name = `w${type.toUpperCase()}`;
+  return themed(name, "zombie", ZOMBIE_BODY) ?? `${PARTY}${name}.svg`;
+}

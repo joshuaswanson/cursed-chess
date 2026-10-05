@@ -23,6 +23,7 @@ import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
 import { TugOfWarPlugin } from "../plugins/tugOfWar";
+import { ZombiesPlugin } from "../plugins/zombies";
 import type { KickTarget } from "../plugins/football";
 import { benchKings, reinforce, returnKing } from "./reinforcements";
 import type {
@@ -164,6 +165,11 @@ export const GAME_MODES: GameMode[] = [
     name: "STRATEGO",
     theme: "stratego",
     create: () => [new StrategoPlugin()],
+  },
+  {
+    name: "ZOMBIES",
+    theme: "zombies",
+    create: () => [new ZombiesPlugin()],
   },
 ];
 
@@ -486,6 +492,7 @@ function modeSquareBonus(
 ): SquareBonus {
   const football = pluginManager.find<FootballPlugin>("football");
   const tug = pluginManager.find<TugOfWarPlugin>("tug-of-war");
+  const zombies = pluginManager.find<ZombiesPlugin>("zombies");
   return (square, piece, from) => {
     const classes = pluginManager
       .getSquareModifiers(square)
@@ -500,6 +507,7 @@ function modeSquareBonus(
     if (classes.includes("hill-square")) bonus += 0.5;
     if (football) bonus += football.squareBonus(board, square, piece, from);
     if (tug) bonus += tug.squareBonus(square, piece);
+    if (zombies) bonus += zombies.squareBonus(square, piece);
     return bonus;
   };
 }
@@ -609,10 +617,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   legalMovesFrom: (square) => {
     const { game, pluginManager } = get();
-    return pluginManager.invokeModifyLegalMoves(
-      game.getLegalMoves(square),
-      game.turn,
-    );
+    return pluginManager
+      .invokeModifyLegalMoves(game.getLegalMoves(square), game.turn)
+      .filter((move) => move.from === square);
   },
 
   selectSquare: (square) => {
@@ -701,9 +708,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       .find<FootballPlugin>("football")
       ?.shirtOn(processedMove.to);
     const isPortalMove = !!(processedMove.flags & MoveFlag.Portal);
-    const success = isPortalMove
-      ? game.executeTrustedMove(processedMove)
-      : game.makeMove(processedMove);
+    const success =
+      isPortalMove || processedMove.flags & MoveFlag.ModeMove
+        ? game.executeTrustedMove(processedMove)
+        : game.makeMove(processedMove);
     if (!success) return;
 
     const moveState = {

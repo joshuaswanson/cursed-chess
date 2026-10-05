@@ -1,0 +1,283 @@
+/* --- Zombies --- */
+
+.tombstone {
+  position: absolute;
+  inset: 4%;
+  width: 92%;
+  height: 92%;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.grave-mound {
+  fill: #4a3a26;
+}
+
+.grave-mound-lit {
+  fill: none;
+  stroke: #7a6142;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.headstone {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  rotate: -6deg;
+}
+
+.headstone-face {
+  fill: #9a988c;
+  stroke: #24222a;
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+}
+
+.headstone-lit {
+  fill: none;
+  stroke: #d2cfc2;
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+
+.headstone-rip {
+  font-family: var(--font-display);
+  font-size: 13px;
+  fill: #3a3842;
+}
+
+.headstone-lines {
+  stroke: #5e5c62;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.headstone-crack {
+  fill: none;
+  stroke: #1a1820;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+/* The round before its dead rise, the stone trembles and the earth heaves */
+.tombstone.stirring .headstone {
+  animation: headstone-tremble 0.4s ease-in-out infinite alternate;
+}
+
+.tombstone.stirring .grave-mound {
+  animation: mound-heave 0.8s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+
+@keyframes headstone-tremble {
+  from {
+    rotate: -9deg;
+  }
+  to {
+    rotate: -3deg;
+  }
+}
+
+@keyframes mound-heave {
+  to {
+    scale: 1.08 1.25;
+  }
+}
+
+/* The undead: a rotting green, swaying as they stand, glowing faintly */
+.zombie {
+  position: absolute;
+  inset: 5%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.zombie img {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 0.35em rgba(143, 224, 74, 0.55))
+    drop-shadow(0.06em 0.09em 0 rgba(10, 20, 6, 0.6));
+  transform-origin: 50% 90%;
+  animation: zombie-sway 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes zombie-sway {
+  from {
+    rotate: -7deg;
+  }
+  to {
+    rotate: 5deg;
+  }
+}
+
+/* Two glowing pinpricks where the eyes would be */
+.zombie-eyes {
+  position: absolute;
+  left: 38%;
+  top: 30%;
+  display: flex;
+  gap: 9%;
+  width: 24%;
+  animation: zombie-sway 2.2s ease-in-out infinite alternate;
+}
+
+.zombie-eyes i {
+  flex: 1;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #f4ff7a;
+  box-shadow: 0 0 6px #d8ff3a;
+  animation: zombie-blink 4s steps(1) infinite;
+}
+
+@keyframes zombie-blink {
+  96% {
+    scale: 1 0.1;
+  }
+}
+
+/* Lurching one square: a stagger, a drag of the foot, then another lurch */
+.zombie-shamble {
+  animation: zombie-shamble 1s var(--delay) both;
+}
+
+@keyframes zombie-shamble {
+  0% {
+    translate: var(--from-x) var(--from-y);
+    rotate: 0deg;
+  }
+  30% {
+    translate: calc(var(--from-x) * 0.6) calc(var(--from-y) * 0.6);
+    rotate: -12deg;
+  }
+  45% {
+    translate: calc(var(--from-x) * 0.55) calc(var(--from-y) * 0.55);
+    rotate: -4deg;
+  }
+  80% {
+    translate: 0 0;
+    rotate: 10deg;
+  }
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+}
+
+/* Clawing up out of the grave */
+.zombie-rise img,
+.zombie-rise .zombie-eyes {
+  animation: zombie-rise 1s var(--delay) cubic-bezier(0.3, 0.6, 0.3, 1) both;
+}
+
+@keyframes zombie-rise {
+  from {
+    clip-path: inset(100% 0 0 0);
+    translate: 0 60%;
+    rotate: 10deg;
+  }
+  to {
+    clip-path: inset(-20% -20% -20% -20%);
+    translate: 0 0;
+  }
+}
+
+.zombie-dirt {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #5a4630 0 35%, rgba(90, 70, 48, 0) 70%);
+  animation: dirt-burst 1s var(--delay) ease-out both;
+}
+
+@keyframes dirt-burst {
+  0% {
+    scale: 0.3;
+    opacity: 1;
+  }
+  100% {
+    scale: 1.8 1.2;
+    opacity: 0;
+  }
+}
+
+/* Lunging at the piece it bites */
+.zombie-bite {
+  animation: zombie-lunge 0.6s var(--delay) ease-in-out both;
+}
+
+@keyframes zombie-lunge {
+  45% {
+    translate: calc(var(--from-x) * -0.45) calc(var(--from-y) * -0.45);
+    scale: 1.15;
+  }
+}
+
+/* The bitten piece shudders as the green spreads through it */
+.zombie-bitten img {
+  animation:
+    zombie-turn 0.9s var(--delay) ease-out both,
+    zombie-sway 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes zombie-turn {
+  0% {
+    filter: saturate(0) brightness(1.8);
+    translate: 0 0;
+  }
+  15% {
+    translate: -6% 0;
+  }
+  30% {
+    translate: 6% 0;
+  }
+  45% {
+    translate: -4% 0;
+  }
+}
+
+.zombie-chomp {
+  position: absolute;
+  left: 50%;
+  top: -10%;
+  translate: -50% 0;
+  padding: 0.1em 0.45em;
+  border: 3px solid #0c0a12;
+  border-radius: 10px;
+  background: #8fe04a;
+  color: #0c0a12;
+  font-family: var(--font-display);
+  font-size: calc(var(--square-size, 72px) * 0.26);
+  white-space: nowrap;
+  box-shadow: 3px 4px 0 #0c0a12;
+  z-index: 3;
+  animation: chomp-pop 1s var(--delay) both;
+}
+
+@keyframes chomp-pop {
+  0% {
+    scale: 0;
+    rotate: -12deg;
+    opacity: 0;
+  }
+  20% {
+    scale: 1.2;
+    opacity: 1;
+  }
+  35%,
+  80% {
+    scale: 1;
+    rotate: -6deg;
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: -50% -40%;
+  }
+}

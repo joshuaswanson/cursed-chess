@@ -10,7 +10,8 @@ export type ThemeId =
   | "fifa"
   | "hex"
   | "stratego"
-  | "tug";
+  | "tug"
+  | "zombies";
 
 /** Which animated scene sits behind the board */
 export type BackdropKind = ThemeId;
@@ -209,6 +210,21 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#e8cf9a",
     dark: "#c99e62",
     text: "#2a1a10",
+  },
+  zombies: {
+    id: "zombies",
+    title: "Zombies",
+    tagline:
+      "Captured pieces rise from their graves and bite whoever they reach. Lose your king to a bite and you lose.",
+    catchphrase: "Beware the undead!",
+    sky: ["#07060f", "#1a1530", "#27402a"],
+    accent: "#8fe04a",
+    accent2: "#9b6bd6",
+    ink: "#0c0a12",
+    frame: "#3b3a33",
+    light: "#8e8a72",
+    dark: "#5b5a48",
+    text: "#e8f2d8",
   },
 };
 

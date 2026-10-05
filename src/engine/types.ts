@@ -31,6 +31,8 @@ export const MoveFlag = {
   QueensideCastle: 16,
   DoublePawnPush: 32,
   Portal: 64,
+  /** A move a mode allows that the engine's own rules would not, played as given */
+  ModeMove: 128,
 } as const;
 export type MoveFlag = (typeof MoveFlag)[keyof typeof MoveFlag];
 

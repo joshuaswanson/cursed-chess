@@ -966,3 +966,46 @@
   inset: 0;
   background: url("./tug-grass.svg") 0 0 / 120px 120px;
 }
+
+/* --- Zombies: a graveyard under a sickly moon --- */
+
+.graveyard {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Green mist creeping along the ground, two banks drifting past each other */
+.grave-mist {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  bottom: 0;
+  height: 38%;
+  background:
+    radial-gradient(
+      ellipse 40% 60% at 30% 80%,
+      rgba(160, 220, 120, 0.22),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 35% 55% at 75% 85%,
+      rgba(160, 220, 120, 0.18),
+      transparent 70%
+    );
+  animation: mist-drift 26s ease-in-out infinite alternate;
+}
+
+.grave-mist-b {
+  height: 28%;
+  opacity: 0.8;
+  animation-duration: 19s;
+  animation-direction: alternate-reverse;
+}
+
+@keyframes mist-drift {
+  to {
+    translate: 12% 0;
+  }
+}

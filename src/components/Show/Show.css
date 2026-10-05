@@ -1307,3 +1307,63 @@
     translate: calc(var(--from, -1) * 40vw) 0;
   }
 }
+
+/* --- Zombies: a sickly moon over the title, with ooze dripping off the band --- */
+
+[data-card-theme="zombies"] .card-band {
+  background: linear-gradient(100deg, #1a1530, #27402a);
+}
+
+.card-moon {
+  position: absolute;
+  right: 12vw;
+  top: 50%;
+  width: 14vh;
+  height: 14vh;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background: #eef5d8;
+  box-shadow: 0 0 60px rgba(143, 224, 74, 0.6);
+  opacity: 0.85;
+}
+
+.card-ooze {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 5vh;
+  fill: #8fe04a;
+  animation: ooze-drip 1.6s 0.3s ease-in both;
+  transform-origin: 50% 0;
+}
+
+@keyframes ooze-drip {
+  from {
+    scale: 1 0.1;
+  }
+}
+
+/* Letters lurch up out of the ground one by one */
+[data-card-theme="zombies"] .card-letter {
+  color: #c6e39a;
+  animation-name: letter-claw;
+  animation-duration: 0.7s;
+}
+
+@keyframes letter-claw {
+  0% {
+    translate: 0 60%;
+    rotate: 14deg;
+    opacity: 0;
+    clip-path: inset(100% 0 0 0);
+  }
+  60% {
+    rotate: -6deg;
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(-20% -20% -20% -20%);
+  }
+}

@@ -50,6 +50,10 @@ export const PIECE_PALETTES: Partial<
     light: ["#eafdff", "#7ff1ff", "#16a8c8"],
     dark: ["#ffa2da", "#e0219c", "#47053a"],
   },
+  zombies: {
+    light: ["#fbf6e6", "#ddd2b0", "#9e9170"],
+    dark: ["#9a7fb8", "#4d3570", "#1a0f2a"],
+  },
   stratego: {
     light: ["#e9f0ff", "#86a6e2", "#2b569c"],
     dark: ["#ffb4ab", "#d1352e", "#560e0a"],

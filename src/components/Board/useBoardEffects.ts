@@ -429,3 +429,66 @@ export function useTugDrags(
 }
 
 export { DRAG_MS };
+
+/** How long after the round ends the undead stir, so the last move lands first */
+export const ZOMBIE_DELAY_MS = SLIDE_MS + 250;
+const ZOMBIE_ACT_MS = 1100;
+
+export interface ZombieAct {
+  kind: "rise" | "shamble" | "bite" | "bitten";
+  /** Where a shambling zombie came from, from where it is now */
+  x: number;
+  y: number;
+}
+
+/** What each zombie did at the end of the round just played, for one round's animation */
+export function useZombieActs(
+  view: {
+    round: number;
+    events: {
+      kind: "rise" | "shamble" | "bite";
+      from?: SquareIndex;
+      to: SquareIndex;
+    }[];
+  } | null,
+  flipped: boolean,
+  squareSize: number,
+): Map<SquareIndex, ZombieAct> {
+  const round = view?.round ?? 0;
+  const [seen, setSeen] = useState(round);
+  const [acts, setActs] = useState<Map<SquareIndex, ZombieAct>>(new Map());
+  if (round !== seen) {
+    setSeen(round);
+    const next = new Map<SquareIndex, ZombieAct>();
+    for (const event of view?.events ?? []) {
+      if (event.kind === "shamble" && event.from !== undefined) {
+        next.set(event.to, {
+          kind: "shamble",
+          ...offsetBetween(event.from, event.to, flipped, squareSize),
+        });
+      } else if (event.kind === "bite" && event.from !== undefined) {
+        // The biter lunges at its victim, who turns on the spot
+        next.set(event.from, {
+          kind: "bite",
+          ...offsetBetween(event.to, event.from, flipped, squareSize),
+        });
+        next.set(event.to, { kind: "bitten", x: 0, y: 0 });
+      } else {
+        next.set(event.to, { kind: "rise", x: 0, y: 0 });
+      }
+    }
+    setActs(next);
+    if ((view?.events ?? []).some((e) => e.kind === "bite")) {
+      setTimeout(() => sfx.capture(), ZOMBIE_DELAY_MS + 300);
+    }
+  }
+  useEffect(() => {
+    if (acts.size === 0) return;
+    const done = setTimeout(
+      () => setActs(new Map()),
+      ZOMBIE_DELAY_MS + ZOMBIE_ACT_MS,
+    );
+    return () => clearTimeout(done);
+  }, [acts]);
+  return acts;
+}

@@ -503,3 +503,48 @@
     12px 12px,
     17px 15px;
 }
+
+/* --- Zombies: weathered graveyard stone, crept over with moss --- */
+
+[data-theme="zombies"] .board-shell {
+  background:
+    radial-gradient(
+      circle at 12% 18%,
+      rgba(110, 150, 60, 0.55) 0 6%,
+      transparent 7%
+    ),
+    radial-gradient(
+      circle at 88% 82%,
+      rgba(110, 150, 60, 0.5) 0 7%,
+      transparent 8%
+    ),
+    radial-gradient(
+      circle at 70% 8%,
+      rgba(110, 150, 60, 0.45) 0 4%,
+      transparent 5%
+    ),
+    linear-gradient(160deg, #4a4840, #2e2d28);
+  box-shadow:
+    10px 12px 0 var(--ink),
+    0 0 50px rgba(143, 224, 74, 0.18);
+}
+
+[data-theme="zombies"] .square.light,
+[data-theme="zombies"] .square.dark {
+  background-image:
+    radial-gradient(
+      circle at 25% 30%,
+      rgba(40, 32, 20, 0.35) 0 1.5px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at 70% 70%,
+      rgba(120, 160, 70, 0.35) 0 2px,
+      transparent 3px
+    ),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.15));
+  background-size:
+    13px 13px,
+    19px 17px,
+    100% 100%;
+}
