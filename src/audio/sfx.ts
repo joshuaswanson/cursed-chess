@@ -949,4 +949,160 @@ export const sfx = {
     boom.stop(t + 0.9);
     for (let i = 0; i < 6; i++) crackle(c, out, 1);
   },
+
+  /** A zombie's moan: a wavering buzz through two vowel formants, sliding down and back up */
+  groan(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const length = 1.2 + Math.random() * 0.6;
+    const pitch = 85 + Math.random() * 40;
+    const voice = c.createOscillator();
+    voice.type = "sawtooth";
+    voice.frequency.setValueAtTime(pitch * 1.15, t);
+    voice.frequency.exponentialRampToValueAtTime(pitch * 0.8, t + length * 0.6);
+    voice.frequency.exponentialRampToValueAtTime(pitch, t + length);
+    const wobble = c.createOscillator();
+    wobble.frequency.value = 4 + Math.random() * 3;
+    const wobbleDepth = c.createGain();
+    wobbleDepth.gain.value = pitch * 0.06;
+    wobble.connect(wobbleDepth).connect(voice.frequency);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.35, t + 0.25);
+    gain.gain.setValueAtTime(0.35, t + length * 0.7);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + length);
+    for (const [f, q] of [
+      [480, 5],
+      [850, 7],
+    ]) {
+      const formant = c.createBiquadFilter();
+      formant.type = "bandpass";
+      formant.frequency.setValueAtTime(f * 1.2, t);
+      formant.frequency.linearRampToValueAtTime(f * 0.8, t + length);
+      formant.Q.value = q;
+      voice.connect(formant).connect(gain);
+    }
+    const breath = noiseSource(c);
+    const breathBand = c.createBiquadFilter();
+    breathBand.type = "bandpass";
+    breathBand.frequency.value = 700;
+    breathBand.Q.value = 2;
+    const breathGain = c.createGain();
+    breathGain.gain.value = 0.12;
+    breath.connect(breathBand).connect(breathGain).connect(gain);
+    gain.connect(out);
+    for (const node of [voice, wobble, breath]) {
+      node.start(t);
+      node.stop(t + length + 0.05);
+    }
+  },
+
+  /** Teeth sinking in: a crunch of snaps over a wet squelch and a dull thump */
+  bite(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    for (let i = 0; i < 5; i++) creak(c, out, t + i * 0.035, 0.9);
+    for (let i = 0; i < 4; i++) crackle(c, out, 1.4);
+    const squelch = noiseSource(c);
+    const band = c.createBiquadFilter();
+    band.type = "bandpass";
+    band.Q.value = 9;
+    band.frequency.setValueAtTime(1600, t + 0.05);
+    band.frequency.exponentialRampToValueAtTime(300, t + 0.35);
+    const squelchGain = c.createGain();
+    squelchGain.gain.setValueAtTime(0.0001, t);
+    squelchGain.gain.exponentialRampToValueAtTime(0.6, t + 0.08);
+    squelchGain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    squelch.connect(band).connect(squelchGain).connect(out);
+    squelch.start(t, Math.random() * 0.5);
+    squelch.stop(t + 0.45);
+    const thump = c.createOscillator();
+    thump.frequency.setValueAtTime(110, t);
+    thump.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+    const thumpGain = c.createGain();
+    thumpGain.gain.setValueAtTime(0.5, t);
+    thumpGain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    thump.connect(thumpGain).connect(out);
+    thump.start(t);
+    thump.stop(t + 0.22);
+  },
+
+  /** Earth churning as something digs its way up, then the headstone cracks */
+  graveRise(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const src = noiseSource(c);
+    const low = c.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.value = 260;
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.7, t + 0.3);
+    gain.gain.setValueAtTime(0.7, t + 1.2);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 2);
+    src.connect(low).connect(gain).connect(out);
+    src.start(t);
+    src.stop(t + 2.05);
+    for (let i = 0; i < 14; i++)
+      creak(c, out, t + 0.1 + Math.random() * 1.6, 0.6);
+    for (let i = 0; i < 5; i++) creak(c, out, t + 1.3 + i * 0.04, 1);
+  },
+
+  /** A dragging step: two soft scrapes, the second one longer */
+  shuffle(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    for (const [at, length] of [
+      [0, 0.12],
+      [0.35, 0.3],
+    ]) {
+      const src = noiseSource(c);
+      const band = c.createBiquadFilter();
+      band.type = "bandpass";
+      band.frequency.value = 900;
+      band.Q.value = 1.5;
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.0001, t + at);
+      gain.gain.exponentialRampToValueAtTime(0.18, t + at + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + at + length);
+      src.connect(band).connect(gain).connect(out);
+      src.start(t + at, Math.random() * 0.5);
+      src.stop(t + at + length + 0.02);
+    }
+  },
+
+  /** A springy boing as a piece is knocked off a fresh grave */
+  boing(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const osc = c.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(520, t + 0.12);
+    osc.frequency.exponentialRampToValueAtTime(380, t + 0.35);
+    const wobble = c.createOscillator();
+    wobble.frequency.value = 22;
+    const wobbleDepth = c.createGain();
+    wobbleDepth.gain.value = 30;
+    wobble.connect(wobbleDepth).connect(osc.frequency);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    osc.connect(gain).connect(out);
+    for (const node of [osc, wobble]) {
+      node.start(t);
+      node.stop(t + 0.42);
+    }
+  },
 };
