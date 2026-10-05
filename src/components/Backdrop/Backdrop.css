@@ -946,46 +946,23 @@
   }
 }
 
-/* --- Tug of war: your blue against their red, the seam between them won and lost --- */
+/* --- Tug of war: a freshly mown field the mud has been churned into --- */
 
 .tug-field {
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  background:
+    radial-gradient(
+      ellipse 80% 75% at 50% 50%,
+      transparent 55%,
+      rgba(20, 40, 10, 0.35)
+    ),
+    repeating-linear-gradient(0deg, #5fae3a 0 9vh, #6dbb44 9vh 18vh);
 }
 
-.tug-field-red,
-.tug-field-blue {
+/* Tufts of grass over the mowing stripes */
+.tug-field-grass {
   position: absolute;
-  left: 0;
-  right: 0;
-  transition: height 0.9s cubic-bezier(0.3, 1.4, 0.5, 1);
-}
-
-.tug-field-red {
-  top: 0;
-  height: calc(var(--seam) + 2vh);
-  background:
-    repeating-linear-gradient(
-      -45deg,
-      rgba(255, 255, 255, 0.07) 0 3vh,
-      transparent 3vh 6vh
-    ),
-    linear-gradient(180deg, #b8322a, #d8493a);
-}
-
-/* Blue's top edge is a zigzag, biting into the red along the seam */
-.tug-field-blue {
-  bottom: 0;
-  height: calc(100% - var(--seam) + 2vh);
-  background:
-    repeating-linear-gradient(
-      45deg,
-      rgba(255, 255, 255, 0.07) 0 3vh,
-      transparent 3vh 6vh
-    ),
-    linear-gradient(180deg, #3d6fd8, #2a52b0);
-  mask: conic-gradient(from 135deg at 50% 2vh, #000 90deg, transparent 0) 0 0 /
-    4vh 100% repeat-x;
-  filter: drop-shadow(0 -0.6vh 0 rgba(255, 255, 255, 0.85));
+  inset: 0;
+  background: url("./tug-grass.svg") 0 0 / 120px 120px;
 }
