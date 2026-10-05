@@ -82,6 +82,26 @@ const SLIDES: Partial<Record<PieceType, number[]>> = {
   [PieceType.Queen]: QUEEN_DIRECTIONS,
 };
 
+/** Whether a zombie of a type standing on one square could bite another, the way the piece it was captures */
+function bites(
+  type: PieceType,
+  from: SquareIndex,
+  target: SquareIndex,
+): boolean {
+  const df = Math.abs(fileOf(target) - fileOf(from));
+  const dr = Math.abs(rankOf(target) - rankOf(from));
+  switch (type) {
+    case PieceType.Knight:
+      return KNIGHT_JUMPS.includes(target - from);
+    case PieceType.King:
+      return reach(from, target) === 1;
+    case PieceType.Pawn:
+      return df === 1 && dr === 1;
+  }
+  // Rooks, bishops, and queens only reach the next square along their lines
+  return (SLIDES[type] ?? []).some((step) => from + step === target);
+}
+
 /**
  * Zombies. A captured piece is buried under a tombstone and, two rounds later,
  * claws its way out as a zombie. Zombies belong to no one. After every round
@@ -172,19 +192,7 @@ export class ZombiesPlugin implements ModePlugin {
     from: SquareIndex,
     target: SquareIndex,
   ): boolean {
-    const type = zombies.get(from);
-    const df = Math.abs(fileOf(target) - fileOf(from));
-    const dr = Math.abs(rankOf(target) - rankOf(from));
-    switch (type) {
-      case PieceType.Knight:
-        return KNIGHT_JUMPS.includes(target - from);
-      case PieceType.King:
-        return reach(from, target) === 1;
-      case PieceType.Pawn:
-        return df === 1 && dr === 1;
-    }
-    // Rooks, bishops, and queens only reach the next square along their lines
-    return (SLIDES[type!] ?? []).some((step) => from + step === target);
+    return bites(zombies.get(from)!, from, target);
   }
 
   /** The zombies that could bite a square */
@@ -367,28 +375,55 @@ export class ZombiesPlugin implements ModePlugin {
     return prey[Math.floor(Math.random() * prey.length)];
   }
 
-  /** The open neighboring square that brings the zombie closest to the nearest living piece */
+  /**
+   * Where a zombie shambles: one step, the way it moves, along the shortest
+   * route to a square it could bite someone from. With no such square in
+   * reach it lurches toward the nearest piece, and failing that anywhere it
+   * can, so it never just stands there.
+   */
   private shambleTarget(board: Board, from: SquareIndex): SquareIndex | null {
+    const type = this.zombies.get(from)!;
+    const steps = SLIDES[type] ?? QUEEN_DIRECTIONS;
+    const open = (sq: SquareIndex) =>
+      isValidSquare(sq) &&
+      !board.get(sq) &&
+      !this.zombies.has(sq) &&
+      !this.graves.some((g) => g.sq === sq);
     const living = ALL_SQUARES.filter((sq) => board.get(sq));
     if (living.length === 0) return null;
-    const nearest = (sq: SquareIndex) =>
-      Math.min(...living.map((p) => reach(p, sq)));
-    const here = nearest(from);
-    const type = this.zombies.get(from);
-    const steps = (SLIDES[type!] ?? QUEEN_DIRECTIONS)
+    const strikes = (sq: SquareIndex) => living.some((p) => bites(type, sq, p));
+
+    // Breadth first over the squares it can shamble to, nearest first
+    const firstStep = new Map<SquareIndex, SquareIndex>();
+    let ring = steps
       .map((d) => from + d)
-      .filter(
-        (sq) =>
-          isValidSquare(sq) &&
-          !board.get(sq) &&
-          !this.zombies.has(sq) &&
-          !this.graves.some((g) => g.sq === sq),
+      .filter(open)
+      .sort(() => Math.random() - 0.5);
+    for (const sq of ring) firstStep.set(sq, sq);
+    while (ring.length > 0) {
+      const goal = ring.find(strikes);
+      if (goal !== undefined) return firstStep.get(goal)!;
+      const next: SquareIndex[] = [];
+      for (const sq of ring) {
+        for (const d of steps) {
+          const to = sq + d;
+          if (to === from || firstStep.has(to) || !open(to)) continue;
+          firstStep.set(to, firstStep.get(sq)!);
+          next.push(to);
+        }
+      }
+      ring = next;
+    }
+
+    const nearest = (sq: SquareIndex) =>
+      Math.min(
+        ...living.map((p) =>
+          Math.hypot(fileOf(p) - fileOf(sq), rankOf(p) - rankOf(sq)),
+        ),
       );
-    const better = steps
-      .map((sq) => ({ sq, d: nearest(sq) }))
-      .filter((s) => s.d < here)
-      .sort((a, b) => a.d - b.d || Math.random() - 0.5);
-    return better[0]?.sq ?? null;
+    const moves = steps.map((d) => from + d).filter(open);
+    moves.sort((a, b) => nearest(a) - nearest(b));
+    return moves[0] ?? null;
   }
 
   /**
