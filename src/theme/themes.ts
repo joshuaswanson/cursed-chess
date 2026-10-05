@@ -200,9 +200,9 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     tagline:
       "Pieces on the two middle files grab the rope. Out-muscle them and haul the flag three squares your way.",
     catchphrase: "Heave ho!",
-    sky: ["#7fd0ff", "#bfe9ff", "#ffe9b0"],
-    accent: "#e8402f",
-    accent2: "#2f6bff",
+    sky: ["#3f7f2a", "#5fae3a", "#6dbb44"],
+    accent: "#f2c14e",
+    accent2: "#5fae3a",
     ink: "#2a1a10",
     frame: "#8a5a2b",
     light: "#e8cf9a",

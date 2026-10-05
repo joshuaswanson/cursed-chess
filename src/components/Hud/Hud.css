@@ -442,3 +442,33 @@
 .dev-chip.active {
   outline: 3px solid var(--paper);
 }
+
+/* --- Tug of war: wooden boards held together with rope --- */
+
+[data-theme="tug"] .hud-card {
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 30px,
+      rgba(42, 26, 16, 0.45) 30px 32px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 220, 160, 0.06) 0 2px,
+      transparent 2px 9px
+    ),
+    linear-gradient(180deg, #8a5a2b, #6b4422);
+  border-color: #2a1a10;
+}
+
+/* A rope stitched round the inside of each board */
+[data-theme="tug"] .hud-card::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 3px dashed #d9b277;
+  border-radius: 13px;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
