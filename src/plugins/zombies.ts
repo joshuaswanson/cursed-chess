@@ -87,8 +87,10 @@ const SLIDES: Partial<Record<PieceType, number[]>> = {
  * claws its way out as a zombie. Zombies belong to no one. After every round
  * each one bites a piece it could capture as the piece it used to be, and
  * turns it into one of them, or else shambles a square toward the nearest
- * living piece of either army. Zombie pawns, with no side to face, bite on
- * every diagonal. Either side can put a zombie down by capturing it.
+ * living piece of either army. Too slow to slide, rooks, bishops, and queens
+ * only bite and shamble a single square along their lines. Zombie pawns, with
+ * no side to face, bite on every diagonal. Either side can put a zombie down
+ * by capturing it.
  *
  * Kings are never bitten outright. A king a zombie could bite is in check: it
  * must get clear, block the zombie, or have it put down, and may never end its
@@ -166,7 +168,6 @@ export class ZombiesPlugin implements ModePlugin {
 
   /** Whether a zombie could bite a square, the way the piece it was captures */
   private canBite(
-    board: Board,
     zombies: Map<SquareIndex, PieceType>,
     from: SquareIndex,
     target: SquareIndex,
@@ -182,24 +183,16 @@ export class ZombiesPlugin implements ModePlugin {
       case PieceType.Pawn:
         return df === 1 && dr === 1;
     }
-    for (const step of SLIDES[type!] ?? []) {
-      for (let sq = from + step; isValidSquare(sq); sq += step) {
-        if (sq === target) return true;
-        if (board.get(sq) || zombies.has(sq)) break;
-      }
-    }
-    return false;
+    // Rooks, bishops, and queens only reach the next square along their lines
+    return (SLIDES[type!] ?? []).some((step) => from + step === target);
   }
 
   /** The zombies that could bite a square */
   private biters(
-    board: Board,
     zombies: Map<SquareIndex, PieceType>,
     sq: SquareIndex,
   ): SquareIndex[] {
-    return [...zombies.keys()].filter((z) =>
-      this.canBite(board, zombies, z, sq),
-    );
+    return [...zombies.keys()].filter((z) => this.canBite(zombies, z, sq));
   }
 
   /**
@@ -224,7 +217,7 @@ export class ZombiesPlugin implements ModePlugin {
     if (king === null) return true;
     const zombies = new Map(this.zombies);
     zombies.delete(move.to);
-    if (this.biters(after, zombies, king).length > 0) return false;
+    if (this.biters(zombies, king).length > 0) return false;
     if (!(move.flags & MoveFlag.ModeMove)) return true;
     return !isSquareAttacked(after, king, opponent(color));
   }
@@ -298,7 +291,7 @@ export class ZombiesPlugin implements ModePlugin {
       const safe =
         king === null ||
         (!isSquareAttacked(board, king, opponent(piece.color)) &&
-          this.biters(board, this.zombies, king).length === 0);
+          this.biters(this.zombies, king).length === 0);
       board.remove(sq);
       board.put(from, piece);
       if (safe) return sq;
@@ -367,7 +360,7 @@ export class ZombiesPlugin implements ModePlugin {
       return (
         piece !== null &&
         piece.type !== PieceType.King &&
-        this.canBite(board, this.zombies, from, sq)
+        this.canBite(this.zombies, from, sq)
       );
     });
     if (prey.length === 0) return null;
@@ -381,13 +374,16 @@ export class ZombiesPlugin implements ModePlugin {
     const nearest = (sq: SquareIndex) =>
       Math.min(...living.map((p) => reach(p, sq)));
     const here = nearest(from);
-    const steps = QUEEN_DIRECTIONS.map((d) => from + d).filter(
-      (sq) =>
-        isValidSquare(sq) &&
-        !board.get(sq) &&
-        !this.zombies.has(sq) &&
-        !this.graves.some((g) => g.sq === sq),
-    );
+    const type = this.zombies.get(from);
+    const steps = (SLIDES[type!] ?? QUEEN_DIRECTIONS)
+      .map((d) => from + d)
+      .filter(
+        (sq) =>
+          isValidSquare(sq) &&
+          !board.get(sq) &&
+          !this.zombies.has(sq) &&
+          !this.graves.some((g) => g.sq === sq),
+      );
     const better = steps
       .map((sq) => ({ sq, d: nearest(sq) }))
       .filter((s) => s.d < here)
@@ -461,7 +457,7 @@ export class ZombiesPlugin implements ModePlugin {
   private menace(board: Board, color: Color): ZombieView["menace"] {
     const king = board.findKing(color);
     if (king === null) return null;
-    const zombies = this.biters(board, this.zombies, king);
+    const zombies = this.biters(this.zombies, king);
     return zombies.length > 0 ? { king, zombies } : null;
   }
 
@@ -476,9 +472,9 @@ export class ZombiesPlugin implements ModePlugin {
    * The computer puts zombies down when it can and keeps its pieces from
    * standing where one could bite them
    */
-  squareBonus(board: Board, square: SquareIndex, piece: Piece): number {
+  squareBonus(square: SquareIndex, piece: Piece): number {
     if (this.zombies.has(square)) return 2.5;
-    if (this.biters(board, this.zombies, square).length === 0) return 0;
+    if (this.biters(this.zombies, square).length === 0) return 0;
     return piece.type === PieceType.King ? -50 : -1.5;
   }
 

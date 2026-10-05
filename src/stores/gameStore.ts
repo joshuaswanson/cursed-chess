@@ -516,7 +516,7 @@ function modeSquareBonus(
     if (classes.includes("hill-square")) bonus += 0.5;
     if (football) bonus += football.squareBonus(board, square, piece, from);
     if (tug) bonus += tug.squareBonus(square, piece);
-    if (zombies) bonus += zombies.squareBonus(board, square, piece);
+    if (zombies) bonus += zombies.squareBonus(square, piece);
     return bonus;
   };
 }
@@ -634,7 +634,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   selectSquare: (square) => {
     const state = get();
-    if (state.paused || state.gravityFalling) return;
+    // Nobody moves while pieces fall or the undead are still acting
+    if (state.paused || state.gravityFalling || state.zombiesActing) return;
     if (state.pluginManager.isAutonomous()) {
       if (state.deployPieceType) state.deployPiece(square);
       return;
@@ -699,7 +700,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   makeMove: (from, to, promotion) => {
     const state = get();
-    if (state.paused || state.gravityFalling) return;
+    // Nobody moves while pieces fall or the undead are still acting
+    if (state.paused || state.gravityFalling || state.zombiesActing) return;
     const { game, pluginManager } = state;
     const piece = game.board.get(from);
     if (!piece) return;
