@@ -620,10 +620,10 @@
 /* A rifle held at the ready from the shoulder, turned toward wherever it points */
 .unit-rifle {
   position: absolute;
-  left: calc(var(--grip-x) - 80% * 0.14);
-  top: calc(var(--grip-y) - 7.5%);
-  width: 80%;
-  height: 15%;
+  left: calc(var(--grip-x) - 104% * 0.14);
+  top: calc(var(--grip-y) - 11%);
+  width: 104%;
+  height: 22%;
   z-index: 2;
   overflow: visible;
   transform-origin: 14% 50%;
@@ -1180,6 +1180,43 @@
   clip-path: inset(-80% -80% var(--trench-edge) -80%);
 }
 
+/* In the front line, only the man himself; his rifle levelled over the parapet still shows */
+.battle-unit.is-entrenched.is-aiming .unit-body {
+  clip-path: none;
+}
+
+.battle-unit.is-entrenched.is-aiming .unit-img {
+  clip-path: inset(-80% -80% var(--trench-edge) -80%);
+}
+
 .battle-unit.is-entrenched .unit-base {
   display: none;
+}
+
+/* --- Trenches: field-worn health bars, khaki and field grey, draining to blood red --- */
+
+[data-theme="trenches"] .unit-hp-track {
+  border-radius: 1px;
+  background: #2a1d14;
+  box-shadow:
+    0 0 0 1.5px #120c07,
+    inset 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="trenches"] .unit-hp-lag {
+  background: #8a2a1e;
+}
+
+[data-theme="trenches"] .side-blue .unit-hp-fill {
+  background: linear-gradient(#b7a66c, #7d6f3e 60%);
+}
+
+[data-theme="trenches"] .side-red .unit-hp-fill {
+  background: linear-gradient(#a3abab, #5d6767 60%);
+}
+
+[data-theme="trenches"] .unit-hp-num {
+  border-radius: 2px;
+  background: #3a2f22;
+  color: #e6dfcc;
 }

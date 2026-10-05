@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Color, PieceType } from "../../engine";
 import type { Piece, SquareIndex } from "../../engine";
 import { DROP_MS } from "../../plugins/clashRoyale";
-import { AIM_MS, SHELL_FALL_MS } from "../../plugins/trenches";
+import { AIM_MS, SHELL_FALL_MS, TRENCH_RANKS } from "../../plugins/trenches";
 import { shakeBoard } from "./useBoardEffects";
 import { TRENCH_EDGE } from "./trenchFront";
 import type { BattleEvent, BattleView, Unit } from "../../plugins/clashRoyale";
@@ -124,6 +124,7 @@ export function BattleUnit({
   squareSize,
   stance,
   entrenched = false,
+  aiming = false,
 }: {
   sq: SquareIndex;
   piece: Piece;
@@ -134,6 +135,8 @@ export function BattleUnit({
   stance?: "charging" | "snagged";
   /** Down in a trench, hidden below its near edge */
   entrenched?: boolean;
+  /** Manning the front line, his rifle levelled at the enemy */
+  aiming?: boolean;
 }) {
   const unit = view.units[sq];
   if (!unit) return null;
@@ -161,11 +164,13 @@ export function BattleUnit({
       : undefined;
   return (
     <div
-      className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}${entrenched ? " is-entrenched" : ""}`}
-      style={{
-        ...arrivalStyle(arrival, flipped, squareSize),
-        "--trench-edge": `${((0.95 - TRENCH_EDGE) / 0.9) * 100}%`,
-      } as Style}
+      className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}${entrenched ? " is-entrenched" : ""}${aiming ? " is-aiming" : ""}`}
+      style={
+        {
+          ...arrivalStyle(arrival, flipped, squareSize),
+          "--trench-edge": `${((0.95 - TRENCH_EDGE) / 0.9) * 100}%`,
+        } as Style
+      }
     >
       <span className="unit-base" />
       <div
@@ -183,7 +188,8 @@ export function BattleUnit({
         {arms === "rifle" && (
           <Rifle
             key={firing?.id ?? "rest"}
-            rest={RIFLE_AT_SIDE}
+            rest={aiming ? enemyAngle(piece.color, flipped) : RIFLE_AT_SIDE}
+            grip={aiming ? RIFLE_SHOULDER : RIFLE_GRIP}
             side={gripSide(piece.color)}
             aim={firing ? aimAngle(firing, flipped) : null}
             fireMs={Math.max(0, (firing?.delayMs ?? 0) - AIM_MS)}
@@ -204,12 +210,15 @@ export function BattleUnit({
  */
 function Rifle({
   rest,
+  grip,
   side,
   aim,
   fireMs,
   thrust = false,
 }: {
   rest: number;
+  /** Where he holds it, from his middle, in squares */
+  grip: { x: number; y: number };
   /** Which hand he holds it in: 1 for his right, -1 for his left */
   side: number;
   aim: number | null;
@@ -218,8 +227,8 @@ function Rifle({
   thrust?: boolean;
 }) {
   const style: Style = {
-    "--grip-x": `${50 + (side * RIFLE_GRIP.x * 100) / 0.9}%`,
-    "--grip-y": `${50 + (RIFLE_GRIP.y * 100) / 0.9}%`,
+    "--grip-x": `${50 + (side * grip.x * 100) / 0.9}%`,
+    "--grip-y": `${50 + (grip.y * 100) / 0.9}%`,
     "--rest": `${rest}deg`,
     "--aim": `${aim ?? rest}deg`,
     "--fire": `${fireMs}ms`,
@@ -448,8 +457,10 @@ function Gunshot({
           y: middle.y + ahead.y * MG_PIVOT_AHEAD * squareSize,
         }
       : {
-          x: middle.x + gripSide(event.color) * RIFLE_GRIP.x * squareSize,
-          y: middle.y + RIFLE_GRIP.y * squareSize,
+          x:
+            middle.x +
+            gripSide(event.color) * holdFor(event.from).x * squareSize,
+          y: middle.y + holdFor(event.from).y * squareSize,
         };
   const toEnd = Math.hypot(end.x - pivot.x, end.y - pivot.y) || 1;
   const reach = (event.weapon === "mg" ? MG_REACH : RIFLE_REACH) * squareSize;
@@ -588,6 +599,18 @@ const RIFLE_AT_SIDE = -90;
 /** Where a rifleman grips his rifle at his side, from his middle, in squares: your army holds it on the right, theirs on the left */
 const RIFLE_GRIP = { x: 0.2, y: 0.22 };
 const gripSide = (color: Color) => (color === Color.White ? 1 : -1);
+/** Where a man in the front line holds his rifle to his shoulder, levelled over the parapet */
+const RIFLE_SHOULDER = { x: 0.1, y: 0.02 };
+const FRONT_RANKS = Object.values(TRENCH_RANKS).map((t) => t.front);
+/** How a man on a square holds his rifle: at his shoulder in the front line, otherwise at his side */
+const holdFor = (sq: SquareIndex) =>
+  FRONT_RANKS.includes(sq >> 4) ? RIFLE_SHOULDER : RIFLE_GRIP;
+
+/** The angle, in degrees, straight at the enemy line, a touch off true so the rifles splay */
+function enemyAngle(color: Color, flipped: boolean): number {
+  const ahead = towardEnemy(color, flipped);
+  return (Math.atan2(ahead.y, ahead.x) * 180) / Math.PI + gripSide(color) * 10;
+}
 
 /** The angle, in degrees, from a shooter to where his round is going */
 function aimAngle(event: AttackEvent, flipped: boolean): number {

@@ -596,6 +596,10 @@ export function Board() {
               flipped={flipped}
               squareSize={squareSize}
               stance={trenchStance(overlays.trenches, battle.units[sq]?.id)}
+              aiming={
+                overlays.trenches !== null &&
+                Object.values(TRENCH_RANKS).some((t) => t.front === rankOf(sq))
+              }
               entrenched={
                 overlays.trenches !== null &&
                 Object.values(TRENCH_RANKS).some(

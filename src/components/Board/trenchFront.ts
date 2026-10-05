@@ -53,7 +53,7 @@ const LIFT = 25;
 const FAR_LIP = -43;
 const FAR_WALL_FOOT = -22;
 const FLOOR = -9;
-const NEAR_LIP = 19;
+const NEAR_LIP = 47;
 /** Where a trench's near edge crosses the squares of its row, as a share of the square: men in it are hidden below that */
 export const TRENCH_EDGE = (SQ / 2 - LIFT + NEAR_LIP) / SQ;
 const NEAR_BANK = 10;
