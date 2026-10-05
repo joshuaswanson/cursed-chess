@@ -7,7 +7,12 @@ import type {
   BoardOverlay,
   SquareModifier,
 } from "./types";
-import { ALL_SQUARES, fileOf } from "../utils/squareUtils";
+import {
+  ALL_SQUARES,
+  fileOf,
+  isValidSquare,
+  rankOf,
+} from "../utils/squareUtils";
 
 /** The rope runs up the line between these two files */
 export const ROPE_FILES = [3, 4];
@@ -24,11 +29,22 @@ export interface TugView {
   heave: number;
   /** Which way the last heave went: 1 toward White, -1 toward Black */
   heaveDir: number;
-  /** Pieces the last heave dragged a square along with the rope */
-  dragged: { from: SquareIndex; to: SquareIndex }[];
+  /** Pieces the last heave moved */
+  dragged: Haul[];
 }
 
 const onRope = (sq: SquareIndex) => ROPE_FILES.includes(fileOf(sq));
+
+/** A pawn is never hauled onto the first or last rank, where it would promote or be stuck */
+const canStand = (piece: Piece, sq: SquareIndex) =>
+  piece.type !== PieceType.Pawn || (rankOf(sq) !== 0 && rankOf(sq) !== 7);
+
+/** A piece the rope moved: hauled a square along it, or hopping off it to make way */
+export interface Haul {
+  from: SquareIndex;
+  to: SquareIndex;
+  hop: boolean;
+}
 
 /**
  * Tug of war on a chessboard. A rope runs up the middle of the board and any
@@ -45,7 +61,7 @@ export class TugOfWarPlugin implements ModePlugin {
   private flag = 0;
   private heave = 0;
   private heaveDir = 0;
-  private dragged: { from: SquareIndex; to: SquareIndex }[] = [];
+  private dragged: Haul[] = [];
   private winner: Color | null = null;
 
   onGameStart(): void {
@@ -79,30 +95,51 @@ export class TugOfWarPlugin implements ModePlugin {
 
   /**
    * Everyone on the rope is hauled a square the way it went: toward White's
-   * end is down the ranks. A piece only goes if the square is free, and a
-   * pawn is never hauled onto the first or last rank.
+   * end is down the ranks. Whoever is jammed at the end of the line, against
+   * the board's edge, or a pawn that would land on the first or last rank,
+   * hops off the rope to the nearest free square so the rest can come.
    */
-  private dragAlong(
-    board: Board,
-    pull: number,
-  ): { from: SquareIndex; to: SquareIndex }[] {
+  private dragAlong(board: Board, pull: number): Haul[] {
     const step = pull > 0 ? -16 : 16;
     // Those nearest the end they are hauled toward go first, clearing the way
     const holders = ALL_SQUARES.filter(
       (sq) => onRope(sq) && board.get(sq),
     ).sort((a, b) => (pull > 0 ? a - b : b - a));
-    const moves: { from: SquareIndex; to: SquareIndex }[] = [];
+    const moves: Haul[] = [];
     for (const from of holders) {
-      const to = from + step;
       const piece = board.get(from)!;
-      const rank = to >> 4;
-      if (to < 0 || to > 0x77 || board.get(to)) continue;
-      if (piece.type === PieceType.Pawn && (rank === 0 || rank === 7)) continue;
+      const to = from + step;
+      const fits = isValidSquare(to) && !board.get(to) && canStand(piece, to);
+      const dest = fits ? to : this.stepAside(board, from, piece);
+      if (dest === null) continue;
       board.remove(from);
-      board.put(to, piece);
-      moves.push({ from, to });
+      board.put(dest, piece);
+      moves.push({ from, to: dest, hop: !fits });
     }
     return moves;
+  }
+
+  /** The nearest free square off the rope, on the piece's own side of it if there is a tie */
+  private stepAside(
+    board: Board,
+    from: SquareIndex,
+    piece: Piece,
+  ): SquareIndex | null {
+    const side = fileOf(from) === ROPE_FILES[0] ? -1 : 1;
+    const score = (sq: SquareIndex) => {
+      const df = fileOf(sq) - fileOf(from);
+      const dr = rankOf(sq) - rankOf(from);
+      return (
+        Math.max(Math.abs(df), Math.abs(dr)) * 100 +
+        Math.abs(dr) * 10 +
+        Math.abs(df) * 2 +
+        (Math.sign(df) === side ? 0 : 1)
+      );
+    };
+    const free = ALL_SQUARES.filter(
+      (sq) => !onRope(sq) && !board.get(sq) && canStand(piece, sq),
+    ).sort((a, b) => score(a) - score(b));
+    return free[0] ?? null;
   }
 
   modifyGameStatus(_ctx: PluginContext, status: GameStatus): GameStatus {

@@ -412,7 +412,9 @@ export function Board() {
           ? ({
               "--slide-from-x": `${hauled.x}px`,
               "--slide-from-y": `${hauled.y}px`,
-              animation: `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) ${heaveDelay}ms both`,
+              animation: hauled.hop
+                ? `tug-hop ${DRAG_MS}ms ease-out ${heaveDelay}ms both`
+                : `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) ${heaveDelay}ms both`,
             } as React.CSSProperties)
           : slide
             ? ({

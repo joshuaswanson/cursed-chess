@@ -372,25 +372,25 @@ export function useHeave(
 
 const DRAG_MS = 560;
 
-/** Pieces a tug of war heave just hauled a square, with where they were hauled from */
+/** Pieces a tug of war heave just moved, with where they came from and whether they hopped off the rope */
 export function useTugDrags(
   heave: number,
-  dragged: { from: SquareIndex; to: SquareIndex }[],
+  dragged: { from: SquareIndex; to: SquareIndex; hop: boolean }[],
   flipped: boolean,
   squareSize: number,
   delayMs: number,
-): Map<SquareIndex, { x: number; y: number }> {
+): Map<SquareIndex, { x: number; y: number; hop: boolean }> {
   const [seen, setSeen] = useState(heave);
   const [drags, setDrags] = useState<
-    Map<SquareIndex, { x: number; y: number }>
+    Map<SquareIndex, { x: number; y: number; hop: boolean }>
   >(new Map());
   if (heave !== seen) {
     setSeen(heave);
     setDrags(
       new Map(
-        dragged.map(({ from, to }) => [
+        dragged.map(({ from, to, hop }) => [
           to,
-          offsetBetween(from, to, flipped, squareSize),
+          { ...offsetBetween(from, to, flipped, squareSize), hop },
         ]),
       ),
     );
