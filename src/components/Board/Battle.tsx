@@ -241,48 +241,52 @@ function Rifle({
       style={style}
       aria-hidden
     >
-      <path d="M16 15 Q32 22 50 14" className="rifle-sling" />
+      <GunDefs scale={30} />
+      <path d="M15 15.5 Q32 22.5 50 14.2" className="rifle-sling" />
+      {/* Butt and wrist: oiled walnut, a steel butt plate, the grip narrowing to the action */}
       <path
-        d="M1 7 Q1 4 4 4 L15 4.5 L22 7.5 L28 8 L28 13.5 L22 14 L15 16.5 L4 17.5 Q1 17.5 1 14.5 Z"
-        className="rifle-wood"
+        d="M2.2 5.6 Q1.6 4.2 3.4 4 L14 4.6 Q18 5.6 21.5 7.4 L28 8 L28 13.6 L22.5 14 Q18.5 15.4 15 16.8 L3.6 17.8 Q1.6 17.8 1.8 16.2 Z"
+        className="gun-wood"
       />
-      <path d="M4 9 Q10 8 16 9 M4 13 Q10 12.5 15 13" className="rifle-grain" />
-      <rect
-        x="27"
-        y="7"
-        width="12"
-        height="7.5"
-        rx="1.6"
-        className="rifle-steel"
+      <path
+        d="M2.2 5.6 Q1.6 4.2 3.4 4 L4.4 4 L4.6 17.8 L3.6 17.8 Q1.6 17.8 1.8 16.2 Z"
+        className="gun-steel"
       />
-      <path d="M33.5 14.5 L32 18.5" className="rifle-bolt" />
-      <circle cx="31.6" cy="19" r="2" className="rifle-steel" />
-      <path d="M38 7.6 L58 8.4 L58 13.2 L38 14 Z" className="rifle-wood" />
-      <rect
-        x="57"
-        y="9.2"
-        width="10"
-        height="3.4"
-        rx="1.2"
-        className="rifle-steel"
+      {/* The action: receiver, magazine, bolt with its round knob, trigger guard */}
+      <path d="M27 7.2 L40 7.4 L40 14.2 L27 14.4 Z" className="gun-steel" />
+      <path
+        d="M31 14.2 L37.5 14.2 L37 19.2 Q34 20.2 31.4 19.2 Z"
+        className="gun-steel"
       />
-      <rect
-        x="45"
-        y="7.3"
-        width="2.4"
-        height="7"
-        rx="0.6"
-        className="rifle-band"
+      <path d="M26 14.2 Q27 18 30.6 17.2" className="gun-guard" />
+      <path d="M36.2 7.4 L38.8 3.2" className="gun-bolt" />
+      <circle cx="39.2" cy="2.8" r="1.9" className="gun-steel" />
+      <path d="M28 8.4 L39.6 8.6" className="gun-shine" />
+      {/* Wood to the nose, with two steel bands, then the nose cap and the muzzle */}
+      <path
+        d="M39.6 7.8 L59 8.6 Q60.2 9 60.2 10.8 Q60.2 12.6 59 13 L39.6 13.8 Z"
+        className="gun-wood"
       />
-      <rect
-        x="54"
-        y="7.8"
-        width="2.4"
-        height="6"
-        rx="0.6"
-        className="rifle-band"
+      <path
+        d="M46 7.9 h2.4 v5.7 h-2.4 Z M54 8.3 h2.2 v5 h-2.2 Z"
+        className="gun-steel"
       />
-      <path d="M65 9.6 L72 10.9 L65 12.2 Z" className="rifle-blade" />
+      <path
+        d="M59.6 8.8 L65.4 9.2 L65.4 12.4 L59.6 12.8 Z"
+        className="gun-steel"
+      />
+      <path d="M40 8.6 L58.6 9.3" className="gun-shine" />
+      {/* The bayonet, fixed under the muzzle */}
+      <path
+        d="M62 12 L64.5 12 L71.8 11.2 L64.5 13.8 L62 13.8 Z"
+        className="gun-blade"
+      />
+      <path d="M64.5 12.6 L71 11.5" className="gun-blade-edge" />
+      {/* Light across the top, shadow underneath, so it reads as round */}
+      <path
+        d="M2.2 5.6 Q1.6 4.2 3.4 4 L14 4.6 Q18 5.6 21.5 7.4 L28 8 L28 13.6 L22.5 14 Q18.5 15.4 15 16.8 L3.6 17.8 Q1.6 17.8 1.8 16.2 Z M39.6 7.8 L59 8.6 Q60.2 9 60.2 10.8 Q60.2 12.6 59 13 L39.6 13.8 Z"
+        className="gun-round"
+      />
     </svg>
   );
 }
@@ -380,51 +384,54 @@ function MachineGun({
         <circle cx="20" cy="20" r="4.5" className="mg-head" />
       </svg>
       <svg className="mg-gun" viewBox="0 0 100 34">
+        <GunDefs scale={34} />
+        {/* The belt of brass rounds feeding in from the side */}
+        <path d="M24 23 Q27 29 23 33.5" className="mg-belt-cloth" />
         <path
-          d="M30 22 Q36 30 30 33 M33 23 l2.4 -0.6 l0.8 3.4 l-2.4 0.6 Z M31 27 l2.4 -0.2 l0.4 3.4 l-2.4 0.2 Z M29 31 l2.4 0.2 l-0.2 2.4 l-2.4 -0.2 Z"
-          className="mg-belt"
+          d="M25.3 24 l3 -0.4 l0.5 2.8 l-3 0.4 Z M25.8 27.4 l3 0 l0.2 2.8 l-3 0 Z M25.4 30.8 l3 0.3 l-0.2 2.8 l-3 -0.3 Z"
+          className="mg-round"
         />
-        <rect x="1" y="9" width="7" height="3.6" rx="1.6" className="mg-grip" />
-        <rect
-          x="1"
-          y="20"
-          width="7"
-          height="3.6"
-          rx="1.6"
-          className="mg-grip"
+        {/* Spade grips and the thumb trigger between them */}
+        <path
+          d="M1 9 h7 a1.8 1.8 0 0 1 0 3.6 h-7 a1.8 1.8 0 0 1 0 -3.6 Z M1 20.4 h7 a1.8 1.8 0 0 1 0 3.6 h-7 a1.8 1.8 0 0 1 0 -3.6 Z"
+          className="gun-wood"
         />
-        <rect x="7" y="8" width="4" height="17" rx="1" className="mg-steel" />
-        <rect
-          x="10"
-          y="6.5"
-          width="24"
-          height="20"
-          rx="2"
-          className="mg-steel"
+        <path d="M7.4 8 h3.6 v18 h-3.6 Z" className="gun-steel" />
+        {/* The receiver box, riveted, with its feed block and rear sight */}
+        <path
+          d="M10.6 6.4 h23.4 q1.6 0 1.6 1.6 v18 q0 1.6 -1.6 1.6 h-23.4 Z"
+          className="gun-steel"
         />
-        <path d="M12 9.5 H32 M12 23.5 H32" className="mg-seam" />
-        <rect
-          x="18"
-          y="3.5"
-          width="5"
-          height="3.5"
-          rx="0.8"
-          className="mg-steel"
+        <path d="M12.5 9 H33 M12.5 25 H33" className="mg-seam" />
+        <path
+          d="M14 8 h.1 M20 8 h.1 M26 8 h.1 M32 8 h.1 M14 26 h.1 M20 26 h.1 M26 26 h.1 M32 26 h.1"
+          className="mg-rivets"
         />
-        <rect
-          x="33"
-          y="9"
-          width="44"
-          height="15"
-          rx="4"
+        <path d="M23 18.5 h6 v9 h-6 Z" className="gun-steel" />
+        <path d="M17 3.2 h5 v3.4 h-5 Z" className="gun-steel" />
+        {/* The water jacket: a fluted steel drum around the barrel, rounded by the light */}
+        <path
+          d="M35 8.6 h40 q3.6 0 3.6 3.6 v9.6 q0 3.6 -3.6 3.6 h-40 Z"
           className="mg-jacket"
         />
         <path
-          d="M38 9.5 V23.5 M43 9.5 V23.5 M48 9.5 V23.5 M53 9.5 V23.5 M58 9.5 V23.5 M63 9.5 V23.5 M68 9.5 V23.5 M73 9.5 V23.5"
+          d="M40 9 V25 M45 9 V25 M50 9 V25 M55 9 V25 M60 9 V25 M65 9 V25 M70 9 V25 M75 9.3 V24.7"
           className="mg-flutes"
         />
-        <rect x="76" y="14" width="10" height="5" rx="1" className="mg-steel" />
-        <path d="M85 12.5 L98 10 L98 23 L85 20.5 Z" className="mg-steel" />
+        <path
+          d="M35 8.6 h40 q3.6 0 3.6 3.6 v9.6 q0 3.6 -3.6 3.6 h-40 Z"
+          className="gun-round"
+        />
+        <path d="M36 11.5 H77" className="gun-shine" />
+        <circle cx="68" cy="25.6" r="1.4" className="gun-steel" />
+        {/* The muzzle and its cone of a flash hider */}
+        <path d="M78.4 14 h7 v6 h-7 Z" className="gun-steel" />
+        <path d="M85 12.6 L98.4 10 L98.4 24 L85 21.4 Z" className="gun-steel" />
+        <path d="M85.5 13.4 L97.8 11.2" className="gun-shine" />
+        <path
+          d="M10.6 6.4 h23.4 q1.6 0 1.6 1.6 v18 q0 1.6 -1.6 1.6 h-23.4 Z"
+          className="gun-round"
+        />
       </svg>
     </span>
   );
@@ -531,6 +538,51 @@ function Gunshot({
         </>
       )}
     </>
+  );
+}
+
+const GUN_TEXTURES = `${import.meta.env.BASE_URL}textures/trenches/`;
+
+/**
+ * Oiled walnut and blued, worn steel from photographs, and the light that
+ * rounds a stock or a barrel, at a scale to suit the drawing they fill
+ */
+function GunDefs({ scale }: { scale: number }) {
+  return (
+    <defs>
+      <pattern
+        id={`gun-wood-${scale}`}
+        width={scale}
+        height={scale}
+        patternUnits="userSpaceOnUse"
+      >
+        <image
+          href={`${GUN_TEXTURES}gun_wood.jpg`}
+          width={scale}
+          height={scale}
+          preserveAspectRatio="none"
+        />
+      </pattern>
+      <pattern
+        id={`gun-steel-${scale}`}
+        width={scale}
+        height={scale}
+        patternUnits="userSpaceOnUse"
+      >
+        <image
+          href={`${GUN_TEXTURES}gun_steel.jpg`}
+          width={scale}
+          height={scale}
+          preserveAspectRatio="none"
+        />
+      </pattern>
+      <linearGradient id="gun-round" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#fff" stopOpacity="0.28" />
+        <stop offset="0.3" stopColor="#fff" stopOpacity="0.05" />
+        <stop offset="0.6" stopColor="#000" stopOpacity="0.1" />
+        <stop offset="1" stopColor="#000" stopOpacity="0.55" />
+      </linearGradient>
+    </defs>
   );
 }
 
