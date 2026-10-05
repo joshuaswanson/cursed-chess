@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { WIN_LINE } from "../../plugins/tugOfWar";
 import type { TugView } from "../../plugins/tugOfWar";
 import { sfx } from "../../audio/sfx";
 import { ROPE_TILE } from "./ropeTexture";
+import { useTugStruggle } from "./tugStruggle";
 import "./TugOfWar.css";
 
 type Style = React.CSSProperties & Record<`--${string}`, string | number>;
@@ -388,13 +389,6 @@ function MudSplats() {
   );
 }
 
-const STRUGGLE = new Set([
-  "tug-surge",
-  "tug-stretch",
-  "tug-lean-white",
-  "tug-lean-black",
-]);
-
 /** How far down the board, in squares, a spot `toWhite` squares from the center line toward White sits */
 const fromTop = (toWhite: number, flipped: boolean) =>
   4 + (flipped ? -toWhite : toWhite);
@@ -422,20 +416,6 @@ export function TugLayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.heave]);
 
-  // A piece that steps onto the rope joins the struggle mid-cycle, in step
-  // with the rope and everyone else on it, by sharing one clock with them
-  useEffect(() => {
-    for (const animation of document.getAnimations()) {
-      if (
-        animation instanceof CSSAnimation &&
-        STRUGGLE.has(animation.animationName) &&
-        animation.startTime !== 0
-      ) {
-        animation.startTime = 0;
-      }
-    }
-  });
-
   const flagTop = fromTop(view.flag, flipped);
   // Which way the last heave went on screen: down is positive
   const yank = view.heaveDir * (flipped ? -1 : 1);
@@ -446,10 +426,12 @@ export function TugLayer({
 
   // The struggle only plays out when both teams have someone on the rope
   const contested = view.white > 0 && view.black > 0;
+  const rootRef = useRef<HTMLDivElement>(null);
+  useTugStruggle(rootRef, contested, flipped);
 
   return (
     <>
-      <div className="tug-layer" aria-hidden>
+      <div ref={rootRef} className="tug-layer" aria-hidden>
         <MudSplats />
         <MudPit />
         <span className="tug-center-line" />
@@ -465,10 +447,7 @@ export function TugLayer({
           </span>
         ))}
       </div>
-      <div
-        className={`tug-layer tug-rope-layer${contested ? " contested" : ""}`}
-        aria-hidden
-      >
+      <div className="tug-layer tug-rope-layer" aria-hidden>
         <div
           key={view.heave}
           className={`tug-rope-wrap${view.heave > 0 ? " heaving" : ""}`}
