@@ -21,6 +21,8 @@ export interface BoardOverlays {
   football: FootballView | null;
   tug: TugView | null;
   hillSquares: SquareIndex[];
+  /** Rounds each side has held the hill in a row, and how many it takes to win */
+  hillStreak: { white: number; black: number; needed: number };
   battleRoyale: BattleRoyaleOverlay | null;
   gravityDirection: string | null;
   gravityAngle: number | null;
@@ -41,6 +43,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     football: null,
     tug: null,
     hillSquares: [],
+    hillStreak: { white: 0, black: 0, needed: 3 },
     battleRoyale: null,
     gravityDirection: null,
     gravityAngle: null,
@@ -68,9 +71,20 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
       case "rally-resources":
         result.hasRally = true;
         break;
-      case "king-of-hill":
+      case "king-of-hill": {
         result.hillSquares = overlay.squares;
+        const data = overlay.data as {
+          whiteDomination: number;
+          blackDomination: number;
+          dominationNeeded: number;
+        };
+        result.hillStreak = {
+          white: data.whiteDomination,
+          black: data.blackDomination,
+          needed: data.dominationNeeded,
+        };
         break;
+      }
       case "football":
         result.football = overlay.data as FootballView;
         break;

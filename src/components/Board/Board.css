@@ -288,24 +288,207 @@
   height: 25%;
   z-index: 1;
   pointer-events: none;
+  overflow: hidden;
   background: linear-gradient(135deg, #fff3a8 0%, #ffd23f 45%, #d99a06 100%);
   box-shadow: inset 0 0 0 4px #8a4b00;
+  filter: brightness(calc(1 + var(--power, 0) * 0.25))
+    saturate(calc(1 + var(--power, 0) * 0.3));
+  transition: filter 0.5s ease-out;
 }
 
-.hill-throne::after {
-  content: "";
+/* Light rays turning behind the crown, stronger and faster with more of your pieces */
+.hill-rays {
+  position: absolute;
+  inset: -40%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 255, 255, 0.85) 0deg 9deg,
+    rgba(255, 255, 255, 0) 9deg 30deg
+  );
+  mask: radial-gradient(circle, #000 15%, transparent 62%);
+  opacity: 0;
+  transition: opacity 0.6s ease-out;
+  animation: hill-rays 9s linear infinite;
+}
+
+@keyframes hill-rays {
+  to {
+    rotate: 1turn;
+  }
+}
+
+.power-2 .hill-rays {
+  opacity: 0.35;
+}
+
+.power-3 .hill-rays {
+  opacity: 0.6;
+  animation-duration: 6s;
+}
+
+.power-4 .hill-rays {
+  opacity: 0.9;
+  animation-duration: 3.5s;
+}
+
+/* A band of shine sweeping across the gold */
+.hill-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.85) 48%,
+    transparent 61%
+  );
+  background-size: 300% 100%;
+  opacity: 0;
+  animation: hill-sheen 2.4s ease-in-out infinite;
+}
+
+@keyframes hill-sheen {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
+}
+
+.power-3 .hill-sheen {
+  opacity: 0.6;
+}
+
+.power-4 .hill-sheen {
+  opacity: 1;
+  animation-duration: 1.4s;
+}
+
+/* Four-pointed glints that twinkle across the hill */
+.hill-sparkle {
+  position: absolute;
+  width: 12%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: #fff;
+  clip-path: polygon(
+    50% 0,
+    60% 40%,
+    100% 50%,
+    60% 60%,
+    50% 100%,
+    40% 60%,
+    0 50%,
+    40% 40%
+  );
+  opacity: 0;
+  scale: 0;
+  animation: hill-twinkle 1.8s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+@keyframes hill-twinkle {
+  0%,
+  100% {
+    scale: 0;
+    rotate: 0deg;
+    opacity: 0;
+  }
+  50% {
+    scale: 1;
+    rotate: 45deg;
+    opacity: 1;
+  }
+}
+
+/* More glints as more of your pieces climb on */
+.power-2 .hill-sparkle:nth-child(-n + 6),
+.power-3 .hill-sparkle:nth-child(-n + 8),
+.power-4 .hill-sparkle {
+  animation-play-state: running;
+}
+
+.power-4 .hill-sparkle {
+  animation-duration: 1.1s;
+}
+
+.hill-crown {
   position: absolute;
   inset: 22%;
   background: rgba(138, 75, 0, 0.28);
   mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 70'><path d='M8 60 L14 18 L34 40 L50 6 L66 40 L86 18 L92 60 Z'/></svg>")
     center / contain no-repeat;
+  transition: background-color 0.5s ease-out;
 }
 
-/* Glows in the color of whoever holds more of the hill, and pulses once they hold enough to win */
+/* Close to winning, the crown itself glows white-hot */
+.power-3 .hill-crown {
+  background: rgba(255, 255, 255, 0.75);
+  filter: drop-shadow(0 0 6px #fff);
+}
+
+.power-4 .hill-crown {
+  background: #fff;
+  filter: drop-shadow(0 0 10px #fff) drop-shadow(0 0 20px #ffe27a);
+  animation: hill-crown-pulse 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes hill-crown-pulse {
+  to {
+    scale: 1.1;
+  }
+}
+
+/* A pip for each round held in a row, on a badge across the hill's bottom
+   edge above the pieces; fill them all to win */
+.hill-pips {
+  position: absolute;
+  z-index: 5;
+  translate: -50% -50%;
+  display: flex;
+  gap: calc(var(--square-size, 72px) * 0.08);
+  padding: calc(var(--square-size, 72px) * 0.06)
+    calc(var(--square-size, 72px) * 0.1);
+  border: 2px solid #8a4b00;
+  border-radius: 999px;
+  background: #fff3c4;
+  box-shadow: 2px 3px 0 rgba(42, 20, 0, 0.35);
+  pointer-events: none;
+}
+
+.hill-pips i {
+  width: calc(var(--square-size, 72px) * 0.16);
+  aspect-ratio: 1;
+  border: 2px solid #8a4b00;
+  border-radius: 50%;
+  background: rgba(138, 75, 0, 0.15);
+}
+
+.pips-white i.lit {
+  background: #2c6bff;
+  box-shadow: 0 0 8px #7fa8ff;
+  animation: pip-light 0.5s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.pips-black i.lit {
+  background: #e2304a;
+  box-shadow: 0 0 8px #ff8a9a;
+  animation: pip-light 0.5s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+@keyframes pip-light {
+  from {
+    scale: 0.2;
+  }
+}
+
+/* Glows in the color of whoever holds more of the hill, brighter with more of your pieces */
 .hill-throne.held-white {
   box-shadow:
     inset 0 0 0 5px #2c6bff,
-    inset 0 0 40px rgba(44, 107, 255, 0.6);
+    inset 0 0 40px rgba(44, 107, 255, 0.6),
+    0 0 calc(var(--power, 0) * 46px) calc(var(--power, 0) * 10px)
+      rgba(255, 226, 122, 0.85);
 }
 
 .hill-throne.held-black {
@@ -314,13 +497,23 @@
     inset 0 0 40px rgba(226, 48, 74, 0.6);
 }
 
+.hill-throne.power-1 {
+  animation: hill-warm 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes hill-warm {
+  to {
+    filter: brightness(1.18) saturate(1.2);
+  }
+}
+
 .hill-throne.dominated {
   animation: hill-held 1s ease-in-out infinite alternate;
 }
 
 @keyframes hill-held {
   to {
-    filter: brightness(1.15);
+    filter: brightness(calc(1.2 + var(--power, 0) * 0.25)) saturate(1.4);
   }
 }
 

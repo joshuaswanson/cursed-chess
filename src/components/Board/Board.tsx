@@ -22,6 +22,7 @@ import {
 } from "./boardGeometry";
 import { PortalArrows } from "./PortalArrows";
 import { Sideline } from "./Sideline";
+import { HillThrone } from "./HillThrone";
 import { TugLayer } from "./TugOfWar";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
@@ -663,13 +664,13 @@ export function Board() {
             />
           )}
           {hill.length > 0 && (
-            <div
-              className={`hill-throne${hillLeader ? ` held-${hillLeader}` : ""}${Math.max(hillWhite, hillBlack) >= 3 ? " dominated" : ""}`}
-              style={{
-                left: `${Math.min(...hill.map((sq) => colOnScreen(sq, flipped))) * 12.5}%`,
-                top: `${Math.min(...hill.map((sq) => rowOnScreen(sq, flipped))) * 12.5}%`,
-              }}
-              aria-hidden
+            <HillThrone
+              left={Math.min(...hill.map((sq) => colOnScreen(sq, flipped)))}
+              top={Math.min(...hill.map((sq) => rowOnScreen(sq, flipped)))}
+              leader={hillLeader}
+              yours={hillWhite}
+              theirs={hillBlack}
+              streak={overlays.hillStreak}
             />
           )}
           {rows}
