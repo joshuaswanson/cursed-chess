@@ -144,14 +144,15 @@
 /* The board held up by its handle: a white plastic frame around red LED digits */
 [data-countdown="fifa"] .countdown-prop {
   top: 62%;
-  width: calc(var(--square-size) * 0.32);
-  height: calc(var(--square-size) * 1.7);
+  width: calc(var(--square-size) * 0.22);
+  height: calc(var(--square-size) * 0.75);
   border-radius: calc(var(--square-size) * 0.08);
   background: linear-gradient(90deg, #6b7280, #eef1f4 45%, #9ca3af);
   box-shadow: 0.06em 0.08em 0 var(--ink);
 }
 
 [data-countdown="fifa"] .countdown-digit {
+  font-size: calc(var(--square-size) * 1.15);
   padding: 0.04em 0.3em;
   border: 0.07em solid #eef1f4;
   border-radius: 0.14em;

@@ -7,6 +7,25 @@ import { sfx } from "../../audio/sfx";
 import "./MoveCountdown.css";
 
 const COUNTDOWN_FROM = 5;
+/** FIFA's board is held up on the touchline, this many squares wide, clear of the board's frame */
+const TOUCHLINE_BOARD_SQUARES = 1.8;
+const FRAME_SQUARES = 0.35;
+const EDGE_PX = 4;
+
+/**
+ * Where the countdown stands: over the board, or for FIFA held up by the
+ * fourth official on the left touchline at halfway, overlapping the pitch's
+ * edge only when there is no room beside it
+ */
+function placeCountdown(anchor: DOMRect, themeId: string): DOMRect {
+  if (themeId !== "fifa") return anchor;
+  const squares = document.querySelector(".board")?.getBoundingClientRect();
+  if (!squares) return anchor;
+  const square = squares.width / 8;
+  const width = square * TOUCHLINE_BOARD_SQUARES;
+  const left = Math.max(EDGE_PX, squares.left - square * FRAME_SQUARES - width);
+  return new DOMRect(left, squares.top, width, squares.height);
+}
 
 /** The last seconds of your move, dressed for the channel that is on air */
 export function MoveCountdown() {
@@ -32,8 +51,10 @@ export function MoveCountdown() {
   const [box, setBox] = useState<DOMRect | null>(null);
   useLayoutEffect(() => {
     if (!showing) return;
-    const measure = () =>
-      setBox(anchorRef.current?.getBoundingClientRect() ?? null);
+    const measure = () => {
+      const anchor = anchorRef.current?.getBoundingClientRect();
+      setBox(anchor ? placeCountdown(anchor, theme.id) : null);
+    };
     measure();
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
@@ -41,7 +62,7 @@ export function MoveCountdown() {
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
     };
-  }, [showing]);
+  }, [showing, theme.id]);
 
   const page = document.querySelector(".app");
   return (
