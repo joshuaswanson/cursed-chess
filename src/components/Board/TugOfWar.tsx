@@ -43,14 +43,14 @@ const LEAD_POOL = 44;
  */
 function coilSpiral(): { x: number; y: number }[] {
   const points: { x: number; y: number }[] = [];
-  const turns = 2.4;
+  const turns = 3.4;
   const steps = 260;
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     const theta = -Math.PI / 2 + t * turns * Math.PI * 2;
     const wobble =
       1 + 0.07 * Math.sin(theta * 3 + 1) + 0.05 * Math.sin(theta * 5);
-    const r = (1 - 0.62 * t) * wobble;
+    const r = (1 - 0.66 * t) * wobble;
     points.push({
       x: 50 + Math.cos(theta) * 40 * r,
       y: 31 + Math.sin(theta) * 25 * r,
