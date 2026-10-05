@@ -29,11 +29,11 @@ const COIL_ROPE = 12.6;
 const STRAND_TONES = ["#c9a066", "#b88d52", "#d6b077"];
 /** Where the rope comes down into the pile, in the coil's drawing */
 const COIL_ENTRY = { x: 50, y: -10 };
-const LOBE_SPACING = COIL_ROPE * 0.38;
+const LOBE_SPACING = COIL_ROPE * 0.27;
 /** Share of the spiral a pile holds when neither team has pulled rope out of it or into it */
 const COIL_REST = 0.7;
 const COIL_GIVE = 0.3;
-const LEAD_POOL = 44;
+const LEAD_POOL = 62;
 
 /**
  * A pile of rope lying on the ground, drawn for the bottom end: uneven loops

@@ -1,6 +1,6 @@
-/** One repeat of the rope, 16 units wide: three strand turns, each bulging past the core */
+/** One repeat of the rope, 16 units wide: three strand turns packed close, each bulging past the core */
 const WIDTH = 16;
-const PITCH = 8;
+const PITCH = 5.5;
 const TILE = PITCH * 3;
 const TONES = ["#c9a066", "#b88d52", "#d6b077"];
 
@@ -49,7 +49,7 @@ function lobe(y: number, tone: string): string {
  * without a seam.
  */
 function tile(): string {
-  const lobes = [-1, 0, 1, 2, 3]
+  const lobes = [-2, -1, 0, 1, 2, 3, 4]
     .map((k) => lobe(k * PITCH, TONES[((k % 3) + 3) % 3]))
     .join("");
   return (
