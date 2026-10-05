@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { BOARD, MARGIN, REACH, SQ, frontFor } from "./trenchFront";
 import type { Sandbag } from "./trenchFront";
+import { ShellHole } from "./ShellHole";
 import "./WorldTrenches.css";
 
 /**
@@ -171,9 +172,6 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
       aria-hidden
     >
       <EarthDefs />
-      {scene.craters.map((c, i) => (
-        <circle key={i} cx={c.x} cy={c.y} r={c.r} fill="url(#wt-crater)" />
-      ))}
       {scene.comms.map((d, i) => (
         <g key={`c${i}`}>
           <path d={d} className="comms-cut" />
@@ -269,5 +267,32 @@ export function WorldTrenchesFront({ flipped }: { flipped: boolean }) {
         </g>
       ))}
     </svg>
+  );
+}
+
+/** How far off the board, in squares, shell holes still get rain rings; further out they are never on screen */
+const RIPPLE_REACH = 6 * SQ;
+
+/** The shell holes pocking the ground off the board, under the trench lines */
+export function WorldCraters({ flipped }: { flipped: boolean }) {
+  const scene = useMemo(() => frontFor(flipped), [flipped]);
+  const width = BOARD + REACH * 2;
+  const height = BOARD + MARGIN * 2;
+  return (
+    <div className="world-trenches world-craters" style={placement} aria-hidden>
+      {scene.craters.map((c) => (
+        <ShellHole
+          key={c.seed}
+          seed={c.seed}
+          rippling={c.x > -RIPPLE_REACH && c.x < BOARD + RIPPLE_REACH}
+          style={{
+            left: `${((c.x - c.r + REACH) / width) * 100}%`,
+            top: `${((c.y - c.r) / height) * 100}%`,
+            width: `${((c.r * 2) / width) * 100}%`,
+            height: `${((c.r * 2) / height) * 100}%`,
+          }}
+        />
+      ))}
+    </div>
   );
 }

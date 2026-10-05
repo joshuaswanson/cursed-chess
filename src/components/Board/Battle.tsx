@@ -588,6 +588,7 @@ function GunDefs({ scale }: { scale: number }) {
 
 /** A soldier's steel helmet: the flat British one for your army, the German one for theirs */
 function Helmet({ color, type }: { color: Color; type: PieceType }) {
+  const tommy = color === Color.White;
   return (
     <svg
       className={`unit-helmet helmet-on-${type}`}
@@ -595,15 +596,20 @@ function Helmet({ color, type }: { color: Color; type: PieceType }) {
       aria-hidden
     >
       <defs>
-        <linearGradient id="brodie-dome" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#9a9564" />
-          <stop offset="0.5" stopColor="#6c6842" />
-          <stop offset="1" stopColor="#45422a" />
+        <radialGradient id="tommy-dome" cx="0.36" cy="0.25" r="0.85">
+          <stop offset="0" stopColor="#a49d6c" />
+          <stop offset="0.45" stopColor="#6f6942" />
+          <stop offset="1" stopColor="#3a3722" />
+        </radialGradient>
+        <linearGradient id="tommy-brim" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8a845a" />
+          <stop offset="1" stopColor="#4c4830" />
         </linearGradient>
-        <linearGradient id="brodie-brim" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#837e54" />
-          <stop offset="1" stopColor="#4e4b30" />
-        </linearGradient>
+        <radialGradient id="fritz-dome" cx="0.36" cy="0.22" r="0.85">
+          <stop offset="0" stopColor="#97a19b" />
+          <stop offset="0.45" stopColor="#5e6863" />
+          <stop offset="1" stopColor="#2e3532" />
+        </radialGradient>
         <pattern
           id="helmet-steel"
           width="44"
@@ -611,69 +617,98 @@ function Helmet({ color, type }: { color: Color; type: PieceType }) {
           patternUnits="userSpaceOnUse"
         >
           <image
-            href={`${import.meta.env.BASE_URL}textures/trenches/helmet_metal.jpg`}
+            href={`${GUN_TEXTURES}helmet_metal.jpg`}
             width="44"
             height="44"
             preserveAspectRatio="none"
           />
         </pattern>
-        <linearGradient id="stahl-dome" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#8b9590" />
-          <stop offset="0.55" stopColor="#5b6560" />
-          <stop offset="1" stopColor="#363d3a" />
-        </linearGradient>
       </defs>
-      {color === Color.White ? (
+      {tommy ? (
         <>
+          {/* Its shadow on the head, and the chin strap hanging down */}
+          <ellipse cx="22" cy="20" rx="14" ry="3.2" className="helmet-cast" />
+          <path
+            d="M11 18.6 Q13 23.6 22 24.6 Q31 23.6 33 18.6"
+            className="helmet-strap"
+          />
           <ellipse
             cx="22"
-            cy="18.4"
-            rx="20.5"
-            ry="4.6"
-            className="helmet-underside"
+            cy="18.6"
+            rx="21"
+            ry="4.8"
+            className="helmet-under"
+          />
+          <ellipse
+            cx="22"
+            cy="17.9"
+            rx="12"
+            ry="2.3"
+            className="helmet-liner"
           />
           <ellipse
             cx="22"
             cy="17"
-            rx="20.5"
-            ry="4.4"
-            fill="url(#brodie-brim)"
+            rx="21"
+            ry="4.5"
+            fill="url(#tommy-brim)"
+            className="helmet-edge"
+          />
+          <ellipse cx="22" cy="17" rx="21" ry="4.5" className="helmet-steel" />
+          <ellipse cx="22" cy="17" rx="20.4" ry="4" className="helmet-roll" />
+          <path
+            d="M9.6 17 C10 7 15 3.2 22 3.2 C29 3.2 34 7 34.4 17 Z"
+            fill="url(#tommy-dome)"
             className="helmet-edge"
           />
           <path
-            d="M10 17 C10.5 6 15 3.5 22 3.5 C29 3.5 33.5 6 34 17 Z"
-            fill="url(#brodie-dome)"
-            className="helmet-edge"
-          />
-          <path
-            d="M10 17 C10.5 6 15 3.5 22 3.5 C29 3.5 33.5 6 34 17 Z"
+            d="M9.6 17 C10 7 15 3.2 22 3.2 C29 3.2 34 7 34.4 17 Z"
             className="helmet-steel"
+          />
+          <circle cx="22" cy="3.9" r="1" className="helmet-rivet" />
+          {/* Knocks and dents, and mud splashed up from the trench floor */}
+          <path d="M27.5 9 q1.6 1 1 2.6" className="helmet-dent" />
+          <path d="M14 12.5 q1.2 -0.4 1.8 0.6" className="helmet-dent" />
+          <path
+            d="M12 15.6 q1.4 -1.2 2.6 -0.2 q-1 1 -2.6 0.2 Z M30 14.8 q1 -0.8 2 0 q-0.8 0.8 -2 0 Z M5 18.6 q1.6 -0.6 2.4 0.4 q-1.2 0.6 -2.4 -0.4 Z"
+            className="helmet-mud"
           />
           <ellipse
-            cx="22"
-            cy="17"
-            rx="20.5"
-            ry="4.4"
-            className="helmet-steel"
+            cx="16.5"
+            cy="7.5"
+            rx="3.6"
+            ry="1.6"
+            className="helmet-sheen"
           />
-          <path d="M3.5 16.4 Q22 13 40.5 16.4" className="helmet-glint" />
-          <circle cx="22" cy="4.4" r="1.1" className="helmet-rivet" />
-          <path d="M14 10 Q16.5 6 22 5.8" className="helmet-shine" />
         </>
       ) : (
         <>
+          <ellipse cx="22" cy="21.5" rx="14" ry="3" className="helmet-cast" />
           <path
-            d="M4 21 C3 16 6 14.2 9 13.6 C10 4.8 15 2 23 2 C31 2 35.6 5 36.6 12.2 L40.4 13.8 C41.4 15.2 40.8 17.2 39.2 17.6 C30 15.6 20 16 12.6 18 C9.4 19 6.2 21.4 4 21 Z"
-            fill="url(#stahl-dome)"
+            d="M9.6 20 Q12 25 22 25.8 Q32 25 34.4 20"
+            className="helmet-strap"
+          />
+          <path
+            d="M3.6 22.4 Q4.6 16.2 8.2 13.2 C9.2 4.2 15 1.6 22 1.6 C29 1.6 34.8 4.2 35.8 13.2 Q39.4 16.2 40.4 22.4 Q31 19.8 22 19.9 Q13 19.8 3.6 22.4 Z"
+            fill="url(#fritz-dome)"
             className="helmet-edge"
           />
           <path
-            d="M4 21 C3 16 6 14.2 9 13.6 C10 4.8 15 2 23 2 C31 2 35.6 5 36.6 12.2 L40.4 13.8 C41.4 15.2 40.8 17.2 39.2 17.6 C30 15.6 20 16 12.6 18 C9.4 19 6.2 21.4 4 21 Z"
+            d="M3.6 22.4 Q4.6 16.2 8.2 13.2 C9.2 4.2 15 1.6 22 1.6 C29 1.6 34.8 4.2 35.8 13.2 Q39.4 16.2 40.4 22.4 Q31 19.8 22 19.9 Q13 19.8 3.6 22.4 Z"
             className="helmet-steel"
           />
-          <path d="M8.5 16.4 Q24 13.2 38.8 15.6" className="helmet-rim" />
-          <circle cx="13.5" cy="10.8" r="1.7" className="helmet-lug" />
-          <path d="M15 7.5 Q18 3.8 24 3.7" className="helmet-shine" />
+          {/* The visor's edge and the flare of the neck guard */}
+          <path d="M8.6 15.6 Q22 12.2 35.4 15.6" className="helmet-visor" />
+          <path d="M8.2 13.2 Q22 10.4 35.8 13.2" className="helmet-crease" />
+          {/* The ventilation lugs, one each side */}
+          <circle cx="10.6" cy="10.4" r="1.9" className="helmet-lug" />
+          <circle cx="33.4" cy="10.4" r="1.9" className="helmet-lug" />
+          <path d="M25 6 q1.6 1.2 0.8 2.8" className="helmet-dent" />
+          <path
+            d="M14.6 16.8 q1.4 -1.2 2.8 -0.2 q-1 1 -2.8 0.2 Z M28 17.4 q1 -0.8 2.2 0 q-0.8 0.8 -2.2 0 Z M5.6 20.4 q1.4 -0.8 2.4 0.2 q-1.2 0.8 -2.4 -0.2 Z"
+            className="helmet-mud"
+          />
+          <ellipse cx="16" cy="6" rx="3.8" ry="1.7" className="helmet-sheen" />
         </>
       )}
     </svg>

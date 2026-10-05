@@ -11,30 +11,14 @@
   position: absolute;
 }
 
-.trench-field > .crater,
 .trench-field > .wire-cell,
 .trench-field > .fallen {
   width: 12.5%;
   height: 12.5%;
 }
 
-/* A shell hole: a churned rim around brown standing water */
-.crater {
-  background:
-    radial-gradient(
-      ellipse 34% 28% at 50% 54%,
-      #3a3a32 0 40%,
-      #4b4a3e 58%,
-      transparent 62%
-    ),
-    radial-gradient(
-      ellipse 46% 40% at 50% 54%,
-      #2a1d10 0 64%,
-      #6a5236 70%,
-      #4a3622 80%,
-      transparent 86%
-    );
-  opacity: 0.95;
+/* A new shell hole opens with the blast */
+.shell-hole.fresh {
   animation: crater-open 0.4s ease-out both;
 }
 

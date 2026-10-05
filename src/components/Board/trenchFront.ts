@@ -413,7 +413,7 @@ function wireBelts(rows: number[], seed: number) {
 /** Shell holes pocking the ground off the board, thickest in no man's land */
 function cratersOff(rows: number[], seed: number) {
   const rand = seeded(seed);
-  const out: { x: number; y: number; r: number }[] = [];
+  const out: { x: number; y: number; r: number; seed: number }[] = [];
   for (let i = 0; i < 160; i++) {
     const x = -REACH + rand() * (BOARD + REACH * 2);
     if (onBoard(x)) continue;
@@ -425,6 +425,7 @@ function cratersOff(rows: number[], seed: number) {
       x,
       y: MARGIN + row * SQ + rand() * SQ,
       r: 14 + rand() * (inNoMansLand ? 36 : 22),
+      seed: Math.floor(rand() * 1e9),
     });
   }
   return out;

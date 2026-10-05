@@ -197,3 +197,9 @@
 .world-trenches {
   filter: saturate(0.7) brightness(0.92) contrast(1.05);
 }
+
+/* The shell holes lie under everything else on the ground */
+.world-craters {
+  z-index: 0;
+  will-change: auto;
+}

@@ -3,6 +3,7 @@ import { Color } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import type { TrenchView } from "../../plugins/trenches";
 import { visualCol, visualRow } from "./boardGeometry";
+import { ShellHole } from "./ShellHole";
 import "./TrenchField.css";
 
 type Style = React.CSSProperties & Record<`--${string}`, string | number>;
@@ -132,16 +133,24 @@ export function TrenchField({
   const flares = useFlares();
   return (
     <div className="trench-field" aria-hidden>
-      {view.craters.map((sq) => (
-        <span
-          key={`c${sq}`}
-          className="crater"
-          style={{
-            ...cellAt(sq, flipped),
-            rotate: `${scatter(sq) * 180}deg`,
-          }}
-        />
-      ))}
+      {view.craters.map((c) => {
+        // Files and ranks from a1's corner, to the screen, either way round
+        const left = flipped ? 8 - c.x : c.x;
+        const top = flipped ? c.y : 8 - c.y;
+        return (
+          <ShellHole
+            key={c.seed}
+            seed={c.seed}
+            className="fresh"
+            style={{
+              left: `${(left - c.r) * 12.5}%`,
+              top: `${(top - c.r) * 12.5}%`,
+              width: `${c.r * 25}%`,
+              height: `${c.r * 25}%`,
+            }}
+          />
+        );
+      })}
       {view.fallen.map((f) => (
         <Helmet key={`f${f.sq}`} fallen={f} flipped={flipped} />
       ))}

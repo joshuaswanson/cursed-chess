@@ -92,10 +92,20 @@ export interface TrenchUnit extends Unit {
   snaggedUntil: number;
 }
 
+export interface Crater {
+  /** Its middle, in files and ranks from a1's corner */
+  x: number;
+  y: number;
+  /** Its radius, in squares */
+  r: number;
+  /** Seeds its own torn outline */
+  seed: number;
+}
+
 export interface TrenchView {
   wire: SquareIndex[];
-  /** Shell holes churned into the ground */
-  craters: SquareIndex[];
+  /** Shell holes churned into the ground, where each shell actually burst, in squares from the board's corner */
+  craters: Crater[];
   /** Where men have fallen, and whose they were, left lying in the mud */
   fallen: { sq: SquareIndex; color: Color; tilt: number }[];
   /** Units that are charging, and those tangled in the wire */
@@ -159,7 +169,7 @@ export class TrenchesPlugin implements ModePlugin {
   private clock = 0;
   private wire = new Set<SquareIndex>();
   private incoming: { sq: SquareIndex; at: number }[] = [];
-  private craters = new Set<SquareIndex>();
+  private craters: Crater[] = [];
   private fallen: TrenchView["fallen"] = [];
   private barrageAt = 0;
   private charges: Record<Color, number> = {
@@ -182,7 +192,7 @@ export class TrenchesPlugin implements ModePlugin {
     this.lastOrder = { [Color.White]: -Infinity, [Color.Black]: -Infinity };
     this.foeAttackAt = FOE_FIRST_ATTACK_MS;
     this.winner = null;
-    this.craters.clear();
+    this.craters = [];
     this.fallen = [];
     this.incoming = [];
     this.barrageAt = rand(...BARRAGE_MS);
@@ -858,7 +868,13 @@ export class TrenchesPlugin implements ModePlugin {
     this.incoming = this.incoming.filter((s) => s.at > this.clock);
     for (const { sq } of landed) {
       if (NO_MANS_LAND.includes(rankOf(sq))) {
-        this.craters.add(sq);
+        // Shells burst where they fall, not in the middle of a square
+        this.craters.push({
+          x: fileOf(sq) + rand(0.1, 0.9),
+          y: rankOf(sq) + rand(0.1, 0.9),
+          r: rand(0.32, 0.62),
+          seed: Math.floor(Math.random() * 1e9),
+        });
         if (this.wire.has(sq) && Math.random() < WIRE_CUT_CHANCE) {
           this.wire.delete(sq);
         }
@@ -944,7 +960,7 @@ export class TrenchesPlugin implements ModePlugin {
       ).length;
     return {
       wire: [...this.wire],
-      craters: [...this.craters],
+      craters: this.craters.map((c) => ({ ...c })),
       fallen: [...this.fallen],
       charging: units
         .filter(([, u]) => u.order === "charge")
