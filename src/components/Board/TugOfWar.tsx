@@ -154,88 +154,234 @@ function blob(cx: number, cy: number, rx: number, ry: number, seed: number) {
   return `${d} Z`;
 }
 
-const MUD_LIP = blob(250, 100, 236, 86, 11);
-const MUD_BOWL = blob(250, 104, 196, 66, 23);
-const MUD_PUDDLE = blob(258, 110, 104, 30, 37);
-const MUD_SPLATTER = (() => {
-  const rand = seeded(5);
-  return Array.from({ length: 14 }, () => {
-    const a = rand() * Math.PI * 2;
-    const reach = 1.04 + rand() * 0.16;
-    return {
-      x: 250 + Math.cos(a) * 236 * reach,
-      y: 100 + Math.sin(a) * 86 * reach,
-      r: 2 + rand() * 4,
-    };
-  });
-})();
-const MUD_CLODS = [
-  { x: 120, y: 92, r: 9 },
-  { x: 372, y: 124, r: 7 },
-  { x: 330, y: 70, r: 5 },
-];
+const MUD_SHAPE = blob(250, 100, 222, 80, 11);
+const MUD_WET = blob(252, 104, 150, 50, 23);
+const MUD_PUDDLE = blob(258, 108, 92, 26, 37);
 
 /**
- * A pit of mud sunk into the arena where the halves meet: a raised lip of
- * drier mud lit along its top, a dark wet bowl, and a puddle in the middle
- * reflecting the sky
+ * A churned mud pit where the halves meet. The surface is noise lit from the
+ * top left, so it has real lumps and hollows with a wet sheen on top; the
+ * edges are ragged and soft, the middle is darker and wetter, and a murky
+ * puddle sits in it reflecting the sky.
  */
 function MudPit() {
   return (
     <svg className="tug-mud" viewBox="0 0 500 200" aria-hidden>
       <defs>
-        <linearGradient id="mud-lip" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#a17a48" />
-          <stop offset="1" stopColor="#7a5530" />
-        </linearGradient>
-        <linearGradient id="mud-bowl" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#3e2510" />
-          <stop offset="0.45" stopColor="#5a3818" />
-          <stop offset="1" stopColor="#6b4422" />
-        </linearGradient>
-        <linearGradient id="mud-puddle" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#6f7f7a" />
-          <stop offset="1" stopColor="#3e3a2a" />
+        <filter id="mud-surface" x="-10%" y="-20%" width="120%" height="140%">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.03 0.05"
+            numOctaves="4"
+            seed="9"
+            result="noise"
+          />
+          {/* Ragged edges: the pit's outline pushed about by the same noise */}
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="noise"
+            scale="26"
+            xChannelSelector="R"
+            yChannelSelector="G"
+            result="shape"
+          />
+          <feGaussianBlur in="shape" stdDeviation="2.5" result="soft" />
+          <feDiffuseLighting
+            in="noise"
+            surfaceScale="5"
+            diffuseConstant="1.15"
+            lightingColor="#9c7244"
+            result="relief"
+          >
+            <feDistantLight azimuth="225" elevation="38" />
+          </feDiffuseLighting>
+          <feSpecularLighting
+            in="noise"
+            surfaceScale="6"
+            specularConstant="0.8"
+            specularExponent="28"
+            lightingColor="#fff6e6"
+            result="sheen"
+          >
+            <feDistantLight azimuth="225" elevation="55" />
+          </feSpecularLighting>
+          <feComposite
+            in="relief"
+            in2="sheen"
+            operator="arithmetic"
+            k2="1"
+            k3="0.45"
+            result="lit"
+          />
+          <feComposite in="lit" in2="soft" operator="in" />
+        </filter>
+        <filter id="mud-soft" x="-20%" y="-30%" width="140%" height="160%">
+          <feGaussianBlur stdDeviation="9" />
+        </filter>
+        <filter id="mud-edge" x="-20%" y="-30%" width="140%" height="160%">
+          <feGaussianBlur stdDeviation="3" />
+        </filter>
+        <linearGradient id="mud-water" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8fa6a6" />
+          <stop offset="0.5" stopColor="#4d4b3c" />
+          <stop offset="1" stopColor="#2f2616" />
         </linearGradient>
       </defs>
-      {MUD_SPLATTER.map((d, i) => (
-        <circle key={i} cx={d.x} cy={d.y} r={d.r} fill="#7a5530" />
-      ))}
-      <path d={MUD_LIP} fill="url(#mud-lip)" stroke="#4a2c12" strokeWidth="3" />
-      <path d={MUD_BOWL} fill="url(#mud-bowl)" />
-      <path d={MUD_PUDDLE} fill="url(#mud-puddle)" />
-      <ellipse className="mud-ripple" cx="240" cy="108" rx="30" ry="8" />
+      {/* A soft dark ring where the wet ground stains the sand */}
       <path
-        d="M196 100 Q240 92 290 98"
-        stroke="#cfe6ee"
-        strokeOpacity="0.55"
-        strokeWidth="4"
+        d={MUD_SHAPE}
+        fill="#5a3a1c"
+        fillOpacity="0.35"
+        filter="url(#mud-soft)"
+      />
+      <path d={MUD_SHAPE} fill="#fff" filter="url(#mud-surface)" />
+      <path
+        d={MUD_WET}
+        fill="#2a1606"
+        fillOpacity="0.45"
+        filter="url(#mud-soft)"
+        style={{ mixBlendMode: "multiply" }}
+      />
+      {/* Ruts where feet have skidded in from both sides */}
+      <g
+        fill="none"
+        stroke="#24130a"
+        strokeOpacity="0.4"
+        strokeLinecap="round"
+        filter="url(#mud-edge)"
+      >
+        <path d="M70 78 C120 70 170 76 200 90" strokeWidth="9" />
+        <path d="M86 128 C130 138 172 132 202 116" strokeWidth="7" />
+        <path d="M432 76 C380 70 330 78 300 92" strokeWidth="9" />
+        <path d="M416 130 C372 140 330 132 300 116" strokeWidth="7" />
+      </g>
+      <path d={MUD_PUDDLE} fill="url(#mud-water)" filter="url(#mud-edge)" />
+      <ellipse className="mud-ripple" cx="248" cy="108" rx="28" ry="7" />
+      <path
+        d="M206 100 Q246 93 294 99"
+        stroke="#dff0f4"
+        strokeOpacity="0.45"
+        strokeWidth="3"
         strokeLinecap="round"
         fill="none"
+        filter="url(#mud-edge)"
       />
-      {MUD_CLODS.map((c, i) => (
-        <g key={i}>
-          <circle
-            cx={c.x}
-            cy={c.y + 2}
-            r={c.r}
-            fill="#2e1a08"
-            fillOpacity="0.5"
+    </svg>
+  );
+}
+
+/** A few turns of red cord bound tight round the rope, tying a corner of the pennant to it */
+function Lashing({ y }: { y: number }) {
+  return (
+    <g>
+      {[-3, 0, 3].map((dy) => (
+        <g key={dy}>
+          <rect
+            x="2.5"
+            y={y + dy - 1.3}
+            width="11"
+            height="2.6"
+            rx="1.3"
+            fill="#c42c1d"
+            stroke="#2a1a10"
+            strokeWidth="1.1"
           />
-          <circle
-            cx={c.x}
-            cy={c.y}
-            r={c.r}
-            fill="#7a5530"
-            stroke="#3e2510"
-            strokeWidth="1.5"
+          <path
+            d={`M4.5 ${y + dy - 0.5} H11.5`}
+            stroke="#ff8a7a"
+            strokeWidth="0.7"
+            strokeLinecap="round"
           />
-          <circle
-            cx={c.x - c.r * 0.3}
-            cy={c.y - c.r * 0.35}
-            r={c.r * 0.35}
-            fill="#b08a58"
+        </g>
+      ))}
+    </g>
+  );
+}
+
+/** Patches of mud flung across the arena, kept clear of the pit in the middle */
+const MUD_SPLATS = (() => {
+  const rand = seeded(17);
+  const splats: { d: string; drops: { x: number; y: number; r: number }[] }[] =
+    [];
+  while (splats.length < 14) {
+    const x = 40 + rand() * 720;
+    const y = 40 + rand() * 720;
+    if (Math.abs(x - 400) < 300 && Math.abs(y - 400) < 140) continue;
+    const size = 16 + rand() * 26;
+    const drops = Array.from({ length: 5 }, () => {
+      const a = rand() * Math.PI * 2;
+      const reach = size * (1.3 + rand() * 0.9);
+      return {
+        x: x + Math.cos(a) * reach,
+        y: y + Math.sin(a) * reach * 0.8,
+        r: 1.5 + rand() * 3.5,
+      };
+    });
+    splats.push({
+      d: blob(x, y, size, size * (0.6 + rand() * 0.3), splats.length + 40),
+      drops,
+    });
+  }
+  return splats;
+})();
+
+/** Mud splattered about the arena from all the slipping and sliding */
+function MudSplats() {
+  return (
+    <svg className="tug-splats" viewBox="0 0 800 800" aria-hidden>
+      <defs>
+        <filter id="splat-surface" x="-30%" y="-30%" width="160%" height="160%">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.06"
+            numOctaves="4"
+            seed="3"
+            result="noise"
           />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="noise"
+            scale="14"
+            xChannelSelector="R"
+            yChannelSelector="G"
+            result="shape"
+          />
+          <feDiffuseLighting
+            in="noise"
+            surfaceScale="4"
+            diffuseConstant="1.15"
+            lightingColor="#8d6438"
+            result="relief"
+          >
+            <feDistantLight azimuth="225" elevation="40" />
+          </feDiffuseLighting>
+          <feSpecularLighting
+            in="noise"
+            surfaceScale="5"
+            specularConstant="0.7"
+            specularExponent="26"
+            lightingColor="#fff6e6"
+            result="sheen"
+          >
+            <feDistantLight azimuth="225" elevation="55" />
+          </feSpecularLighting>
+          <feComposite
+            in="relief"
+            in2="sheen"
+            operator="arithmetic"
+            k2="1"
+            k3="0.4"
+            result="lit"
+          />
+          <feComposite in="lit" in2="shape" operator="in" />
+        </filter>
+      </defs>
+      {MUD_SPLATS.map((splat, i) => (
+        <g key={i} filter="url(#splat-surface)">
+          <path d={splat.d} fill="#fff" />
+          {splat.drops.map((drop, j) => (
+            <circle key={j} cx={drop.x} cy={drop.y} r={drop.r} fill="#fff" />
+          ))}
         </g>
       ))}
     </svg>
@@ -297,6 +443,7 @@ export function TugLayer({
   return (
     <>
       <div className="tug-layer" aria-hidden>
+        <MudSplats />
         <MudPit />
         <span className="tug-center-line" />
         {lines.map(({ toWhite, team }) => (
@@ -368,24 +515,8 @@ export function TugLayer({
                   repeatCount="indefinite"
                 />
               </path>
-              {[8, 32].map((y) => (
-                <g key={y}>
-                  <ellipse
-                    cx="9"
-                    cy={y}
-                    rx="7"
-                    ry="3.4"
-                    fill="#e8402f"
-                    stroke="#2a1a10"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d={`M9 ${y} l-4 6 M9 ${y} l3 6`}
-                    stroke="#2a1a10"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </g>
+              {[5, 35].map((y) => (
+                <Lashing key={y} y={y} />
               ))}
             </svg>
             <span className="tug-score">
