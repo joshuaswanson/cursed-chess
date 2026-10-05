@@ -407,12 +407,19 @@ const fromTop = (toWhite: number, flipped: boolean) =>
 export function TugLayer({
   view,
   flipped,
+  delayMs,
 }: {
   view: TugView;
   flipped: boolean;
+  /** How long the heave waits for the move that set it off to finish */
+  delayMs: number;
 }) {
   useEffect(() => {
-    if (view.heave > 0) sfx.heave();
+    if (view.heave === 0) return;
+    const heave = setTimeout(() => sfx.heave(), delayMs);
+    return () => clearTimeout(heave);
+    // Only a new heave plays the sound
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.heave]);
 
   // A piece that steps onto the rope joins the struggle mid-cycle, in step

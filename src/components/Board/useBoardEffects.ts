@@ -157,7 +157,7 @@ export function useMineExplosions(
 }
 
 const CAPTURE_WORDS = ["POW!", "BAM!", "KO!", "WHAM!", "CRUNCH!", "BONK!"];
-const CAPTURE_BURST_MS = 700;
+export const CAPTURE_BURST_MS = 700;
 
 /** A comic burst on the square where a piece was just taken */
 export function useCaptureBurst<Sq extends string | number = SquareIndex>(
@@ -353,6 +353,8 @@ export function useHeave(
   heave: number,
   heaveDir: number,
   flipped: boolean,
+  /** The heave waits for the move that set it off to finish */
+  delayMs: number,
 ): number {
   const [seen, setSeen] = useState(heave);
   const [yank, setYank] = useState(0);
@@ -362,9 +364,9 @@ export function useHeave(
   }
   useEffect(() => {
     if (yank === 0) return;
-    const done = setTimeout(() => setYank(0), HEAVE_MS);
+    const done = setTimeout(() => setYank(0), delayMs + HEAVE_MS);
     return () => clearTimeout(done);
-  }, [yank, heave]);
+  }, [yank, heave, delayMs]);
   return yank;
 }
 
@@ -376,6 +378,7 @@ export function useTugDrags(
   dragged: { from: SquareIndex; to: SquareIndex }[],
   flipped: boolean,
   squareSize: number,
+  delayMs: number,
 ): Map<SquareIndex, { x: number; y: number }> {
   const [seen, setSeen] = useState(heave);
   const [drags, setDrags] = useState<
@@ -394,9 +397,9 @@ export function useTugDrags(
   }
   useEffect(() => {
     if (drags.size === 0) return;
-    const done = setTimeout(() => setDrags(new Map()), DRAG_MS + 100);
+    const done = setTimeout(() => setDrags(new Map()), delayMs + DRAG_MS + 100);
     return () => clearTimeout(done);
-  }, [drags]);
+  }, [drags, delayMs]);
   return drags;
 }
 

@@ -163,7 +163,7 @@
 
 /* A heave snaps the rope thin and long, then it springs back like elastic */
 .tug-rope-wrap.heaving .tug-rope {
-  animation: rope-spring 0.9s ease-out;
+  animation: rope-spring 0.9s ease-out var(--heave-delay, 0ms);
 }
 
 @keyframes rope-spring {
@@ -182,7 +182,8 @@
 }
 
 .tug-rope-wrap.heaving {
-  animation: rope-yank 0.7s cubic-bezier(0.3, 1.6, 0.5, 1);
+  animation: rope-yank 0.7s cubic-bezier(0.3, 1.6, 0.5, 1)
+    var(--heave-delay, 0ms);
 }
 
 @keyframes rope-yank {
@@ -200,7 +201,7 @@
   z-index: 3;
   width: calc(var(--square-size, 72px) * 1.45);
   translate: -10% -50%;
-  transition: top 0.7s cubic-bezier(0.3, 1.5, 0.5, 1);
+  transition: top 0.7s cubic-bezier(0.3, 1.5, 0.5, 1) var(--heave-delay, 0ms);
 }
 
 .tug-rope-layer.contested .tug-flag-body {
@@ -208,7 +209,8 @@
 }
 
 .tug-flag-body.heaving {
-  animation: flag-yank 0.7s cubic-bezier(0.3, 1.6, 0.5, 1);
+  animation: flag-yank 0.7s cubic-bezier(0.3, 1.6, 0.5, 1)
+    var(--heave-delay, 0ms);
 }
 
 @keyframes flag-yank {
@@ -284,7 +286,8 @@
 
 /* Pieces on the rope are dragged along with every heave */
 .board.tug-heave .square.rope-square .piece-img {
-  animation: rope-drag 0.7s cubic-bezier(0.3, 1.6, 0.5, 1);
+  animation: rope-drag 0.7s cubic-bezier(0.3, 1.6, 0.5, 1)
+    var(--heave-delay, 0ms);
 }
 
 @keyframes rope-drag {

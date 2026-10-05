@@ -43,6 +43,7 @@ import {
   useHeave,
   useTugDrags,
   DRAG_MS,
+  CAPTURE_BURST_MS,
   usePlayCall,
   goalReaction,
   DIVE_MS,
@@ -216,16 +217,22 @@ export function Board() {
   }, [portalsDue, travel, slides, settlePortals]);
 
   useGravitySpin(shellRef, overlays.gravityDirection !== null);
+  // A heave waits for the move that ended the round to land, and for any capture's burst
+  const heaveDelay = moveHistory[moveHistory.length - 1]?.move.captured
+    ? SLIDE_MS + CAPTURE_BURST_MS
+    : SLIDE_MS + 100;
   const tugDrags = useTugDrags(
     overlays.tug?.heave ?? 0,
     overlays.tug?.dragged ?? [],
     flipped,
     squareSize,
+    heaveDelay,
   );
   const tugYank = useHeave(
     overlays.tug?.heave ?? 0,
     overlays.tug?.heaveDir ?? 0,
     flipped,
+    heaveDelay,
   );
   const shotDives = useShotDives(
     overlays.football?.lastKick ?? null,
@@ -405,7 +412,7 @@ export function Board() {
           ? ({
               "--slide-from-x": `${hauled.x}px`,
               "--slide-from-y": `${hauled.y}px`,
-              animation: `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) both`,
+              animation: `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) ${heaveDelay}ms both`,
             } as React.CSSProperties)
           : slide
             ? ({
@@ -599,6 +606,7 @@ export function Board() {
   const { gravityAngle } = overlays;
   const boardStyle = {
     "--yank": tugYank,
+    "--heave-delay": `${heaveDelay}ms`,
     "--flip": flipped ? -1 : 1,
     ...(deployPieceType && {
       "--deploy-preview": `url(${pieceImage({ type: deployPieceType, color: Color.White })})`,
@@ -641,7 +649,13 @@ export function Board() {
             />
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
-          {overlays.tug && <TugLayer view={overlays.tug} flipped={flipped} />}
+          {overlays.tug && (
+            <TugLayer
+              view={overlays.tug}
+              flipped={flipped}
+              delayMs={heaveDelay}
+            />
+          )}
           {hill.length > 0 && (
             <div
               className={`hill-throne${hillLeader ? ` held-${hillLeader}` : ""}${Math.max(hillWhite, hillBlack) >= 3 ? " dominated" : ""}`}
