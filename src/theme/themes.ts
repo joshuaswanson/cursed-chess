@@ -84,7 +84,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "royale",
     title: "Battle royale",
     tagline: "The edge is crumbling. Get to the middle.",
-    catchphrase: "Move away from the edges!",
+    catchphrase: "Stay away from the edges!",
     sky: ["#140303", "#5c0d06", "#d9480f"],
     accent: "#ff7a1a",
     accent2: "#ffd23f",
