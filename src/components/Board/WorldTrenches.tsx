@@ -155,10 +155,7 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
   );
 }
 
-/**
- * The near bank of every trench, drawn in front of the pieces: the men stand
- * down in the trench behind it, showing from the waist up
- */
+/** The sandbags along the near edge of the enemy's trenches, drawn in front of the men in them */
 export function WorldTrenchesFront({ flipped }: { flipped: boolean }) {
   const scene = useMemo(() => frontFor(flipped), [flipped]);
   return (
@@ -171,9 +168,6 @@ export function WorldTrenchesFront({ flipped }: { flipped: boolean }) {
     >
       {scene.lines.map((line) => (
         <g key={line.key}>
-          <path d={line.nearBank} className="near-bank" />
-          <path d={line.nearBank} className="earth-texture" />
-          <path d={line.nearBank} className="near-bank-lip" />
           <Sandbags bags={line.nearBags} />
         </g>
       ))}

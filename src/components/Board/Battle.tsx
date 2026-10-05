@@ -4,6 +4,7 @@ import type { Piece, SquareIndex } from "../../engine";
 import { DROP_MS } from "../../plugins/clashRoyale";
 import { AIM_MS, SHELL_FALL_MS } from "../../plugins/trenches";
 import { shakeBoard } from "./useBoardEffects";
+import { TRENCH_EDGE } from "./trenchFront";
 import type { BattleEvent, BattleView, Unit } from "../../plugins/clashRoyale";
 import { pieceImage } from "../../utils/pieceImages";
 import { offsetBetween, visualCol, visualRow } from "./boardGeometry";
@@ -122,6 +123,7 @@ export function BattleUnit({
   flipped,
   squareSize,
   stance,
+  entrenched = false,
 }: {
   sq: SquareIndex;
   piece: Piece;
@@ -130,6 +132,8 @@ export function BattleUnit({
   squareSize: number;
   /** Charging across open ground, or caught on the wire */
   stance?: "charging" | "snagged";
+  /** Down in a trench, hidden below its near edge */
+  entrenched?: boolean;
 }) {
   const unit = view.units[sq];
   if (!unit) return null;
@@ -157,8 +161,11 @@ export function BattleUnit({
       : undefined;
   return (
     <div
-      className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}`}
-      style={arrivalStyle(arrival, flipped, squareSize)}
+      className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}${entrenched ? " is-entrenched" : ""}`}
+      style={{
+        ...arrivalStyle(arrival, flipped, squareSize),
+        "--trench-edge": `${((0.95 - TRENCH_EDGE) / 0.9) * 100}%`,
+      } as Style}
     >
       <span className="unit-base" />
       <div

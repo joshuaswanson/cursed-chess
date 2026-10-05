@@ -1174,3 +1174,12 @@
   width: 12.5%;
   height: 12.5%;
 }
+
+/* Down in a trench, a man shows only above its near edge */
+.battle-unit.is-entrenched .unit-body {
+  clip-path: inset(-80% -80% var(--trench-edge) -80%);
+}
+
+.battle-unit.is-entrenched .unit-base {
+  display: none;
+}

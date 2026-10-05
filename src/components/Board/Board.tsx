@@ -26,6 +26,7 @@ import { HillThrone } from "./HillThrone";
 import { TugLayer } from "./TugOfWar";
 import { Tombstone, ZombiePiece } from "./Zombies";
 import type { TrenchView } from "../../plugins/trenches";
+import { TRENCH_RANKS } from "../../plugins/trenches";
 import { TrenchField } from "./TrenchField";
 import { WorldTrenches, WorldTrenchesFront } from "./WorldTrenches";
 import { PortalTravelPiece } from "./PortalTravelPiece";
@@ -595,6 +596,12 @@ export function Board() {
               flipped={flipped}
               squareSize={squareSize}
               stance={trenchStance(overlays.trenches, battle.units[sq]?.id)}
+              entrenched={
+                overlays.trenches !== null &&
+                Object.values(TRENCH_RANKS).some(
+                  (t) => t.front === rankOf(sq) || t.back === rankOf(sq),
+                )
+              }
             />
           )}
           {piece && arrivals.has(sq) && (

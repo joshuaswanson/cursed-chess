@@ -48,13 +48,17 @@ const toPath = (points: Point[], close = false) =>
  * floor, the near lip, and how high the near bank rises over it. The near
  * bank tops out at a man's waist when he stands in the middle of his square.
  */
+/** How far up the screen every trench line is drawn from the middle of its row of squares */
+const LIFT = 25;
 const FAR_LIP = -43;
 const FAR_WALL_FOOT = -22;
 const FLOOR = -9;
 const NEAR_LIP = 19;
+/** Where a trench's near edge crosses the squares of its row, as a share of the square: men in it are hidden below that */
+export const TRENCH_EDGE = (SQ / 2 - LIFT + NEAR_LIP) / SQ;
 const NEAR_BANK = 10;
 /** How far the near bank spreads out in front of the trench, enough to cover a man's feet */
-const NEAR_SPREAD = 30;
+const NEAR_SPREAD = 30 + LIFT;
 
 export interface Sandbag {
   x: number;
@@ -113,7 +117,7 @@ function layBags(
  */
 function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
   const rand = seeded(seed);
-  const centreY = MARGIN + row * SQ + SQ / 2;
+  const centreY = MARGIN + row * SQ + SQ / 2 - LIFT;
   const xs: number[] = [];
   for (let x = -REACH; x <= BOARD + REACH; x += STEP) xs.push(x);
   const bays = new Map<number, number>();
