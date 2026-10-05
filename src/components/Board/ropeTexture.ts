@@ -53,18 +53,42 @@ function lobe(y: number, tone: string): string {
  * lobes past either end repeat into the next tile, so the rope runs on
  * without a seam.
  */
-function tile(): string {
-  const lobes = [-3, -2, -1, 0, 1, 2, 3, 4, 5]
+function tile(shaded = false): string {
+  const rows = [-3, -2, -1, 0, 1, 2, 3, 4, 5];
+  const lobes = rows
     .map((k) => lobe(k * PITCH, TONES[((k % 3) + 3) % 3]))
     .join("");
+  // The rounding is laid only over the strands themselves
+  const silhouette = rows
+    .map(
+      (k) =>
+        `<path transform="translate(${WIDTH / 2} ${k * PITCH}) rotate(-${STRAND_LEAN})" d="${strandPath(STRAND_HALF, STRAND_THICK)}" fill="#fff"/>`,
+    )
+    .join("");
+  const rounding = shaded
+    ? `<mask id="strands" maskUnits="userSpaceOnUse" x="0" y="0" width="${WIDTH}" height="${TILE}">${silhouette}</mask>` +
+      `<rect width="${WIDTH}" height="${TILE}" fill="url(#round)" mask="url(#strands)"/>`
+    : "";
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${TILE}" viewBox="0 0 ${WIDTH} ${TILE}">` +
     `<defs><linearGradient id="hl" x1="0" y1="0" x2="0" y2="1">` +
     `<stop offset="0" stop-color="#fff" stop-opacity="0.3"/>` +
     `<stop offset="0.45" stop-color="#fff" stop-opacity="0"/>` +
     `<stop offset="1" stop-color="#000" stop-opacity="0.35"/>` +
-    `</linearGradient></defs>${lobes}</svg>`
+    `</linearGradient>` +
+    // Darker toward both edges, so the rope reads as round
+    `<linearGradient id="round" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${WIDTH}" y2="0">` +
+    `<stop offset="0" stop-color="#281608" stop-opacity="0.5"/>` +
+    `<stop offset="0.3" stop-color="#281608" stop-opacity="0"/>` +
+    `<stop offset="0.45" stop-color="#fff5dc" stop-opacity="0.22"/>` +
+    `<stop offset="0.6" stop-color="#fff5dc" stop-opacity="0"/>` +
+    `<stop offset="1" stop-color="#281608" stop-opacity="0.55"/>` +
+    `</linearGradient></defs>${lobes}${rounding}</svg>`
   );
 }
 
 export const ROPE_TILE = `url("data:image/svg+xml,${encodeURIComponent(tile())}")`;
+/** The rope's texture shaded round, as an image address, for laying it along a curve */
+export const ROPE_TILE_SHADED_URL = `data:image/svg+xml,${encodeURIComponent(tile(true))}`;
+/** The tile's height as a share of its width */
+export const ROPE_TILE_RATIO = TILE / WIDTH;
