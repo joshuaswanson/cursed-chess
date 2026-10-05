@@ -1157,16 +1157,20 @@
   stroke-linecap: round;
 }
 
-/* Behind a parapet that faces the viewer, a man shows only from the waist up */
-.battle-unit.is-sunk .unit-body {
-  translate: 0 var(--stand);
-  clip-path: inset(-60% -60% var(--sunk) -60%);
+/* The machine guns, laid over the board on the right side of their gunners */
+.trench-guns {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
 }
 
-.battle-unit.is-sunk .unit-mg {
-  translate: 0 var(--stand);
+.trench-guns.guns-toward {
+  z-index: 4;
 }
 
-.battle-unit.is-sunk .unit-base {
-  display: none;
+.trench-gun {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
 }

@@ -12,7 +12,6 @@
 }
 
 .trench-field > .crater,
-.trench-field > .gun-nest,
 .trench-field > .wire-cell,
 .trench-field > .fallen {
   width: 12.5%;
@@ -44,24 +43,6 @@
     scale: 0.3;
     opacity: 0;
   }
-}
-
-/* A horseshoe of sandbags around the machine gun */
-.gun-nest {
-  border-radius: 50% 50% 18% 18%;
-  border: 0.32em solid transparent;
-  background: radial-gradient(
-    ellipse 50% 50%,
-    transparent 52%,
-    #8f7e58 54% 70%,
-    #2a2014 72%,
-    transparent 76%
-  );
-  scale: 1.2 0.9;
-}
-
-.gun-nest.faces-down {
-  rotate: 180deg;
 }
 
 /* A helmet left in the mud where its owner fell */

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Color } from "../../engine";
 import type { SquareIndex } from "../../engine";
-import { GUN_NESTS } from "../../plugins/trenches";
 import type { TrenchView } from "../../plugins/trenches";
 import { visualCol, visualRow } from "./boardGeometry";
 import "./TrenchField.css";
@@ -121,8 +120,7 @@ function useFlares(): { id: number; x: number; drift: number }[] {
 
 /**
  * What the fighting leaves on the board, between the ground and the pieces:
- * the machine gun nests, wire strung across no man's land, shell craters, the
- * helmets of the fallen, and flares drifting down over it all
+ * wire strung across no man's land, shell craters, the helmets of the fallen, and flares drifting down over it all
  */
 export function TrenchField({
   view,
@@ -144,16 +142,6 @@ export function TrenchField({
           }}
         />
       ))}
-      {(Object.keys(GUN_NESTS) as Color[]).map((color) => {
-        const enemyAbove = (color === Color.White) !== flipped;
-        return (
-          <span
-            key={`n${color}`}
-            className={`gun-nest ${enemyAbove ? "faces-up" : "faces-down"}`}
-            style={cellAt(GUN_NESTS[color], flipped)}
-          />
-        );
-      })}
       {view.fallen.map((f) => (
         <Helmet key={`f${f.sq}`} fallen={f} flipped={flipped} />
       ))}

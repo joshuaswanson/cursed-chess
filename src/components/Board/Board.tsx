@@ -15,7 +15,7 @@ import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
 import type { GravityPlugin } from "../../plugins/gravity";
-import { BattleEffects, BattleUnit } from "./Battle";
+import { BattleEffects, BattleUnit, TrenchGuns } from "./Battle";
 import {
   visualCol as colOnScreen,
   visualRow as rowOnScreen,
@@ -27,8 +27,7 @@ import { TugLayer } from "./TugOfWar";
 import { Tombstone, ZombiePiece } from "./Zombies";
 import type { TrenchView } from "../../plugins/trenches";
 import { TrenchField } from "./TrenchField";
-import { WorldTrenches } from "./WorldTrenches";
-import { parapetTops } from "./trenchFront";
+import { WorldTrenches, WorldTrenchesFront } from "./WorldTrenches";
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
 import { BoardFog } from "../Fog/Fog";
@@ -596,13 +595,6 @@ export function Board() {
               flipped={flipped}
               squareSize={squareSize}
               stance={trenchStance(overlays.trenches, battle.units[sq]?.id)}
-              behindParapet={
-                overlays.trenches
-                  ? parapetTops(flipped).get(rowOnScreen(sq, flipped))?.[
-                      colOnScreen(sq, flipped)
-                    ]
-                  : undefined
-              }
             />
           )}
           {piece && arrivals.has(sq) && (
@@ -767,6 +759,23 @@ export function Board() {
         >
           {lakes.size > 0 && <WorldRiver rows={riverRanks.size} />}
           {overlays.trenches && <WorldTrenches flipped={flipped} />}
+          {overlays.trenches && <WorldTrenchesFront flipped={flipped} />}
+          {overlays.trenches && battle && (
+            <>
+              <TrenchGuns
+                view={battle}
+                board={game.board}
+                flipped={flipped}
+                facing="away"
+              />
+              <TrenchGuns
+                view={battle}
+                board={game.board}
+                flipped={flipped}
+                facing="toward"
+              />
+            </>
+          )}
           {lakes.size > 0 && (
             <Battlefield
               riverRows={[...riverRanks].map((r) => (flipped ? r : 7 - r))}

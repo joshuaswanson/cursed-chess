@@ -122,7 +122,6 @@ export function BattleUnit({
   flipped,
   squareSize,
   stance,
-  behindParapet,
 }: {
   sq: SquareIndex;
   piece: Piece;
@@ -131,8 +130,6 @@ export function BattleUnit({
   squareSize: number;
   /** Charging across open ground, or caught on the wire */
   stance?: "charging" | "snagged";
-  /** Standing behind a parapet whose top comes this far down the square, hidden below it */
-  behindParapet?: number;
 }) {
   const unit = view.units[sq];
   if (!unit) return null;
@@ -158,19 +155,10 @@ export function BattleUnit({
     (action.weapon === "rifle" || action.weapon === "bayonet")
       ? action
       : undefined;
-  const gunning =
-    action?.unitId === unit.id && action.weapon === "mg" ? action : undefined;
   return (
     <div
-      className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}${behindParapet === undefined ? "" : " is-sunk"}`}
-      style={{
-        ...arrivalStyle(arrival, flipped, squareSize),
-        // He stands in his bay of the trench, the wall in front cutting him off at the waist
-        ...(behindParapet !== undefined && {
-          "--stand": px((behindParapet - WAIST_LINE) * squareSize),
-          "--sunk": `${((0.95 - WAIST_LINE) / 0.9) * 100}%`,
-        }),
-      }}
+      className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}`}
+      style={arrivalStyle(arrival, flipped, squareSize)}
     >
       <span className="unit-base" />
       <div
@@ -196,13 +184,6 @@ export function BattleUnit({
           />
         )}
       </div>
-      {arms === "mg" && (
-        <MachineGun
-          color={piece.color}
-          flipped={flipped}
-          aim={gunning ? aimAngle(gunning, flipped) : null}
-        />
-      )}
       {(tower || unit.hp < unit.maxHp) && (
         <HealthBar unit={unit} tower={tower} />
       )}
@@ -293,6 +274,60 @@ const RIFLE_REACH = 0.6;
 /** Which way is toward the enemy for a side, on screen: up the board for the side at the bottom */
 function towardEnemy(color: Color, flipped: boolean): { x: number; y: number } {
   return { x: 0, y: (color === Color.White) !== flipped ? -1 : 1 };
+}
+
+/**
+ * The machine guns, each on its tripod in front of its gunner, drawn on the
+ * side of him it stands: behind a gunner facing away up the board, in front
+ * of one facing the viewer, where it rests on the sandbags. Each traverses
+ * onto whatever it is firing at.
+ */
+export function TrenchGuns({
+  view,
+  board,
+  flipped,
+  facing,
+}: {
+  view: BattleView;
+  board: { get: (sq: SquareIndex) => Piece | null };
+  flipped: boolean;
+  /** Which guns to draw: those facing away from the viewer, or toward */
+  facing: "away" | "toward";
+}) {
+  const guns = Object.entries(view.units).flatMap(([key, unit]) => {
+    const sq = Number(key);
+    const piece = board.get(sq);
+    if (view.arms?.[unit.id] !== "mg" || !piece) return [];
+    const away = towardEnemy(piece.color, flipped).y < 0;
+    if ((facing === "away") !== away) return [];
+    const burst = [...view.events]
+      .reverse()
+      .find(
+        (e): e is AttackEvent =>
+          e.kind === "attack" && e.unitId === unit.id && e.weapon === "mg",
+      );
+    return [{ sq, color: piece.color, burst }];
+  });
+  return (
+    <div className={`trench-guns guns-${facing}`} aria-hidden>
+      {guns.map(({ sq, color, burst }) => (
+        <span
+          key={sq}
+          className="trench-gun"
+          style={{
+            left: `${visualCol(sq, flipped) * 12.5}%`,
+            top: `${visualRow(sq, flipped) * 12.5}%`,
+          }}
+        >
+          <MachineGun
+            color={color}
+            flipped={flipped}
+            aim={burst ? aimAngle(burst, flipped) : null}
+          />
+        </span>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -540,9 +575,6 @@ function Helmet({ color, type }: { color: Color; type: PieceType }) {
     </svg>
   );
 }
-
-/** Where in his square the trench wall cuts a man off, as a share of the square: about his waist */
-const WAIST_LINE = 0.7;
 
 /** A rifle is carried upright at its man's side while he waits */
 const RIFLE_AT_SIDE = -90;
