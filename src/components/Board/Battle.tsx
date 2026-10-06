@@ -139,7 +139,7 @@ export function BattleUnit({
   flipped,
   squareSize,
   stance,
-  entrenched,
+  entrenched = false,
   aiming = false,
 }: {
   sq: SquareIndex;
@@ -149,8 +149,8 @@ export function BattleUnit({
   squareSize: number;
   /** Charging across open ground, or caught on the wire */
   stance?: "charging" | "snagged" | "peeking" | "crouched";
-  /** Down in a trench behind sandbags, the clip-path that hides him below their tops */
-  entrenched?: string | null;
+  /** Down in his own trench, drawn behind the sandbags and earth in front of it */
+  entrenched?: boolean;
   /** Manning the front line, his rifle levelled at the enemy */
   aiming?: boolean;
 }) {
@@ -170,6 +170,7 @@ export function BattleUnit({
   }
 
   const bodyRef = useReplay<HTMLDivElement>(action?.id ?? 0);
+  const armsRef = useReplay<HTMLDivElement>(action?.id ?? 0);
   if (!unit) return null;
   const arms = view.arms?.[unit.id];
   const tower = piece.type === PieceType.King;
@@ -186,65 +187,71 @@ export function BattleUnit({
       : arms === "rifle" || arms === "grenadier"
         ? "rifle"
         : null;
+  const rifle = held && (
+    <Rifle
+      kind={held}
+      // A burst's rounds are one swing onto the target, not one each
+      shot={firing ? firing.id - (firing.round ?? 0) : 0}
+      rest={aiming ? enemyAngle(piece.color, sq, flipped) : RIFLE_AT_SIDE}
+      grip={aiming ? RIFLE_SHOULDER : RIFLE_GRIP}
+      side={gripSide(sq, flipped)}
+      aim={firing ? aimAngle(firing, flipped) : null}
+      fireMs={Math.max(0, (firing?.delayMs ?? 0) - AIM_MS)}
+      thrust={firing?.weapon === "bayonet"}
+      german={piece.color === Color.Black}
+    />
+  );
+  // A man behind the sandbags levels his rifle over them, so it is drawn
+  // apart from him, above the bags he is behind
+  const overParapet = entrenched && aiming;
+  const className = `battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}${entrenched ? " is-entrenched" : ""}${aiming ? " is-aiming" : ""}`;
+  const style = {
+    ...arrivalStyle(arrival, flipped, squareSize),
+    "--hunch": `${unit.id % 2 ? 9 : -9}deg`,
+  } as Style;
+  const motion = actionStyle(action, unit, flipped, squareSize);
   return (
-    <div
-      className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}${entrenched ? " is-entrenched" : ""}${aiming ? " is-aiming" : ""}`}
-      style={
-        {
-          ...arrivalStyle(arrival, flipped, squareSize),
-          "--hunch": `${unit.id % 2 ? 9 : -9}deg`,
-          ...(entrenched && { "--parapet": entrenched }),
-        } as Style
-      }
-    >
-      <span className="unit-base" />
-      <div
-        ref={bodyRef}
-        className="unit-body"
-        style={actionStyle(action, unit, flipped, squareSize)}
-      >
-        <img
-          src={pieceImage(piece)}
-          alt={`${piece.color}${piece.type}`}
-          className="unit-img"
-          draggable={false}
-        />
-        {arms === "general" && (
-          <GeneralCap color={piece.color} tilt={helmetTilt(unit.id) * 0.5} />
-        )}
-        {arms === "general" && <FieldGlasses />}
-        {arms && arms !== "general" && (
-          <Helmet
-            color={piece.color}
-            type={piece.type}
-            tilt={helmetTilt(unit.id)}
+    <>
+      <div className={className} style={style}>
+        <span className="unit-base" />
+        <div ref={bodyRef} className="unit-body" style={motion}>
+          <img
+            src={pieceImage(piece)}
+            alt={`${piece.color}${piece.type}`}
+            className="unit-img"
+            draggable={false}
           />
-        )}
-        {arms === "grenadier" && (
-          <GrenadeBelt german={piece.color === Color.Black} />
-        )}
-        {arms === "vickers" && (
-          <CarriedVickers german={piece.color === Color.Black} />
-        )}
-        {held && (
-          <Rifle
-            kind={held}
-            // A burst's rounds are one swing onto the target, not one each
-            shot={firing ? firing.id - (firing.round ?? 0) : 0}
-            rest={aiming ? enemyAngle(piece.color, sq, flipped) : RIFLE_AT_SIDE}
-            grip={aiming ? RIFLE_SHOULDER : RIFLE_GRIP}
-            side={gripSide(sq, flipped)}
-            aim={firing ? aimAngle(firing, flipped) : null}
-            fireMs={Math.max(0, (firing?.delayMs ?? 0) - AIM_MS)}
-            thrust={firing?.weapon === "bayonet"}
-            german={piece.color === Color.Black}
-          />
+          {arms === "general" && (
+            <GeneralCap color={piece.color} tilt={helmetTilt(unit.id) * 0.5} />
+          )}
+          {arms === "general" && <FieldGlasses />}
+          {arms && arms !== "general" && (
+            <Helmet
+              color={piece.color}
+              type={piece.type}
+              tilt={helmetTilt(unit.id)}
+            />
+          )}
+          {arms === "grenadier" && (
+            <GrenadeBelt german={piece.color === Color.Black} />
+          )}
+          {arms === "vickers" && (
+            <CarriedVickers german={piece.color === Color.Black} />
+          )}
+          {!overParapet && rifle}
+        </div>
+        {(tower || unit.hp < unit.maxHp) && (
+          <HealthBar unit={unit} tower={tower} />
         )}
       </div>
-      {(tower || unit.hp < unit.maxHp) && (
-        <HealthBar unit={unit} tower={tower} />
+      {overParapet && rifle && (
+        <div className={`${className} is-arms`} style={style} aria-hidden>
+          <div ref={armsRef} className="unit-body" style={motion}>
+            {rifle}
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }
 

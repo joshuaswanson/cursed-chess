@@ -197,6 +197,7 @@ function EarthDefs() {
         shade={0.25}
       />
       <PhotoPattern id="tx-hessian" file="hessian" size={30} />
+      <PhotoPattern id="tx-mud-bank" file="mud" size={400} shade={0.08} />
       <radialGradient id="wt-shade" cx="0.42" cy="0.22" r="0.85">
         <stop offset="0" stopColor="#fff" stopOpacity="0.22" />
         <stop offset="0.45" stopColor="#000" stopOpacity="0" />
@@ -426,6 +427,15 @@ function WorldTrenchesFrontLayer({ flipped }: { flipped: boolean }) {
       <EarthDefs />
       {scene.lines.map((line) => (
         <g key={line.key}>
+          {line.nearBags.length > 0 &&
+            line.bankBands.map((band, i) => (
+              <path
+                key={i}
+                d={band.d}
+                className="near-bank"
+                fillOpacity={band.opacity}
+              />
+            ))}
           <Sandbags bags={line.nearBags} />
         </g>
       ))}

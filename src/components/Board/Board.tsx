@@ -28,7 +28,7 @@ import { Tombstone, ZombiePiece } from "./Zombies";
 import type { TrenchView } from "../../plugins/trenches";
 import { TRENCH_RANKS } from "../../plugins/trenches";
 import { BoardCraters, TrenchField } from "./TrenchField";
-import { parapetClip } from "./trenchFront";
+import { behindSandbags } from "./trenchFront";
 import { RainRipples } from "./RainRipples";
 import { LineOrders } from "../Trenches/LineOrders";
 import {
@@ -626,13 +626,9 @@ export function Board() {
               entrenched={
                 // Only the trench's own side takes cover behind its sandbags;
                 // men who have taken it shelter against its far wall
-                overlays.trenches && (piece.color === Color.White) === flipped
-                  ? parapetClip(
-                      flipped,
-                      rowOnScreen(sq, flipped),
-                      colOnScreen(sq, flipped),
-                    )
-                  : null
+                !!overlays.trenches &&
+                (piece.color === Color.White) === flipped &&
+                behindSandbags(flipped, rowOnScreen(sq, flipped))
               }
             />
           )}

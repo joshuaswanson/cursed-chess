@@ -27,6 +27,11 @@
   fill-opacity: 0.5;
 }
 
+/* The earth in front of the enemy's men, the same mud as the ground around it */
+.near-bank {
+  fill: url(#tx-mud-bank);
+}
+
 /* The spoil thrown up behind a trench */
 .spoil {
   fill: url(#tx-soil);

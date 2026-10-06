@@ -1014,23 +1014,19 @@
 }
 
 /* Every soldier stands over the sandbags, so a man climbing out of a trench
-   is never drawn behind the bags he is climbing over; those still down in
-   one are hidden below the bags' tops */
+   is never drawn behind the bags he is climbing over. Those down in their
+   own trench stand behind the sandbags and earth in front of it, and only
+   a rifle levelled over the parapet lies on top of the bags. */
 [data-theme="trenches"] .battle-unit {
   z-index: 4;
 }
 
-.battle-unit.is-entrenched .unit-body {
-  clip-path: var(--parapet);
+[data-theme="trenches"] .battle-unit.is-entrenched {
+  z-index: 2;
 }
 
-/* In the front line, only the man himself; his rifle levelled over the parapet still shows */
-.battle-unit.is-entrenched.is-aiming .unit-body {
-  clip-path: none;
-}
-
-.battle-unit.is-entrenched.is-aiming .unit-img {
-  clip-path: var(--parapet);
+[data-theme="trenches"] .battle-unit.is-entrenched.is-arms {
+  z-index: 4;
 }
 
 .battle-unit.is-entrenched .unit-base {
@@ -1261,8 +1257,7 @@
   rotate: var(--hunch);
 }
 
-/* Theirs sink down behind the sandbags, only the tops of their helmets
-   showing; the parts sink inside the body, so the sandbags' outline stays put */
+/* Theirs sink down behind the sandbags, only the tops of their helmets showing */
 [data-theme="trenches"] .battle-unit.is-entrenched .unit-body > * {
   transition: transform 0.24s ease-out;
 }

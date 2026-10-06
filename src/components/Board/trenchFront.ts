@@ -66,8 +66,13 @@ const NEAR_LIP = 47;
 /** Where a trench's near edge crosses the squares of its row, as a share of the square: men in it are hidden below that */
 export const TRENCH_EDGE = (SQ / 2 - LIFT + NEAR_LIP) / SQ;
 const NEAR_BANK = 10;
-/** How far the near bank spreads out in front of the trench, enough to cover a man's feet */
-const NEAR_SPREAD = 30 + LIFT;
+/** How far below the near lip each band of the near bank reaches, and how solid it is */
+const BANK_FADE = [
+  { depth: 46, opacity: 1 },
+  { depth: 56, opacity: 0.5 },
+  { depth: 66, opacity: 0.4 },
+  { depth: 78, opacity: 0.3 },
+];
 
 export interface Sandbag {
   x: number;
@@ -115,8 +120,8 @@ interface TrenchLine {
   slats: [string, string];
   /** Behind the far lip: sandbags if the enemy lies that way, otherwise the spoil heap */
   farWorks: { bags: Sandbag[]; heap: string | null };
-  /** The near bank, standing in front of the men: earth, with sandbags on it if the enemy lies this way */
-  nearBank: string;
+  /** The near bank in front of an enemy line, as bands thinning out into the ground */
+  bankBands: { d: string; opacity: number }[];
   nearBags: Sandbag[];
   /** The screen row of squares it runs through */
   row: number;
@@ -332,11 +337,23 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
     x: p.x,
     y: p.y - NEAR_BANK + (enemyAbove ? bankLumps[i] * 0.35 : 6),
   }));
-  const bankFoot = near.map((p, i) => ({
-    x: p.x,
-    y: p.y + NEAR_SPREAD + Math.abs(bankLumps[i]) * 0.8,
+  // The earth in front of the men, solid down past their feet, then thinning
+  // into the ground in a few steps that follow the trench's bends
+  const bankBands = BANK_FADE.map(({ depth, opacity }) => ({
+    opacity,
+    d: toPath(
+      [
+        ...bankTop,
+        ...near
+          .map((p, i) => ({
+            x: p.x,
+            y: p.y + depth + Math.abs(bankLumps[i]) * 0.8,
+          }))
+          .reverse(),
+      ],
+      true,
+    ),
   }));
-  const nearBank = toPath([...bankTop, ...[...bankFoot].reverse()], true);
   const nearBags = enemyAbove ? [] : layBags(near, rand, 1, 14, -3);
 
   // Duckboard slats laid across the floor, unevenly spaced, some skewed,
@@ -382,7 +399,7 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
     boardsLight,
     slats,
     farWorks,
-    nearBank,
+    bankBands,
     nearBags,
     row,
   };
@@ -503,62 +520,9 @@ export function frontFor(flipped: boolean) {
   return fronts.get(flipped)!;
 }
 
-/** How finely the parapet's top is traced across a square */
-const TRACE_STEPS = 16;
-
-/**
- * The outline that cuts a man off where the sandbags in front of him begin,
- * traced along the bags' own lumpy tops, as a CSS clip-path for his body,
- * which fills the middle nine-tenths of his square. Null if no sandbags
- * stand in front of that square.
- */
-const clips = new Map<string, string | null>();
-
-export function parapetClip(
-  flipped: boolean,
-  row: number,
-  col: number,
-): string | null {
-  const key = `${flipped}:${row}:${col}`;
-  if (!clips.has(key)) clips.set(key, traceParapet(flipped, row, col));
-  return clips.get(key)!;
-}
-
-function traceParapet(
-  flipped: boolean,
-  row: number,
-  col: number,
-): string | null {
-  const line = frontFor(flipped).lines.find(
+/** Whether men in this row of the board stand behind sandbags, out of sight below their tops */
+export function behindSandbags(flipped: boolean, row: number): boolean {
+  return frontFor(flipped).lines.some(
     (l) => l.row === row && l.nearBags.length > 0,
   );
-  if (!line) return null;
-  const rowTop = MARGIN + row * SQ;
-  const bags = line.nearBags.filter(
-    (b) =>
-      b.x + b.w > col * SQ - SQ * 0.2 && b.x - b.w < (col + 1) * SQ + SQ * 0.2,
-  );
-  // The highest bag top over each point across the square, or the lowest
-  // bag's middle where there is a gap between bags
-  const floor = Math.max(...bags.map((b) => b.y)) - rowTop;
-  const topAt = (x: number) => {
-    let top = floor;
-    for (const b of bags) {
-      const u = (x - b.x) / (b.w / 2);
-      if (Math.abs(u) >= 1) continue;
-      top = Math.min(
-        top,
-        b.y - rowTop - (b.h / 2) * 0.92 * Math.sqrt(1 - u * u),
-      );
-    }
-    return top / SQ;
-  };
-  const toBody = (share: number) => ((share - 0.05) / 0.9) * 100;
-  const points: string[] = [];
-  for (let i = TRACE_STEPS; i >= 0; i--) {
-    const sx = -0.15 + (1.3 * i) / TRACE_STEPS;
-    const y = topAt(col * SQ + sx * SQ);
-    points.push(`${toBody(sx).toFixed(1)}% ${toBody(y).toFixed(1)}%`);
-  }
-  return `polygon(-80% -80%, 180% -80%, 180% ${points[0].split(" ")[1]}, ${points.join(", ")}, -80% ${points[points.length - 1].split(" ")[1]})`;
 }
