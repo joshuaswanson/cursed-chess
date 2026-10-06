@@ -1,100 +1,184 @@
 /* --- Trenches: your orders, and the weather over the front --- */
 
+/* Your hand of squad cards, fanned out on a dark tray under the board */
 .trench-orders {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 16px;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 14px;
   width: 100%;
   margin-top: 14px;
-  padding: 10px 14px;
-  color: #efe6cf;
-  background:
-    radial-gradient(circle at 12px 12px, #2b2416 0 3px, transparent 4px) 0 0 /
-      calc(100% - 24px) calc(100% - 24px) no-repeat,
-    linear-gradient(90deg, #4c4430, #6b603f);
+  padding: 18px 14px 12px;
+  background: linear-gradient(180deg, #2d271c, #1e1a12);
   border: 3px solid var(--ink);
-  border-radius: 10px;
-  box-shadow: 5px 6px 0 var(--ink);
+  border-radius: 12px;
+  box-shadow:
+    5px 6px 0 var(--ink),
+    inset 0 2px 10px rgba(0, 0, 0, 0.6);
 }
 
-/* A squad card: stencilled on a crate lid, filling with light as it readies */
+/* A playing card: aged paper in an olive frame, its squad as the artwork */
 .squad-card {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 104px;
-  padding: 6px 10px 6px;
-  overflow: hidden;
-  font-family: var(--font-ui);
-  color: #efe6cf;
-  background: linear-gradient(180deg, #5d5238, #3e3624);
-  border: 3px solid var(--ink);
-  border-radius: 8px;
-  box-shadow: 3px 4px 0 var(--ink);
-  cursor: pointer;
+  width: 84px;
+  aspect-ratio: 5 / 7;
+  padding: 0;
+  border: 0;
+  background: none;
+  rotate: var(--fan);
+  translate: 0 0;
   transition:
-    translate 0.08s,
-    box-shadow 0.08s;
+    translate 0.16s ease-out,
+    rotate 0.16s ease-out,
+    scale 0.16s ease-out;
+  cursor: pointer;
 }
 
-/* The part still readying, darkened, draining away as the card readies */
-.squad-card::after {
-  content: "";
+.card-face {
   position: absolute;
   inset: 0;
-  background: rgba(14, 11, 6, 0.6);
-  transform-origin: 50% 0;
-  scale: 1 calc(1 - var(--charge, 1));
-  pointer-events: none;
+  overflow: hidden;
+  border-radius: 9px;
+  border: 3px solid var(--ink);
+  background:
+    radial-gradient(
+      ellipse at 30% 20%,
+      rgba(255, 248, 225, 0.5),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 80% 90%,
+      rgba(90, 60, 25, 0.35),
+      transparent 60%
+    ),
+    linear-gradient(170deg, #e8dcb8, #c9b78c);
+  box-shadow:
+    inset 0 0 0 4px #4b5a2e,
+    inset 0 0 0 6px #c9a44a,
+    3px 5px 0 var(--ink);
 }
 
-.squad-card.ready::after {
+/* The squad stood in a little group in the card's window */
+.card-art {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 14%;
+  bottom: 14%;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #8b9a8d, #5d5440 70%, #3e3424);
+  box-shadow: inset 0 0 0 1.5px rgba(30, 24, 12, 0.7);
+}
+
+.card-art img {
+  position: absolute;
+  bottom: 4%;
+  width: calc(110% * var(--grow, 1) / (0.5 + var(--of) * 0.5));
+  left: calc(
+    50% - 55% * var(--grow, 1) / (0.5 + var(--of) * 0.5) +
+      (var(--n) - (var(--of) - 1) / 2) * (72% / var(--of))
+  );
+  translate: 0 calc(mod(var(--n), 2) * -8%);
+  z-index: calc(10 - mod(var(--n), 2));
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5));
+}
+
+/* Seconds until it is ready, stamped in the corner like a card's cost */
+.card-cost {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: #fff4dc;
+  background: #6e1a10;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  z-index: 3;
+}
+
+.squad-card.ready .card-cost {
   display: none;
+}
+
+/* Still readying: the card lies dimmed, the dimness draining away as it readies */
+.card-charge {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: rgba(16, 13, 8, 0.62);
+  transform-origin: 50% 0;
+  scale: 1 calc(1 - var(--charge, 1));
+}
+
+.squad-card.ready .card-charge {
+  display: none;
+}
+
+/* Ready: it glows, and lifts and straightens toward you under the cursor */
+.squad-card.ready .card-face {
+  box-shadow:
+    inset 0 0 0 4px #4b5a2e,
+    inset 0 0 0 6px #e4c35a,
+    3px 5px 0 var(--ink),
+    0 0 16px rgba(242, 201, 76, 0.55);
+}
+
+.squad-card.ready:hover,
+.squad-card.ready:focus-visible {
+  translate: 0 -14px;
+  rotate: 0deg;
+  scale: 1.08;
+  outline: none;
+}
+
+.squad-card.ready:active {
+  translate: 0 -6px;
+  scale: 1.02;
 }
 
 .squad-card:disabled {
   cursor: not-allowed;
 }
 
-.squad-card.ready:hover {
-  translate: 0 -2px;
-  box-shadow: 3px 6px 0 var(--ink);
-}
-
-.squad-card:focus-visible {
+.squad-card.ready:focus-visible .card-face {
   outline: 3px solid #f2c94c;
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
-.squad-men {
-  display: flex;
-  height: 34px;
-}
-
-.squad-men img {
-  width: 30px;
-  height: 34px;
-  margin-inline: -4px;
-  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5));
-}
-
-.squad-name {
+/* The squad's name, on a tag that appears above the card on hover */
+.card-label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  translate: -50% 4px;
+  padding: 4px 10px;
+  font-family: var(--font-ui);
   font-weight: 800;
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
+  color: #fff4dc;
+  background: #2a2216;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 2px 3px 0 var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.14s ease-out,
+    translate 0.14s ease-out;
+  z-index: 5;
 }
 
-.squad-time {
-  font-size: 11px;
-  opacity: 0.8;
-}
-
-.squad-card.ready .squad-time {
-  color: #b9e07a;
+.squad-card:hover .card-label,
+.squad-card:focus-visible .card-label {
   opacity: 1;
+  translate: -50% 0;
 }
 
 /* --- Orders along each of your trench lines --- */

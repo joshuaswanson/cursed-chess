@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../../stores/gameStore";
-import { Color } from "../../engine";
+import { Color, PieceType } from "../../engine";
 import { SQUADS } from "../../plugins/trenches";
 import type { TrenchesPlugin } from "../../plugins/trenches";
 import { pieceImage } from "../../utils/pieceImages";
@@ -32,7 +32,7 @@ export function TrenchOrders() {
   if (!view) return null;
   return (
     <div className="trench-orders" role="toolbar" aria-label="Squads">
-      {SQUADS.map((squad) => {
+      {SQUADS.map((squad, i) => {
         const card = view.cards.find((c) => c.id === squad.id)!;
         const ready = card.readyInMs === 0;
         const share = 1 - card.readyInMs / squad.readyMs;
@@ -42,22 +42,41 @@ export function TrenchOrders() {
             type="button"
             className={`squad-card${ready ? " ready" : ""}`}
             disabled={!ready}
-            style={{ "--charge": share } as React.CSSProperties}
+            aria-label={`${squad.name}${ready ? "" : `, ready in ${Math.ceil(card.readyInMs / 1000)} seconds`}`}
+            style={
+              {
+                "--charge": share,
+                "--fan": `${(i - (SQUADS.length - 1) / 2) * 3.5}deg`,
+              } as React.CSSProperties
+            }
             onClick={() => trenchSend(squad.id)}
           >
-            <span className="squad-men" aria-hidden>
-              {squad.men.map((type, i) => (
-                <img
-                  key={i}
-                  src={pieceImage({ type, color: Color.White })}
-                  alt=""
-                  draggable={false}
-                />
-              ))}
+            <span className="card-face">
+              <span className="card-art" aria-hidden>
+                {squad.men.map((type, n) => (
+                  <img
+                    key={n}
+                    src={pieceImage({ type, color: Color.White })}
+                    alt=""
+                    draggable={false}
+                    style={
+                      {
+                        "--n": n,
+                        "--of": squad.men.length,
+                        // Pawns are drawn small in their artwork; they stand up taller here
+                        "--grow": type === PieceType.Pawn ? 1.45 : 1,
+                      } as React.CSSProperties
+                    }
+                  />
+                ))}
+              </span>
+              <span className="card-cost" aria-hidden>
+                {ready ? "" : Math.ceil(card.readyInMs / 1000)}
+              </span>
+              <span className="card-charge" aria-hidden />
             </span>
-            <span className="squad-name">{squad.name}</span>
-            <span className="squad-time">
-              {ready ? "Ready" : `${Math.ceil(card.readyInMs / 1000)}s`}
+            <span className="card-label" aria-hidden>
+              {squad.name}
             </span>
           </button>
         );
