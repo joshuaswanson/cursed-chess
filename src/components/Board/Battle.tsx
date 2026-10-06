@@ -9,6 +9,7 @@ import { pieceImage } from "../../utils/pieceImages";
 import { offsetBetween, visualCol, visualRow } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
 import { surfaceOf } from "../../utils/surface";
+import { BakedArt } from "./BakedArt";
 import "./Battle.css";
 
 type Style = React.CSSProperties & Record<`--${string}`, string>;
@@ -304,14 +305,14 @@ const Rifle = memo(function Rifle({
       style={style}
       aria-hidden
     >
-      <svg viewBox="0 0 72 22">
+      <BakedArt name={`rifle:${kind}:${german}`} viewBox="0 0 72 22">
         <GunDefs scale={30} />
         {german ? (
           <Mauser scoped={kind === "sniper"} />
         ) : (
           <Enfield scoped={kind === "sniper"} />
         )}
-      </svg>
+      </BakedArt>
     </span>
   );
 });
@@ -542,25 +543,25 @@ const GrenadeBelt = memo(function GrenadeBelt({
 }) {
   return german ? (
     <span className="unit-grenades german" aria-hidden>
-      <svg viewBox="-11 -9 22 23">
+      <BakedArt name="grenades:german" viewBox="-11 -9 22 23">
         <g transform="translate(-5 0) rotate(-14)">
           <StickGrenade />
         </g>
         <g transform="translate(5 1) rotate(12)">
           <StickGrenade />
         </g>
-      </svg>
+      </BakedArt>
     </span>
   ) : (
     <span className="unit-grenades" aria-hidden>
-      <svg viewBox="-11 -7.5 22 15">
+      <BakedArt name="grenades" viewBox="-11 -7.5 22 15">
         <g transform="translate(-5 0) rotate(-8)">
           <MillsBomb id="belt-a" />
         </g>
         <g transform="translate(5.5 0.5) rotate(10)">
           <MillsBomb id="belt-b" />
         </g>
-      </svg>
+      </BakedArt>
     </span>
   );
 });
@@ -744,9 +745,9 @@ const CarriedVickers = memo(function CarriedVickers({
 }) {
   return (
     <span className="carried-vickers" aria-hidden>
-      <svg viewBox="0 0 100 34">
+      <BakedArt name={`vickers:${german}`} viewBox="0 0 100 34">
         <VickersBody german={german} />
-      </svg>
+      </BakedArt>
     </span>
   );
 });
@@ -792,9 +793,9 @@ function MachineGun({
         </svg>
       )}
       <span className="mg-gun">
-        <svg viewBox="0 0 100 34">
+        <BakedArt name={`mg:${color}`} viewBox="0 0 100 34">
           <VickersBody german={color === Color.Black} />
-        </svg>
+        </BakedArt>
       </span>
     </span>
   );
@@ -889,11 +890,14 @@ interface Shot {
 }
 
 /**
- * Every rifle and machine gun round in flight: the flash at the muzzle, the
- * tracer streaking out, and the mud jumping where it goes wide, all drawn on
- * one canvas, so a machine gun's stream of fire costs one layer
+ * Every round and burst on the front, all drawn on one canvas that reaches
+ * a square past the board each side and two above it, for the smoke: the
+ * flash at the muzzle, the tracer streaking out, the mud jumping where a
+ * round goes wide or the spark and damage where it strikes, and every shell
+ * and grenade going off. However much is happening, the screen takes one
+ * picture of it each frame.
  */
-function Gunfire({
+function BattleCanvas({
   events,
   flipped,
   squareSize,
@@ -904,13 +908,45 @@ function Gunfire({
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const shots = useRef(new Map<number, Shot>());
+  const blasts = useRef(new Map<number, Blast>());
+  /** Every event already drawn, so none plays twice while it is still listed */
+  const seen = useRef(new Set<number>());
   const wake = useRef<() => void>(() => {});
 
   useEffect(() => {
     const now = performance.now();
     let fresh = false;
+    const listed = new Set(events.map((e) => e.id));
+    for (const id of seen.current) if (!listed.has(id)) seen.current.delete(id);
     for (const e of events) {
-      if (e.kind !== "attack" || shots.current.has(e.id)) continue;
+      if (seen.current.has(e.id)) continue;
+      seen.current.add(e.id);
+      if (e.kind === "grenade" || e.kind === "shell") {
+        const centre =
+          e.kind === "grenade"
+            ? { x: 0.5, y: 0.5, sq: e.to }
+            : {
+                x: flipped ? 1 - e.at.x : e.at.x,
+                y: flipped ? e.at.y : 1 - e.at.y,
+                sq: e.sq,
+              };
+        blasts.current.set(
+          e.id,
+          blastAt(
+            e.id,
+            (visualCol(centre.sq, flipped) + centre.x) * squareSize,
+            (visualRow(centre.sq, flipped) + centre.y) * squareSize,
+            e.kind === "grenade" ? 0.6 : 1.7,
+            now +
+              e.delayMs +
+              (e.kind === "grenade" ? e.flightMs : SHELL_FALL_MS),
+            squareSize,
+          ),
+        );
+        fresh = true;
+        continue;
+      }
+      if (e.kind !== "attack") continue;
       if (e.weapon !== "rifle" && e.weapon !== "mg" && e.weapon !== "sniper")
         continue;
       const firedAt = now + (e.delayMs ?? 0);
@@ -941,10 +977,8 @@ function Gunfire({
     // Thin streaks and quick sparks read the same at a pixel to a pixel, and
     // each frame of the canvas is copied whole to the screen
     const scale = 1;
-    // A square's room all round the board, for damage rising off its edge
-    const size = squareSize * 10;
-    surface.width = Math.round(size * scale);
-    surface.height = Math.round(size * scale);
+    surface.width = Math.round(squareSize * 10 * scale);
+    surface.height = Math.round(squareSize * 11 * scale);
     let frame = 0;
 
     const draw = (now: number) => {
@@ -956,8 +990,12 @@ function Gunfire({
         0,
         scale,
         squareSize * scale,
-        squareSize * scale,
+        squareSize * 2 * scale,
       );
+      for (const [id, blast] of blasts.current) {
+        if (now > blast.ends) blasts.current.delete(id);
+        else drawBlast(ctx, blast, now);
+      }
       for (const [id, shot] of shots.current) {
         if (now > shot.landsAt + (shot.hit ? NUMBER_MS : SPLASH_MS)) {
           shots.current.delete(id);
@@ -972,7 +1010,10 @@ function Gunfire({
           drawDamage(ctx, shot, shot.hit, now, squareSize);
         }
       }
-      frame = shots.current.size > 0 ? requestAnimationFrame(draw) : 0;
+      frame =
+        shots.current.size + blasts.current.size > 0
+          ? requestAnimationFrame(draw)
+          : 0;
     };
     wake.current = () => {
       if (!frame) frame = requestAnimationFrame(draw);
@@ -984,7 +1025,7 @@ function Gunfire({
     };
   }, [squareSize]);
 
-  return <canvas ref={ref} className="gunfire" />;
+  return <canvas ref={ref} className="battle-canvas" />;
 }
 
 const easeOut = (p: number) => 1 - (1 - p) ** 2;
@@ -1207,7 +1248,7 @@ const GeneralCap = memo(function GeneralCap({
       style={{ "--tilt": `${tilt}deg` } as Style}
       aria-hidden
     >
-      <svg viewBox="0 0 44 26">
+      <BakedArt name={`cap:${color}`} viewBox="0 0 44 26">
         <defs>
           <linearGradient id={`cap-crown-${color}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor={british ? "#a99a6a" : "#8d958e"} />
@@ -1245,7 +1286,7 @@ const GeneralCap = memo(function GeneralCap({
           className="cap-oak"
         />
         <path d="M14 18.4 Q22 17.6 30 18.4" className="cap-gloss" />
-      </svg>
+      </BakedArt>
     </span>
   );
 });
@@ -1254,7 +1295,7 @@ const GeneralCap = memo(function GeneralCap({
 const FieldGlasses = memo(function FieldGlasses() {
   return (
     <span className="field-glasses" aria-hidden>
-      <svg viewBox="0 0 20 14">
+      <BakedArt name="glasses" viewBox="0 0 20 14">
         <path d="M3 1 Q10 6 17 1" className="glasses-strap" />
         <rect
           x="2.6"
@@ -1294,7 +1335,7 @@ const FieldGlasses = memo(function FieldGlasses() {
           ry="0.9"
           className="glasses-lens"
         />
-      </svg>
+      </BakedArt>
     </span>
   );
 });
@@ -1326,7 +1367,7 @@ const Helmet = memo(function Helmet({
       style={{ "--tilt": `${tilt}deg` } as Style}
       aria-hidden
     >
-      <svg viewBox="0 0 44 26">
+      <BakedArt name={`helmet:${color}:${type}`} viewBox="0 0 44 26">
         <defs>
           <radialGradient id="tommy-dome" cx="0.36" cy="0.25" r="0.85">
             <stop offset="0" stopColor="#a49d6c" />
@@ -1463,7 +1504,7 @@ const Helmet = memo(function Helmet({
             />
           </>
         )}
-      </svg>
+      </BakedArt>
     </span>
   );
 });
@@ -1681,142 +1722,6 @@ function bezier(x1: number, y1: number, x2: number, y2: number, p: number) {
   return at(y1, y2, (lo + hi) / 2);
 }
 
-/** How far the clods reach from the blast, in squares times the blast's size */
-const SPRAY = { side: 1.7, up: 3.1, down: 1.4 };
-
-/**
- * Earth and clods hurled up in a column and raining back down, all drawn on
- * one canvas, so a barrage's hundreds of clods cost one layer per blast
- */
-function ClodSpray({
-  id,
-  size,
-  delayMs,
-}: {
-  id: number;
-  size: number;
-  delayMs: number;
-}) {
-  const ref = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const surface = surfaceOf(canvas);
-    const ctx = surface.getContext("2d");
-    if (!ctx) return;
-    const sq = parseFloat(getComputedStyle(canvas).getPropertyValue("--sq"));
-    if (!sq) return;
-    const reach = sq * size;
-    const width = Math.ceil(reach * SPRAY.side * 2);
-    const height = Math.ceil(reach * (SPRAY.up + SPRAY.down));
-    surface.width = width;
-    surface.height = height;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    canvas.style.left = `${-width / 2}px`;
-    canvas.style.top = `${-reach * SPRAY.up}px`;
-    const originX = width / 2;
-    const originY = reach * SPRAY.up;
-    const grain = sq * 0.012 * (0.6 + size * 0.5);
-
-    const clods = Array.from({ length: Math.round(34 * size + 10) }, (_, i) => {
-      const r = (k: number) => scatter(id * 97 + i * 13 + k);
-      const up = 0.6 + r(1) * 2.2;
-      const width = (2 + r(4) * 9) * grain;
-      const tone = r(7);
-      return {
-        dx: (r(2) * 2 - 1) * (0.4 + up * 0.35),
-        up,
-        fall: 0.2 + r(3) * 0.9,
-        dur: (0.7 + r(5) * 0.7) * 1000,
-        spin: (((r(6) * 2 - 1) * 900) / 180) * Math.PI,
-        color: tone > 0.6 ? "#2a1d12" : tone > 0.3 ? "#3d2c1c" : "#55402a",
-        rx: (width / 2) * (0.75 + r(8) * 0.5),
-        ry: (width / 2.4) * (0.75 + r(9) * 0.5),
-      };
-    });
-    const last = Math.max(...clods.map((c) => c.dur));
-
-    const start = performance.now() + delayMs;
-    let frame = requestAnimationFrame(function draw(now) {
-      ctx.clearRect(0, 0, width, height);
-      const t = now - start;
-      if (t > last) return;
-      frame = requestAnimationFrame(draw);
-      if (t < 0) return;
-      for (const c of clods) {
-        const p = Math.min(1, t / c.dur);
-        if (p >= 1) continue;
-        // Up to the top of its arc, then down to where it lands
-        let x: number;
-        let y: number;
-        let turn: number;
-        if (p < 0.45) {
-          const e = bezier(0.15, 0.7, 0.4, 1, p / 0.45);
-          x = c.dx * 0.55 * e;
-          y = -c.up * e;
-          turn = c.spin * 0.5 * e;
-        } else {
-          const e = bezier(0.6, 0, 0.9, 0.6, (p - 0.45) / 0.55);
-          x = c.dx * (0.55 + 0.45 * e);
-          y = -c.up + (c.up + c.fall) * e;
-          turn = c.spin * (0.5 + 0.5 * e);
-        }
-        ctx.globalAlpha = p < 0.92 ? 1 : (1 - p) / 0.08;
-        ctx.fillStyle = c.color;
-        ctx.beginPath();
-        ctx.ellipse(
-          originX + x * reach,
-          originY + y * reach,
-          c.rx,
-          c.ry,
-          turn,
-          0,
-          Math.PI * 2,
-        );
-        ctx.fill();
-      }
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [id, size, delayMs]);
-
-  return <canvas ref={ref} className="blast-canvas" />;
-}
-
-/**
- * A high-explosive burst: a white-hot flash, a fireball rolling outward and
- * darkening to smoke, a column of earth and clods hurled up and raining back
- * down, and a pall of black smoke that climbs and hangs. Size 1 is a shell,
- * spanning several squares.
- */
-function Explosion({
-  id,
-  style,
-  delayMs,
-  size,
-}: {
-  id: number;
-  style: Style;
-  delayMs: number;
-  size: number;
-}) {
-  return (
-    <span className="explosion" style={style}>
-      <span className="blast-cloud">
-        <BlastCloud id={id} size={size} delayMs={delayMs} />
-      </span>
-      <span className="blast-earth">
-        <ClodSpray id={id} size={size} delayMs={delayMs} />
-      </span>
-    </span>
-  );
-}
-
-/** The fire, flash, and smoke reach this far from the blast, in squares times its size */
-const CLOUD = { side: 3.8, up: 6, down: 2 };
-/** The smoke and fire are soft, so they are drawn at this fraction of the screen's pixels */
-const CLOUD_DETAIL = 0.5;
 const FLASH_BLAST_MS = 320;
 const FIRE_MS = 750;
 const SMOKE_MS = 3200;
@@ -1832,159 +1737,206 @@ const BILLOWS = [
 const easeOutCss = (p: number) => bezier(0, 0, 0.58, 1, p);
 
 /**
- * The burst itself, drawn on one canvas: a white-hot flash, a fireball
- * rolling outward and darkening as it burns down, and a pall of black smoke
- * that climbs, spreads, and hangs over the hole
+ * A high-explosive burst on the battle canvas: a white-hot flash, a
+ * fireball rolling outward and darkening, a column of earth and clods
+ * hurled up and raining back down, and a pall of black smoke that climbs
+ * and hangs. Size 1 is a shell, spanning several squares.
  */
-function BlastCloud({
-  id,
-  size,
-  delayMs,
-}: {
-  id: number;
-  size: number;
-  delayMs: number;
-}) {
-  const ref = useRef<HTMLCanvasElement>(null);
+interface Blast {
+  x: number;
+  y: number;
+  /** Its reach, in pixels */
+  reach: number;
+  at: number;
+  ends: number;
+  clods: {
+    dx: number;
+    up: number;
+    fall: number;
+    dur: number;
+    spin: number;
+    color: string;
+    rx: number;
+    ry: number;
+  }[];
+  puffs: {
+    x: number;
+    rise: number;
+    size: number;
+    delay: number;
+    drift: number;
+    rgb: string;
+  }[];
+}
 
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const surface = surfaceOf(canvas);
-    const ctx = surface.getContext("2d");
-    if (!ctx) return;
-    const sq = parseFloat(getComputedStyle(canvas).getPropertyValue("--sq"));
-    if (!sq) return;
-    const blast = sq * size;
-    const width = Math.ceil(blast * CLOUD.side * 2);
-    const height = Math.ceil(blast * (CLOUD.up + CLOUD.down));
-    const detail = CLOUD_DETAIL * (window.devicePixelRatio || 1);
-    surface.width = Math.ceil(width * detail);
-    surface.height = Math.ceil(height * detail);
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    canvas.style.left = `${-width / 2}px`;
-    canvas.style.top = `${-blast * CLOUD.up}px`;
-    const ox = width / 2;
-    const oy = blast * CLOUD.up;
-
-    const puffs = Array.from({ length: 9 }, (_, i) => {
-      const r = (k: number) => scatter(id * 61 + i * 7 + k + 500);
-      const shade = 30 + r(6) * 40;
-      return {
-        x: (r(1) * 2 - 1) * 0.55,
-        rise: 0.6 + r(2) * 1.6,
-        size: 0.9 + r(3) * 1.1,
-        delay: r(4) * 350,
-        drift: (r(5) * 2 - 1) * 0.5,
-        rgb: [shade, shade - 4, shade - 8].map(Math.round).join(", "),
-      };
-    });
-    const last = Math.max(FIRE_MS, ...puffs.map((p) => p.delay + SMOKE_MS));
-
-    const blob = (
-      x: number,
-      y: number,
-      radius: number,
-      stops: [number, string][],
-    ) => {
-      const fill = ctx.createRadialGradient(x, y, 0, x, y, radius);
-      for (const [at, color] of stops) fill.addColorStop(at, color);
-      ctx.fillStyle = fill;
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fill();
+/** The burst a shell or grenade makes, laid out the same way every time it is drawn */
+function blastAt(
+  id: number,
+  x: number,
+  y: number,
+  size: number,
+  at: number,
+  sq: number,
+): Blast {
+  const grain = sq * 0.012 * (0.6 + size * 0.5);
+  const clods = Array.from({ length: Math.round(34 * size + 10) }, (_, i) => {
+    const r = (k: number) => scatter(id * 97 + i * 13 + k);
+    const up = 0.6 + r(1) * 2.2;
+    const width = (2 + r(4) * 9) * grain;
+    const tone = r(7);
+    return {
+      dx: (r(2) * 2 - 1) * (0.4 + up * 0.35),
+      up,
+      fall: 0.2 + r(3) * 0.9,
+      dur: (0.7 + r(5) * 0.7) * 1000,
+      spin: (((r(6) * 2 - 1) * 900) / 180) * Math.PI,
+      color: tone > 0.6 ? "#2a1d12" : tone > 0.3 ? "#3d2c1c" : "#55402a",
+      rx: (width / 2) * (0.75 + r(8) * 0.5),
+      ry: (width / 2.4) * (0.75 + r(9) * 0.5),
     };
+  });
+  const puffs = Array.from({ length: 9 }, (_, i) => {
+    const r = (k: number) => scatter(id * 61 + i * 7 + k + 500);
+    const shade = 30 + r(6) * 40;
+    return {
+      x: (r(1) * 2 - 1) * 0.55,
+      rise: 0.6 + r(2) * 1.6,
+      size: 0.9 + r(3) * 1.1,
+      delay: r(4) * 350,
+      drift: (r(5) * 2 - 1) * 0.5,
+      rgb: [shade, shade - 4, shade - 8].map(Math.round).join(", "),
+    };
+  });
+  const lasts = Math.max(
+    FIRE_MS,
+    ...clods.map((c) => c.dur),
+    ...puffs.map((p) => p.delay + SMOKE_MS),
+  );
+  return { x, y, reach: sq * size, at, ends: at + lasts, clods, puffs };
+}
 
-    const start = performance.now() + delayMs;
-    let frame = requestAnimationFrame(function draw(now) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, surface.width, surface.height);
-      const t = now - start;
-      if (t > last) return;
-      frame = requestAnimationFrame(draw);
-      if (t < 0) return;
-      ctx.setTransform(detail, 0, 0, detail, 0, 0);
+function drawBlast(ctx: Surface2D, blast: Blast, now: number) {
+  const t = now - blast.at;
+  if (t < 0) return;
+  const { x: ox, y: oy, reach } = blast;
+  const blob = (
+    x: number,
+    y: number,
+    radius: number,
+    stops: [number, string][],
+  ) => {
+    const fill = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    for (const [at, color] of stops) fill.addColorStop(at, color);
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  };
 
-      // The pall of smoke, each puff swelling as it climbs and drifts, its
-      // path growing with it
-      for (const puff of puffs) {
-        const p = (t - puff.delay) / SMOKE_MS;
-        if (p <= 0 || p >= 1) continue;
-        const grow = 0.3 + 1.5 * easeOutCss(p);
-        const alpha =
-          p < 0.12
-            ? 0.9 * easeOutCss(p / 0.12)
-            : 0.9 * (1 - easeOutCss((p - 0.12) / 0.88));
-        const e = easeOutCss(p);
-        const dx = puff.x * 0.3 + (puff.x + puff.drift - puff.x * 0.3) * e;
-        const dy = -puff.rise * e;
-        ctx.globalAlpha = alpha;
-        blob(
-          ox + grow * dx * blast,
-          oy + grow * dy * blast,
-          (grow * puff.size * blast) / 2,
-          [
-            [0, `rgb(${puff.rgb})`],
-            [0.55, `rgba(${puff.rgb}, 0.6)`],
-            [1, `rgba(${puff.rgb}, 0)`],
-          ],
-        );
-      }
+  // The pall of smoke, each puff swelling as it climbs and drifts, its path
+  // growing with it
+  for (const puff of blast.puffs) {
+    const p = (t - puff.delay) / SMOKE_MS;
+    if (p <= 0 || p >= 1) continue;
+    const e = easeOutCss(p);
+    const grow = 0.3 + 1.5 * e;
+    ctx.globalAlpha =
+      p < 0.12
+        ? 0.9 * easeOutCss(p / 0.12)
+        : 0.9 * (1 - easeOutCss((p - 0.12) / 0.88));
+    const dx = puff.x * 0.3 + (puff.x + puff.drift - puff.x * 0.3) * e;
+    const dy = -puff.rise * e;
+    blob(
+      ox + grow * dx * reach,
+      oy + grow * dy * reach,
+      (grow * puff.size * reach) / 2,
+      [
+        [0, `rgb(${puff.rgb})`],
+        [0.55, `rgba(${puff.rgb}, 0.6)`],
+        [1, `rgba(${puff.rgb}, 0)`],
+      ],
+    );
+  }
 
-      // The fireball's billows, burning bright and darkening into smoke
-      const fire = t / FIRE_MS;
-      if (fire < 1) {
-        const e = easeOutCss(fire);
-        const grow = 0.2 + 1.4 * e;
-        const alpha = fire < 0.35 ? 1 : 1 - easeOutCss((fire - 0.35) / 0.65);
-        const glow =
-          fire < 0.35
-            ? 1.4 - 0.4 * easeOutCss(fire / 0.35)
-            : 1 - 0.65 * easeOutCss((fire - 0.35) / 0.65);
-        const tone = (r: number, g: number, b: number, a: number) =>
-          `rgba(${Math.min(255, Math.round(r * glow))}, ${Math.min(255, Math.round(g * glow))}, ${Math.min(255, Math.round(b * glow))}, ${a})`;
-        ctx.globalAlpha = alpha;
-        for (const billow of BILLOWS) {
-          blob(
-            ox + billow.x * e * blast,
-            oy + billow.y * e * blast,
-            (grow * 1.4 * blast) / 2,
-            [
-              [0, tone(255, 236, 170, 0.95)],
-              [0.35, tone(255, 150, 50, 0.85)],
-              [0.62, tone(190, 60, 20, 0.55)],
-              [1, tone(60, 30, 20, 0)],
-            ],
-          );
-        }
-      }
+  // The fireball's billows, burning bright and darkening into smoke
+  const fire = t / FIRE_MS;
+  if (fire < 1) {
+    const e = easeOutCss(fire);
+    const grow = 0.2 + 1.4 * e;
+    const glow =
+      fire < 0.35
+        ? 1.4 - 0.4 * easeOutCss(fire / 0.35)
+        : 1 - 0.65 * easeOutCss((fire - 0.35) / 0.65);
+    const tone = (r: number, g: number, b: number, a: number) =>
+      `rgba(${Math.min(255, Math.round(r * glow))}, ${Math.min(255, Math.round(g * glow))}, ${Math.min(255, Math.round(b * glow))}, ${a})`;
+    ctx.globalAlpha = fire < 0.35 ? 1 : 1 - easeOutCss((fire - 0.35) / 0.65);
+    for (const billow of BILLOWS) {
+      blob(
+        ox + billow.x * e * reach,
+        oy + billow.y * e * reach,
+        (grow * 1.4 * reach) / 2,
+        [
+          [0, tone(255, 236, 170, 0.95)],
+          [0.35, tone(255, 150, 50, 0.85)],
+          [0.62, tone(190, 60, 20, 0.55)],
+          [1, tone(60, 30, 20, 0)],
+        ],
+      );
+    }
+  }
 
-      // The flash: blinding, white at the heart, gone in a blink
-      const flash = t / FLASH_BLAST_MS;
-      if (flash < 1) {
-        const grow =
-          flash < 0.25
-            ? 0.15 + 0.85 * easeOutCss(flash / 0.25)
-            : 1 + 0.15 * easeOutCss((flash - 0.25) / 0.75);
-        ctx.globalAlpha =
-          flash < 0.25 ? 1 : 1 - easeOutCss((flash - 0.25) / 0.75);
-        ctx.globalCompositeOperation = "lighter";
-        blob(ox, oy, (grow * 3.2 * blast) / 2, [
-          [0, "rgba(255, 255, 245, 1)"],
-          [0.18, "rgba(255, 238, 180, 0.9)"],
-          [0.4, "rgba(255, 190, 90, 0.5)"],
-          [0.65, "rgba(255, 150, 60, 0.15)"],
-          [1, "rgba(255, 150, 60, 0)"],
-        ]);
-        ctx.globalCompositeOperation = "source-over";
-      }
-      ctx.globalAlpha = 1;
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [id, size, delayMs]);
+  // The flash: blinding, white at the heart, gone in a blink
+  const flash = t / FLASH_BLAST_MS;
+  if (flash < 1) {
+    const grow =
+      flash < 0.25
+        ? 0.15 + 0.85 * easeOutCss(flash / 0.25)
+        : 1 + 0.15 * easeOutCss((flash - 0.25) / 0.75);
+    ctx.globalAlpha = flash < 0.25 ? 1 : 1 - easeOutCss((flash - 0.25) / 0.75);
+    ctx.globalCompositeOperation = "lighter";
+    blob(ox, oy, (grow * 3.2 * reach) / 2, [
+      [0, "rgba(255, 255, 245, 1)"],
+      [0.18, "rgba(255, 238, 180, 0.9)"],
+      [0.4, "rgba(255, 190, 90, 0.5)"],
+      [0.65, "rgba(255, 150, 60, 0.15)"],
+      [1, "rgba(255, 150, 60, 0)"],
+    ]);
+    ctx.globalCompositeOperation = "source-over";
+  }
 
-  return <canvas ref={ref} className="blast-canvas" />;
+  // Earth and clods hurled up in a column and raining back down
+  for (const c of blast.clods) {
+    const p = t / c.dur;
+    if (p >= 1) continue;
+    let x: number;
+    let y: number;
+    let turn: number;
+    if (p < 0.45) {
+      const e = bezier(0.15, 0.7, 0.4, 1, p / 0.45);
+      x = c.dx * 0.55 * e;
+      y = -c.up * e;
+      turn = c.spin * 0.5 * e;
+    } else {
+      const e = bezier(0.6, 0, 0.9, 0.6, (p - 0.45) / 0.55);
+      x = c.dx * (0.55 + 0.45 * e);
+      y = -c.up + (c.up + c.fall) * e;
+      turn = c.spin * (0.5 + 0.5 * e);
+    }
+    ctx.globalAlpha = p < 0.92 ? 1 : (1 - p) / 0.08;
+    ctx.fillStyle = c.color;
+    ctx.beginPath();
+    ctx.ellipse(
+      ox + x * reach,
+      oy + y * reach,
+      c.rx,
+      c.ry,
+      turn,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 }
 
 function Effect({
@@ -2024,7 +1976,7 @@ function Effect({
           </>
         );
       }
-      // Rifle and machine gun rounds are all drawn on the gunfire canvas
+      // Rifle and machine gun rounds are all drawn on the battle canvas
       if (event.weapon) return null;
       const travel = offsetBetween(event.to, event.from, flipped, squareSize);
       const hitAt = { animationDelay: `${event.hitMs}ms` };
@@ -2132,28 +2084,12 @@ function Effect({
               </svg>
             </span>
           </span>
-          <Explosion
-            id={event.id}
-            style={cell(event.to)}
-            delayMs={event.delayMs + event.flightMs}
-            size={0.6}
-          />
         </>
       );
     }
+    // Shells burst on the battle canvas
     case "shell":
-      return (
-        <Explosion
-          id={event.id}
-          style={{
-            ...cell(event.sq),
-            // On the spot in the square where its crater opens
-            translate: `${((flipped ? 1 - event.at.x : event.at.x) - 0.5) * 100}% ${((flipped ? event.at.y : 1 - event.at.y) - 0.5) * 100}%`,
-          }}
-          delayMs={event.delayMs + SHELL_FALL_MS}
-          size={1.7}
-        />
-      );
+      return null;
     case "deploy":
       return (
         <>
@@ -2245,7 +2181,11 @@ export function BattleEffects({
       style={{ "--sq": px(squareSize) } as Style}
       aria-hidden
     >
-      <Gunfire events={view.events} flipped={flipped} squareSize={squareSize} />
+      <BattleCanvas
+        events={view.events}
+        flipped={flipped}
+        squareSize={squareSize}
+      />
       {view.events.map((event) => (
         <Effect
           key={event.id}

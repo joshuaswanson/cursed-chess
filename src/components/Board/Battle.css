@@ -788,33 +788,13 @@
   }
 }
 
-/* Rifle and machine gun fire, drawn across the whole board */
-.battle-effects > .gunfire {
+/* Every round and burst, drawn across the board, a square past it each side
+   and two above it for the smoke */
+.battle-effects > .battle-canvas {
   left: -12.5%;
-  top: -12.5%;
+  top: -25%;
   width: 125%;
-  height: 125%;
-}
-
-/* --- A high-explosive burst, drawn on two canvases centred on the blast:
-   the fire, flash, and smoke, and the clods of earth over them --- */
-
-.battle-effects > .explosion {
-  z-index: 3;
-  overflow: visible;
-}
-
-.explosion > span {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0;
-  height: 0;
-}
-
-.blast-canvas {
-  position: absolute;
-  pointer-events: none;
+  height: 137.5%;
 }
 
 /* Steel helmets, sat on each piece's head */
@@ -1478,6 +1458,13 @@
   width: 100%;
   height: 100%;
   overflow: visible;
+}
+
+/* A piece of kit drawn once and shown as an image, reaching past its box as its shapes do */
+.baked-art {
+  position: absolute;
+  max-width: none;
+  pointer-events: none;
 }
 
 /* Your men holding a trench can be picked out with a click, to send forward alone */
