@@ -62,10 +62,14 @@
   overflow: visible;
 }
 
-/* Each part of a flare rides a full-board layer moved so its corner sits on the flare */
+/* Each part of a flare rides a point-sized layer, moved to wherever the flare is */
 .flare-layer {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
   pointer-events: none;
   will-change: transform;
 }

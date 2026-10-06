@@ -34,9 +34,9 @@ function positionAt(shot: FlareShot, ms: number) {
   };
 }
 
-/** A keyframe placing a full-board layer so its origin sits on a point of the board */
-const at = (p: { x: number; y: number }) => ({
-  transform: `translate(${(p.x * 100).toFixed(2)}%, ${(p.y * 100).toFixed(2)}%)`,
+/** A keyframe placing a point-sized layer on a point of the board, the board being so many pixels across */
+const at = (p: { x: number; y: number }, size: { w: number; h: number }) => ({
+  transform: `translate(${(p.x * size.w).toFixed(1)}px, ${(p.y * size.h).toFixed(1)}px)`,
 });
 
 /**
@@ -50,8 +50,10 @@ export function Flare({ shot }: { shot: FlareShot }) {
   const puffs = useRef<(HTMLElement | null)[]>([]);
 
   useLayoutEffect(() => {
+    const sky = head.current?.parentElement?.getBoundingClientRect();
+    const size = { w: sky?.width ?? 0, h: sky?.height ?? 0 };
     const path = Array.from({ length: 41 }, (_, i) =>
-      at(positionAt(shot, (i / 40) * TOTAL_MS)),
+      at(positionAt(shot, (i / 40) * TOTAL_MS), size),
     );
     const offsets = path.map((_, i) => i / 40);
     const frames = path.map((p, i) => ({ ...p, offset: offsets[i] }));
@@ -64,7 +66,7 @@ export function Flare({ shot }: { shot: FlareShot }) {
       if (!puff) return;
       const ms = (n / (PUFFS - 1)) * (TOTAL_MS * 0.85);
       const p = positionAt(shot, ms);
-      puff.style.transform = at(p).transform;
+      puff.style.transform = at(p, size).transform;
       animations.push(
         puff.firstElementChild?.animate(
           [

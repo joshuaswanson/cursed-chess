@@ -156,12 +156,13 @@
   overflow: hidden;
 }
 
+/* Each sheet is one tile taller than the screen, so a fall of one tile never shows its edge */
 .rain {
   position: absolute;
   left: -10%;
   right: -10%;
-  top: -100%;
-  height: 200%;
+  top: -220px;
+  height: calc(100% + 220px);
   will-change: transform;
 }
 
