@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
 import { SQUADS } from "../../plugins/trenches";
@@ -12,6 +12,36 @@ function leadIndex(men: PieceType[]): number {
   const odd = men.findIndex((t) => men.filter((u) => u === t).length === 1);
   return odd >= 0 ? odd : 0;
 }
+
+/** The squad standing in the card's window: drawn once, since it never changes */
+const CardArt = memo(function CardArt({ men }: { men: PieceType[] }) {
+  return (
+    <span className="card-art" aria-hidden>
+      {men.map((type, n) => {
+        // The squad's leader is listed first unless it is all one kind; the
+        // lead man is the one who sets it apart, standing at the front
+        const lead = leadIndex(men);
+        const back = n === lead ? -1 : n < lead ? n : n - 1;
+        const slots = men.length - 1;
+        return (
+          <span
+            key={n}
+            className={`card-man ${n === lead ? "lead" : "back"}`}
+            style={
+              {
+                "--slot": back,
+                "--slots": slots,
+                "--far": Math.abs(back - (slots - 1) / 2),
+              } as React.CSSProperties
+            }
+          >
+            <Soldier type={type} color={Color.White} />
+          </span>
+        );
+      })}
+    </span>
+  );
+});
 
 /**
  * Your squads in Trenches: click one that is ready and its men run up to
@@ -58,30 +88,7 @@ export function TrenchOrders() {
             onClick={() => trenchSend(squad.id)}
           >
             <span className="card-face">
-              <span className="card-art" aria-hidden>
-                {squad.men.map((type, n) => {
-                  // The squad's leader is listed first unless it is all one kind; the
-                  // lead man is the one who sets it apart, standing at the front
-                  const lead = leadIndex(squad.men);
-                  const back = n === lead ? -1 : n < lead ? n : n - 1;
-                  const slots = squad.men.length - 1;
-                  return (
-                    <span
-                      key={n}
-                      className={`card-man ${n === lead ? "lead" : "back"}`}
-                      style={
-                        {
-                          "--slot": back,
-                          "--slots": slots,
-                          "--far": Math.abs(back - (slots - 1) / 2),
-                        } as React.CSSProperties
-                      }
-                    >
-                      <Soldier type={type} color={Color.White} />
-                    </span>
-                  );
-                })}
-              </span>
+              <CardArt men={squad.men} />
               <span className="card-charge" aria-hidden />
             </span>
             <span className="card-label" aria-hidden>
