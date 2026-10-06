@@ -19,6 +19,44 @@ export const TRENCH_RANKS: Record<Color, { front: number; back: number }> = {
 };
 /** The ranks between the front lines, strung with barbed wire */
 export const NO_MANS_LAND = [3, 4];
+export type SquadId = "rifles" | "guns" | "sniper" | "assault";
+
+/** A squad that can be sent up to the line, and how long after the last one went it takes to ready */
+export interface Squad {
+  id: SquadId;
+  name: string;
+  men: PieceType[];
+  readyMs: number;
+}
+
+/** The squads either side can send up; sending any one starts every card readying again */
+export const SQUADS: Squad[] = [
+  {
+    id: "rifles",
+    name: "Rifle squad",
+    men: [PieceType.Pawn, PieceType.Pawn, PieceType.Pawn],
+    readyMs: 9000,
+  },
+  {
+    id: "guns",
+    name: "Machine gun team",
+    men: [PieceType.Rook, PieceType.Pawn],
+    readyMs: 16000,
+  },
+  { id: "sniper", name: "Sniper", men: [PieceType.Bishop], readyMs: 11000 },
+  {
+    id: "assault",
+    name: "Assault team",
+    men: [PieceType.Knight, PieceType.Knight],
+    readyMs: 12000,
+  },
+];
+
+/** How often the enemy looks to move men up from its back trench */
+const FOE_MOVE_UP_MS: [number, number] = [9000, 16000];
+/** How often, on each tick a card is ready, the enemy sends one up */
+const FOE_SEND_CHANCE = 0.015;
+
 /** Where each side's machine gun is dug in, in its front trench */
 export const GUN_NESTS: Record<Color, SquareIndex> = {
   [Color.White]: 0x23,
@@ -54,9 +92,6 @@ const PEEK_MS = 1500;
 /** Now and then a man puts his head up just to look, for a moment */
 const LOOK_CHANCE = 0.3;
 const LOOK_MS = 900;
-/** A Lewis gunner fires short bursts from the shoulder */
-const LMG_ROUNDS = 4;
-const LMG_MS = 2100;
 /** A sniper takes his time, and when he fires at a man who shows himself, he rarely misses */
 const SNIPE_MS = 3400;
 const SNIPER_HIT = { trench: 0.55, reserve: 0.6, open: 0.8 };
@@ -77,8 +112,6 @@ const MELEE_MS = 900;
 /** How long a dash takes from one square to the next, and how long the wire holds a man */
 const STEP_MS = 700;
 const WIRE_MS: [number, number] = [1600, 2600];
-/** Reserves wait a while before moving up to fill a gap in the line */
-const RESERVE_CHANCE = 0.35;
 /** After an order to attack, the whistle cannot blow again for this long */
 export const ORDER_COOLDOWN_MS = 6000;
 /** The foe waits between attacks of its own */
@@ -99,7 +132,8 @@ const MAX_CRATER = 1.4;
 /** A shell that lands on the wire sometimes blows a gap in it */
 const WIRE_CUT_CHANCE = 0.35;
 /** Events stay visible to the board for this long */
-const EVENT_LIFE_MS = 2600;
+/** Events stay visible this long, enough for a shell to fall, burst, and its smoke to clear */
+const EVENT_LIFE_MS = 6000;
 const QUIET_START_MS: [number, number] = [1800, 3600];
 
 type Cover = "trench" | "reserve" | "open";
@@ -139,8 +173,10 @@ export interface TrenchView {
   /** How many times each side has gone over the top, so each order is heard once */
   charges: Record<Color, number>;
   /** Whether you can blow the whistle, and how long until you can again */
-  canAttack: boolean;
-  cooldownMs: number;
+  /** How long until each of your squads is ready to send up */
+  cards: { id: SquadId; readyInMs: number }[];
+  /** Your trench lines with men in them who can be ordered forward, and whether forward is into the enemy or up to your own line */
+  lines: { rank: number; kind: "attack" | "advance"; men: number }[];
   /** Men up looking over the parapet, the rest of those in the trenches crouched below it */
   exposed: number[];
   /** Whether each side has men out charging, and how many hold its front trench */
@@ -160,19 +196,17 @@ function distance(a: SquareIndex, b: SquareIndex): number {
 }
 
 /**
- * What a soldier carries, by what he is: pawns are riflemen, bishops snipers,
- * rooks Lewis gunners, and knights assault troops with grenades. Whoever
- * holds a front trench's gun nest mans its machine gun.
+ * What a soldier carries, by what he is: bishops are snipers, knights assault
+ * troops with grenades, and the rest riflemen. Whoever stands in a gun nest,
+ * whatever he is, mans the machine gun fixed there.
  */
-function armsFor(sq: SquareIndex, piece: Piece): Arms {
-  if (sq === GUN_NESTS[piece.color] && piece.type === PieceType.Pawn) {
-    return "mg";
-  }
+function armsFor(sq: SquareIndex, piece: Piece, nests: Set<SquareIndex>): Arms {
+  if (nests.has(sq)) return "mg";
   switch (piece.type) {
+    case PieceType.King:
+      return "general";
     case PieceType.Bishop:
       return "sniper";
-    case PieceType.Rook:
-      return "lmg";
     case PieceType.Knight:
       return "grenadier";
     default:
@@ -216,7 +250,19 @@ export class TrenchesPlugin implements ModePlugin {
   private nextId = 1;
   private clock = 0;
   private wire = new Set<SquareIndex>();
-  private incoming: { sq: SquareIndex; at: number }[] = [];
+  /** Where machine guns are dug in; whoever stands in one mans it */
+  private nests = new Set<SquareIndex>();
+  private foeMoveUpAt = 0;
+  /** When each side last sent a squad up; every card readies again from then */
+  private sentAt: Record<Color, number> = {
+    [Color.White]: 0,
+    [Color.Black]: 0,
+  };
+  private incoming: {
+    sq: SquareIndex;
+    at: number;
+    spot: { x: number; y: number };
+  }[] = [];
   private craters: Crater[] = [];
   private fallen: TrenchView["fallen"] = [];
   private barrageAt = 0;
@@ -240,6 +286,9 @@ export class TrenchesPlugin implements ModePlugin {
     this.lastOrder = { [Color.White]: -Infinity, [Color.Black]: -Infinity };
     this.foeAttackAt = FOE_FIRST_ATTACK_MS;
     this.winner = null;
+    this.nests = new Set(Object.values(GUN_NESTS));
+    this.sentAt = { [Color.White]: 0, [Color.Black]: 0 };
+    this.foeMoveUpAt = rand(...FOE_MOVE_UP_MS);
     this.craters = [];
     this.fallen = [];
     this.incoming = [];
@@ -387,6 +436,9 @@ export class TrenchesPlugin implements ModePlugin {
     }
     this.landShells(board);
 
+    this.foeSends(board);
+    this.foeReinforces(board);
+
     if (this.clock >= this.foeAttackAt) {
       this.foeAttackAt = this.clock + rand(...FOE_ATTACK_MS);
       this.attack(board, Color.Black);
@@ -458,7 +510,7 @@ export class TrenchesPlugin implements ModePlugin {
             rankOf(sq) === from &&
             board.get(sq)?.color === color &&
             this.units.get(sq)?.order === "hold" &&
-            sq !== GUN_NESTS[color],
+            !this.nests.has(sq),
         ),
       ) ?? null
     );
@@ -475,7 +527,9 @@ export class TrenchesPlugin implements ModePlugin {
     let going = 0;
     for (const [sq, unit] of this.units) {
       if (rankOf(sq) !== line.from || board.get(sq)?.color !== color) continue;
-      if (sq === GUN_NESTS[color] || unit.order !== "hold") continue;
+      if (this.nests.has(sq) || unit.order !== "hold") continue;
+      // The general directs the war from the rear; he never goes over the top
+      if (board.get(sq)?.type === PieceType.King) continue;
       unit.order = "charge";
       unit.goal = line.to;
       unit.readyIn = rand(0, 450);
@@ -483,6 +537,145 @@ export class TrenchesPlugin implements ModePlugin {
     }
     if (going === 0) return false;
     this.lastOrder[color] = this.clock;
+    this.charges[color]++;
+    return true;
+  }
+
+  /** A machine gunner who settles in a firing trench digs his gun in there, for good */
+  private digGun(sq: SquareIndex, piece: Piece): void {
+    if (piece.type === PieceType.Rook && FIRING_RANKS.includes(rankOf(sq))) {
+      if (coverAt(sq) === "trench") this.nests.add(sq);
+    }
+  }
+
+  /** How long until a side's squad is ready to go */
+  readyIn(color: Color, squad: Squad): number {
+    return Math.max(0, this.sentAt[color] + squad.readyMs - this.clock);
+  }
+
+  /** The ranks a side can send men up to: its own trenches and the ground between them */
+  private ownGround(color: Color): number[] {
+    return color === Color.White ? [0, 1, 2] : [5, 6, 7];
+  }
+
+  /**
+   * Sends a squad up the line: the men file in from the rear to free spots
+   * in the side's back trench, then the ground in front of it if that is
+   * full. Every card then starts readying again.
+   */
+  sendSquad(board: Board, color: Color, id: SquadId): boolean {
+    const squad = SQUADS.find((s) => s.id === id);
+    if (!squad || this.winner !== null || this.readyIn(color, squad) > 0) {
+      return false;
+    }
+    const { back } = TRENCH_RANKS[color];
+    const ground = this.ownGround(color);
+    const free = (rank: number) =>
+      ALL_SQUARES.filter((s) => rankOf(s) === rank && !board.get(s)).sort(
+        () => Math.random() - 0.5,
+      );
+    const order = [...ground].sort(
+      (a, b) => Math.abs(a - back) - Math.abs(b - back),
+    );
+    const spots = order.flatMap(free);
+    if (spots.length < squad.men.length) return false;
+    const rearRank = color === Color.White ? -1 : 8;
+    squad.men.forEach((type, i) => {
+      const to = spots[i];
+      board.put(to, { type, color });
+      const unit = this.recruit(type);
+      this.units.set(to, unit);
+      // Up the communication trench from behind the lines
+      const from = rearRank * 16 + fileOf(to);
+      const ms = Math.round(travelMs(from, to) * 1.6);
+      const delayMs = i * 260;
+      this.emit({ kind: "move", unitId: unit.id, from, to, ms, delayMs });
+      unit.readyIn = delayMs + ms + rand(300, 900);
+    });
+    this.sentAt[color] = this.clock;
+    return true;
+  }
+
+  /** The enemy sends up one of its ready squads now and then */
+  private foeSends(board: Board): void {
+    const ready = SQUADS.filter((s) => this.readyIn(Color.Black, s) === 0);
+    if (ready.length === 0 || Math.random() > FOE_SEND_CHANCE) return;
+    this.sendSquad(
+      board,
+      Color.Black,
+      ready[Math.floor(Math.random() * ready.length)].id,
+    );
+  }
+
+  /** The enemy moves men up from its back trench when its front line thins */
+  private foeReinforces(board: Board): void {
+    if (this.clock < this.foeMoveUpAt) return;
+    this.foeMoveUpAt = this.clock + rand(...FOE_MOVE_UP_MS);
+    const { front, back } = TRENCH_RANKS[Color.Black];
+    const gaps = ALL_SQUARES.filter(
+      (s) => rankOf(s) === front && !board.get(s),
+    ).length;
+    if (gaps >= 2) this.advanceLine(board, Color.Black, back);
+  }
+
+  /** Every trench line, in order from a side's own rear toward the enemy's */
+  private trenchRanks(color: Color): number[] {
+    const ranks = [
+      TRENCH_RANKS[Color.White].back,
+      TRENCH_RANKS[Color.White].front,
+      TRENCH_RANKS[Color.Black].front,
+      TRENCH_RANKS[Color.Black].back,
+    ];
+    return color === Color.White ? ranks : ranks.reverse();
+  }
+
+  /** The men of a side holding a trench line who could be ordered out of it; the gunner stays on his gun */
+  private holding(board: Board, color: Color, rank: number): TrenchUnit[] {
+    return [...this.units]
+      .filter(
+        ([sq, unit]) =>
+          rankOf(sq) === rank &&
+          board.get(sq)?.color === color &&
+          board.get(sq)?.type !== PieceType.King &&
+          !this.nests.has(sq) &&
+          unit.order === "hold",
+      )
+      .map(([, unit]) => unit);
+  }
+
+  /** The trench lines a side holds men in that it can send forward, to the next line ahead */
+  orderLines(board: Board, color: Color): TrenchView["lines"] {
+    const ranks = this.trenchRanks(color);
+    const theirs = [
+      TRENCH_RANKS[opponent(color)].front,
+      TRENCH_RANKS[opponent(color)].back,
+    ];
+    return ranks.slice(0, -1).flatMap((rank, i) => {
+      const men = this.holding(board, color, rank).length;
+      if (men === 0) return [];
+      const kind: "attack" | "advance" = theirs.includes(ranks[i + 1])
+        ? "attack"
+        : "advance";
+      return [{ rank, kind, men }];
+    });
+  }
+
+  /**
+   * Everyone holding one trench line goes forward for the next one ahead.
+   * Where they find it full they are left out in the open.
+   */
+  advanceLine(board: Board, color: Color, rank: number): boolean {
+    if (this.winner !== null) return false;
+    const ranks = this.trenchRanks(color);
+    const next = ranks[ranks.indexOf(rank) + 1];
+    if (next === undefined) return false;
+    const men = this.holding(board, color, rank);
+    for (const unit of men) {
+      unit.order = "charge";
+      unit.goal = next;
+      unit.readyIn = rand(0, 450);
+    }
+    if (men.length === 0) return false;
     this.charges[color]++;
     return true;
   }
@@ -511,6 +704,7 @@ export class TrenchesPlugin implements ModePlugin {
     if (unit.order === "charge") {
       if (rankOf(sq) === unit.goal) {
         unit.order = "hold";
+        this.digGun(sq, piece);
       } else if (this.advance(board, sq, unit, piece)) {
         return;
       } else if (this.lobGrenade(board, sq, piece, unit)) {
@@ -543,16 +737,10 @@ export class TrenchesPlugin implements ModePlugin {
 
     // To fire he has to come up over the parapet, and while up he can be hit
     this.raise(unit, PEEK_MS);
-    switch (armsFor(sq, piece)) {
+    switch (armsFor(sq, piece, this.nests)) {
       case "mg":
         if (this.burst(board, sq, piece)) {
           unit.readyIn = jitter(BURST_MS);
-          return;
-        }
-        break;
-      case "lmg":
-        if (this.burst(board, sq, piece, undefined, "lmg")) {
-          unit.readyIn = jitter(LMG_MS);
           return;
         }
         break;
@@ -565,6 +753,10 @@ export class TrenchesPlugin implements ModePlugin {
       case "grenadier":
         if (this.lobGrenade(board, sq, piece, unit)) return;
         break;
+      case "general":
+        // The general does not fight; he watches through his field glasses
+        unit.readyIn = jitter(RIFLE_MS);
+        return;
     }
     this.fire(board, sq, piece, false);
     unit.readyIn = jitter(RIFLE_MS);
@@ -751,15 +943,11 @@ export class TrenchesPlugin implements ModePlugin {
     piece: Piece,
   ): boolean {
     if (piece.type === PieceType.King) return false;
-    const { front, back } = TRENCH_RANKS[piece.color];
-    const rank = rankOf(sq);
+    const { front } = TRENCH_RANKS[piece.color];
     const stranded = coverAt(sq) === "open" && unit.order === "hold";
     const behind = coverAt(sq) === "reserve";
-    if (rank === back) {
-      if (Math.random() > RESERVE_CHANCE) return false;
-    } else if (!behind && !stranded) {
-      return false;
-    }
+    // Nobody leaves a trench unless ordered; only men caught out of one move by themselves
+    if (!behind && !stranded) return false;
     const gaps = ALL_SQUARES.filter(
       (s) => rankOf(s) === front && !board.get(s),
     );
@@ -790,6 +978,7 @@ export class TrenchesPlugin implements ModePlugin {
     if (to === undefined) return false;
     const ms = Math.round(STEP_MS * (stranded ? 0.9 : 1.2));
     this.relocate(board, sq, to);
+    this.digGun(to, piece);
     this.emit({ kind: "move", unitId: unit.id, from: sq, to, ms, delayMs: 0 });
     unit.readyIn = ms + (stranded ? rand(50, 200) : rand(300, 900));
     if (this.wire.has(to)) {
@@ -848,7 +1037,6 @@ export class TrenchesPlugin implements ModePlugin {
     sq: SquareIndex,
     piece: Piece,
     at?: SquareIndex,
-    weapon: "mg" | "lmg" = "mg",
   ): boolean {
     const target =
       at ??
@@ -858,15 +1046,14 @@ export class TrenchesPlugin implements ModePlugin {
         open: 14,
       });
     if (target === null) return false;
-    const rounds = weapon === "mg" ? BURST_ROUNDS : LMG_ROUNDS;
-    for (let round = 0; round < rounds; round++) {
+    for (let round = 0; round < BURST_ROUNDS; round++) {
       if (!board.get(target)) break;
       this.shoot(
         board,
         sq,
         target,
         piece,
-        weapon,
+        "mg",
         this.hitChance(sq, target, ROUND_HIT),
         RISE_MS + round * ROUND_GAP_MS,
         round,
@@ -910,8 +1097,7 @@ export class TrenchesPlugin implements ModePlugin {
     if (rivals.length === 0) return false;
     const gap = (s: SquareIndex) => Math.abs(fileOf(s) - fileOf(sq));
     const nearest = rivals.reduce((a, b) => (gap(b) < gap(a) ? b : a));
-    const gunner =
-      sq === GUN_NESTS[piece.color] && piece.type === PieceType.Pawn;
+    const gunner = this.nests.has(sq);
     if (gunner) {
       this.burst(board, sq, piece, nearest);
       unit.readyIn = jitter(BURST_MS);
@@ -951,7 +1137,7 @@ export class TrenchesPlugin implements ModePlugin {
     from: SquareIndex,
     to: SquareIndex,
     piece: Piece,
-    weapon: "rifle" | "mg" | "lmg" | "sniper",
+    weapon: "rifle" | "mg" | "sniper",
     chance: number,
     delayMs: number,
     round: number,
@@ -1077,8 +1263,14 @@ export class TrenchesPlugin implements ModePlugin {
       const rank = ranks[Math.floor(Math.random() * ranks.length)];
       const sq = rank * 16 + Math.floor(Math.random() * 8);
       const delayMs = Math.round(rand(0, BARRAGE_SPREAD_MS));
-      this.incoming.push({ sq, at: this.clock + delayMs + SHELL_FALL_MS });
-      this.emit({ kind: "shell", sq, delayMs });
+      // It bursts somewhere in the square, not dead on its middle
+      const spot = { x: rand(0.1, 0.9), y: rand(0.1, 0.9) };
+      this.incoming.push({
+        sq,
+        at: this.clock + delayMs + SHELL_FALL_MS,
+        spot,
+      });
+      this.emit({ kind: "shell", sq, at: spot, delayMs });
     }
   }
 
@@ -1087,12 +1279,11 @@ export class TrenchesPlugin implements ModePlugin {
     const landed = this.incoming.filter((s) => s.at <= this.clock);
     if (landed.length === 0) return;
     this.incoming = this.incoming.filter((s) => s.at > this.clock);
-    for (const { sq } of landed) {
+    for (const { sq, spot } of landed) {
       if (NO_MANS_LAND.includes(rankOf(sq))) {
-        // Shells burst where they fall, not in the middle of a square
         this.blastCrater({
-          x: fileOf(sq) + rand(0.1, 0.9),
-          y: rankOf(sq) + rand(0.1, 0.9),
+          x: fileOf(sq) + spot.x,
+          y: rankOf(sq) + spot.y,
           r: rand(0.32, 0.62),
           seed: Math.floor(Math.random() * 1e9),
         });
@@ -1185,7 +1376,7 @@ export class TrenchesPlugin implements ModePlugin {
       arms: Object.fromEntries(
         [...this.units].flatMap(([sq, unit]) => {
           const piece = ctx.board.get(sq);
-          return piece ? [[unit.id, armsFor(sq, piece)]] : [];
+          return piece ? [[unit.id, armsFor(sq, piece, this.nests)]] : [];
         }),
       ),
     };
@@ -1222,8 +1413,11 @@ export class TrenchesPlugin implements ModePlugin {
         .filter(([, u]) => u.exposedUntil > this.clock)
         .map(([, u]) => u.id),
       charges: { ...this.charges },
-      canAttack: this.canAttack(board, Color.White),
-      cooldownMs: this.cooldown(Color.White),
+      lines: this.orderLines(board, Color.White),
+      cards: SQUADS.map((squad) => ({
+        id: squad.id,
+        readyInMs: this.readyIn(Color.White, squad),
+      })),
       advancing: {
         [Color.White]: charging(Color.White),
         [Color.Black]: charging(Color.Black),

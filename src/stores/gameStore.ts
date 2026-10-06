@@ -25,6 +25,7 @@ import { FootballPlugin } from "../plugins/football";
 import { TugOfWarPlugin } from "../plugins/tugOfWar";
 import { ZOMBIE_FINISH_MS, ZombiesPlugin } from "../plugins/zombies";
 import { TrenchesPlugin } from "../plugins/trenches";
+import type { SquadId } from "../plugins/trenches";
 import type { KickTarget } from "../plugins/football";
 import { benchKings, reinforce, returnKing } from "./reinforcements";
 import type {
@@ -298,6 +299,10 @@ export interface GameStore {
   deployPiece: (square: SquareIndex) => boolean;
   /** Blows the whistle in Trenches, sending your front line over the top */
   trenchAttack: () => boolean;
+  /** Sends everyone holding one of your trench lines forward to the next */
+  trenchAdvance: (rank: number) => boolean;
+  /** Sends one of your squads up to your back trench in Trenches */
+  trenchSend: (card: SquadId) => boolean;
   showAnnouncement: (
     text: string,
     durationMs?: number,
@@ -921,6 +926,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const trenches = pluginManager.find<TrenchesPlugin>("trenches");
     if (!trenches || paused) return false;
     const ordered = trenches.attack(game.board, Color.White);
+    if (ordered) set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
+    return ordered;
+  },
+
+  trenchSend: (card) => {
+    const { game, pluginManager, paused } = get();
+    const trenches = pluginManager.find<TrenchesPlugin>("trenches");
+    if (!trenches || paused) return false;
+    const sent = trenches.sendSquad(game.board, Color.White, card);
+    if (sent) set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
+    return sent;
+  },
+
+  trenchAdvance: (rank) => {
+    const { game, pluginManager, paused } = get();
+    const trenches = pluginManager.find<TrenchesPlugin>("trenches");
+    if (!trenches || paused) return false;
+    const ordered = trenches.advanceLine(game.board, Color.White, rank);
     if (ordered) set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
     return ordered;
   },

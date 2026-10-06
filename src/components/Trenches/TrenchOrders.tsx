@@ -1,65 +1,67 @@
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { Color } from "../../engine";
-import { ORDER_COOLDOWN_MS } from "../../plugins/trenches";
+import { SQUADS } from "../../plugins/trenches";
 import type { TrenchesPlugin } from "../../plugins/trenches";
+import { pieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
 import "./Trenches.css";
 
 /**
- * Your orders in Trenches: the whistle that sends your front line over the
- * top, how many men hold each front trench, and the enemy's whistle when
- * they come across
+ * Your squads in Trenches: click one that is ready and its men run up to
+ * your back trench. Sending any one starts every card readying again.
  */
 export function TrenchOrders() {
   const pluginManager = useGameStore((s) => s.pluginManager);
   const board = useGameStore((s) => s.game.board);
-  // The front changes inside the plugin every tick
+  // The cards ready inside the plugin every tick
   useGameStore((s) => s.autonomousTick);
-  const trenchAttack = useGameStore((s) => s.trenchAttack);
+  const trenchSend = useGameStore((s) => s.trenchSend);
   const trenches = pluginManager.find<TrenchesPlugin>("trenches");
   const view = trenches?.view(board) ?? null;
 
-  // The enemy's whistle is heard, and the line is warned, each time they come
+  // The enemy's whistle is heard each time they come across
   const theirCharges = view?.charges[Color.Black] ?? 0;
   const heard = useRef(theirCharges);
   useEffect(() => {
     const fresh = theirCharges > heard.current;
     heard.current = theirCharges;
-    if (!fresh) return;
-    sfx.whistle(true);
+    if (fresh) sfx.whistle(true);
   }, [theirCharges]);
 
   if (!view) return null;
-  const ready = view.canAttack;
-  const recharge = view.cooldownMs / ORDER_COOLDOWN_MS;
-  const status = view.advancing[Color.White]
-    ? "Over the top!"
-    : view.manning[Color.White] === 0
-      ? "The front line is empty"
-      : "Holding the line";
-
   return (
-    <div className="trench-orders">
-      <button
-        type="button"
-        className="attack-button"
-        disabled={!ready}
-        style={{ "--recharge": recharge } as React.CSSProperties}
-        onClick={() => {
-          if (trenchAttack()) sfx.whistle(true);
-        }}
-      >
-        <span className="attack-whistle" aria-hidden />
-        Attack
-      </button>
-      <div className="trench-status">
-        <strong>{status}</strong>
-        <span>
-          {view.manning[Color.White]} of ours in the front trench,{" "}
-          {view.manning[Color.Black]} of theirs
-        </span>
-      </div>
+    <div className="trench-orders" role="toolbar" aria-label="Squads">
+      {SQUADS.map((squad) => {
+        const card = view.cards.find((c) => c.id === squad.id)!;
+        const ready = card.readyInMs === 0;
+        const share = 1 - card.readyInMs / squad.readyMs;
+        return (
+          <button
+            key={squad.id}
+            type="button"
+            className={`squad-card${ready ? " ready" : ""}`}
+            disabled={!ready}
+            style={{ "--charge": share } as React.CSSProperties}
+            onClick={() => trenchSend(squad.id)}
+          >
+            <span className="squad-men" aria-hidden>
+              {squad.men.map((type, i) => (
+                <img
+                  key={i}
+                  src={pieceImage({ type, color: Color.White })}
+                  alt=""
+                  draggable={false}
+                />
+              ))}
+            </span>
+            <span className="squad-name">{squad.name}</span>
+            <span className="squad-time">
+              {ready ? "Ready" : `${Math.ceil(card.readyInMs / 1000)}s`}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

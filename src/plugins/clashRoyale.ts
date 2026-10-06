@@ -88,7 +88,7 @@ export type BattleEvent =
       kill: boolean;
       hitMs: number;
       /** A gunshot from a rifle or a machine gun, drawn as a tracer, or a thrust with a bayonet */
-      weapon?: "rifle" | "mg" | "lmg" | "sniper" | "bayonet" | "shrapnel";
+      weapon?: "rifle" | "mg" | "sniper" | "bayonet" | "shrapnel";
       /** The shot or blow went wide, landing this far off the target in squares */
       miss?: boolean;
       impact?: { x: number; y: number };
@@ -127,11 +127,13 @@ export type BattleEvent =
       kind: "shell";
       id: number;
       sq: SquareIndex;
+      /** Where in the square it bursts, from its a1 corner, in squares */
+      at: { x: number; y: number };
       delayMs: number;
     };
 
-/** What a soldier carries: a rifle, the emplaced machine gun, a Lewis gun, a sniper's scoped rifle, or a rifle and a bag of grenades */
-export type Arms = "rifle" | "mg" | "lmg" | "sniper" | "grenadier";
+/** What a soldier carries: a rifle, the fixed machine gun he is manning, a sniper's scoped rifle, a rifle and a bag of grenades, or a general's cap and cane */
+export type Arms = "rifle" | "mg" | "sniper" | "grenadier" | "general";
 
 export interface BattleView {
   units: Record<number, Unit>;

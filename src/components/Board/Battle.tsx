@@ -160,12 +160,11 @@ export function BattleUnit({
     action?.unitId === unit.id &&
     (action.weapon === "rifle" ||
       action.weapon === "bayonet" ||
-      action.weapon === "sniper" ||
-      action.weapon === "lmg")
+      action.weapon === "sniper")
       ? action
       : undefined;
   const held =
-    arms === "sniper" || arms === "lmg"
+    arms === "sniper"
       ? arms
       : arms === "rifle" || arms === "grenadier"
         ? "rifle"
@@ -193,7 +192,11 @@ export function BattleUnit({
           className="unit-img"
           draggable={false}
         />
-        {arms && (
+        {arms === "general" && (
+          <GeneralCap color={piece.color} tilt={helmetTilt(unit.id) * 0.5} />
+        )}
+        {arms === "general" && <FieldGlasses />}
+        {arms && arms !== "general" && (
           <Helmet
             color={piece.color}
             type={piece.type}
@@ -235,7 +238,7 @@ function Rifle({
   fireMs,
   thrust = false,
 }: {
-  kind: "rifle" | "sniper" | "lmg";
+  kind: "rifle" | "sniper";
   rest: number;
   /** Where he holds it, from his middle, in squares */
   grip: { x: number; y: number };
@@ -261,7 +264,7 @@ function Rifle({
       aria-hidden
     >
       <GunDefs scale={30} />
-      {kind === "lmg" ? <LewisGun /> : <Enfield scoped={kind === "sniper"} />}
+      <Enfield scoped={kind === "sniper"} />
     </svg>
   );
 }
@@ -329,52 +332,6 @@ function Enfield({ scoped }: { scoped: boolean }) {
       {/* Light across the top, shadow underneath, so it reads as round */}
       <path
         d="M2.2 5.6 Q1.6 4.2 3.4 4 L14 4.6 Q18 5.6 21.5 7.4 L28 8 L28 13.6 L22.5 14 Q18.5 15.4 15 16.8 L3.6 17.8 Q1.6 17.8 1.8 16.2 Z M39.6 7.8 L59 8.6 Q60.2 9 60.2 10.8 Q60.2 12.6 59 13 L39.6 13.8 Z"
-        className="gun-round"
-      />
-    </>
-  );
-}
-
-/**
- * A Lewis gun, carried from the shoulder: the round pan magazine on top, the
- * finned cooling shroud along the barrel, and the bipod folded beneath
- */
-function LewisGun() {
-  return (
-    <>
-      <path d="M16 15 Q28 21 40 15.2" className="rifle-sling" />
-      <path
-        d="M1.8 6.2 Q1.4 4.6 3.2 4.4 L13 5.4 L19 7.6 L22 8.2 L22 13.8 L18.6 14.4 L13 16.4 L3.4 17.6 Q1.6 17.6 1.8 16 Z"
-        className="gun-wood"
-      />
-      <path d="M21 7.2 L33.4 7.2 L33.4 14.6 L21 14.6 Z" className="gun-steel" />
-      <path
-        d="M24 14.6 L27.4 14.6 L27 19 Q25.6 19.6 24.4 19 Z"
-        className="gun-wood"
-      />
-      {/* The pan magazine, a flat drum seen edge on */}
-      <ellipse cx="27.2" cy="4.4" rx="8.4" ry="3.2" className="gun-steel" />
-      <path
-        d="M19.6 4.4 H34.8 M22 2.4 V6.4 M25 1.5 V7.3 M28 1.4 V7.4 M31 1.7 V7.1 M33.6 2.6 V6.2"
-        className="gun-flutes"
-      />
-      <ellipse cx="27.2" cy="3.3" rx="6" ry="1.3" className="gun-shine-fill" />
-      {/* The cooling shroud around the barrel, finned, with the muzzle poking out */}
-      <path
-        d="M33 5.6 L58 6.4 Q60 6.6 60 10.8 Q60 15 58 15.2 L33 16 Z"
-        className="gun-steel"
-      />
-      <path
-        d="M36 6 V15.6 M39 6.1 V15.5 M42 6.2 V15.4 M45 6.3 V15.3 M48 6.4 V15.2 M51 6.5 V15.1 M54 6.6 V15"
-        className="gun-flutes"
-      />
-      <path d="M59.6 9.2 H68.6 V12.4 H59.6 Z" className="gun-steel" />
-      <path d="M67.4 8.4 H70.4 V13.2 H67.4 Z" className="gun-steel" />
-      {/* The bipod, legs folded back under the barrel */}
-      <path d="M55 15.4 L46 20.4 M56.4 15.2 L47.6 21" className="gun-bolt" />
-      <path d="M34 7.2 H57.4" className="gun-shine" />
-      <path
-        d="M1.8 6.2 Q1.4 4.6 3.2 4.4 L13 5.4 L19 7.6 L22 8.2 L22 13.8 L18.6 14.4 L13 16.4 L3.4 17.6 Q1.6 17.6 1.8 16 Z M33 5.6 L58 6.4 Q60 6.6 60 10.8 Q60 15 58 15.2 L33 16 Z"
         className="gun-round"
       />
     </>
@@ -750,6 +707,96 @@ function GunDefs({ scale }: { scale: number }) {
 }
 
 /** A soldier's steel helmet: the flat British one for your army, the German one for theirs */
+/**
+ * A general's peaked cap, for the king: khaki with the scarlet band and
+ * gilt badge of a British staff general, or field grey with the red band
+ * and cockade of a German one, the peak trimmed with gold oak leaves
+ */
+function GeneralCap({ color, tilt }: { color: Color; tilt: number }) {
+  const british = color === Color.White;
+  return (
+    <svg
+      className="unit-helmet general-cap"
+      viewBox="0 0 44 26"
+      style={{ "--tilt": `${tilt}deg` } as Style}
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id={`cap-crown-${color}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={british ? "#a99a6a" : "#8d958e"} />
+          <stop offset="1" stopColor={british ? "#6f6440" : "#59615b"} />
+        </linearGradient>
+      </defs>
+      {/* The crown, wide and flat on top, swelling out over the band */}
+      <path
+        d="M6 10 Q4 4 22 3 Q40 4 38 10 L35 14 L9 14 Z"
+        fill={`url(#cap-crown-${color})`}
+        className="cap-edge"
+      />
+      <path d="M8 6.5 Q22 4 36 6.5" className="cap-crease" />
+      {/* The scarlet band, and the badge on it */}
+      <path d="M9 13 L35 13 L34.6 18 L9.4 18 Z" className="cap-band" />
+      {british ? (
+        <path
+          d="M22 9.6 l1.4 2.4 l2.6 0.2 l-2 1.8 l0.7 2.6 l-2.7 -1.4 l-2.7 1.4 l0.7 -2.6 l-2 -1.8 l2.6 -0.2 Z"
+          className="cap-badge"
+        />
+      ) : (
+        <>
+          <circle cx="22" cy="10.4" r="1.6" className="cap-cockade-outer" />
+          <circle cx="22" cy="15.5" r="1.9" className="cap-cockade-outer" />
+          <circle cx="22" cy="15.5" r="0.9" className="cap-cockade-inner" />
+        </>
+      )}
+      {/* The peak, black and glossy, with gold oak leaves along it */}
+      <path
+        d="M8.6 17.6 Q22 16.4 35.4 17.6 Q30 23 22 23 Q14 23 8.6 17.6 Z"
+        className="cap-peak"
+      />
+      <path
+        d="M12 19 q2 -1 3 0 q1 -1 3 0 q1 -1 3 0 q1 -1 3 0 q1 -1 3 0 q1 -1 3 0"
+        className="cap-oak"
+      />
+      <path d="M14 18.4 Q22 17.6 30 18.4" className="cap-gloss" />
+    </svg>
+  );
+}
+
+/** A general's field glasses, hung on their strap */
+function FieldGlasses() {
+  return (
+    <svg className="field-glasses" viewBox="0 0 20 14" aria-hidden>
+      <path d="M3 1 Q10 6 17 1" className="glasses-strap" />
+      <rect
+        x="2.6"
+        y="4.4"
+        width="6"
+        height="8.4"
+        rx="2"
+        className="glasses-barrel"
+      />
+      <rect
+        x="11.4"
+        y="4.4"
+        width="6"
+        height="8.4"
+        rx="2"
+        className="glasses-barrel"
+      />
+      <rect
+        x="8.2"
+        y="6.4"
+        width="3.6"
+        height="2.6"
+        rx="0.6"
+        className="glasses-barrel"
+      />
+      <ellipse cx="5.6" cy="12.4" rx="2.4" ry="0.9" className="glasses-lens" />
+      <ellipse cx="14.4" cy="12.4" rx="2.4" ry="0.9" className="glasses-lens" />
+    </svg>
+  );
+}
+
 /** Each man wears his helmet at his own slight angle */
 const helmetTilt = (id: number) => (((id * 7919) % 13) - 6) * 1.4;
 
@@ -1044,6 +1091,107 @@ function Arrow({
   );
 }
 
+/** A repeatable scatter in [0, 1), so an explosion's debris flies the same way each render */
+const scatter = (n: number) => {
+  const v = Math.sin(n * 78.233 + 12.9898) * 43758.5453;
+  return v - Math.floor(v);
+};
+
+/**
+ * A high-explosive burst: a white-hot flash, a fireball rolling outward and
+ * darkening to smoke, a column of earth and clods hurled up and raining back
+ * down, and a pall of black smoke that climbs and hangs. Size 1 is a shell,
+ * spanning several squares.
+ */
+function Explosion({
+  id,
+  style,
+  delayMs,
+  size,
+}: {
+  id: number;
+  style: Style;
+  delayMs: number;
+  size: number;
+}) {
+  const clods = Array.from({ length: Math.round(34 * size + 10) }, (_, i) => {
+    const r = (k: number) => scatter(id * 97 + i * 13 + k);
+    const up = 0.6 + r(1) * 2.2;
+    return {
+      dx: (r(2) * 2 - 1) * (0.4 + up * 0.35),
+      up,
+      fall: 0.2 + r(3) * 0.9,
+      size: 2 + r(4) * 9,
+      dur: 0.7 + r(5) * 0.7,
+      spin: (r(6) * 2 - 1) * 900,
+      tone: r(7),
+      shape: `${30 + r(8) * 40}% ${30 + r(9) * 40}% ${30 + r(10) * 40}% ${30 + r(11) * 40}%`,
+    };
+  });
+  const puffs = Array.from({ length: 9 }, (_, i) => {
+    const r = (k: number) => scatter(id * 61 + i * 7 + k + 500);
+    return {
+      x: (r(1) * 2 - 1) * 0.55,
+      rise: 0.6 + r(2) * 1.6,
+      size: 0.9 + r(3) * 1.1,
+      delay: r(4) * 0.35,
+      drift: (r(5) * 2 - 1) * 0.5,
+      shade: 30 + r(6) * 40,
+    };
+  });
+  return (
+    <span
+      className="explosion"
+      style={css({
+        ...style,
+        "--blast": String(size),
+        "--at": `${delayMs}ms`,
+      })}
+    >
+      <span className="blast-smoke">
+        {puffs.map((p, i) => (
+          <i
+            key={i}
+            style={css({
+              "--x": String(p.x),
+              "--rise": String(p.rise),
+              "--size": String(p.size),
+              "--drift": String(p.drift),
+              "--shade": `rgb(${p.shade}, ${p.shade - 4}, ${p.shade - 8})`,
+              animationDelay: `calc(var(--at) + ${(p.delay * 1000).toFixed(0)}ms)`,
+            })}
+          />
+        ))}
+      </span>
+      <span className="blast-fire">
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+      <span className="blast-flash" />
+      <span className="blast-earth">
+        {clods.map((c, i) => (
+          <i
+            key={i}
+            style={css({
+              "--dx": String(c.dx),
+              "--up": String(c.up),
+              "--fall": String(c.fall),
+              "--size": String(c.size),
+              "--spin": `${c.spin}deg`,
+              "--tone":
+                c.tone > 0.6 ? "#2a1d12" : c.tone > 0.3 ? "#3d2c1c" : "#55402a",
+              borderRadius: c.shape,
+              animationDuration: `${c.dur.toFixed(2)}s`,
+            })}
+          />
+        ))}
+      </span>
+    </span>
+  );
+}
+
 function Effect({
   event,
   flipped,
@@ -1160,9 +1308,6 @@ function Effect({
     }
     case "grenade": {
       const travel = offsetBetween(event.to, event.from, flipped, squareSize);
-      const bursts = {
-        animationDelay: `${event.delayMs + event.flightMs}ms`,
-      };
       return (
         <>
           <span
@@ -1191,57 +1336,28 @@ function Effect({
               </svg>
             </span>
           </span>
-          <span
-            className="shell-flash grenade-burst"
-            style={{ ...cell(event.to), ...bursts }}
-          />
-          <span
-            className="shell-plume grenade-burst"
-            style={{ ...cell(event.to), ...bursts }}
-          >
-            <i />
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
-          <span
-            className="shell-smoke grenade-burst"
-            style={{ ...cell(event.to), ...bursts }}
+          <Explosion
+            id={event.id}
+            style={cell(event.to)}
+            delayMs={event.delayMs + event.flightMs}
+            size={0.6}
           />
         </>
       );
     }
-    case "shell": {
-      const lands = { animationDelay: `${event.delayMs + SHELL_FALL_MS}ms` };
+    case "shell":
       return (
-        <>
-          <span
-            className="shell-shadow"
-            style={{
-              ...cell(event.sq),
-              animationDelay: `${event.delayMs}ms`,
-              animationDuration: `${SHELL_FALL_MS}ms`,
-            }}
-          />
-          <span
-            className="shell-flash"
-            style={{ ...cell(event.sq), ...lands }}
-          />
-          <span className="shell-plume" style={{ ...cell(event.sq), ...lands }}>
-            <i />
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
-          <span
-            className="shell-smoke"
-            style={{ ...cell(event.sq), ...lands }}
-          />
-        </>
+        <Explosion
+          id={event.id}
+          style={{
+            ...cell(event.sq),
+            // On the spot in the square where its crater opens
+            translate: `${((flipped ? 1 - event.at.x : event.at.x) - 0.5) * 100}% ${((flipped ? event.at.y : 1 - event.at.y) - 0.5) * 100}%`,
+          }}
+          delayMs={event.delayMs + SHELL_FALL_MS}
+          size={1.7}
+        />
       );
-    }
     case "deploy":
       return (
         <>
@@ -1265,7 +1381,7 @@ function playEvent(event: BattleEvent): void {
   switch (event.kind) {
     case "attack": {
       const fired = event.delayMs ?? 0;
-      if (event.weapon === "mg" || event.weapon === "lmg") {
+      if (event.weapon === "mg") {
         if (event.round === 0) later(fired, sfx.machineGun);
       } else if (event.weapon === "rifle") {
         later(fired, sfx.rifle);

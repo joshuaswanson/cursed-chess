@@ -18,95 +18,133 @@
   box-shadow: 5px 6px 0 var(--ink);
 }
 
-/* Stencilled on a khaki crate lid; it drains while the whistle recovers */
-.attack-button {
+/* A squad card: stencilled on a crate lid, filling with light as it readies */
+.squad-card {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 10px 22px;
+  gap: 2px;
+  min-width: 104px;
+  padding: 6px 10px 6px;
   overflow: hidden;
-  font-family: var(--font-display);
-  font-size: 26px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #fff4dc;
-  background: linear-gradient(180deg, #a3301f, #6e1a10);
+  font-family: var(--font-ui);
+  color: #efe6cf;
+  background: linear-gradient(180deg, #5d5238, #3e3624);
   border: 3px solid var(--ink);
   border-radius: 8px;
-  box-shadow: 4px 5px 0 var(--ink);
+  box-shadow: 3px 4px 0 var(--ink);
   cursor: pointer;
   transition:
     translate 0.08s,
     box-shadow 0.08s;
 }
 
-.attack-button::after {
+/* The part still readying, darkened, draining away as the card readies */
+.squad-card::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(20, 16, 10, 0.55);
-  transform-origin: 0 50%;
-  scale: var(--recharge, 0) 1;
+  background: rgba(14, 11, 6, 0.6);
+  transform-origin: 50% 0;
+  scale: 1 calc(1 - var(--charge, 1));
+  pointer-events: none;
 }
 
-.attack-button:hover:not(:disabled) {
+.squad-card.ready::after {
+  display: none;
+}
+
+.squad-card:disabled {
+  cursor: not-allowed;
+}
+
+.squad-card.ready:hover {
   translate: 0 -2px;
-  box-shadow: 4px 7px 0 var(--ink);
+  box-shadow: 3px 6px 0 var(--ink);
 }
 
-.attack-button:active:not(:disabled) {
-  translate: 2px 3px;
-  box-shadow: 1px 1px 0 var(--ink);
-}
-
-.attack-button:focus-visible {
+.squad-card:focus-visible {
   outline: 3px solid #f2c94c;
   outline-offset: 3px;
 }
 
-.attack-button:disabled {
-  cursor: not-allowed;
-  filter: grayscale(0.6) brightness(0.8);
-}
-
-/* A trench whistle */
-.attack-whistle {
-  position: relative;
-  z-index: 1;
-  width: 30px;
-  height: 18px;
-  border-radius: 9px 4px 4px 9px;
-  background: linear-gradient(#e6e9ee, #8c929b);
-  border: 2px solid var(--ink);
-}
-
-.attack-whistle::after {
-  content: "";
-  position: absolute;
-  right: -9px;
-  top: 3px;
-  width: 9px;
-  height: 7px;
-  background: #8c929b;
-  border: 2px solid var(--ink);
-  border-left: 0;
-}
-
-.trench-status {
+.squad-men {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-family: var(--font-ui);
+  height: 34px;
 }
 
-.trench-status strong {
-  font-size: 17px;
+.squad-men img {
+  width: 30px;
+  height: 34px;
+  margin-inline: -4px;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5));
 }
 
-.trench-status span {
-  font-size: 13px;
+.squad-name {
+  font-weight: 800;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.squad-time {
+  font-size: 11px;
   opacity: 0.8;
+}
+
+.squad-card.ready .squad-time {
+  color: #b9e07a;
+  opacity: 1;
+}
+
+/* --- Orders along each of your trench lines --- */
+
+.line-orders {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+}
+
+.line-order {
+  position: absolute;
+  right: calc(100% + var(--square-size) * 0.4);
+  translate: 0 -50%;
+  pointer-events: auto;
+  padding: 5px 12px;
+  font-family: var(--font-display);
+  font-size: calc(var(--square-size) * 0.2);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #fff4dc;
+  border: 3px solid var(--ink);
+  border-radius: 7px;
+  box-shadow: 3px 4px 0 var(--ink);
+  cursor: pointer;
+}
+
+.line-order.attack {
+  background: linear-gradient(180deg, #a3301f, #6e1a10);
+}
+
+.line-order.advance {
+  background: linear-gradient(180deg, #6b7a3e, #434d24);
+}
+
+.line-order:hover {
+  translate: 0 calc(-50% - 2px);
+  box-shadow: 3px 6px 0 var(--ink);
+}
+
+.line-order:active {
+  translate: 2px calc(-50% + 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.line-order:focus-visible {
+  outline: 3px solid #f2c94c;
+  outline-offset: 3px;
 }
 
 /* Rain driving down over the whole front, in two sheets at different depths */
@@ -131,14 +169,14 @@
   opacity: 0.22;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='140'%3E%3Cg stroke='%23c8d2d8' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M10 0 l-6 26'/%3E%3Cpath d='M48 50 l-6 26'/%3E%3Cpath d='M75 15 l-6 26'/%3E%3Cpath d='M28 90 l-6 26'/%3E%3Cpath d='M66 104 l-6 26'/%3E%3C/g%3E%3C/svg%3E")
     0 0 / 90px 140px;
-  animation: rain-fall-far 0.68s linear infinite;
+  animation: rain-fall-far 0.52s linear infinite;
 }
 
 .rain-near {
   opacity: 0.32;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='220'%3E%3Cg stroke='%23dfe7ea' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M20 0 l-10 46'/%3E%3Cpath d='M96 70 l-10 46'/%3E%3Cpath d='M140 20 l-10 46'/%3E%3Cpath d='M58 140 l-10 46'/%3E%3C/g%3E%3C/svg%3E")
     0 0 / 160px 220px;
-  animation: rain-fall-near 0.38s linear infinite;
+  animation: rain-fall-near 0.29s linear infinite;
 }
 
 /* Each sheet falls exactly one tile, so the loop never shows */

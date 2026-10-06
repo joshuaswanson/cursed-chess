@@ -231,7 +231,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "trenches",
     title: "Trenches",
     tagline:
-      "The pieces dig in and fight on their own. Press Attack to send your front line over the top, through the wire, for the enemy trench.",
+      "Send squads up from the rear, then order each trench line forward when you choose. Take the enemy's trenches and get at their general.",
     catchphrase: "All Quiet on the Chesstern Front",
     sky: ["#0b0d0f", "#1d2226", "#3a3227"],
     accent: "#c9a44a",

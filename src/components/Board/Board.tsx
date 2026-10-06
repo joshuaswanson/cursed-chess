@@ -30,6 +30,7 @@ import { TRENCH_RANKS } from "../../plugins/trenches";
 import { BoardCraters, TrenchField } from "./TrenchField";
 import { parapetClip } from "./trenchFront";
 import { RainRipples } from "./RainRipples";
+import { LineOrders } from "../Trenches/LineOrders";
 import {
   WorldCraters,
   WorldTrenches,
@@ -623,7 +624,9 @@ export function Board() {
                 Object.values(TRENCH_RANKS).some((t) => t.front === rankOf(sq))
               }
               entrenched={
-                overlays.trenches
+                // Only the trench's own side takes cover behind its sandbags;
+                // men who have taken it shelter against its far wall
+                overlays.trenches && (piece.color === Color.White) === flipped
                   ? parapetClip(
                       flipped,
                       rowOnScreen(sq, flipped),
@@ -801,6 +804,9 @@ export function Board() {
           {overlays.trenches && <RainRipples />}
           {overlays.trenches && <WorldTrenches flipped={flipped} />}
           {overlays.trenches && <WorldTrenchesFront flipped={flipped} />}
+          {overlays.trenches && (
+            <LineOrders view={overlays.trenches} flipped={flipped} />
+          )}
           {overlays.trenches && battle && (
             <>
               <TrenchGuns
