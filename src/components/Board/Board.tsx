@@ -77,12 +77,21 @@ const PORTAL_SETTLE_MS = 150;
 function trenchStance(
   view: TrenchView | null,
   unitId: number | undefined,
-): "snagged" | "charging" | undefined {
+  inTrench: boolean,
+): "snagged" | "charging" | "peeking" | "crouched" | undefined {
   if (!view || unitId === undefined) return undefined;
   if (view.snagged.includes(unitId)) return "snagged";
   if (view.charging.includes(unitId)) return "charging";
-  return undefined;
+  if (!inTrench) return undefined;
+  // Down in a trench a man stays crouched below the parapet, coming up only to look or fire
+  return view.exposed.includes(unitId) ? "peeking" : "crouched";
 }
+
+/** Whether a square lies in one of the trench lines */
+const inTrenchLine = (sq: SquareIndex) =>
+  Object.values(TRENCH_RANKS).some(
+    (t) => t.front === rankOf(sq) || t.back === rankOf(sq),
+  );
 
 /** A one-square step from one square toward another, however far apart they are */
 function oneSquareToward(
@@ -600,9 +609,16 @@ export function Board() {
               view={battle}
               flipped={flipped}
               squareSize={squareSize}
-              stance={trenchStance(overlays.trenches, battle.units[sq]?.id)}
+              stance={trenchStance(
+                overlays.trenches,
+                battle.units[sq]?.id,
+                inTrenchLine(sq),
+              )}
               aiming={
                 overlays.trenches !== null &&
+                overlays.trenches.exposed.includes(
+                  battle.units[sq]?.id ?? -1,
+                ) &&
                 Object.values(TRENCH_RANKS).some((t) => t.front === rankOf(sq))
               }
               entrenched={

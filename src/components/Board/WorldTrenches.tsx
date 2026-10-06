@@ -271,7 +271,6 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
           <g clipPath={`url(#wt-inside-${line.key})`}>
             <path d={line.outline} className="trench-occlusion" />
           </g>
-          <path d={line.farLip} className="lip-rim" />
           {/* Sandbags piled along the lip, over the edge of the cut */}
           <Sandbags bags={line.farWorks.bags} />
         </g>

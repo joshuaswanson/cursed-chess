@@ -131,7 +131,7 @@ export function BattleUnit({
   flipped: boolean;
   squareSize: number;
   /** Charging across open ground, or caught on the wire */
-  stance?: "charging" | "snagged";
+  stance?: "charging" | "snagged" | "peeking" | "crouched";
   /** Down in a trench behind sandbags, the clip-path that hides him below their tops */
   entrenched?: string | null;
   /** Manning the front line, his rifle levelled at the enemy */

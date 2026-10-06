@@ -31,8 +31,6 @@
 /* The spoil thrown up behind a trench */
 .spoil {
   fill: url(#tx-soil);
-  stroke: #2a1f13;
-  stroke-width: 1.5;
 }
 
 /* The cut: a dark wet floor */
@@ -45,13 +43,6 @@
 .far-wall {
   fill: url(#tx-soil);
   filter: brightness(0.7);
-}
-
-.trench-lip {
-  fill: none;
-  stroke: #1c140c;
-  stroke-width: 2;
-  stroke-linejoin: round;
 }
 
 /* Duckboards along the bottom, gaps and all */
@@ -173,15 +164,6 @@
   stroke: rgba(4, 2, 0, 0.8);
   stroke-width: 26;
   filter: url(#wt-soft);
-}
-
-/* The ground's edge, catching the light as it breaks off into the cut */
-.lip-rim {
-  fill: none;
-  stroke: #8f7756;
-  stroke-width: 3;
-  stroke-linejoin: round;
-  stroke-linecap: round;
 }
 
 /* A grim, cold grade over the whole front: washed out, dark, wet */

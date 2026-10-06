@@ -620,6 +620,8 @@
 /* A rifle held at the ready from the shoulder, turned toward wherever it points */
 .unit-rifle {
   position: absolute;
+  /* Over the helmet, where the two cross */
+  z-index: 4;
   left: calc(var(--grip-x) - 80% * 0.2);
   top: calc(var(--grip-y) - 12.5%);
   width: 80%;
@@ -628,6 +630,7 @@
   overflow: visible;
   transform-origin: 20% 50%;
   rotate: var(--rest);
+  transition: rotate 0.25s ease-out;
   filter: drop-shadow(0.03em 0.05em 0 rgba(10, 8, 4, 0.5));
 }
 
@@ -1306,4 +1309,41 @@
 .unit-helmet .helmet-sheen {
   fill: rgba(255, 252, 230, 0.22);
   filter: blur(0.6px);
+}
+
+/* --- In the trenches: crouched below the parapet, or up looking over it --- */
+
+[data-theme="trenches"] .battle-unit.is-crouched:not(.is-entrenched) .unit-body,
+[data-theme="trenches"] .battle-unit.is-peeking:not(.is-entrenched) .unit-body {
+  transition:
+    translate 0.24s ease-out,
+    scale 0.24s ease-out;
+  transform-origin: 50% 95%;
+}
+
+/* Our men, seen from behind, hunker down on their haunches */
+[data-theme="trenches"]
+  .battle-unit.is-crouched:not(.is-entrenched)
+  .unit-body {
+  scale: 1.04 0.8;
+  translate: 0 4%;
+}
+
+/* Theirs sink down behind the sandbags, only the tops of their helmets
+   showing; the parts sink inside the body, so the sandbags' outline stays put */
+[data-theme="trenches"] .battle-unit.is-entrenched .unit-body > * {
+  transition: transform 0.24s ease-out;
+}
+
+[data-theme="trenches"] .battle-unit.is-crouched.is-entrenched .unit-body > * {
+  transform: translateY(34%);
+}
+
+/* Up and looking over: raised clear of the parapet, so the men really lean over it */
+[data-theme="trenches"] .battle-unit.is-peeking.is-entrenched .unit-body > * {
+  transform: translateY(-12%);
+}
+
+[data-theme="trenches"] .battle-unit.is-peeking:not(.is-entrenched) .unit-body {
+  translate: 0 -12%;
 }

@@ -48,6 +48,12 @@ const FIRING_RANKS = [2, 3, 4, 5];
 const IDLE_FIRE = 0.3;
 /** How long a rifleman takes to bring his rifle up onto the target before firing */
 export const AIM_MS = 130;
+/** How long a man takes to come up over the parapet before he fires, and how long he stays up */
+export const RISE_MS = 260;
+const PEEK_MS = 1500;
+/** Now and then a man puts his head up just to look, for a moment */
+const LOOK_CHANCE = 0.3;
+const LOOK_MS = 900;
 /** Men caught in the wire are sitting ducks */
 const SNAGGED_HIT_BONUS = 0.2;
 /** Running men fire less often and less well */
@@ -92,6 +98,8 @@ export interface TrenchUnit extends Unit {
   goal: number;
   /** Caught on the wire until the clock passes this */
   snaggedUntil: number;
+  /** Up and looking over the parapet until the clock passes this; crouched below it otherwise */
+  exposedUntil: number;
 }
 
 export interface Crater {
@@ -118,6 +126,8 @@ export interface TrenchView {
   /** Whether you can blow the whistle, and how long until you can again */
   canAttack: boolean;
   cooldownMs: number;
+  /** Men up looking over the parapet, the rest of those in the trenches crouched below it */
+  exposed: number[];
   /** Whether each side has men out charging, and how many hold its front trench */
   advancing: Record<Color, boolean>;
   manning: Record<Color, number>;
@@ -314,6 +324,7 @@ export class TrenchesPlugin implements ModePlugin {
       order: "hold",
       goal: 0,
       snaggedUntil: 0,
+      exposedUntil: 0,
     };
   }
 
@@ -483,12 +494,16 @@ export class TrenchesPlugin implements ModePlugin {
       unit.readyIn = rand(800, 1600);
       return;
     }
-    // With nobody showing above the parapets, the line mostly holds its fire
+    // With nobody showing above the parapets, the line mostly holds its fire,
+    // a man now and then putting his head up for a look
     if (!this.anyoneExposed(board, piece.color) && Math.random() > IDLE_FIRE) {
+      if (Math.random() < LOOK_CHANCE) this.raise(unit, LOOK_MS);
       unit.readyIn = jitter(RIFLE_MS);
       return;
     }
 
+    // To fire he has to come up over the parapet, and while up he can be hit
+    this.raise(unit, PEEK_MS);
     if (sq === GUN_NESTS[piece.color] && piece.type === PieceType.Pawn) {
       if (this.burst(board, sq, piece)) {
         unit.readyIn = jitter(BURST_MS);
@@ -497,6 +512,22 @@ export class TrenchesPlugin implements ModePlugin {
     }
     this.fire(board, sq, piece, false);
     unit.readyIn = jitter(RIFLE_MS);
+  }
+
+  /** Brings a man up to look over the parapet, for a while, if he is not already up for longer */
+  private raise(unit: TrenchUnit, ms: number): void {
+    unit.exposedUntil = Math.max(unit.exposedUntil, this.clock + ms);
+  }
+
+  /** Whether a man is down in a trench, crouched where no bullet can reach him */
+  private crouched(sq: SquareIndex): boolean {
+    const unit = this.units.get(sq);
+    return (
+      coverAt(sq) === "trench" &&
+      unit !== undefined &&
+      unit.order === "hold" &&
+      unit.exposedUntil <= this.clock
+    );
   }
 
   /** Whether any of the enemy is out of a trench, in the open or moving up behind the lines */
@@ -600,9 +631,12 @@ export class TrenchesPlugin implements ModePlugin {
       (s) => board.get(s)?.color === opponent(color),
     );
     if (foes.length === 0) return null;
+    // A crouched man offers nothing to aim at; he draws only the odd hopeful shot
     const weighted = foes.map((s) => ({
       s,
-      w: weights[coverAt(s)] / (1 + distance(sq, s) * 0.15),
+      w:
+        (weights[coverAt(s)] * (this.crouched(s) ? 0.1 : 1)) /
+        (1 + distance(sq, s) * 0.15),
     }));
     let roll = Math.random() * weighted.reduce((t, x) => t + x.w, 0);
     for (const { s, w } of weighted) {
@@ -626,7 +660,7 @@ export class TrenchesPlugin implements ModePlugin {
     if (target === null) return;
     const chance =
       this.hitChance(sq, target, RIFLE_HIT) * (running ? RUNNING_AIM : 1);
-    this.shoot(board, sq, target, piece, "rifle", chance, AIM_MS, 0);
+    this.shoot(board, sq, target, piece, "rifle", chance, RISE_MS + AIM_MS, 0);
   }
 
   /** The machine gun rakes one target with a burst; returns false if there is nobody to fire at */
@@ -653,7 +687,7 @@ export class TrenchesPlugin implements ModePlugin {
         piece,
         "mg",
         this.hitChance(sq, target, ROUND_HIT),
-        round * ROUND_GAP_MS,
+        RISE_MS + round * ROUND_GAP_MS,
         round,
       );
     }
@@ -667,7 +701,10 @@ export class TrenchesPlugin implements ModePlugin {
     table: Record<Cover, number>,
   ): number {
     const snagged = (this.units.get(target)?.snaggedUntil ?? 0) > this.clock;
-    const cover = rankOf(from) === rankOf(target) ? "open" : coverAt(target);
+    const enfilade = rankOf(from) === rankOf(target);
+    // A man crouched below the parapet cannot be hit, unless he is fired on down the trench
+    if (!enfilade && this.crouched(target)) return 0;
+    const cover = enfilade ? "open" : coverAt(target);
     return table[cover] + (snagged ? SNAGGED_HIT_BONUS : 0);
   }
 
@@ -1001,6 +1038,9 @@ export class TrenchesPlugin implements ModePlugin {
         .map(([, u]) => u.id),
       snagged: units
         .filter(([, u]) => u.snaggedUntil > this.clock)
+        .map(([, u]) => u.id),
+      exposed: units
+        .filter(([, u]) => u.exposedUntil > this.clock)
         .map(([, u]) => u.id),
       charges: { ...this.charges },
       canAttack: this.canAttack(board, Color.White),
