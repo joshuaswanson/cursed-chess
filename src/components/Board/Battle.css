@@ -1317,16 +1317,17 @@
 [data-theme="trenches"] .battle-unit.is-peeking:not(.is-entrenched) .unit-body {
   transition:
     translate 0.24s ease-out,
-    scale 0.24s ease-out;
+    rotate 0.3s ease-out;
   transform-origin: 50% 95%;
 }
 
-/* Our men, seen from behind, hunker down on their haunches */
+/* Our men, seen from behind, hunker down against the trench wall, heads
+   low, each leaning his own way */
 [data-theme="trenches"]
   .battle-unit.is-crouched:not(.is-entrenched)
   .unit-body {
-  scale: 1.04 0.8;
-  translate: 0 4%;
+  translate: 0 11%;
+  rotate: var(--hunch);
 }
 
 /* Theirs sink down behind the sandbags, only the tops of their helmets

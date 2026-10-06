@@ -167,6 +167,7 @@ export function BattleUnit({
       style={
         {
           ...arrivalStyle(arrival, flipped, squareSize),
+          "--hunch": `${unit.id % 2 ? 9 : -9}deg`,
           ...(entrenched && { "--parapet": entrenched }),
         } as Style
       }
