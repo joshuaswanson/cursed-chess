@@ -48,11 +48,11 @@ export function useTugStruggle(
     const layer = root.current;
     const board = layer?.closest<HTMLElement>(".board");
     if (!layer || !board) return;
-    // Only the rope's layer and the pieces gripping it follow the struggle, so
-    // the rest of the board is left alone every frame
+    // Only the rope's layer and the pieces gripping it follow the struggle; the
+    // field's layer, with its filtered mud, is left alone so it is drawn once
     const targets = () =>
       board.querySelectorAll<HTMLElement>(
-        ".tug-layer, .rope-square .piece-img",
+        ".tug-rope-layer, .rope-square .piece-img",
       );
     let last = performance.now() / 1000;
     // The pennant swings on its knots like a weight on a spring, kicked by the rope's jolts

@@ -411,3 +411,9 @@
 [data-theme="tug"] .square.rope-square {
   box-shadow: inset 0 0 0 999px rgba(120, 80, 40, 0.1);
 }
+
+/* The ripple repaints every frame; on its own layer, the filtered mud and
+   splatter beneath are drawn once and kept */
+.tug-mud-ripple {
+  will-change: transform;
+}

@@ -1103,7 +1103,7 @@
 
 .helmet-on-r {
   left: 60%;
-  top: -5%;
+  top: 4%;
   width: 54%;
   rotate: calc(28deg + var(--tilt, 0deg));
 }

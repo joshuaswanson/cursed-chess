@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { WIN_LINE } from "../../plugins/tugOfWar";
 import type { TugView } from "../../plugins/tugOfWar";
 import { sfx } from "../../audio/sfx";
+import { useGameStore } from "../../stores/gameStore";
 import {
   ROPE_TILE,
   ROPE_TILE_RATIO,
@@ -438,7 +439,7 @@ function MudPit() {
           <feTurbulence
             type="fractalNoise"
             baseFrequency="0.03 0.05"
-            numOctaves="4"
+            numOctaves="3"
             seed="9"
             result="noise"
           />
@@ -522,7 +523,6 @@ function MudPit() {
         <path d="M130 416 C140 372 132 330 116 300" strokeWidth="7" />
       </g>
       <path d={MUD_PUDDLE} fill="url(#mud-water)" filter="url(#mud-edge)" />
-      <ellipse className="mud-ripple" cx="108" cy="248" rx="7" ry="28" />
       <path
         d="M100 206 Q93 246 99 294"
         stroke="#dff0f4"
@@ -532,6 +532,23 @@ function MudPit() {
         fill="none"
         filter="url(#mud-edge)"
       />
+    </svg>
+  );
+}
+
+/**
+ * The ripple spreading across the puddle, on its own layer over the pit, so
+ * its motion never makes the browser redo the pit's filtered mud
+ */
+function MudRipple() {
+  return (
+    <svg
+      className="tug-mud tug-mud-ripple"
+      viewBox="0 0 200 500"
+      preserveAspectRatio="none"
+      aria-hidden
+    >
+      <ellipse className="mud-ripple" cx="108" cy="248" rx="7" ry="28" />
     </svg>
   );
 }
@@ -600,7 +617,7 @@ function MudSplats() {
           <feTurbulence
             type="fractalNoise"
             baseFrequency="0.06"
-            numOctaves="4"
+            numOctaves="3"
             seed="3"
             result="noise"
           />
@@ -689,8 +706,10 @@ export function TugLayer({
     { toWhite: -WIN_LINE, team: "black" },
   ];
 
-  // The struggle only plays out when both teams have someone on the rope
-  const contested = view.white > 0 && view.black > 0;
+  // The struggle only plays out when both teams have someone on the rope,
+  // and waits for the title card to clear so the scene is drawn in peace
+  const introDone = useGameStore((s) => s.introDone);
+  const contested = introDone && view.white > 0 && view.black > 0;
   const rootRef = useRef<HTMLDivElement>(null);
   useTugStruggle(rootRef, contested, flipped);
 
@@ -699,6 +718,7 @@ export function TugLayer({
       <div ref={rootRef} className="tug-layer" aria-hidden>
         <MudSplats />
         <MudPit />
+        <MudRipple />
         <span className="tug-center-line" />
         {lines.map(({ toWhite, team }) => (
           <span
