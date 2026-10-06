@@ -710,6 +710,28 @@ export class TrenchesPlugin implements ModePlugin {
     return true;
   }
 
+  /** The next trench line ahead of a rank, toward the enemy, if there is one */
+  private trenchAhead(color: Color, rank: number): number | undefined {
+    const ahead = (r: number) => (color === Color.White ? r > rank : r < rank);
+    return this.trenchRanks(color).find(ahead);
+  }
+
+  /** One man holding a trench line goes forward on his own for the next one ahead */
+  advanceMan(board: Board, color: Color, sq: SquareIndex): boolean {
+    if (this.winner !== null) return false;
+    const next = this.trenchAhead(color, rankOf(sq));
+    const man = this.holding(board, color, rankOf(sq)).find(
+      ([at]) => at === sq,
+    );
+    if (next === undefined || !man) return false;
+    const [, unit] = man;
+    if (board.get(sq)?.type === PieceType.Rook) this.nests.delete(sq);
+    unit.order = "charge";
+    unit.goal = next;
+    unit.readyIn = 0;
+    return true;
+  }
+
   /** Whether a side has anyone in a trench who could go over the top */
   canAttack(board: Board, color: Color): boolean {
     return this.cooldown(color) === 0 && this.frontage(board, color) !== null;
@@ -732,6 +754,13 @@ export class TrenchesPlugin implements ModePlugin {
     }
 
     if (unit.order === "charge") {
+      // A trench ahead full of his own side is no place to stop: he goes on through it
+      if (
+        rankOf(sq) !== unit.goal &&
+        this.fullOfFriends(board, unit.goal, piece.color)
+      ) {
+        unit.goal = this.trenchAhead(piece.color, unit.goal) ?? unit.goal;
+      }
       if (rankOf(sq) === unit.goal) {
         unit.order = "hold";
         this.digGun(board, sq, piece);
@@ -980,9 +1009,10 @@ export class TrenchesPlugin implements ModePlugin {
           Math.random(),
       }))
       .sort((a, b) => b.score - a.score);
-    const to = options[0]?.to;
+    const to = options[0]?.to ?? this.through(board, sq, unit, piece);
     if (to === undefined) return false;
-    const ms = Math.round(STEP_MS * rand(0.85, 1.2));
+    const leap = Math.abs(rankOf(to) - rankOf(sq)) > 1;
+    const ms = Math.round(STEP_MS * rand(0.85, 1.2) * (leap ? 1.8 : 1));
     this.relocate(board, sq, to);
     this.emit({ kind: "move", unitId: unit.id, from: sq, to, ms, delayMs: 0 });
     unit.readyIn = ms;
@@ -991,6 +1021,42 @@ export class TrenchesPlugin implements ModePlugin {
       unit.readyIn = unit.snaggedUntil - this.clock;
     }
     return true;
+  }
+
+  /** Whether every square on a rank is held by a side's own men */
+  private fullOfFriends(board: Board, rank: number, color: Color): boolean {
+    return ALL_SQUARES.filter((s) => rankOf(s) === rank).every(
+      (s) => board.get(s)?.color === color,
+    );
+  }
+
+  /**
+   * Where a man blocked by his own side's trench, short of the trench he is
+   * making for, lands after dropping into it and climbing out the far side
+   */
+  private through(
+    board: Board,
+    sq: SquareIndex,
+    unit: TrenchUnit,
+    piece: Piece,
+  ): SquareIndex | undefined {
+    const step = forward(piece.color);
+    const trench = rankOf(sq + step);
+    if (
+      trench === unit.goal ||
+      !this.trenchRanks(piece.color).includes(trench) ||
+      !this.fullOfFriends(board, trench, piece.color)
+    ) {
+      return undefined;
+    }
+    return [0, -1, 1]
+      .map((d) => sq + step * 2 + d)
+      .find(
+        (to) =>
+          isValidSquare(to) &&
+          Math.abs(fileOf(to) - fileOf(sq)) <= 1 &&
+          !board.get(to),
+      );
   }
 
   /**
