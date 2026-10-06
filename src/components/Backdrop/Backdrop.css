@@ -17,6 +17,12 @@
       var(--sky-2) 65%,
       var(--sky-3) 130%
     );
+  /* Blending the theme colors here alone keeps the rest of the page from
+     restyling and repainting on every frame of the blend */
+  transition:
+    --sky-1 var(--theme-blend),
+    --sky-2 var(--theme-blend),
+    --sky-3 var(--theme-blend);
 }
 
 .backdrop-scene {

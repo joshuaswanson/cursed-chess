@@ -107,17 +107,6 @@ button {
   display: grid;
   grid-template-rows: auto 1fr;
   color: var(--sky-text);
-  transition:
-    --sky-1 var(--theme-blend),
-    --sky-2 var(--theme-blend),
-    --sky-3 var(--theme-blend),
-    --accent var(--theme-blend),
-    --accent-2 var(--theme-blend),
-    --ink var(--theme-blend),
-    --frame var(--theme-blend),
-    --tile-light var(--theme-blend),
-    --tile-dark var(--theme-blend),
-    --sky-text var(--theme-blend);
 }
 
 /* The logo is decoration only, so clicks pass through it to the board's goal beneath */
