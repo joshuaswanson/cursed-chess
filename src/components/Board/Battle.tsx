@@ -158,9 +158,18 @@ export function BattleUnit({
   const tower = piece.type === PieceType.King;
   const firing =
     action?.unitId === unit.id &&
-    (action.weapon === "rifle" || action.weapon === "bayonet")
+    (action.weapon === "rifle" ||
+      action.weapon === "bayonet" ||
+      action.weapon === "sniper" ||
+      action.weapon === "lmg")
       ? action
       : undefined;
+  const held =
+    arms === "sniper" || arms === "lmg"
+      ? arms
+      : arms === "rifle" || arms === "grenadier"
+        ? "rifle"
+        : null;
   return (
     <div
       className={`battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}${entrenched ? " is-entrenched" : ""}${aiming ? " is-aiming" : ""}`}
@@ -191,12 +200,15 @@ export function BattleUnit({
             tilt={helmetTilt(unit.id)}
           />
         )}
-        {arms === "rifle" && (
+        {arms === "grenadier" && <GrenadeBelt />}
+        {held && (
           <Rifle
-            key={firing?.id ?? "rest"}
-            rest={aiming ? enemyAngle(piece.color, flipped) : RIFLE_AT_SIDE}
+            kind={held}
+            // A burst's rounds are one swing onto the target, not one each
+            key={firing ? firing.id - (firing.round ?? 0) : "rest"}
+            rest={aiming ? enemyAngle(piece.color, sq, flipped) : RIFLE_AT_SIDE}
             grip={aiming ? RIFLE_SHOULDER : RIFLE_GRIP}
-            side={gripSide(piece.color)}
+            side={gripSide(sq, flipped)}
             aim={firing ? aimAngle(firing, flipped) : null}
             fireMs={Math.max(0, (firing?.delayMs ?? 0) - AIM_MS)}
             thrust={firing?.weapon === "bayonet"}
@@ -215,6 +227,7 @@ export function BattleUnit({
  * its target and kicks as it fires
  */
 function Rifle({
+  kind,
   rest,
   grip,
   side,
@@ -222,6 +235,7 @@ function Rifle({
   fireMs,
   thrust = false,
 }: {
+  kind: "rifle" | "sniper" | "lmg";
   rest: number;
   /** Where he holds it, from his middle, in squares */
   grip: { x: number; y: number };
@@ -247,6 +261,15 @@ function Rifle({
       aria-hidden
     >
       <GunDefs scale={30} />
+      {kind === "lmg" ? <LewisGun /> : <Enfield scoped={kind === "sniper"} />}
+    </svg>
+  );
+}
+
+/** A Lee-Enfield: walnut and blued steel, a bayonet fixed, or for a sniper a telescopic sight in its place */
+function Enfield({ scoped }: { scoped: boolean }) {
+  return (
+    <>
       <path d="M15 15.5 Q32 22.5 50 14.2" className="rifle-sling" />
       {/* Butt and wrist: oiled walnut, a steel butt plate, the grip narrowing to the action */}
       <path
@@ -281,17 +304,152 @@ function Rifle({
         className="gun-steel"
       />
       <path d="M40 8.6 L58.6 9.3" className="gun-shine" />
-      {/* The bayonet, fixed under the muzzle */}
-      <path
-        d="M62 12 L64.5 12 L71.8 11.2 L64.5 13.8 L62 13.8 Z"
-        className="gun-blade"
-      />
-      <path d="M64.5 12.6 L71 11.5" className="gun-blade-edge" />
+      {scoped ? (
+        <>
+          {/* A telescopic sight, offset over the action */}
+          <path d="M24.5 1.4 h18 v3.6 h-18 Z" className="gun-steel" />
+          <path
+            d="M22.5 0.6 h3 v5.2 h-3 Z M41.5 0.8 h3.4 v4.8 h-3.4 Z"
+            className="gun-steel"
+          />
+          <path d="M30 5 v2.4 M37 5 v2.4" className="gun-guard" />
+          <ellipse cx="44.9" cy="3.2" rx="0.7" ry="2" className="gun-lens" />
+          <path d="M25 2.2 H42" className="gun-shine" />
+        </>
+      ) : (
+        <>
+          {/* The bayonet, fixed under the muzzle */}
+          <path
+            d="M62 12 L64.5 12 L71.8 11.2 L64.5 13.8 L62 13.8 Z"
+            className="gun-blade"
+          />
+          <path d="M64.5 12.6 L71 11.5" className="gun-blade-edge" />
+        </>
+      )}
       {/* Light across the top, shadow underneath, so it reads as round */}
       <path
         d="M2.2 5.6 Q1.6 4.2 3.4 4 L14 4.6 Q18 5.6 21.5 7.4 L28 8 L28 13.6 L22.5 14 Q18.5 15.4 15 16.8 L3.6 17.8 Q1.6 17.8 1.8 16.2 Z M39.6 7.8 L59 8.6 Q60.2 9 60.2 10.8 Q60.2 12.6 59 13 L39.6 13.8 Z"
         className="gun-round"
       />
+    </>
+  );
+}
+
+/**
+ * A Lewis gun, carried from the shoulder: the round pan magazine on top, the
+ * finned cooling shroud along the barrel, and the bipod folded beneath
+ */
+function LewisGun() {
+  return (
+    <>
+      <path d="M16 15 Q28 21 40 15.2" className="rifle-sling" />
+      <path
+        d="M1.8 6.2 Q1.4 4.6 3.2 4.4 L13 5.4 L19 7.6 L22 8.2 L22 13.8 L18.6 14.4 L13 16.4 L3.4 17.6 Q1.6 17.6 1.8 16 Z"
+        className="gun-wood"
+      />
+      <path d="M21 7.2 L33.4 7.2 L33.4 14.6 L21 14.6 Z" className="gun-steel" />
+      <path
+        d="M24 14.6 L27.4 14.6 L27 19 Q25.6 19.6 24.4 19 Z"
+        className="gun-wood"
+      />
+      {/* The pan magazine, a flat drum seen edge on */}
+      <ellipse cx="27.2" cy="4.4" rx="8.4" ry="3.2" className="gun-steel" />
+      <path
+        d="M19.6 4.4 H34.8 M22 2.4 V6.4 M25 1.5 V7.3 M28 1.4 V7.4 M31 1.7 V7.1 M33.6 2.6 V6.2"
+        className="gun-flutes"
+      />
+      <ellipse cx="27.2" cy="3.3" rx="6" ry="1.3" className="gun-shine-fill" />
+      {/* The cooling shroud around the barrel, finned, with the muzzle poking out */}
+      <path
+        d="M33 5.6 L58 6.4 Q60 6.6 60 10.8 Q60 15 58 15.2 L33 16 Z"
+        className="gun-steel"
+      />
+      <path
+        d="M36 6 V15.6 M39 6.1 V15.5 M42 6.2 V15.4 M45 6.3 V15.3 M48 6.4 V15.2 M51 6.5 V15.1 M54 6.6 V15"
+        className="gun-flutes"
+      />
+      <path d="M59.6 9.2 H68.6 V12.4 H59.6 Z" className="gun-steel" />
+      <path d="M67.4 8.4 H70.4 V13.2 H67.4 Z" className="gun-steel" />
+      {/* The bipod, legs folded back under the barrel */}
+      <path d="M55 15.4 L46 20.4 M56.4 15.2 L47.6 21" className="gun-bolt" />
+      <path d="M34 7.2 H57.4" className="gun-shine" />
+      <path
+        d="M1.8 6.2 Q1.4 4.6 3.2 4.4 L13 5.4 L19 7.6 L22 8.2 L22 13.8 L18.6 14.4 L13 16.4 L3.4 17.6 Q1.6 17.6 1.8 16 Z M33 5.6 L58 6.4 Q60 6.6 60 10.8 Q60 15 58 15.2 L33 16 Z"
+        className="gun-round"
+      />
+    </>
+  );
+}
+
+/**
+ * A Mills bomb: a cast-iron egg segmented into a grid of studs, painted
+ * khaki and worn bare at the edges, the brass filler plug at its base, the
+ * striker lever down its side and the ring of the safety pin at its top
+ */
+function MillsBomb({ id }: { id: string }) {
+  const studs: { x: number; y: number }[] = [];
+  for (let row = 0; row < 5; row++) {
+    for (let col = 0; col < 4; col++) {
+      const y = -4.2 + row * 2.1;
+      const width = 3.4 * Math.sqrt(1 - (y / 5.4) ** 2);
+      studs.push({ x: -width + ((col + 0.5) * width * 2) / 4, y });
+    }
+  }
+  return (
+    <>
+      <defs>
+        <radialGradient id={`${id}-iron`} cx="0.35" cy="0.3" r="0.8">
+          <stop offset="0" stopColor="#9a9a6a" />
+          <stop offset="0.5" stopColor="#5f6340" />
+          <stop offset="1" stopColor="#262818" />
+        </radialGradient>
+        <clipPath id={`${id}-egg`}>
+          <ellipse cx="0" cy="0" rx="4" ry="5.4" />
+        </clipPath>
+      </defs>
+      {/* The striker lever, curving down the side from the top */}
+      <path d="M1.2 -5.6 Q4.6 -5.4 4.8 -2 L4.6 3" className="mills-lever" />
+      <ellipse
+        cx="0"
+        cy="0"
+        rx="4"
+        ry="5.4"
+        fill={`url(#${id}-iron)`}
+        className="mills-body"
+      />
+      <g clipPath={`url(#${id}-egg)`}>
+        <path
+          d="M-5 -3.2 Q0 -2.7 5 -3.2 M-5 -1.1 Q0 -0.6 5 -1.1 M-5 1 Q0 1.5 5 1 M-5 3.1 Q0 3.6 5 3.1 M-1.8 -6 Q-2.3 0 -1.8 6 M1.8 -6 Q2.3 0 1.8 6 M0 -6 V6"
+          className="mills-grooves"
+        />
+        {studs.map((p, i) => (
+          <ellipse
+            key={i}
+            cx={p.x - 0.25}
+            cy={p.y - 0.3}
+            rx="0.45"
+            ry="0.35"
+            className="mills-glint"
+          />
+        ))}
+      </g>
+      <path d="M-1.6 5 h3.2 v1.3 h-3.2 Z" className="mills-plug" />
+      <path d="M-1 -5.2 h2 v-1.2 h-2 Z" className="mills-cap" />
+      <circle cx="-1.8" cy="-6.6" r="1.3" className="mills-ring" />
+    </>
+  );
+}
+
+/** Two Mills bombs hung on an assault trooper's belt */
+function GrenadeBelt() {
+  return (
+    <svg className="unit-grenades" viewBox="-11 -7.5 22 15" aria-hidden>
+      <g transform="translate(-5 0) rotate(-8)">
+        <MillsBomb id="belt-a" />
+      </g>
+      <g transform="translate(5.5 0.5) rotate(10)">
+        <MillsBomb id="belt-b" />
+      </g>
     </svg>
   );
 }
@@ -477,7 +635,7 @@ function Gunshot({
       : {
           x:
             middle.x +
-            gripSide(event.color) * holdFor(event.from).x * squareSize,
+            gripSide(event.from, flipped) * holdFor(event.from).x * squareSize,
           y: middle.y + holdFor(event.from).y * squareSize,
         };
   const toEnd = Math.hypot(end.x - pivot.x, end.y - pivot.y) || 1;
@@ -746,9 +904,11 @@ function Helmet({
 
 /** A rifle is carried upright at its man's side while he waits */
 const RIFLE_AT_SIDE = -90;
-/** Where a rifleman grips his rifle at his side, from his middle, in squares: your army holds it on the right, theirs on the left */
+/** Where a rifleman grips his rifle at his side, from his middle, in squares */
 const RIFLE_GRIP = { x: 0.2, y: 0.22 };
-const gripSide = (color: Color) => (color === Color.White ? 1 : -1);
+/** Which side of a man, on screen, his rifle is on: toward the middle of the board, so the two halves of the line face inward */
+const gripSide = (sq: SquareIndex, flipped: boolean) =>
+  visualCol(sq, flipped) < 4 ? 1 : -1;
 /** Where a man in the front line holds his rifle to his shoulder, levelled over the parapet */
 const RIFLE_SHOULDER = { x: 0.1, y: 0.02 };
 const FRONT_RANKS = Object.values(TRENCH_RANKS).map((t) => t.front);
@@ -757,9 +917,11 @@ const holdFor = (sq: SquareIndex) =>
   FRONT_RANKS.includes(sq >> 4) ? RIFLE_SHOULDER : RIFLE_GRIP;
 
 /** The angle, in degrees, straight at the enemy line, a touch off true so the rifles splay */
-function enemyAngle(color: Color, flipped: boolean): number {
+function enemyAngle(color: Color, sq: SquareIndex, flipped: boolean): number {
   const ahead = towardEnemy(color, flipped);
-  return (Math.atan2(ahead.y, ahead.x) * 180) / Math.PI + gripSide(color) * 10;
+  return (
+    (Math.atan2(ahead.y, ahead.x) * 180) / Math.PI + gripSide(sq, flipped) * 10
+  );
 }
 
 /** The angle, in degrees, from a shooter to where his round is going */
@@ -898,7 +1060,7 @@ function Effect({
 
   switch (event.kind) {
     case "attack": {
-      if (event.weapon === "bayonet") {
+      if (event.weapon === "bayonet" || event.weapon === "shrapnel") {
         const struck = { animationDelay: `${event.hitMs}ms` };
         return event.miss ? null : (
           <>
@@ -996,6 +1158,60 @@ function Effect({
         </>
       );
     }
+    case "grenade": {
+      const travel = offsetBetween(event.to, event.from, flipped, squareSize);
+      const bursts = {
+        animationDelay: `${event.delayMs + event.flightMs}ms`,
+      };
+      return (
+        <>
+          <span
+            className="grenade-flight"
+            style={css({
+              ...cell(event.from),
+              "--dx": px(travel.x),
+              "--dy": px(travel.y),
+              "--lob": px(
+                -squareSize *
+                  (0.7 + Math.hypot(travel.x, travel.y) / squareSize / 4),
+              ),
+              animationDelay: `${event.delayMs}ms`,
+              animationDuration: `${event.flightMs}ms`,
+            })}
+          >
+            <span
+              className="grenade-arc"
+              style={{
+                animationDelay: `${event.delayMs}ms`,
+                animationDuration: `${event.flightMs}ms`,
+              }}
+            >
+              <svg className="grenade-bomb" viewBox="-6 -8 12 15">
+                <MillsBomb id={`thrown-${event.id}`} />
+              </svg>
+            </span>
+          </span>
+          <span
+            className="shell-flash grenade-burst"
+            style={{ ...cell(event.to), ...bursts }}
+          />
+          <span
+            className="shell-plume grenade-burst"
+            style={{ ...cell(event.to), ...bursts }}
+          >
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+          <span
+            className="shell-smoke grenade-burst"
+            style={{ ...cell(event.to), ...bursts }}
+          />
+        </>
+      );
+    }
     case "shell": {
       const lands = { animationDelay: `${event.delayMs + SHELL_FALL_MS}ms` };
       return (
@@ -1049,10 +1265,14 @@ function playEvent(event: BattleEvent): void {
   switch (event.kind) {
     case "attack": {
       const fired = event.delayMs ?? 0;
-      if (event.weapon === "mg") {
-        if (event.round === 0) sfx.machineGun();
+      if (event.weapon === "mg" || event.weapon === "lmg") {
+        if (event.round === 0) later(fired, sfx.machineGun);
       } else if (event.weapon === "rifle") {
         later(fired, sfx.rifle);
+      } else if (event.weapon === "sniper") {
+        later(fired, sfx.sniper);
+      } else if (event.weapon === "shrapnel") {
+        break;
       } else if (event.weapon === "bayonet") {
         sfx.swing();
       } else if (event.ranged) {
@@ -1068,6 +1288,13 @@ function playEvent(event: BattleEvent): void {
       break;
     case "deploy":
       sfx.drop(DROP_MS / 1000);
+      break;
+    case "grenade":
+      later(event.delayMs, sfx.swing);
+      later(event.delayMs + event.flightMs, () => {
+        sfx.grenade();
+        shakeBoard();
+      });
       break;
     case "shell":
       later(event.delayMs, sfx.incoming);

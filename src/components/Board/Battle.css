@@ -801,9 +801,17 @@
   animation-fill-mode: both;
 }
 
-.battle-effects > .tracer.weapon-mg {
+.battle-effects > .tracer.weapon-mg,
+.battle-effects > .tracer.weapon-lmg {
   background: linear-gradient(90deg, transparent, #ffb36b 60%, #fff1d6);
   box-shadow: 0 0 6px rgba(255, 140, 60, 0.9);
+}
+
+/* A sniper's round: a thin, fast white streak */
+.battle-effects > .tracer.weapon-sniper {
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, #f4f7ff 50%, #ffffff);
+  box-shadow: 0 0 4px rgba(220, 232, 255, 0.9);
 }
 
 @keyframes tracer-fly {
@@ -1337,14 +1345,156 @@
 }
 
 [data-theme="trenches"] .battle-unit.is-crouched.is-entrenched .unit-body > * {
-  transform: translateY(34%);
+  transform: translateY(calc(var(--square-size, 72px) * 0.3));
 }
 
 /* Up and looking over: raised clear of the parapet, so the men really lean over it */
 [data-theme="trenches"] .battle-unit.is-peeking.is-entrenched .unit-body > * {
-  transform: translateY(-12%);
+  transform: translateY(calc(var(--square-size, 72px) * -0.1));
 }
 
 [data-theme="trenches"] .battle-unit.is-peeking:not(.is-entrenched) .unit-body {
   translate: 0 -12%;
+}
+
+/* --- Troops: sights, Lewis guns, and Mills bombs --- */
+
+.gun-lens {
+  fill: #8fb2c4;
+  stroke: #0b0a09;
+  stroke-width: 0.4;
+}
+
+.gun-flutes {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 0.7;
+}
+
+.gun-shine-fill {
+  fill: rgba(230, 236, 245, 0.25);
+}
+
+.unit-grenades {
+  position: absolute;
+  left: 28%;
+  top: 58%;
+  width: 40%;
+  z-index: 3;
+  overflow: visible;
+  filter: drop-shadow(0.02em 0.04em 0 rgba(10, 8, 4, 0.55));
+}
+
+.mills-body {
+  stroke: #12140a;
+  stroke-width: 0.45;
+}
+
+/* The deep grooves that split the iron into studs */
+.mills-grooves {
+  fill: none;
+  stroke: rgba(14, 16, 8, 0.75);
+  stroke-width: 0.5;
+}
+
+/* Paint worn off the top of each stud, bare iron catching the light */
+.mills-glint {
+  fill: rgba(205, 205, 170, 0.35);
+}
+
+.mills-plug {
+  fill: #b08a3a;
+  stroke: #3d2c0c;
+  stroke-width: 0.35;
+}
+
+.mills-cap {
+  fill: #4a4c48;
+  stroke: #12130f;
+  stroke-width: 0.35;
+}
+
+.mills-lever {
+  fill: none;
+  stroke: #8a8d86;
+  stroke-width: 0.9;
+  stroke-linecap: round;
+}
+
+.mills-ring {
+  fill: none;
+  stroke: #a7a99f;
+  stroke-width: 0.5;
+}
+
+.mills-lever {
+  fill: none;
+  stroke: #8c8c82;
+  stroke-width: 0.9;
+}
+
+/* A grenade thrown in a high arc, tumbling as it goes, then bursting where it lands */
+.battle-effects > .grenade-flight {
+  z-index: 4;
+  animation-name: grenade-across;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  opacity: 0;
+}
+
+.grenade-arc {
+  position: absolute;
+  inset: 0;
+  animation-name: grenade-lob;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+.grenade-bomb {
+  position: absolute;
+  left: 37%;
+  top: 36%;
+  width: 26%;
+  height: 28%;
+  overflow: visible;
+  animation: grenade-tumble 0.32s linear infinite;
+}
+
+@keyframes grenade-across {
+  0% {
+    translate: 0 0;
+    opacity: 1;
+  }
+  99% {
+    opacity: 1;
+  }
+  100% {
+    translate: var(--dx) var(--dy);
+    opacity: 0;
+  }
+}
+
+@keyframes grenade-lob {
+  0% {
+    translate: 0 0;
+    animation-timing-function: cubic-bezier(0.3, 0.6, 0.6, 1);
+  }
+  50% {
+    translate: 0 var(--lob);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.7, 0.4);
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+@keyframes grenade-tumble {
+  to {
+    rotate: 1turn;
+  }
+}
+
+/* Its burst: the shell's, smaller */
+.battle-effects > .grenade-burst {
+  scale: 0.6;
 }

@@ -109,28 +109,6 @@
   opacity: 0.8;
 }
 
-.trench-warning {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  translate: 0 -50%;
-  padding: 6px 14px;
-  font-family: var(--font-display);
-  font-size: 18px;
-  color: #fff4dc;
-  background: #8a1d12;
-  border: 3px solid var(--ink);
-  border-radius: 8px;
-  animation: warning-pulse 0.5s ease-in-out 4 alternate;
-}
-
-@keyframes warning-pulse {
-  to {
-    scale: 1.08;
-    background: #c22a18;
-  }
-}
-
 /* Rain driving down over the whole front, in two sheets at different depths */
 .trench-weather {
   position: fixed;
@@ -153,14 +131,14 @@
   opacity: 0.22;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='140'%3E%3Cg stroke='%23c8d2d8' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M10 0 l-6 26'/%3E%3Cpath d='M48 50 l-6 26'/%3E%3Cpath d='M75 15 l-6 26'/%3E%3Cpath d='M28 90 l-6 26'/%3E%3Cpath d='M66 104 l-6 26'/%3E%3C/g%3E%3C/svg%3E")
     0 0 / 90px 140px;
-  animation: rain-fall-far 0.9s linear infinite;
+  animation: rain-fall-far 0.68s linear infinite;
 }
 
 .rain-near {
   opacity: 0.32;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='220'%3E%3Cg stroke='%23dfe7ea' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M20 0 l-10 46'/%3E%3Cpath d='M96 70 l-10 46'/%3E%3Cpath d='M140 20 l-10 46'/%3E%3Cpath d='M58 140 l-10 46'/%3E%3C/g%3E%3C/svg%3E")
     0 0 / 160px 220px;
-  animation: rain-fall-near 0.5s linear infinite;
+  animation: rain-fall-near 0.38s linear infinite;
 }
 
 /* Each sheet falls exactly one tile, so the loop never shows */

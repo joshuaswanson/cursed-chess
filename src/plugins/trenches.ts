@@ -3,7 +3,7 @@ import type { Piece, SquareIndex } from "../engine/types";
 import type { Board } from "../engine/board";
 import { opponent } from "../engine/moves";
 import type { ModePlugin, PluginContext, BoardOverlay } from "./types";
-import type { BattleEvent, BattleView, Unit } from "./clashRoyale";
+import type { Arms, BattleEvent, BattleView, Unit } from "./clashRoyale";
 import { travelMs } from "./clashRoyale";
 import {
   ALL_SQUARES,
@@ -54,6 +54,19 @@ const PEEK_MS = 1500;
 /** Now and then a man puts his head up just to look, for a moment */
 const LOOK_CHANCE = 0.3;
 const LOOK_MS = 900;
+/** A Lewis gunner fires short bursts from the shoulder */
+const LMG_ROUNDS = 4;
+const LMG_MS = 2100;
+/** A sniper takes his time, and when he fires at a man who shows himself, he rarely misses */
+const SNIPE_MS = 3400;
+const SNIPER_HIT = { trench: 0.55, reserve: 0.6, open: 0.8 };
+const SNIPER_DAMAGE = 2;
+/** How far a grenade can be thrown, in squares, how long between throws, and what its blast does */
+const GRENADE_RANGE = 2.4;
+const GRENADE_MS = 5200;
+const GRENADE_HIT = 0.75;
+const GRENADE_DAMAGE = 2;
+const SHRAPNEL_HIT = 0.35;
 /** Men caught in the wire are sitting ducks */
 const SNAGGED_HIT_BONUS = 0.2;
 /** Running men fire less often and less well */
@@ -100,6 +113,8 @@ export interface TrenchUnit extends Unit {
   snaggedUntil: number;
   /** Up and looking over the parapet until the clock passes this; crouched below it otherwise */
   exposedUntil: number;
+  /** When a grenadier has his next grenade ready */
+  grenadeAt: number;
 }
 
 export interface Crater {
@@ -142,6 +157,27 @@ const forward = (color: Color) => (color === Color.White ? 16 : -16);
 
 function distance(a: SquareIndex, b: SquareIndex): number {
   return Math.hypot(fileOf(a) - fileOf(b), rankOf(a) - rankOf(b));
+}
+
+/**
+ * What a soldier carries, by what he is: pawns are riflemen, bishops snipers,
+ * rooks Lewis gunners, and knights assault troops with grenades. Whoever
+ * holds a front trench's gun nest mans its machine gun.
+ */
+function armsFor(sq: SquareIndex, piece: Piece): Arms {
+  if (sq === GUN_NESTS[piece.color] && piece.type === PieceType.Pawn) {
+    return "mg";
+  }
+  switch (piece.type) {
+    case PieceType.Bishop:
+      return "sniper";
+    case PieceType.Rook:
+      return "lmg";
+    case PieceType.Knight:
+      return "grenadier";
+    default:
+      return "rifle";
+  }
 }
 
 function coverAt(sq: SquareIndex): Cover {
@@ -325,6 +361,7 @@ export class TrenchesPlugin implements ModePlugin {
       goal: 0,
       snaggedUntil: 0,
       exposedUntil: 0,
+      grenadeAt: 0,
     };
   }
 
@@ -476,6 +513,8 @@ export class TrenchesPlugin implements ModePlugin {
         unit.order = "hold";
       } else if (this.advance(board, sq, unit, piece)) {
         return;
+      } else if (this.lobGrenade(board, sq, piece, unit)) {
+        return;
       } else if (Math.random() < 0.5) {
         this.fire(board, sq, piece, true);
         unit.readyIn = jitter(RIFLE_MS * 1.6);
@@ -504,14 +543,125 @@ export class TrenchesPlugin implements ModePlugin {
 
     // To fire he has to come up over the parapet, and while up he can be hit
     this.raise(unit, PEEK_MS);
-    if (sq === GUN_NESTS[piece.color] && piece.type === PieceType.Pawn) {
-      if (this.burst(board, sq, piece)) {
-        unit.readyIn = jitter(BURST_MS);
-        return;
-      }
+    switch (armsFor(sq, piece)) {
+      case "mg":
+        if (this.burst(board, sq, piece)) {
+          unit.readyIn = jitter(BURST_MS);
+          return;
+        }
+        break;
+      case "lmg":
+        if (this.burst(board, sq, piece, undefined, "lmg")) {
+          unit.readyIn = jitter(LMG_MS);
+          return;
+        }
+        break;
+      case "sniper":
+        if (this.snipe(board, sq, piece)) {
+          unit.readyIn = jitter(SNIPE_MS);
+          return;
+        }
+        break;
+      case "grenadier":
+        if (this.lobGrenade(board, sq, piece, unit)) return;
+        break;
     }
     this.fire(board, sq, piece, false);
     unit.readyIn = jitter(RIFLE_MS);
+  }
+
+  /**
+   * A sniper watches for anyone who shows himself, over a parapet or in the
+   * open, and picks him off; returns false if nobody is showing
+   */
+  private snipe(board: Board, sq: SquareIndex, piece: Piece): boolean {
+    const showing = ALL_SQUARES.filter(
+      (s) => board.get(s)?.color === opponent(piece.color) && !this.crouched(s),
+    );
+    if (showing.length === 0) return false;
+    const target = showing.reduce((a, b) =>
+      distance(sq, a) <= distance(sq, b) ? a : b,
+    );
+    this.shoot(
+      board,
+      sq,
+      target,
+      piece,
+      "sniper",
+      this.hitChance(sq, target, SNIPER_HIT),
+      RISE_MS + AIM_MS * 2,
+      0,
+      SNIPER_DAMAGE,
+    );
+    return true;
+  }
+
+  /**
+   * A grenadier lobs a bomb at the enemy nearest him, if one is within
+   * throwing range, over any parapet and into the trench behind it; returns
+   * false if he has none ready or nobody is close enough
+   */
+  private lobGrenade(
+    board: Board,
+    sq: SquareIndex,
+    piece: Piece,
+    unit: TrenchUnit,
+  ): boolean {
+    if (piece.type !== PieceType.Knight || unit.grenadeAt > this.clock) {
+      return false;
+    }
+    const near = ALL_SQUARES.filter(
+      (s) =>
+        board.get(s)?.color === opponent(piece.color) &&
+        distance(sq, s) <= GRENADE_RANGE,
+    );
+    if (near.length === 0) return false;
+    const target = near[Math.floor(Math.random() * near.length)];
+    const flightMs = Math.round(650 + 140 * distance(sq, target));
+    const delayMs = RISE_MS;
+    const bursts = delayMs + flightMs;
+    this.raise(unit, PEEK_MS);
+    this.emit({
+      kind: "grenade",
+      unitId: unit.id,
+      color: piece.color,
+      from: sq,
+      to: target,
+      flightMs,
+      delayMs,
+    });
+    // The blast catches whoever is in the trench it lands in, crouched or not
+    const around = [0, -17, -16, -15, -1, 1, 15, 16, 17]
+      .map((d) => target + d)
+      .filter(
+        (s) => isValidSquare(s) && Math.abs(fileOf(s) - fileOf(target)) <= 1,
+      );
+    for (const s of around) {
+      const victim = this.units.get(s);
+      if (!victim || !board.get(s)) continue;
+      const direct = s === target;
+      if (Math.random() >= (direct ? GRENADE_HIT : SHRAPNEL_HIT)) continue;
+      const damage = direct ? GRENADE_DAMAGE : 1;
+      victim.hp -= damage;
+      const kill = victim.hp <= 0;
+      this.emit({
+        kind: "attack",
+        unitId: unit.id,
+        targetId: victim.id,
+        color: piece.color,
+        from: target,
+        to: s,
+        damage,
+        ranged: true,
+        kill,
+        hitMs: bursts,
+        weapon: "shrapnel",
+      });
+      if (kill) this.fall(board, s, target, bursts);
+    }
+    unit.grenadeAt = this.clock + jitter(GRENADE_MS);
+    unit.readyIn = bursts + jitter(RIFLE_MS * 0.6);
+    return true;
   }
 
   /** Brings a man up to look over the parapet, for a while, if he is not already up for longer */
@@ -588,7 +738,12 @@ export class TrenchesPlugin implements ModePlugin {
     return true;
   }
 
-  /** Reserves move up to fill a gap in their side's front line */
+  /**
+   * Men out of a trench make for a gap in their own front line: from the
+   * back trench now and then, from the ground behind the line, and anyone
+   * left stranded in no man's land, edging sideways along the ground to
+   * reach it
+   */
   private moveUp(
     board: Board,
     sq: SquareIndex,
@@ -597,26 +752,50 @@ export class TrenchesPlugin implements ModePlugin {
   ): boolean {
     if (piece.type === PieceType.King) return false;
     const { front, back } = TRENCH_RANKS[piece.color];
-    const reserve = piece.color === Color.White ? 1 : 6;
     const rank = rankOf(sq);
-    if (rank !== back && rank !== reserve) return false;
-    const gap = ALL_SQUARES.some((s) => rankOf(s) === front && !board.get(s));
-    if (!gap || (rank === back && Math.random() > RESERVE_CHANCE)) return false;
-    const step = forward(piece.color);
-    const to = [step, step - 1, step + 1]
+    const stranded = coverAt(sq) === "open" && unit.order === "hold";
+    const behind = coverAt(sq) === "reserve";
+    if (rank === back) {
+      if (Math.random() > RESERVE_CHANCE) return false;
+    } else if (!behind && !stranded) {
+      return false;
+    }
+    const gaps = ALL_SQUARES.filter(
+      (s) => rankOf(s) === front && !board.get(s),
+    );
+    if (gaps.length === 0) return false;
+    const reach = (a: SquareIndex, b: SquareIndex) =>
+      Math.max(
+        Math.abs(fileOf(a) - fileOf(b)),
+        Math.abs(rankOf(a) - rankOf(b)),
+      );
+    const goal = gaps.reduce((a, b) =>
+      reach(sq, a) + Math.random() * 0.5 <= reach(sq, b) ? a : b,
+    );
+    // The neighbouring square that brings him closest, sideways if that is all there is
+    const to = [-17, -16, -15, -1, 1, 15, 16, 17]
       .map((d) => sq + d)
-      .find(
+      .filter(
         (s) =>
           isValidSquare(s) &&
           Math.abs(fileOf(s) - fileOf(sq)) <= 1 &&
           !board.get(s) &&
-          (rankOf(s) === reserve || rankOf(s) === front),
-      );
+          reach(s, goal) < reach(sq, goal),
+      )
+      .sort(
+        (a, b) =>
+          reach(a, goal) - reach(b, goal) ||
+          Math.abs(rankOf(a) - front) - Math.abs(rankOf(b) - front),
+      )[0];
     if (to === undefined) return false;
-    const ms = Math.round(STEP_MS * 1.2);
+    const ms = Math.round(STEP_MS * (stranded ? 0.9 : 1.2));
     this.relocate(board, sq, to);
     this.emit({ kind: "move", unitId: unit.id, from: sq, to, ms, delayMs: 0 });
-    unit.readyIn = ms + rand(300, 900);
+    unit.readyIn = ms + (stranded ? rand(50, 200) : rand(300, 900));
+    if (this.wire.has(to)) {
+      unit.snaggedUntil = this.clock + ms + rand(...WIRE_MS);
+      unit.readyIn = unit.snaggedUntil - this.clock;
+    }
     return true;
   }
 
@@ -669,6 +848,7 @@ export class TrenchesPlugin implements ModePlugin {
     sq: SquareIndex,
     piece: Piece,
     at?: SquareIndex,
+    weapon: "mg" | "lmg" = "mg",
   ): boolean {
     const target =
       at ??
@@ -678,14 +858,15 @@ export class TrenchesPlugin implements ModePlugin {
         open: 14,
       });
     if (target === null) return false;
-    for (let round = 0; round < BURST_ROUNDS; round++) {
+    const rounds = weapon === "mg" ? BURST_ROUNDS : LMG_ROUNDS;
+    for (let round = 0; round < rounds; round++) {
       if (!board.get(target)) break;
       this.shoot(
         board,
         sq,
         target,
         piece,
-        "mg",
+        weapon,
         this.hitChance(sq, target, ROUND_HIT),
         RISE_MS + round * ROUND_GAP_MS,
         round,
@@ -770,10 +951,11 @@ export class TrenchesPlugin implements ModePlugin {
     from: SquareIndex,
     to: SquareIndex,
     piece: Piece,
-    weapon: "rifle" | "mg",
+    weapon: "rifle" | "mg" | "lmg" | "sniper",
     chance: number,
     delayMs: number,
     round: number,
+    damage = 1,
   ): void {
     const shooter = this.units.get(from)!;
     const target = this.units.get(to);
@@ -784,7 +966,7 @@ export class TrenchesPlugin implements ModePlugin {
     const impact = hit
       ? { x: 0, y: 0 }
       : { x: rand(-0.45, 0.45), y: rand(-0.45, 0.45) };
-    if (hit) target.hp -= 1;
+    if (hit) target.hp -= damage;
     const kill = hit && target.hp <= 0;
     this.emit({
       kind: "attack",
@@ -793,7 +975,7 @@ export class TrenchesPlugin implements ModePlugin {
       color: piece.color,
       from,
       to,
-      damage: hit ? 1 : 0,
+      damage: hit ? damage : 0,
       ranged: true,
       kill,
       hitMs,
@@ -1001,13 +1183,10 @@ export class TrenchesPlugin implements ModePlugin {
       units: Object.fromEntries(this.units),
       events: [...this.events],
       arms: Object.fromEntries(
-        [...this.units].map(([sq, unit]) => [
-          unit.id,
-          sq === GUN_NESTS[ctx.board.get(sq)?.color ?? Color.White] &&
-          ctx.board.get(sq)?.type === PieceType.Pawn
-            ? "mg"
-            : "rifle",
-        ]),
+        [...this.units].flatMap(([sq, unit]) => {
+          const piece = ctx.board.get(sq);
+          return piece ? [[unit.id, armsFor(sq, piece)]] : [];
+        }),
       ),
     };
     return [

@@ -88,7 +88,7 @@ export type BattleEvent =
       kill: boolean;
       hitMs: number;
       /** A gunshot from a rifle or a machine gun, drawn as a tracer, or a thrust with a bayonet */
-      weapon?: "rifle" | "mg" | "bayonet";
+      weapon?: "rifle" | "mg" | "lmg" | "sniper" | "bayonet" | "shrapnel";
       /** The shot or blow went wide, landing this far off the target in squares */
       miss?: boolean;
       impact?: { x: number; y: number };
@@ -112,6 +112,17 @@ export type BattleEvent =
       color: Color;
     }
   | {
+      /** A grenade lobbed from one square onto another, bursting as it lands */
+      kind: "grenade";
+      id: number;
+      unitId: number;
+      color: Color;
+      from: SquareIndex;
+      to: SquareIndex;
+      flightMs: number;
+      delayMs: number;
+    }
+  | {
       /** An artillery shell coming down on a square */
       kind: "shell";
       id: number;
@@ -119,11 +130,14 @@ export type BattleEvent =
       delayMs: number;
     };
 
+/** What a soldier carries: a rifle, the emplaced machine gun, a Lewis gun, a sniper's scoped rifle, or a rifle and a bag of grenades */
+export type Arms = "rifle" | "mg" | "lmg" | "sniper" | "grenadier";
+
 export interface BattleView {
   units: Record<number, Unit>;
   events: BattleEvent[];
   /** What each unit carries, by unit id, where pieces are armed */
-  arms?: Record<number, "rifle" | "mg">;
+  arms?: Record<number, Arms>;
 }
 
 type Unstamped<E> = E extends BattleEvent ? Omit<E, "id"> : never;
