@@ -799,13 +799,12 @@ export function Board() {
         >
           {lakes.size > 0 && <WorldRiver rows={riverRanks.size} />}
           {overlays.trenches && <WorldCraters flipped={flipped} />}
-          {overlays.trenches && <RainRipples within="world-craters" />}
           {overlays.trenches && <WorldTrenches flipped={flipped} />}
           {overlays.trenches && <WorldTrenchesBank flipped={flipped} />}
           {overlays.trenches && (
             <BoardCraters view={overlays.trenches} flipped={flipped} />
           )}
-          {overlays.trenches && <RainRipples within="board-craters" />}
+          {overlays.trenches && <RainRipples />}
           {overlays.trenches && <WorldTrenchesFront flipped={flipped} />}
           {overlays.trenches && (
             <LineOrders view={overlays.trenches} flipped={flipped} />

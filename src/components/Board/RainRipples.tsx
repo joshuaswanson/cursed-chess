@@ -55,15 +55,11 @@ function dropsFor(seed: number, count: number): Drop[] {
 }
 
 /**
- * Raindrops ringing the water in every shell hole, all drawn on one canvas
- * laid over the craters, so hundreds of rings cost one layer
+ * Raindrops ringing the water in every shell hole on the front, all drawn on
+ * one canvas laid over the craters and the earth banks, so hundreds of rings
+ * cost one layer
  */
-export function RainRipples({
-  within,
-}: {
-  /** The class of the layer whose shell holes it rings */
-  within: string;
-}) {
+export function RainRipples() {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -83,7 +79,7 @@ export function RainRipples({
     const survey = () => {
       const area = canvas.parentElement!.getBoundingClientRect();
       const found = [
-        ...document.querySelectorAll<HTMLElement>(`.${within} [data-ripples]`),
+        ...document.querySelectorAll<HTMLElement>("[data-ripples]"),
       ].map((hole) => ({ hole, box: hole.getBoundingClientRect() }));
       if (found.length === 0) {
         pools = [];
@@ -193,11 +189,11 @@ export function RainRipples({
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", survey);
     };
-  }, [within]);
+  }, []);
 
   return (
     <div
-      className={`rain-ripples ripples-${within}`}
+      className="rain-ripples"
       style={{ "--span": SPAN } as React.CSSProperties}
       aria-hidden
     >

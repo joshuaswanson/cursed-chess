@@ -5,6 +5,7 @@ import type { Sandbag } from "./trenchFront";
 import { ShellHole } from "./ShellHole";
 import "./WorldTrenches.css";
 import drawingStyles from "./WorldTrenches.css?raw";
+import { inline } from "../../utils/inlineImage";
 
 /**
  * Sandbags laid in courses: burlap bags plumped in the middle, their tied
@@ -213,27 +214,6 @@ function EarthDefs() {
       </radialGradient>
     </defs>
   );
-}
-
-const inlined = new Map<string, Promise<string>>();
-
-/** A texture as a data URL, which a drawing shown as an image can still use */
-function inline(href: string): Promise<string> {
-  let made = inlined.get(href);
-  if (!made) {
-    made = fetch(href)
-      .then((r) => r.blob())
-      .then(
-        (blob) =>
-          new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          }),
-      );
-    inlined.set(href, made);
-  }
-  return made;
 }
 
 /**
@@ -508,9 +488,35 @@ function WorldTrenchesBankLayer({ flipped }: { flipped: boolean }) {
 const BANK_REACH = 60;
 const BANK_FADE = 50;
 
+/** The shell holes, by seed, that a trench line is dug through or heaped over, where no rain rings would show */
+function underTheLines(scene: ReturnType<typeof frontFor>): Set<number> {
+  const ctx = document.createElement("canvas").getContext("2d");
+  if (!ctx) return new Set();
+  const ground = scene.lines.flatMap((line) => [
+    new Path2D(line.outline),
+    ...(line.farWorks.heap ? [new Path2D(line.farWorks.heap)] : []),
+  ]);
+  const covered = (x: number, y: number) =>
+    ground.some((shape) => ctx.isPointInPath(shape, x, y));
+  return new Set(
+    scene.craters
+      .filter((c) =>
+        [
+          [0, 0],
+          [c.r, 0],
+          [-c.r, 0],
+          [0, c.r],
+          [0, -c.r],
+        ].some(([dx, dy]) => covered(c.x + dx, c.y + dy)),
+      )
+      .map((c) => c.seed),
+  );
+}
+
 /** The shell holes pocking the ground off the board, under the trench lines */
 function WorldCratersLayer({ flipped }: { flipped: boolean }) {
   const scene = useMemo(() => frontFor(flipped), [flipped]);
+  const hidden = useMemo(() => underTheLines(scene), [scene]);
   const width = BOARD + REACH * 2;
   const height = BOARD + MARGIN * 2;
   return (
@@ -519,6 +525,7 @@ function WorldCratersLayer({ flipped }: { flipped: boolean }) {
         <ShellHole
           key={c.seed}
           seed={c.seed}
+          rippling={!hidden.has(c.seed)}
           style={{
             left: `${((c.x - c.r + REACH) / width) * 100}%`,
             top: `${((c.y - c.r) / height) * 100}%`,
