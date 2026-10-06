@@ -403,6 +403,9 @@ function holdPause(ms: number): void {
 
 /** What the trenches looked like at the last redraw */
 let lastTrenchLook: string | undefined;
+let lastTrenchDraw = 0;
+/** How often, at most, the Trenches board redraws: each redraw of a crowded front costs the page dearly */
+const TRENCH_REDRAW_MS = 200;
 
 function endGameSoon(
   winner: Color | null,
@@ -1099,8 +1102,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Trenches says when anything on screen has changed; the board redraws only then
     const trenches = pluginManager.find<TrenchesPlugin>("trenches");
     const look = trenches?.signature();
-    if (look === undefined || look !== lastTrenchLook) {
+    const now = performance.now();
+    const due = !trenches || now - lastTrenchDraw >= TRENCH_REDRAW_MS;
+    if ((look === undefined || look !== lastTrenchLook) && due) {
       lastTrenchLook = look;
+      lastTrenchDraw = now;
       set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
     }
     if (winner === null) return;
