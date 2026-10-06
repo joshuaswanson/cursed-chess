@@ -145,14 +145,16 @@ function layBags(
     };
   };
   const end = edge[edge.length - 1].x;
-  // Laid by hand: each bag its own size, packed unevenly, the odd one missing
-  // or slumped, each course staggered over the one below
+  // Laid by hand: each bag its own size, packed unevenly, the odd one slumped
+  // or missing from the upper courses, each course staggered over the one below
   for (let course = 0; course < courses; course++) {
     let x = edge[0].x + (course % 2 ? BAG_W * 0.5 : 0) + rand() * 6;
     while (x < end) {
       const w = BAG_W * (0.8 + rand() * 0.4);
       const h = BAG_H * (0.8 + rand() * 0.35);
-      if (rand() > (course > 0 ? 0.1 : 0.03)) {
+      // The bottom course has no gaps, since men crouch behind it
+      const missing = rand() <= 0.1;
+      if (course === 0 || !missing) {
         const { y, tilt } = along(x + w / 2);
         bags.push({
           x: x + w / 2,
