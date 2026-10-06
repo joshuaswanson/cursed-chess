@@ -1483,4 +1483,41 @@ export const sfx = {
       node.stop(t + length + 0.05);
     }
   },
+
+  /** A flare going up: the pop of the pistol, the hiss of its climb, and a long sputtering burn */
+  flare(burnSeconds: number): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const pop = c.createOscillator();
+    pop.frequency.setValueAtTime(220, t);
+    pop.frequency.exponentialRampToValueAtTime(60, t + 0.08);
+    const popGain = c.createGain();
+    popGain.gain.setValueAtTime(0.25, t);
+    popGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    pop.connect(popGain).connect(out);
+    pop.start(t);
+    pop.stop(t + 0.12);
+    const hiss = noiseSource(c);
+    const band = c.createBiquadFilter();
+    band.type = "bandpass";
+    band.Q.value = 1.4;
+    band.frequency.setValueAtTime(1800, t);
+    band.frequency.exponentialRampToValueAtTime(5200, t + 1.1);
+    band.frequency.exponentialRampToValueAtTime(2600, t + 1.4);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.06, t + 0.15);
+    gain.gain.setValueAtTime(0.05, t + 1.1);
+    gain.gain.linearRampToValueAtTime(0.025, t + 1.6);
+    // The burn sputters as it goes
+    for (let at = 1.6; at < burnSeconds; at += 0.08 + Math.random() * 0.12) {
+      gain.gain.linearRampToValueAtTime(0.015 + Math.random() * 0.02, t + at);
+    }
+    gain.gain.linearRampToValueAtTime(0.0001, t + burnSeconds);
+    hiss.connect(band).connect(gain).connect(out);
+    hiss.start(t);
+    hiss.stop(t + burnSeconds + 0.05);
+  },
 };

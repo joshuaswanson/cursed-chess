@@ -3,6 +3,8 @@ import type { SquareIndex } from "../../engine";
 import type { TrenchView } from "../../plugins/trenches";
 import { visualCol, visualRow } from "./boardGeometry";
 import { ShellHole } from "./ShellHole";
+import { Flare } from "./Flare";
+import type { FlareShot } from "./Flare";
 import "./TrenchField.css";
 
 type Style = React.CSSProperties & Record<`--${string}`, string | number>;
@@ -43,37 +45,48 @@ function Wire({ sq }: { sq: SquareIndex }) {
   );
 }
 
-/** A flare popping over no man's land, hanging in the rain and lighting it pale */
-function useFlares(): { id: number; x: number; drift: number }[] {
-  const [flares, setFlares] = useState<
-    { id: number; x: number; drift: number }[]
-  >([]);
+/**
+ * Flares going up over no man's land now and then, fired from one trench or
+ * the other, sometimes two in quick succession
+ */
+function useFlares(flipped: boolean): FlareShot[] {
+  const [flares, setFlares] = useState<FlareShot[]>([]);
   useEffect(() => {
     let id = 0;
     let timer = 0;
+    const fire = () => {
+      // From just in front of one side's front trench, on the screen
+      const near = Math.random() < 0.5;
+      const row = near !== flipped ? 5 : 2;
+      const shot: FlareShot = {
+        id: ++id,
+        x: 0.1 + Math.random() * 0.8,
+        y: (row + (near !== flipped ? 0.1 : 0.9)) / 8,
+        drift: (Math.random() - 0.5) * 0.18,
+        rise: 0.18 + Math.random() * 0.12,
+      };
+      setFlares((all) => [...all.slice(-2), shot]);
+    };
     const next = () => {
       timer = window.setTimeout(
         () => {
-          const flare = {
-            id: ++id,
-            x: 15 + Math.random() * 70,
-            drift: (Math.random() - 0.5) * 20,
-          };
-          setFlares((all) => [...all.slice(-2), flare]);
+          fire();
+          if (Math.random() < 0.25)
+            window.setTimeout(fire, 700 + Math.random() * 900);
           next();
         },
-        7000 + Math.random() * 9000,
+        8000 + Math.random() * 10000,
       );
     };
     next();
     return () => clearTimeout(timer);
-  }, []);
+  }, [flipped]);
   return flares;
 }
 
 /**
  * What the fighting leaves on the board, between the ground and the pieces:
- * wire strung across no man's land, shell craters, and flares drifting down over it all
+ * wire strung across no man's land, and flares drifting down over it all
  */
 export function TrenchField({
   view,
@@ -82,9 +95,40 @@ export function TrenchField({
   view: TrenchView;
   flipped: boolean;
 }) {
-  const flares = useFlares();
+  const flares = useFlares(flipped);
   return (
-    <div className="trench-field" aria-hidden>
+    <>
+      <div className="trench-field" aria-hidden>
+        {view.wire.map((sq) => (
+          <span
+            key={`w${sq}`}
+            className="wire-cell"
+            style={cellAt(sq, flipped)}
+          >
+            <Wire sq={sq} />
+          </span>
+        ))}
+      </div>
+      {/* Up in the sky, over the sandbags and the men */}
+      <div className="flare-sky" aria-hidden>
+        {flares.map((shot) => (
+          <Flare key={shot.id} shot={shot} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+/** The shell holes the fighting has churned into the board, under the trench lines and their sandbags */
+export function BoardCraters({
+  view,
+  flipped,
+}: {
+  view: TrenchView;
+  flipped: boolean;
+}) {
+  return (
+    <div className="board-craters" aria-hidden>
       {view.craters.map((c) => {
         // Files and ranks from a1's corner, to the screen, either way round
         const left = flipped ? 8 - c.x : c.x;
@@ -102,22 +146,6 @@ export function TrenchField({
           />
         );
       })}
-      {view.wire.map((sq) => (
-        <span key={`w${sq}`} className="wire-cell" style={cellAt(sq, flipped)}>
-          <Wire sq={sq} />
-        </span>
-      ))}
-      {flares.map((flare) => (
-        <span
-          key={flare.id}
-          className="flare"
-          style={
-            { "--x": `${flare.x}%`, "--drift": `${flare.drift}%` } as Style
-          }
-        >
-          <i />
-        </span>
-      ))}
     </div>
   );
 }

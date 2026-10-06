@@ -27,7 +27,7 @@ import { TugLayer } from "./TugOfWar";
 import { Tombstone, ZombiePiece } from "./Zombies";
 import type { TrenchView } from "../../plugins/trenches";
 import { TRENCH_RANKS } from "../../plugins/trenches";
-import { TrenchField } from "./TrenchField";
+import { BoardCraters, TrenchField } from "./TrenchField";
 import {
   WorldCraters,
   WorldTrenches,
@@ -778,6 +778,9 @@ export function Board() {
         >
           {lakes.size > 0 && <WorldRiver rows={riverRanks.size} />}
           {overlays.trenches && <WorldCraters flipped={flipped} />}
+          {overlays.trenches && (
+            <BoardCraters view={overlays.trenches} flipped={flipped} />
+          )}
           {overlays.trenches && <WorldTrenches flipped={flipped} />}
           {overlays.trenches && <WorldTrenchesFront flipped={flipped} />}
           {overlays.trenches && battle && (
