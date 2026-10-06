@@ -263,7 +263,9 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
     const roughness = board ? 0.7 : 1.3;
     const widen = board ? 0 : rand() * 8 - 4;
     far.push({ x, y: c + FAR_LIP - widen + wallsA[i] * roughness });
-    near.push({ x, y: c + NEAR_LIP + widen + wallsB[i] * roughness });
+    // Ours end at the duckboards the men stand on, seen from behind them
+    const lip = enemyAbove ? OUR_FLOOR + 13 : NEAR_LIP;
+    near.push({ x, y: c + lip + widen + wallsB[i] * roughness });
   });
 
   const farFoot = xs.map((x, i) => ({

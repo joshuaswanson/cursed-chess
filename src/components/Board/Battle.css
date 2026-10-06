@@ -1029,10 +1029,10 @@
 }
 
 .helmet-on-n {
-  left: 40%;
-  top: 6%;
-  width: 38%;
-  rotate: calc(-14deg + var(--tilt, 0deg));
+  left: 46%;
+  top: 4%;
+  width: 46%;
+  rotate: calc(12deg + var(--tilt, 0deg));
 }
 
 .helmet-on-b {

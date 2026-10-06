@@ -184,15 +184,6 @@
   stroke-linecap: round;
 }
 
-/* The crumbling near lip of our own trenches, just in front of the men's boots */
-.near-crumb {
-  fill: none;
-  stroke: #4c3b28;
-  stroke-width: 9;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 -3px 2px rgba(0, 0, 0, 0.6));
-}
-
 /* A grim, cold grade over the whole front: washed out, dark, wet */
 .world-trenches {
   filter: saturate(0.7) brightness(0.92) contrast(1.05);

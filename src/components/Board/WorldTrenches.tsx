@@ -233,6 +233,9 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
               <path d={line.farWorks.heap} className="earth-texture" />
             </>
           )}
+          <clipPath id={`wt-inside-${line.key}`}>
+            <path d={line.outline} />
+          </clipPath>
           <path d={line.outline} className="trench-cut" />
           <path d={line.outline} className="earth-texture trench-floor" />
           <path d={line.centre} className="duckboard-bed" />
@@ -269,8 +272,6 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
             <path d={line.outline} className="trench-occlusion" />
           </g>
           <path d={line.farLip} className="lip-rim" />
-          <path d={line.nearLip} className="lip-rim" />
-          <path d={line.outline} className="trench-lip" />
           {/* Sandbags piled along the lip, over the edge of the cut */}
           <Sandbags bags={line.farWorks.bags} />
         </g>
@@ -305,12 +306,6 @@ export function WorldTrenchesFront({ flipped }: { flipped: boolean }) {
     >
       {scene.lines.map((line) => (
         <g key={line.key}>
-          {line.ours && (
-            <>
-              <path d={line.nearLip} className="near-crumb" />
-              <path d={line.nearLip} className="lip-rim" />
-            </>
-          )}
           <Sandbags bags={line.nearBags} />
         </g>
       ))}
