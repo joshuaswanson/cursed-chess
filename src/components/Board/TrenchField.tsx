@@ -119,7 +119,7 @@ function TrenchFieldLayer({
   );
 }
 
-/** The shell holes the fighting has churned into the board, under the trench lines and their sandbags */
+/** The shell holes the fighting has churned into the board, over the earth banks and under the sandbags */
 function BoardCratersLayer({
   view,
   flipped,

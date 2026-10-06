@@ -384,8 +384,6 @@ function WorldTrenchesLayer({ flipped }: { flipped: boolean }) {
           <g clipPath={`url(#wt-inside-${line.key})`}>
             <path d={line.outline} className="trench-occlusion" />
           </g>
-          {/* Sandbags piled along the lip, over the edge of the cut */}
-          <Sandbags bags={line.farWorks.bags} />
         </g>
       ))}
       {scene.wire.coils.map((d, i) => (
@@ -405,7 +403,7 @@ function WorldTrenchesLayer({ flipped }: { flipped: boolean }) {
   );
 }
 
-/** The sandbags along the near edge of the enemy's trenches, drawn in front of the men in them */
+/** Every sandbag along the front, over the shell holes, and in front of the enemy's men in their trenches */
 function WorldTrenchesFrontLayer({ flipped }: { flipped: boolean }) {
   const scene = useMemo(() => frontFor(flipped), [flipped]);
   const ref = useRef<SVGSVGElement>(null);
@@ -427,21 +425,88 @@ function WorldTrenchesFrontLayer({ flipped }: { flipped: boolean }) {
       <EarthDefs />
       {scene.lines.map((line) => (
         <g key={line.key}>
-          {line.nearBags.length > 0 &&
-            line.bankBands.map((band, i) => (
-              <path
-                key={i}
-                d={band.d}
-                className="near-bank"
-                fillOpacity={band.opacity}
-              />
-            ))}
+          {/* Piled along the lip, over the edge of the cut and the shell holes beside it */}
+          <Sandbags bags={line.farWorks.bags} />
           <Sandbags bags={line.nearBags} />
         </g>
       ))}
     </svg>
   );
 }
+
+/**
+ * The earth bank in front of each enemy line, hiding the men in it from the
+ * waist down. It runs only across the board, where men stand, thinning out
+ * just past each edge, and lies under the craters, wire, and sandbags.
+ */
+function WorldTrenchesBankLayer({ flipped }: { flipped: boolean }) {
+  const scene = useMemo(() => frontFor(flipped), [flipped]);
+  const ref = useRef<SVGSVGElement>(null);
+  const baked = useBaked(ref, flipped);
+
+  if (baked)
+    return (
+      <BakedFront className="world-trenches world-trenches-bank" url={baked} />
+    );
+  return (
+    <svg
+      ref={ref}
+      className="world-trenches world-trenches-bank"
+      viewBox={viewBox}
+      preserveAspectRatio="none"
+      style={placement}
+      aria-hidden
+    >
+      <EarthDefs />
+      <defs>
+        <linearGradient
+          id="wt-bank-sides"
+          gradientUnits="userSpaceOnUse"
+          x1={-BANK_REACH}
+          x2={BOARD + BANK_REACH}
+        >
+          <stop offset="0" stopColor="#000" />
+          <stop
+            offset={BANK_FADE / (BOARD + BANK_REACH * 2)}
+            stopColor="#fff"
+          />
+          <stop
+            offset={1 - BANK_FADE / (BOARD + BANK_REACH * 2)}
+            stopColor="#fff"
+          />
+          <stop offset="1" stopColor="#000" />
+        </linearGradient>
+        <mask id="wt-bank-board" maskUnits="userSpaceOnUse">
+          <rect
+            x={-BANK_REACH}
+            y={0}
+            width={BOARD + BANK_REACH * 2}
+            height={BOARD + MARGIN * 2}
+            fill="url(#wt-bank-sides)"
+          />
+        </mask>
+      </defs>
+      <g mask="url(#wt-bank-board)">
+        {scene.lines
+          .filter((line) => line.nearBags.length > 0)
+          .flatMap((line) =>
+            line.bankBands.map((band, i) => (
+              <path
+                key={`${line.key}-${i}`}
+                d={band.d}
+                className="near-bank"
+                fillOpacity={band.opacity}
+              />
+            )),
+          )}
+      </g>
+    </svg>
+  );
+}
+
+/** How far past the board's edges the bank reaches, and over how much of that it thins away */
+const BANK_REACH = 60;
+const BANK_FADE = 50;
 
 /** The shell holes pocking the ground off the board, under the trench lines */
 function WorldCratersLayer({ flipped }: { flipped: boolean }) {
@@ -471,3 +536,4 @@ function WorldCratersLayer({ flipped }: { flipped: boolean }) {
 export const WorldTrenches = memo(WorldTrenchesLayer);
 export const WorldTrenchesFront = memo(WorldTrenchesFrontLayer);
 export const WorldCraters = memo(WorldCratersLayer);
+export const WorldTrenchesBank = memo(WorldTrenchesBankLayer);

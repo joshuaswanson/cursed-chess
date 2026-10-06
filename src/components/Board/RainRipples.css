@@ -1,4 +1,4 @@
-/* Over the craters and under the trench lines, reaching well past the board each side */
+/* Over the craters it rings, reaching well past the board each side */
 .rain-ripples {
   position: absolute;
   z-index: 0;
@@ -7,6 +7,11 @@
   width: calc(var(--square-size) * (8 + 2 * var(--span)));
   height: calc(var(--square-size) * 10);
   pointer-events: none;
+}
+
+/* The board's own shell holes lie over the earth bank in front of the enemy's men */
+.ripples-board-craters {
+  z-index: 3;
 }
 
 .rain-ripples canvas {

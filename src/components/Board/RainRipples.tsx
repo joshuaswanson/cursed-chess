@@ -55,7 +55,12 @@ function dropsFor(seed: number): Drop[] {
  * Raindrops ringing the water in every shell hole, all drawn on one canvas
  * laid over the craters, so hundreds of rings cost one layer
  */
-export function RainRipples() {
+export function RainRipples({
+  within,
+}: {
+  /** The class of the layer whose shell holes it rings */
+  within: string;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -72,10 +77,24 @@ export function RainRipples() {
     // the middle half of its box, flattened by the slant the ground is seen at
     const survey = () => {
       const area = canvas.parentElement!.getBoundingClientRect();
-      const left = Math.max(area.left, 0);
-      const top = Math.max(area.top, 0);
-      const right = Math.min(area.right, window.innerWidth);
-      const bottom = Math.min(area.bottom, window.innerHeight);
+      const found = [
+        ...document.querySelectorAll<HTMLElement>(`.${within} [data-ripples]`),
+      ].map((hole) => ({ hole, box: hole.getBoundingClientRect() }));
+      if (found.length === 0) {
+        pools = [];
+        return;
+      }
+      // The canvas covers only the part of the screen its pools lie in
+      const left = Math.max(Math.min(...found.map((f) => f.box.left)), 0);
+      const top = Math.max(Math.min(...found.map((f) => f.box.top)), 0);
+      const right = Math.min(
+        Math.max(...found.map((f) => f.box.right)),
+        window.innerWidth,
+      );
+      const bottom = Math.min(
+        Math.max(...found.map((f) => f.box.bottom)),
+        window.innerHeight,
+      );
       const width = Math.max(0, Math.round(right - left));
       const height = Math.max(0, Math.round(bottom - top));
       canvas.style.left = `${left - area.left}px`;
@@ -88,17 +107,14 @@ export function RainRipples() {
         canvas.height = height;
       }
       view = { left, top };
-      pools = [...document.querySelectorAll<HTMLElement>("[data-ripples]")]
-        .map((hole) => {
-          const r = hole.getBoundingClientRect();
-          return {
-            cx: r.left + r.width / 2 - view.left,
-            cy: r.top + r.height / 2 - view.top,
-            span: r.width * 0.48,
-            squash: Number(hole.dataset.squash) || 0.8,
-            drops: dropsFor(Number(hole.dataset.ripples)),
-          };
-        })
+      pools = found
+        .map(({ hole, box: r }) => ({
+          cx: r.left + r.width / 2 - view.left,
+          cy: r.top + r.height / 2 - view.top,
+          span: r.width * 0.48,
+          squash: Number(hole.dataset.squash) || 0.8,
+          drops: dropsFor(Number(hole.dataset.ripples)),
+        }))
         .filter(
           (p) =>
             p.cx + p.span > 0 &&
@@ -152,11 +168,11 @@ export function RainRipples() {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", survey);
     };
-  }, []);
+  }, [within]);
 
   return (
     <div
-      className="rain-ripples"
+      className={`rain-ripples ripples-${within}`}
       style={{ "--span": SPAN } as React.CSSProperties}
       aria-hidden
     >

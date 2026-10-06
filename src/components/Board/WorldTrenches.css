@@ -12,7 +12,9 @@
   will-change: transform;
 }
 
-/* The near banks stand in front of the men down in the trenches */
+/* The near banks and their sandbags stand in front of the men down in the
+   trenches; the craters and wire lie on the ground between the two */
+.world-trenches-bank,
 .world-trenches-front {
   z-index: 3;
 }
