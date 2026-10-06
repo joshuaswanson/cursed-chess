@@ -23,7 +23,7 @@
   fill-opacity: 0.6;
 }
 
-.earth-texture.trench-floor {
+.earth-texture.cut-ground {
   fill-opacity: 0.5;
 }
 
@@ -33,7 +33,7 @@
 }
 
 /* The cut: a dark wet floor */
-.trench-cut {
+.cut-floor {
   fill: url(#tx-mud-deep);
 }
 

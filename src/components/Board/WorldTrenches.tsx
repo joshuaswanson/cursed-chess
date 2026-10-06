@@ -1,8 +1,10 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import type { RefObject } from "react";
 import { BOARD, MARGIN, REACH, SQ, frontFor } from "./trenchFront";
 import type { Sandbag } from "./trenchFront";
 import { ShellHole } from "./ShellHole";
 import "./WorldTrenches.css";
+import drawingStyles from "./WorldTrenches.css?raw";
 
 /**
  * Sandbags laid in courses: burlap bags plumped in the middle, their tied
@@ -212,11 +214,100 @@ function EarthDefs() {
   );
 }
 
+const inlined = new Map<string, Promise<string>>();
+
+/** A texture as a data URL, which a drawing shown as an image can still use */
+function inline(href: string): Promise<string> {
+  let made = inlined.get(href);
+  if (!made) {
+    made = fetch(href)
+      .then((r) => r.blob())
+      .then(
+        (blob) =>
+          new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          }),
+      );
+    inlined.set(href, made);
+  }
+  return made;
+}
+
+/**
+ * The drawing turned into a single image once it is on the page. The front
+ * never changes, and one image costs every later frame far less than the
+ * thousands of shapes it is drawn with.
+ */
+function useBaked(ref: RefObject<SVGSVGElement | null>, flipped: boolean) {
+  const [baked, setBaked] = useState<{ flipped: boolean; url: string }>();
+
+  useEffect(() => {
+    const svg = ref.current;
+    if (!svg) return;
+    let cancelled = false;
+    let url: string | undefined;
+    const copy = svg.cloneNode(true) as SVGSVGElement;
+    const box = svg.getBoundingClientRect();
+    // Inside an image the page's stylesheets no longer reach it, so it
+    // carries its own, and its own size in place of the page's layout
+    copy.removeAttribute("class");
+    copy.removeAttribute("style");
+    copy.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    copy.setAttribute("width", String(Math.round(box.width)));
+    copy.setAttribute("height", String(Math.round(box.height)));
+    const style = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "style",
+    );
+    style.textContent = drawingStyles;
+    copy.prepend(style);
+    Promise.all(
+      [...copy.querySelectorAll("image")].map(async (image) =>
+        image.setAttribute("href", await inline(image.getAttribute("href")!)),
+      ),
+    )
+      .then(() => {
+        const drawing = new XMLSerializer().serializeToString(copy);
+        url = URL.createObjectURL(
+          new Blob([drawing], { type: "image/svg+xml" }),
+        );
+        const image = new Image();
+        image.src = url;
+        return image.decode();
+      })
+      .then(() => {
+        if (!cancelled && url) setBaked({ flipped, url });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [ref, flipped]);
+
+  return baked?.flipped === flipped ? baked.url : undefined;
+}
+
 const viewBox = `${-REACH} 0 ${BOARD + REACH * 2} ${BOARD + MARGIN * 2}`;
 const placement = {
   "--reach": REACH / SQ,
   "--margin": MARGIN / SQ,
 } as React.CSSProperties;
+
+function BakedFront({ className, url }: { className: string; url: string }) {
+  return (
+    <img
+      className={className}
+      src={url}
+      style={placement}
+      alt=""
+      aria-hidden
+      draggable={false}
+    />
+  );
+}
 
 /**
  * The front running on off both sides of the board: the same trench lines
@@ -226,9 +317,13 @@ const placement = {
  */
 function WorldTrenchesLayer({ flipped }: { flipped: boolean }) {
   const scene = useMemo(() => frontFor(flipped), [flipped]);
+  const ref = useRef<SVGSVGElement>(null);
+  const baked = useBaked(ref, flipped);
 
+  if (baked) return <BakedFront className="world-trenches" url={baked} />;
   return (
     <svg
+      ref={ref}
       className="world-trenches"
       viewBox={viewBox}
       preserveAspectRatio="none"
@@ -253,8 +348,8 @@ function WorldTrenchesLayer({ flipped }: { flipped: boolean }) {
           <clipPath id={`wt-inside-${line.key}`}>
             <path d={line.outline} />
           </clipPath>
-          <path d={line.outline} className="trench-cut" />
-          <path d={line.outline} className="earth-texture trench-floor" />
+          <path d={line.outline} className="cut-floor" />
+          <path d={line.outline} className="earth-texture cut-ground" />
           <path d={line.centre} className="duckboard-bed" />
           <path
             d={line.centre}
@@ -312,14 +407,23 @@ function WorldTrenchesLayer({ flipped }: { flipped: boolean }) {
 /** The sandbags along the near edge of the enemy's trenches, drawn in front of the men in them */
 function WorldTrenchesFrontLayer({ flipped }: { flipped: boolean }) {
   const scene = useMemo(() => frontFor(flipped), [flipped]);
+  const ref = useRef<SVGSVGElement>(null);
+  const baked = useBaked(ref, flipped);
+
+  if (baked)
+    return (
+      <BakedFront className="world-trenches world-trenches-front" url={baked} />
+    );
   return (
     <svg
+      ref={ref}
       className="world-trenches world-trenches-front"
       viewBox={viewBox}
       preserveAspectRatio="none"
       style={placement}
       aria-hidden
     >
+      <EarthDefs />
       {scene.lines.map((line) => (
         <g key={line.key}>
           <Sandbags bags={line.nearBags} />
