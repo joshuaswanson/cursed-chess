@@ -1396,40 +1396,73 @@
 }
 
 /* The pennant tied on in the middle, swinging as the rope jolts */
+/* Tied on by its cord around the middle of the rope */
 .card-tug-pennant {
   position: absolute;
   left: 50%;
-  top: 40%;
-  width: 4.4vh;
+  top: 0.3vh;
+  width: 7vh;
   translate: -50% 0;
-  transform-origin: 50% 0;
+  transform-origin: 50% 8%;
   overflow: visible;
   animation: pennant-swing 1s 0.5s ease-in-out infinite;
 }
 
-.card-tug-pennant path {
-  fill: #ffd23f;
+.pennant-edge {
+  fill: none;
   stroke: var(--ink);
-  stroke-width: 2.5;
+  stroke-width: 2.2;
   stroke-linejoin: round;
 }
 
-.card-tug-pennant .stripe {
-  fill: #fff;
-  stroke: none;
+/* The stitched hem along the top */
+.pennant-hem {
+  stroke: rgba(255, 245, 225, 0.6);
+  stroke-width: 0.8;
+  stroke-dasharray: 1.6 1.2;
+}
+
+.pennant-cord {
+  fill: none;
+  stroke: #6b4a22;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.pennant-knot {
+  fill: #7d5a2c;
+  stroke: var(--ink);
+  stroke-width: 1.2;
+}
+
+/* The cloth ripples as it swings, flowing out toward its point */
+.pennant-cloth {
+  transform-box: view-box;
+  transform-origin: 50% 10%;
+  animation: pennant-ripple 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes pennant-ripple {
+  from {
+    transform: skewX(-4deg) scaleY(1);
+  }
+  to {
+    transform: skewX(5deg) scaleY(0.97);
+  }
 }
 
 /* Kicked the other way at each jolt, then swinging back */
+/* Flying out to the side from its knot, kicked about as the rope jolts */
 @keyframes pennant-swing {
   0%,
   100% {
-    rotate: 0deg;
+    rotate: -68deg;
   }
   18% {
-    rotate: 22deg;
+    rotate: -52deg;
   }
   50% {
-    rotate: -18deg;
+    rotate: -82deg;
   }
 }
 

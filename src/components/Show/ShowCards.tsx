@@ -182,9 +182,47 @@ function Flair({ theme }: { theme: ThemeId }) {
                 className="card-tug-strands"
                 style={{ "--rope": ROPE_TILE } as React.CSSProperties}
               />
-              <svg className="card-tug-pennant" viewBox="0 0 30 34">
-                <path d="M3 2 H27 L15 32 Z" />
-                <path d="M11 2 H19 L15 22 Z" className="stripe" />
+              <svg className="card-tug-pennant" viewBox="0 0 40 60">
+                <defs>
+                  <clipPath id="pennant-cloth">
+                    <path d="M7 7 H33 Q32 24 26.5 37 Q22.5 47 20 58 Q17.5 47 13.5 37 Q8 24 7 7 Z" />
+                  </clipPath>
+                  <linearGradient id="pennant-fold" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0" stopColor="#000" stopOpacity="0.28" />
+                    <stop offset="0.35" stopColor="#fff" stopOpacity="0.16" />
+                    <stop offset="0.55" stopColor="#000" stopOpacity="0" />
+                    <stop offset="0.75" stopColor="#000" stopOpacity="0.18" />
+                    <stop offset="1" stopColor="#000" stopOpacity="0.32" />
+                  </linearGradient>
+                </defs>
+                {/* The cloth, ripples and all, in team colours: red with white bands */}
+                <g className="pennant-cloth">
+                  <g clipPath="url(#pennant-cloth)">
+                    <rect x="0" y="0" width="40" height="60" fill="#d8352a" />
+                    <path
+                      d="M0 18 L40 15 V22 L0 25 Z M0 33 L40 30 V36 L0 39 Z"
+                      fill="#f6efe2"
+                    />
+                    <rect
+                      x="0"
+                      y="0"
+                      width="40"
+                      height="60"
+                      fill="url(#pennant-fold)"
+                    />
+                  </g>
+                  <path
+                    d="M7 7 H33 Q32 24 26.5 37 Q22.5 47 20 58 Q17.5 47 13.5 37 Q8 24 7 7 Z"
+                    className="pennant-edge"
+                  />
+                  <path d="M8.5 10.5 H31.5" className="pennant-hem" />
+                </g>
+                {/* The cord lashing it to the rope */}
+                <path
+                  d="M9 3 Q20 9 31 3 M9 7 Q20 1 31 7"
+                  className="pennant-cord"
+                />
+                <circle cx="20" cy="5" r="2.4" className="pennant-knot" />
               </svg>
             </div>
           </div>
