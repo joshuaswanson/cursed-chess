@@ -777,7 +777,11 @@ export class TrenchesPlugin implements ModePlugin {
     switch (armsFor(sq, piece, this.nests)) {
       case "mg":
         if (this.burst(board, sq, piece)) {
-          unit.readyIn = jitter(BURST_MS);
+          // With men out in the open in front of him, he never lets up: one
+          // burst runs straight into the next
+          unit.readyIn = this.enemyInTheOpen(board, piece.color)
+            ? BURST_ROUNDS * ROUND_GAP_MS + rand(40, 120)
+            : jitter(BURST_MS);
           return;
         }
         break;
@@ -900,6 +904,13 @@ export class TrenchesPlugin implements ModePlugin {
     unit.grenadeAt = this.clock + jitter(GRENADE_MS);
     unit.readyIn = bursts + jitter(RIFLE_MS * 0.6);
     return true;
+  }
+
+  /** Whether any of the enemy are out of their trenches, crossing no man's land */
+  private enemyInTheOpen(board: Board, color: Color): boolean {
+    return ALL_SQUARES.some(
+      (s) => board.get(s)?.color === opponent(color) && coverAt(s) === "open",
+    );
   }
 
   /** Brings a man up to look over the parapet, for a while, if he is not already up for longer */

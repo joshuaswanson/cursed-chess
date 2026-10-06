@@ -15,8 +15,18 @@ function leadIndex(men: PieceType[]): number {
 
 /** The squad standing in the card's window: drawn once, since it never changes */
 const CardArt = memo(function CardArt({ men }: { men: PieceType[] }) {
+  // A squad all of one kind stands in formation: four in a diamond, a pair
+  // fanned out in a V; a mixed squad has its odd man out front
+  const alike = men.every((t) => t === men[0]);
+  const formation = !alike
+    ? "led"
+    : men.length === 4
+      ? "diamond"
+      : men.length === 2
+        ? "vee"
+        : "led";
   return (
-    <span className="card-art" aria-hidden>
+    <span className={`card-art formation-${formation}`} aria-hidden>
       {men.map((type, n) => {
         // The squad's leader is listed first unless it is all one kind; the
         // lead man is the one who sets it apart, standing at the front
@@ -29,7 +39,8 @@ const CardArt = memo(function CardArt({ men }: { men: PieceType[] }) {
             className={`card-man ${n === lead ? "lead" : "back"}`}
             style={
               {
-                "--slot": back,
+                // A lone man behind stands off to one side, where he shows
+                "--spread": slots === 1 ? 0.55 : back - (slots - 1) / 2,
                 "--slots": slots,
                 "--far": Math.abs(back - (slots - 1) / 2),
               } as React.CSSProperties

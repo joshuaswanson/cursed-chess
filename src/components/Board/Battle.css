@@ -744,7 +744,8 @@
 /* The ammunition belt, brass rounds and all, feeding in from the side */
 
 /* Men going over the top run hunched, bobbing as they go */
-.battle-unit.is-charging .unit-img {
+/* The whole man moves, his kit with him */
+.battle-unit.is-charging .unit-body {
   animation: charge-bob 0.32s ease-in-out infinite alternate;
 }
 
@@ -760,8 +761,11 @@
 }
 
 /* Caught on the wire, thrashing to get free */
-.battle-unit.is-snagged .unit-img {
+.battle-unit.is-snagged .unit-body {
   animation: wire-thrash 0.16s linear infinite alternate;
+}
+
+.battle-unit.is-snagged .unit-img {
   filter: brightness(0.85) saturate(0.8);
 }
 
@@ -1085,9 +1089,9 @@
 }
 
 .helmet-on-n {
-  left: 46%;
-  top: 4%;
-  width: 46%;
+  left: 45%;
+  top: 1%;
+  width: 54%;
   rotate: calc(12deg + var(--tilt, 0deg));
 }
 
@@ -1099,8 +1103,8 @@
 
 .helmet-on-r {
   left: 60%;
-  top: -2%;
-  width: 46%;
+  top: -5%;
+  width: 54%;
   rotate: calc(28deg + var(--tilt, 0deg));
 }
 
