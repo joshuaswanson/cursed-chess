@@ -295,22 +295,23 @@ const Rifle = memo(function Rifle({
     "--aim": `${aim ?? rest}deg`,
     "--fire": `${fireMs}ms`,
   };
-  const ref = useReplay<SVGSVGElement>(shot);
+  const ref = useReplay<HTMLSpanElement>(shot);
   return (
-    <svg
+    <span
       ref={ref}
       className={`unit-rifle${aim === null ? "" : thrust ? " thrusting" : " firing"}`}
-      viewBox="0 0 72 22"
       style={style}
       aria-hidden
     >
-      <GunDefs scale={30} />
-      {german ? (
-        <Mauser scoped={kind === "sniper"} />
-      ) : (
-        <Enfield scoped={kind === "sniper"} />
-      )}
-    </svg>
+      <svg viewBox="0 0 72 22">
+        <GunDefs scale={30} />
+        {german ? (
+          <Mauser scoped={kind === "sniper"} />
+        ) : (
+          <Enfield scoped={kind === "sniper"} />
+        )}
+      </svg>
+    </span>
   );
 });
 
@@ -539,23 +540,27 @@ const GrenadeBelt = memo(function GrenadeBelt({
   german?: boolean;
 }) {
   return german ? (
-    <svg className="unit-grenades german" viewBox="-11 -9 22 23" aria-hidden>
-      <g transform="translate(-5 0) rotate(-14)">
-        <StickGrenade />
-      </g>
-      <g transform="translate(5 1) rotate(12)">
-        <StickGrenade />
-      </g>
-    </svg>
+    <span className="unit-grenades german" aria-hidden>
+      <svg viewBox="-11 -9 22 23">
+        <g transform="translate(-5 0) rotate(-14)">
+          <StickGrenade />
+        </g>
+        <g transform="translate(5 1) rotate(12)">
+          <StickGrenade />
+        </g>
+      </svg>
+    </span>
   ) : (
-    <svg className="unit-grenades" viewBox="-11 -7.5 22 15" aria-hidden>
-      <g transform="translate(-5 0) rotate(-8)">
-        <MillsBomb id="belt-a" />
-      </g>
-      <g transform="translate(5.5 0.5) rotate(10)">
-        <MillsBomb id="belt-b" />
-      </g>
-    </svg>
+    <span className="unit-grenades" aria-hidden>
+      <svg viewBox="-11 -7.5 22 15">
+        <g transform="translate(-5 0) rotate(-8)">
+          <MillsBomb id="belt-a" />
+        </g>
+        <g transform="translate(5.5 0.5) rotate(10)">
+          <MillsBomb id="belt-b" />
+        </g>
+      </svg>
+    </span>
   );
 });
 
@@ -737,9 +742,11 @@ const CarriedVickers = memo(function CarriedVickers({
   german?: boolean;
 }) {
   return (
-    <svg className="carried-vickers" viewBox="0 0 100 34" aria-hidden>
-      <VickersBody german={german} />
-    </svg>
+    <span className="carried-vickers" aria-hidden>
+      <svg viewBox="0 0 100 34">
+        <VickersBody german={german} />
+      </svg>
+    </span>
   );
 });
 
@@ -783,9 +790,11 @@ function MachineGun({
           <circle cx="20" cy="20" r="4.5" className="mg-head" />
         </svg>
       )}
-      <svg className="mg-gun" viewBox="0 0 100 34">
-        <VickersBody german={color === Color.Black} />
-      </svg>
+      <span className="mg-gun">
+        <svg viewBox="0 0 100 34">
+          <VickersBody german={color === Color.Black} />
+        </svg>
+      </span>
     </span>
   );
 }
@@ -1146,85 +1155,100 @@ const GeneralCap = memo(function GeneralCap({
 }) {
   const british = color === Color.White;
   return (
-    <svg
+    <span
       className="unit-helmet general-cap"
-      viewBox="0 0 44 26"
       style={{ "--tilt": `${tilt}deg` } as Style}
       aria-hidden
     >
-      <defs>
-        <linearGradient id={`cap-crown-${color}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={british ? "#a99a6a" : "#8d958e"} />
-          <stop offset="1" stopColor={british ? "#6f6440" : "#59615b"} />
-        </linearGradient>
-      </defs>
-      {/* The crown, wide and flat on top, swelling out over the band */}
-      <path
-        d="M6 10 Q4 4 22 3 Q40 4 38 10 L35 14 L9 14 Z"
-        fill={`url(#cap-crown-${color})`}
-        className="cap-edge"
-      />
-      <path d="M8 6.5 Q22 4 36 6.5" className="cap-crease" />
-      {/* The scarlet band, and the badge on it */}
-      <path d="M9 13 L35 13 L34.6 18 L9.4 18 Z" className="cap-band" />
-      {british ? (
+      <svg viewBox="0 0 44 26">
+        <defs>
+          <linearGradient id={`cap-crown-${color}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor={british ? "#a99a6a" : "#8d958e"} />
+            <stop offset="1" stopColor={british ? "#6f6440" : "#59615b"} />
+          </linearGradient>
+        </defs>
+        {/* The crown, wide and flat on top, swelling out over the band */}
         <path
-          d="M22 9.6 l1.4 2.4 l2.6 0.2 l-2 1.8 l0.7 2.6 l-2.7 -1.4 l-2.7 1.4 l0.7 -2.6 l-2 -1.8 l2.6 -0.2 Z"
-          className="cap-badge"
+          d="M6 10 Q4 4 22 3 Q40 4 38 10 L35 14 L9 14 Z"
+          fill={`url(#cap-crown-${color})`}
+          className="cap-edge"
         />
-      ) : (
-        <>
-          <circle cx="22" cy="10.4" r="1.6" className="cap-cockade-outer" />
-          <circle cx="22" cy="15.5" r="1.9" className="cap-cockade-outer" />
-          <circle cx="22" cy="15.5" r="0.9" className="cap-cockade-inner" />
-        </>
-      )}
-      {/* The peak, black and glossy, with gold oak leaves along it */}
-      <path
-        d="M8.6 17.6 Q22 16.4 35.4 17.6 Q30 23 22 23 Q14 23 8.6 17.6 Z"
-        className="cap-peak"
-      />
-      <path
-        d="M12 19 q2 -1 3 0 q1 -1 3 0 q1 -1 3 0 q1 -1 3 0 q1 -1 3 0 q1 -1 3 0"
-        className="cap-oak"
-      />
-      <path d="M14 18.4 Q22 17.6 30 18.4" className="cap-gloss" />
-    </svg>
+        <path d="M8 6.5 Q22 4 36 6.5" className="cap-crease" />
+        {/* The scarlet band, and the badge on it */}
+        <path d="M9 13 L35 13 L34.6 18 L9.4 18 Z" className="cap-band" />
+        {british ? (
+          <path
+            d="M22 9.6 l1.4 2.4 l2.6 0.2 l-2 1.8 l0.7 2.6 l-2.7 -1.4 l-2.7 1.4 l0.7 -2.6 l-2 -1.8 l2.6 -0.2 Z"
+            className="cap-badge"
+          />
+        ) : (
+          <>
+            <circle cx="22" cy="10.4" r="1.6" className="cap-cockade-outer" />
+            <circle cx="22" cy="15.5" r="1.9" className="cap-cockade-outer" />
+            <circle cx="22" cy="15.5" r="0.9" className="cap-cockade-inner" />
+          </>
+        )}
+        {/* The peak, black and glossy, with gold oak leaves along it */}
+        <path
+          d="M8.6 17.6 Q22 16.4 35.4 17.6 Q30 23 22 23 Q14 23 8.6 17.6 Z"
+          className="cap-peak"
+        />
+        <path
+          d="M12 19 q2 -1 3 0 q1 -1 3 0 q1 -1 3 0 q1 -1 3 0 q1 -1 3 0 q1 -1 3 0"
+          className="cap-oak"
+        />
+        <path d="M14 18.4 Q22 17.6 30 18.4" className="cap-gloss" />
+      </svg>
+    </span>
   );
 });
 
 /** A general's field glasses, hung on their strap */
 const FieldGlasses = memo(function FieldGlasses() {
   return (
-    <svg className="field-glasses" viewBox="0 0 20 14" aria-hidden>
-      <path d="M3 1 Q10 6 17 1" className="glasses-strap" />
-      <rect
-        x="2.6"
-        y="4.4"
-        width="6"
-        height="8.4"
-        rx="2"
-        className="glasses-barrel"
-      />
-      <rect
-        x="11.4"
-        y="4.4"
-        width="6"
-        height="8.4"
-        rx="2"
-        className="glasses-barrel"
-      />
-      <rect
-        x="8.2"
-        y="6.4"
-        width="3.6"
-        height="2.6"
-        rx="0.6"
-        className="glasses-barrel"
-      />
-      <ellipse cx="5.6" cy="12.4" rx="2.4" ry="0.9" className="glasses-lens" />
-      <ellipse cx="14.4" cy="12.4" rx="2.4" ry="0.9" className="glasses-lens" />
-    </svg>
+    <span className="field-glasses" aria-hidden>
+      <svg viewBox="0 0 20 14">
+        <path d="M3 1 Q10 6 17 1" className="glasses-strap" />
+        <rect
+          x="2.6"
+          y="4.4"
+          width="6"
+          height="8.4"
+          rx="2"
+          className="glasses-barrel"
+        />
+        <rect
+          x="11.4"
+          y="4.4"
+          width="6"
+          height="8.4"
+          rx="2"
+          className="glasses-barrel"
+        />
+        <rect
+          x="8.2"
+          y="6.4"
+          width="3.6"
+          height="2.6"
+          rx="0.6"
+          className="glasses-barrel"
+        />
+        <ellipse
+          cx="5.6"
+          cy="12.4"
+          rx="2.4"
+          ry="0.9"
+          className="glasses-lens"
+        />
+        <ellipse
+          cx="14.4"
+          cy="12.4"
+          rx="2.4"
+          ry="0.9"
+          className="glasses-lens"
+        />
+      </svg>
+    </span>
   );
 });
 
@@ -1250,137 +1274,150 @@ const Helmet = memo(function Helmet({
   const tommy = color === Color.White;
   const strapped = STRAPPED.has(type);
   return (
-    <svg
+    <span
       className={`unit-helmet helmet-on-${type}`}
-      viewBox="0 0 44 26"
       style={{ "--tilt": `${tilt}deg` } as Style}
       aria-hidden
     >
-      <defs>
-        <radialGradient id="tommy-dome" cx="0.36" cy="0.25" r="0.85">
-          <stop offset="0" stopColor="#a49d6c" />
-          <stop offset="0.45" stopColor="#6f6942" />
-          <stop offset="1" stopColor="#3a3722" />
-        </radialGradient>
-        <linearGradient id="tommy-brim" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#8a845a" />
-          <stop offset="1" stopColor="#4c4830" />
-        </linearGradient>
-        <radialGradient id="fritz-dome" cx="0.36" cy="0.22" r="0.85">
-          <stop offset="0" stopColor="#97a19b" />
-          <stop offset="0.45" stopColor="#5e6863" />
-          <stop offset="1" stopColor="#2e3532" />
-        </radialGradient>
-        <pattern
-          id="helmet-steel"
-          width="44"
-          height="26"
-          patternUnits="userSpaceOnUse"
-        >
-          <image
-            href={`${GUN_TEXTURES}helmet_grain.png`}
+      <svg viewBox="0 0 44 26">
+        <defs>
+          <radialGradient id="tommy-dome" cx="0.36" cy="0.25" r="0.85">
+            <stop offset="0" stopColor="#a49d6c" />
+            <stop offset="0.45" stopColor="#6f6942" />
+            <stop offset="1" stopColor="#3a3722" />
+          </radialGradient>
+          <linearGradient id="tommy-brim" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#8a845a" />
+            <stop offset="1" stopColor="#4c4830" />
+          </linearGradient>
+          <radialGradient id="fritz-dome" cx="0.36" cy="0.22" r="0.85">
+            <stop offset="0" stopColor="#97a19b" />
+            <stop offset="0.45" stopColor="#5e6863" />
+            <stop offset="1" stopColor="#2e3532" />
+          </radialGradient>
+          <pattern
+            id="helmet-steel"
             width="44"
-            height="44"
-            preserveAspectRatio="none"
-          />
-        </pattern>
-        <radialGradient id="helmet-sheen">
-          <stop offset="0.3" stopColor="#fffce6" stopOpacity="0.26" />
-          <stop offset="1" stopColor="#fffce6" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      {tommy ? (
-        <>
-          {/* Its shadow on the head, and the chin strap hanging down */}
-          <ellipse cx="22" cy="20" rx="14" ry="3.2" className="helmet-cast" />
-          {strapped && (
-            <path
-              d="M14.5 18.4 Q15.5 24 22 25 Q28.5 24 29.5 18.4"
-              className="helmet-strap"
+            height="26"
+            patternUnits="userSpaceOnUse"
+          >
+            <image
+              href={`${GUN_TEXTURES}helmet_grain.png`}
+              width="44"
+              height="44"
+              preserveAspectRatio="none"
             />
-          )}
-          <ellipse
-            cx="22"
-            cy="18.6"
-            rx="21"
-            ry="4.8"
-            className="helmet-under"
-          />
-          <ellipse
-            cx="22"
-            cy="17.9"
-            rx="12"
-            ry="2.3"
-            className="helmet-liner"
-          />
-          <ellipse
-            cx="22"
-            cy="17"
-            rx="21"
-            ry="4.5"
-            fill="url(#tommy-brim)"
-            className="helmet-edge"
-          />
-          <ellipse cx="22" cy="17" rx="21" ry="4.5" className="helmet-steel" />
-          <ellipse cx="22" cy="17" rx="20.4" ry="4" className="helmet-roll" />
-          <path
-            d="M9.6 17 C10 7 15 3.2 22 3.2 C29 3.2 34 7 34.4 17 Z"
-            fill="url(#tommy-dome)"
-            className="helmet-edge"
-          />
-          <path
-            d="M9.6 17 C10 7 15 3.2 22 3.2 C29 3.2 34 7 34.4 17 Z"
-            className="helmet-steel"
-          />
-          <circle cx="22" cy="3.9" r="1" className="helmet-rivet" />
-          {/* Knocks and dents, and mud splashed up from the trench floor */}
-          <path d="M27.5 9 q1.6 1 1 2.6" className="helmet-dent" />
-          <path d="M14 12.5 q1.2 -0.4 1.8 0.6" className="helmet-dent" />
-          <path
-            d="M12 15.6 q1.4 -1.2 2.6 -0.2 q-1 1 -2.6 0.2 Z M30 14.8 q1 -0.8 2 0 q-0.8 0.8 -2 0 Z M5 18.6 q1.6 -0.6 2.4 0.4 q-1.2 0.6 -2.4 -0.4 Z"
-            className="helmet-mud"
-          />
-          <ellipse
-            cx="16.5"
-            cy="7.5"
-            rx="3.6"
-            ry="1.6"
-            className="helmet-sheen"
-          />
-        </>
-      ) : (
-        <>
-          <ellipse cx="22" cy="21.5" rx="14" ry="3" className="helmet-cast" />
-          {strapped && (
-            <path
-              d="M13.6 19.6 Q15 25 22 25.8 Q29 25 30.4 19.6"
-              className="helmet-strap"
+          </pattern>
+          <radialGradient id="helmet-sheen">
+            <stop offset="0.3" stopColor="#fffce6" stopOpacity="0.26" />
+            <stop offset="1" stopColor="#fffce6" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        {tommy ? (
+          <>
+            {/* Its shadow on the head, and the chin strap hanging down */}
+            <ellipse cx="22" cy="20" rx="14" ry="3.2" className="helmet-cast" />
+            {strapped && (
+              <path
+                d="M14.5 18.4 Q15.5 24 22 25 Q28.5 24 29.5 18.4"
+                className="helmet-strap"
+              />
+            )}
+            <ellipse
+              cx="22"
+              cy="18.6"
+              rx="21"
+              ry="4.8"
+              className="helmet-under"
             />
-          )}
-          <path
-            d="M3.6 22.4 Q4.6 16.2 8.2 13.2 C9.2 4.2 15 1.6 22 1.6 C29 1.6 34.8 4.2 35.8 13.2 Q39.4 16.2 40.4 22.4 Q31 19.8 22 19.9 Q13 19.8 3.6 22.4 Z"
-            fill="url(#fritz-dome)"
-            className="helmet-edge"
-          />
-          <path
-            d="M3.6 22.4 Q4.6 16.2 8.2 13.2 C9.2 4.2 15 1.6 22 1.6 C29 1.6 34.8 4.2 35.8 13.2 Q39.4 16.2 40.4 22.4 Q31 19.8 22 19.9 Q13 19.8 3.6 22.4 Z"
-            className="helmet-steel"
-          />
-          {/* The visor's edge and the flare of the neck guard */}
-          <path d="M8.6 15.6 Q22 12.2 35.4 15.6" className="helmet-visor" />
-          <path d="M8.2 13.2 Q22 10.4 35.8 13.2" className="helmet-crease" />
-          {/* The ventilation lugs, one each side */}
-          <circle cx="10.6" cy="10.4" r="1.9" className="helmet-lug" />
-          <circle cx="33.4" cy="10.4" r="1.9" className="helmet-lug" />
-          <path d="M25 6 q1.6 1.2 0.8 2.8" className="helmet-dent" />
-          <path
-            d="M14.6 16.8 q1.4 -1.2 2.8 -0.2 q-1 1 -2.8 0.2 Z M28 17.4 q1 -0.8 2.2 0 q-0.8 0.8 -2.2 0 Z M5.6 20.4 q1.4 -0.8 2.4 0.2 q-1.2 0.8 -2.4 -0.2 Z"
-            className="helmet-mud"
-          />
-          <ellipse cx="16" cy="6" rx="3.8" ry="1.7" className="helmet-sheen" />
-        </>
-      )}
-    </svg>
+            <ellipse
+              cx="22"
+              cy="17.9"
+              rx="12"
+              ry="2.3"
+              className="helmet-liner"
+            />
+            <ellipse
+              cx="22"
+              cy="17"
+              rx="21"
+              ry="4.5"
+              fill="url(#tommy-brim)"
+              className="helmet-edge"
+            />
+            <ellipse
+              cx="22"
+              cy="17"
+              rx="21"
+              ry="4.5"
+              className="helmet-steel"
+            />
+            <ellipse cx="22" cy="17" rx="20.4" ry="4" className="helmet-roll" />
+            <path
+              d="M9.6 17 C10 7 15 3.2 22 3.2 C29 3.2 34 7 34.4 17 Z"
+              fill="url(#tommy-dome)"
+              className="helmet-edge"
+            />
+            <path
+              d="M9.6 17 C10 7 15 3.2 22 3.2 C29 3.2 34 7 34.4 17 Z"
+              className="helmet-steel"
+            />
+            <circle cx="22" cy="3.9" r="1" className="helmet-rivet" />
+            {/* Knocks and dents, and mud splashed up from the trench floor */}
+            <path d="M27.5 9 q1.6 1 1 2.6" className="helmet-dent" />
+            <path d="M14 12.5 q1.2 -0.4 1.8 0.6" className="helmet-dent" />
+            <path
+              d="M12 15.6 q1.4 -1.2 2.6 -0.2 q-1 1 -2.6 0.2 Z M30 14.8 q1 -0.8 2 0 q-0.8 0.8 -2 0 Z M5 18.6 q1.6 -0.6 2.4 0.4 q-1.2 0.6 -2.4 -0.4 Z"
+              className="helmet-mud"
+            />
+            <ellipse
+              cx="16.5"
+              cy="7.5"
+              rx="3.6"
+              ry="1.6"
+              className="helmet-sheen"
+            />
+          </>
+        ) : (
+          <>
+            <ellipse cx="22" cy="21.5" rx="14" ry="3" className="helmet-cast" />
+            {strapped && (
+              <path
+                d="M13.6 19.6 Q15 25 22 25.8 Q29 25 30.4 19.6"
+                className="helmet-strap"
+              />
+            )}
+            <path
+              d="M3.6 22.4 Q4.6 16.2 8.2 13.2 C9.2 4.2 15 1.6 22 1.6 C29 1.6 34.8 4.2 35.8 13.2 Q39.4 16.2 40.4 22.4 Q31 19.8 22 19.9 Q13 19.8 3.6 22.4 Z"
+              fill="url(#fritz-dome)"
+              className="helmet-edge"
+            />
+            <path
+              d="M3.6 22.4 Q4.6 16.2 8.2 13.2 C9.2 4.2 15 1.6 22 1.6 C29 1.6 34.8 4.2 35.8 13.2 Q39.4 16.2 40.4 22.4 Q31 19.8 22 19.9 Q13 19.8 3.6 22.4 Z"
+              className="helmet-steel"
+            />
+            {/* The visor's edge and the flare of the neck guard */}
+            <path d="M8.6 15.6 Q22 12.2 35.4 15.6" className="helmet-visor" />
+            <path d="M8.2 13.2 Q22 10.4 35.8 13.2" className="helmet-crease" />
+            {/* The ventilation lugs, one each side */}
+            <circle cx="10.6" cy="10.4" r="1.9" className="helmet-lug" />
+            <circle cx="33.4" cy="10.4" r="1.9" className="helmet-lug" />
+            <path d="M25 6 q1.6 1.2 0.8 2.8" className="helmet-dent" />
+            <path
+              d="M14.6 16.8 q1.4 -1.2 2.8 -0.2 q-1 1 -2.8 0.2 Z M28 17.4 q1 -0.8 2.2 0 q-0.8 0.8 -2.2 0 Z M5.6 20.4 q1.4 -0.8 2.4 0.2 q-1.2 0.8 -2.4 -0.2 Z"
+              className="helmet-mud"
+            />
+            <ellipse
+              cx="16"
+              cy="6"
+              rx="3.8"
+              ry="1.7"
+              className="helmet-sheen"
+            />
+          </>
+        )}
+      </svg>
+    </span>
   );
 });
 
@@ -1695,7 +1732,7 @@ function ClodSpray({
     return () => cancelAnimationFrame(frame);
   }, [id, size, delayMs]);
 
-  return <canvas ref={ref} className="clod-spray" />;
+  return <canvas ref={ref} className="blast-canvas" />;
 }
 
 /**
@@ -1715,53 +1752,188 @@ function Explosion({
   delayMs: number;
   size: number;
 }) {
-  const puffs = Array.from({ length: 9 }, (_, i) => {
-    const r = (k: number) => scatter(id * 61 + i * 7 + k + 500);
-    return {
-      x: (r(1) * 2 - 1) * 0.55,
-      rise: 0.6 + r(2) * 1.6,
-      size: 0.9 + r(3) * 1.1,
-      delay: r(4) * 0.35,
-      drift: (r(5) * 2 - 1) * 0.5,
-      shade: 30 + r(6) * 40,
-    };
-  });
   return (
-    <span
-      className="explosion"
-      style={css({
-        ...style,
-        "--blast": String(size),
-        "--at": `${delayMs}ms`,
-      })}
-    >
-      <span className="blast-smoke">
-        {puffs.map((p, i) => (
-          <i
-            key={i}
-            style={css({
-              "--x": String(p.x),
-              "--rise": String(p.rise),
-              "--size": String(p.size),
-              "--drift": String(p.drift),
-              "--shade": `rgb(${p.shade}, ${p.shade - 4}, ${p.shade - 8})`,
-              animationDelay: `calc(var(--at) + ${(p.delay * 1000).toFixed(0)}ms)`,
-            })}
-          />
-        ))}
+    <span className="explosion" style={style}>
+      <span className="blast-cloud">
+        <BlastCloud id={id} size={size} delayMs={delayMs} />
       </span>
-      <span className="blast-fire">
-        <i />
-        <i />
-        <i />
-        <i />
-      </span>
-      <span className="blast-flash" />
       <span className="blast-earth">
         <ClodSpray id={id} size={size} delayMs={delayMs} />
       </span>
     </span>
   );
+}
+
+/** The fire, flash, and smoke reach this far from the blast, in squares times its size */
+const CLOUD = { side: 3.8, up: 6, down: 2 };
+/** The smoke and fire are soft, so they are drawn at this fraction of the screen's pixels */
+const CLOUD_DETAIL = 0.5;
+const FLASH_BLAST_MS = 320;
+const FIRE_MS = 750;
+const SMOKE_MS = 3200;
+/** Where each billow of the fireball rolls out to, in squares times the blast's size */
+const BILLOWS = [
+  { x: -0.35, y: -0.45 },
+  { x: 0.4, y: -0.3 },
+  { x: 0, y: -0.85 },
+  { x: 0.05, y: 0.05 },
+];
+
+/** CSS's ease-out */
+const easeOutCss = (p: number) => bezier(0, 0, 0.58, 1, p);
+
+/**
+ * The burst itself, drawn on one canvas: a white-hot flash, a fireball
+ * rolling outward and darkening as it burns down, and a pall of black smoke
+ * that climbs, spreads, and hangs over the hole
+ */
+function BlastCloud({
+  id,
+  size,
+  delayMs,
+}: {
+  id: number;
+  size: number;
+  delayMs: number;
+}) {
+  const ref = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    const sq = parseFloat(getComputedStyle(canvas).getPropertyValue("--sq"));
+    if (!sq) return;
+    const blast = sq * size;
+    const width = Math.ceil(blast * CLOUD.side * 2);
+    const height = Math.ceil(blast * (CLOUD.up + CLOUD.down));
+    const detail = CLOUD_DETAIL * (window.devicePixelRatio || 1);
+    canvas.width = Math.ceil(width * detail);
+    canvas.height = Math.ceil(height * detail);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    canvas.style.left = `${-width / 2}px`;
+    canvas.style.top = `${-blast * CLOUD.up}px`;
+    const ox = width / 2;
+    const oy = blast * CLOUD.up;
+
+    const puffs = Array.from({ length: 9 }, (_, i) => {
+      const r = (k: number) => scatter(id * 61 + i * 7 + k + 500);
+      const shade = 30 + r(6) * 40;
+      return {
+        x: (r(1) * 2 - 1) * 0.55,
+        rise: 0.6 + r(2) * 1.6,
+        size: 0.9 + r(3) * 1.1,
+        delay: r(4) * 350,
+        drift: (r(5) * 2 - 1) * 0.5,
+        rgb: [shade, shade - 4, shade - 8].map(Math.round).join(", "),
+      };
+    });
+    const last = Math.max(FIRE_MS, ...puffs.map((p) => p.delay + SMOKE_MS));
+
+    const blob = (
+      x: number,
+      y: number,
+      radius: number,
+      stops: [number, string][],
+    ) => {
+      const fill = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      for (const [at, color] of stops) fill.addColorStop(at, color);
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    const start = performance.now() + delayMs;
+    let frame = requestAnimationFrame(function draw(now) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const t = now - start;
+      if (t > last) return;
+      frame = requestAnimationFrame(draw);
+      if (t < 0) return;
+      ctx.setTransform(detail, 0, 0, detail, 0, 0);
+
+      // The pall of smoke, each puff swelling as it climbs and drifts, its
+      // path growing with it
+      for (const puff of puffs) {
+        const p = (t - puff.delay) / SMOKE_MS;
+        if (p <= 0 || p >= 1) continue;
+        const grow = 0.3 + 1.5 * easeOutCss(p);
+        const alpha =
+          p < 0.12
+            ? 0.9 * easeOutCss(p / 0.12)
+            : 0.9 * (1 - easeOutCss((p - 0.12) / 0.88));
+        const e = easeOutCss(p);
+        const dx = puff.x * 0.3 + (puff.x + puff.drift - puff.x * 0.3) * e;
+        const dy = -puff.rise * e;
+        ctx.globalAlpha = alpha;
+        blob(
+          ox + grow * dx * blast,
+          oy + grow * dy * blast,
+          (grow * puff.size * blast) / 2,
+          [
+            [0, `rgb(${puff.rgb})`],
+            [0.55, `rgba(${puff.rgb}, 0.6)`],
+            [1, `rgba(${puff.rgb}, 0)`],
+          ],
+        );
+      }
+
+      // The fireball's billows, burning bright and darkening into smoke
+      const fire = t / FIRE_MS;
+      if (fire < 1) {
+        const e = easeOutCss(fire);
+        const grow = 0.2 + 1.4 * e;
+        const alpha = fire < 0.35 ? 1 : 1 - easeOutCss((fire - 0.35) / 0.65);
+        const glow =
+          fire < 0.35
+            ? 1.4 - 0.4 * easeOutCss(fire / 0.35)
+            : 1 - 0.65 * easeOutCss((fire - 0.35) / 0.65);
+        const tone = (r: number, g: number, b: number, a: number) =>
+          `rgba(${Math.min(255, Math.round(r * glow))}, ${Math.min(255, Math.round(g * glow))}, ${Math.min(255, Math.round(b * glow))}, ${a})`;
+        ctx.globalAlpha = alpha;
+        for (const billow of BILLOWS) {
+          blob(
+            ox + billow.x * e * blast,
+            oy + billow.y * e * blast,
+            (grow * 1.4 * blast) / 2,
+            [
+              [0, tone(255, 236, 170, 0.95)],
+              [0.35, tone(255, 150, 50, 0.85)],
+              [0.62, tone(190, 60, 20, 0.55)],
+              [1, tone(60, 30, 20, 0)],
+            ],
+          );
+        }
+      }
+
+      // The flash: blinding, white at the heart, gone in a blink
+      const flash = t / FLASH_BLAST_MS;
+      if (flash < 1) {
+        const grow =
+          flash < 0.25
+            ? 0.15 + 0.85 * easeOutCss(flash / 0.25)
+            : 1 + 0.15 * easeOutCss((flash - 0.25) / 0.75);
+        ctx.globalAlpha =
+          flash < 0.25 ? 1 : 1 - easeOutCss((flash - 0.25) / 0.75);
+        ctx.globalCompositeOperation = "lighter";
+        blob(ox, oy, (grow * 3.2 * blast) / 2, [
+          [0, "rgba(255, 255, 245, 1)"],
+          [0.18, "rgba(255, 238, 180, 0.9)"],
+          [0.4, "rgba(255, 190, 90, 0.5)"],
+          [0.65, "rgba(255, 150, 60, 0.15)"],
+          [1, "rgba(255, 150, 60, 0)"],
+        ]);
+        ctx.globalCompositeOperation = "source-over";
+      }
+      ctx.globalAlpha = 1;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [id, size, delayMs]);
+
+  return <canvas ref={ref} className="blast-canvas" />;
 }
 
 function Effect({

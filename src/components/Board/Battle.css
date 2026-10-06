@@ -795,9 +795,8 @@
   height: 100%;
 }
 
-/* --- A high-explosive burst ---
-   Nothing shows until it goes off: each part holds still and unseen
-   through its delay, and only plays forward from the moment of the blast */
+/* --- A high-explosive burst, drawn on two canvases centred on the blast:
+   the fire, flash, and smoke, and the clods of earth over them --- */
 
 .battle-effects > .explosion {
   z-index: 3;
@@ -812,137 +811,9 @@
   height: 0;
 }
 
-.explosion i {
-  position: absolute;
-}
-
-/* The flash: blinding, white at the heart, gone in a blink */
-.blast-flash {
-  width: calc(var(--sq) * 3.2 * var(--blast)) !important;
-  height: calc(var(--sq) * 3.2 * var(--blast)) !important;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    rgba(255, 255, 245, 1) 0%,
-    rgba(255, 238, 180, 0.9) 18%,
-    rgba(255, 190, 90, 0.5) 40%,
-    rgba(255, 150, 60, 0.15) 65%,
-    rgba(255, 150, 60, 0) 100%
-  );
-  mix-blend-mode: screen;
-  opacity: 0;
-  animation: blast-flash 0.32s var(--at) ease-out forwards;
-}
-
-@keyframes blast-flash {
-  0% {
-    opacity: 1;
-    scale: 0.15;
-  }
-  25% {
-    opacity: 1;
-    scale: 1;
-  }
-  100% {
-    opacity: 0;
-    scale: 1.15;
-  }
-}
-
-/* The fireball: soft billows of flame rolling out and burning down into smoke */
-.blast-fire i {
-  width: calc(var(--sq) * 1.4 * var(--blast));
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    rgba(255, 236, 170, 0.95),
-    rgba(255, 150, 50, 0.85) 35%,
-    rgba(190, 60, 20, 0.55) 62%,
-    rgba(60, 30, 20, 0) 100%
-  );
-  opacity: 0;
-  animation: blast-fire 0.75s var(--at) ease-out forwards;
-}
-
-.blast-fire i:nth-child(1) {
-  --fx: -0.35;
-  --fy: -0.45;
-}
-.blast-fire i:nth-child(2) {
-  --fx: 0.4;
-  --fy: -0.3;
-}
-.blast-fire i:nth-child(3) {
-  --fx: 0;
-  --fy: -0.85;
-}
-.blast-fire i:nth-child(4) {
-  --fx: 0.05;
-  --fy: 0.05;
-}
-
-@keyframes blast-fire {
-  0% {
-    opacity: 1;
-    scale: 0.2;
-    translate: -50% -50%;
-    filter: brightness(1.4);
-  }
-  35% {
-    opacity: 1;
-    filter: brightness(1);
-  }
-  100% {
-    opacity: 0;
-    scale: 1.6;
-    translate: calc(-50% + var(--sq) * var(--fx) * var(--blast))
-      calc(-50% + var(--sq) * var(--fy) * var(--blast));
-    filter: brightness(0.35) saturate(0.4);
-  }
-}
-
-/* Earth and clods hurled up in a column and raining back down */
-.clod-spray {
+.blast-canvas {
   position: absolute;
   pointer-events: none;
-}
-
-/* A pall of black smoke, climbing, spreading, and hanging over the hole */
-.blast-smoke i {
-  width: calc(var(--sq) * var(--size) * var(--blast));
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    var(--shade),
-    color-mix(in srgb, var(--shade) 60%, transparent) 55%,
-    transparent 100%
-  );
-  opacity: 0;
-  animation: blast-smoke 3.2s ease-out both;
-}
-
-@keyframes blast-smoke {
-  0% {
-    opacity: 0;
-    scale: 0.3;
-    transform: translate(calc(var(--sq) * var(--x) * 0.3 * var(--blast)), 0);
-  }
-  12% {
-    opacity: 0.9;
-  }
-  100% {
-    opacity: 0;
-    scale: 1.8;
-    transform: translate(
-      calc(var(--sq) * (var(--x) + var(--drift)) * var(--blast)),
-      calc(var(--sq) * var(--rise) * -1 * var(--blast))
-    );
-  }
 }
 
 /* Steel helmets, sat on each piece's head */
@@ -1557,9 +1428,10 @@
   stroke-width: 2.6;
 }
 
-/* One shadow for the whole soldier, kit and all, where each piece of kit
-   once cast its own */
-[data-theme="trenches"] .unit-body {
+/* One shadow for the whole soldier, kit and all, cast from around his body,
+   so the flash as he fires or is hit stays a plain change of brightness the
+   compositor can run */
+[data-theme="trenches"] .battle-unit {
   filter: drop-shadow(0.03em 0.05em 0 rgba(10, 8, 4, 0.5));
 }
 
@@ -1591,6 +1463,20 @@
     rgba(255, 190, 90, 0.35) 60%,
     transparent
   );
+}
+
+/* Each piece of kit is an HTML box holding its drawing, so it can turn and
+   move on the compositor, which will not animate an SVG element's own turn */
+.unit-rifle > svg,
+.unit-helmet > svg,
+.field-glasses > svg,
+.unit-grenades > svg,
+.carried-vickers > svg,
+.mg-gun > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 /* Your men holding a trench can be picked out with a click, to send forward alone */
