@@ -737,6 +737,12 @@ export class TrenchesPlugin implements ModePlugin {
         this.digGun(board, sq, piece);
       } else if (this.advance(board, sq, unit, piece)) {
         return;
+      } else if (
+        coverAt(sq) !== "trench" &&
+        this.edgeToward(board, sq, unit, unit.goal, 0.9)
+      ) {
+        // Blocked straight ahead, out of cover: along the ground to a free spot in the line
+        return;
       } else if (this.lobGrenade(board, sq, piece, unit)) {
         return;
       } else if (Math.random() < 0.5) {
@@ -1005,9 +1011,22 @@ export class TrenchesPlugin implements ModePlugin {
     const behind = coverAt(sq) === "reserve";
     // Nobody leaves a trench unless ordered; only men caught out of one move by themselves
     if (!behind && !stranded) return false;
-    const gaps = ALL_SQUARES.filter(
-      (s) => rankOf(s) === front && !board.get(s),
-    );
+    return this.edgeToward(board, sq, unit, front, stranded ? 0.9 : 1.2);
+  }
+
+  /**
+   * A step toward the nearest free square on a rank: forward when he can,
+   * sideways along the ground when the way ahead is blocked. False if
+   * every square on the rank is taken or nothing brings him closer.
+   */
+  private edgeToward(
+    board: Board,
+    sq: SquareIndex,
+    unit: TrenchUnit,
+    rank: number,
+    pace: number,
+  ): boolean {
+    const gaps = ALL_SQUARES.filter((s) => rankOf(s) === rank && !board.get(s));
     if (gaps.length === 0) return false;
     const reach = (a: SquareIndex, b: SquareIndex) =>
       Math.max(
@@ -1030,14 +1049,14 @@ export class TrenchesPlugin implements ModePlugin {
       .sort(
         (a, b) =>
           reach(a, goal) - reach(b, goal) ||
-          Math.abs(rankOf(a) - front) - Math.abs(rankOf(b) - front),
+          Math.abs(rankOf(a) - rank) - Math.abs(rankOf(b) - rank),
       )[0];
     if (to === undefined) return false;
-    const ms = Math.round(STEP_MS * (stranded ? 0.9 : 1.2));
+    const ms = Math.round(STEP_MS * pace);
     this.relocate(board, sq, to);
-    this.digGun(board, to, piece);
+    this.digGun(board, to, board.get(to)!);
     this.emit({ kind: "move", unitId: unit.id, from: sq, to, ms, delayMs: 0 });
-    unit.readyIn = ms + (stranded ? rand(50, 200) : rand(300, 900));
+    unit.readyIn = ms + (pace < 1 ? rand(50, 200) : rand(300, 900));
     if (this.wire.has(to)) {
       unit.snaggedUntil = this.clock + ms + rand(...WIRE_MS);
       unit.readyIn = unit.snaggedUntil - this.clock;
