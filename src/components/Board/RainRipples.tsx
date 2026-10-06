@@ -2,8 +2,10 @@ import { useEffect, useRef } from "react";
 import { surfaceOf } from "../../utils/surface";
 import "./RainRipples.css";
 
-/** How many raindrops are ringing a pool at any moment */
+/** How many raindrops are ringing a big pool at any moment; smaller pools catch fewer, by their area */
 const RAINDROPS = 26;
+/** The breadth of a big pool, in squares */
+const BIG_POOL = 0.8;
 /** How far, in squares, the canvas reaches past the board on each side */
 const SPAN = 14;
 /** How often the pools are looked up again, as new shell holes open */
@@ -37,9 +39,9 @@ function seeded(seed: number) {
   };
 }
 
-function dropsFor(seed: number): Drop[] {
+function dropsFor(seed: number, count: number): Drop[] {
   const rand = seeded(seed ^ 0x5bd1e995);
-  return Array.from({ length: RAINDROPS }, () => {
+  return Array.from({ length: count }, () => {
     const a = rand() * Math.PI * 2;
     const d = Math.sqrt(rand()) * 0.72;
     return {
@@ -110,13 +112,28 @@ export function RainRipples({
         surface.height = height;
       }
       view = { left, top };
+      const square =
+        parseFloat(
+          getComputedStyle(canvas).getPropertyValue("--square-size"),
+        ) || 72;
       pools = found
         .map(({ hole, box: r }) => ({
           cx: r.left + r.width / 2 - view.left,
           cy: r.top + r.height / 2 - view.top,
           span: r.width * 0.48,
           squash: Number(hole.dataset.squash) || 0.8,
-          drops: dropsFor(Number(hole.dataset.ripples)),
+          drops: dropsFor(
+            Number(hole.dataset.ripples),
+            Math.max(
+              3,
+              Math.min(
+                RAINDROPS,
+                Math.round(
+                  RAINDROPS * ((r.width * 0.48) / (square * BIG_POOL)) ** 2,
+                ),
+              ),
+            ),
+          ),
         }))
         .filter(
           (p) =>
