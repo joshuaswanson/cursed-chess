@@ -621,7 +621,7 @@ export function Board() {
                 overlays.trenches.exposed.includes(
                   battle.units[sq]?.id ?? -1,
                 ) &&
-                Object.values(TRENCH_RANKS).some((t) => t.front === rankOf(sq))
+                inTrenchLine(sq)
               }
               entrenched={
                 // Only the trench's own side takes cover behind its sandbags;

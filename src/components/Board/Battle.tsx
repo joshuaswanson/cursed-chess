@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { Color, PieceType } from "../../engine";
 import type { Piece, SquareIndex } from "../../engine";
 import { DROP_MS } from "../../plugins/clashRoyale";
@@ -230,7 +230,7 @@ export function BattleUnit({
  * A rifle held at the ready, pointed toward the enemy line, that swings onto
  * its target and kicks as it fires
  */
-function Rifle({
+const Rifle = memo(function Rifle({
   kind,
   rest,
   grip,
@@ -268,7 +268,7 @@ function Rifle({
       <Enfield scoped={kind === "sniper"} />
     </svg>
   );
-}
+});
 
 /** A Lee-Enfield: walnut and blued steel, a bayonet fixed, or for a sniper a telescopic sight in its place */
 function Enfield({ scoped }: { scoped: boolean }) {
@@ -399,7 +399,7 @@ function MillsBomb({ id }: { id: string }) {
 }
 
 /** Two Mills bombs hung on an assault trooper's belt */
-function GrenadeBelt() {
+const GrenadeBelt = memo(function GrenadeBelt() {
   return (
     <svg className="unit-grenades" viewBox="-11 -7.5 22 15" aria-hidden>
       <g transform="translate(-5 0) rotate(-8)">
@@ -410,7 +410,7 @@ function GrenadeBelt() {
       </g>
     </svg>
   );
-}
+});
 
 /** Where the machine gun pivots, ahead of its gunner toward the enemy, and how far out its muzzle is, in squares */
 const MG_PIVOT_AHEAD = 0.12;
@@ -534,13 +534,13 @@ function VickersBody() {
 }
 
 /** A machine gunner's Vickers, carried over his shoulder until he digs it in */
-function CarriedVickers() {
+const CarriedVickers = memo(function CarriedVickers() {
   return (
     <svg className="carried-vickers" viewBox="0 0 100 34" aria-hidden>
       <VickersBody />
     </svg>
   );
-}
+});
 
 /**
  * The machine gun on its tripod in front of the gunner. It traverses onto
@@ -731,7 +731,13 @@ function GunDefs({ scale }: { scale: number }) {
  * gilt badge of a British staff general, or field grey with the red band
  * and cockade of a German one, the peak trimmed with gold oak leaves
  */
-function GeneralCap({ color, tilt }: { color: Color; tilt: number }) {
+const GeneralCap = memo(function GeneralCap({
+  color,
+  tilt,
+}: {
+  color: Color;
+  tilt: number;
+}) {
   const british = color === Color.White;
   return (
     <svg
@@ -779,10 +785,10 @@ function GeneralCap({ color, tilt }: { color: Color; tilt: number }) {
       <path d="M14 18.4 Q22 17.6 30 18.4" className="cap-gloss" />
     </svg>
   );
-}
+});
 
 /** A general's field glasses, hung on their strap */
-function FieldGlasses() {
+const FieldGlasses = memo(function FieldGlasses() {
   return (
     <svg className="field-glasses" viewBox="0 0 20 14" aria-hidden>
       <path d="M3 1 Q10 6 17 1" className="glasses-strap" />
@@ -814,7 +820,7 @@ function FieldGlasses() {
       <ellipse cx="14.4" cy="12.4" rx="2.4" ry="0.9" className="glasses-lens" />
     </svg>
   );
-}
+});
 
 /** Each man wears his helmet at his own slight angle */
 const helmetTilt = (id: number) => (((id * 7919) % 13) - 6) * 1.4;
@@ -826,7 +832,7 @@ const STRAPPED = new Set<PieceType>([
   PieceType.Knight,
 ]);
 
-function Helmet({
+const Helmet = memo(function Helmet({
   color,
   type,
   tilt,
@@ -966,7 +972,7 @@ function Helmet({
       )}
     </svg>
   );
-}
+});
 
 /** A rifle is carried upright at its man's side while he waits */
 const RIFLE_AT_SIDE = -90;

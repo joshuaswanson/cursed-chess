@@ -57,12 +57,6 @@ const FOE_MOVE_UP_MS: [number, number] = [9000, 16000];
 /** How often, on each tick a card is ready, the enemy sends one up */
 const FOE_SEND_CHANCE = 0.015;
 
-/** Where each side's machine gun is dug in, in its front trench */
-export const GUN_NESTS: Record<Color, SquareIndex> = {
-  [Color.White]: 0x23,
-  [Color.Black]: 0x54,
-};
-
 const HP: Record<PieceType, number> = {
   [PieceType.Pawn]: 3,
   [PieceType.Knight]: 4,
@@ -80,8 +74,6 @@ const ROUND_GAP_MS = 85;
 /** A shot's chance of hitting, by where its target stands */
 const RIFLE_HIT = { trench: 0.07, reserve: 0.18, open: 0.5 };
 const ROUND_HIT = { trench: 0.025, reserve: 0.07, open: 0.3 };
-/** The ranks men fire from: the front trenches and no man's land between them */
-const FIRING_RANKS = [2, 3, 4, 5];
 /** With every enemy down in a trench, a man only fires this often when his turn comes */
 const IDLE_FIRE = 0.3;
 /** How long a rifleman takes to bring his rifle up onto the target before firing */
@@ -288,7 +280,7 @@ export class TrenchesPlugin implements ModePlugin {
     this.lastOrder = { [Color.White]: -Infinity, [Color.Black]: -Infinity };
     this.foeAttackAt = FOE_FIRST_ATTACK_MS;
     this.winner = null;
-    this.nests = new Set(Object.values(GUN_NESTS));
+    this.nests = new Set();
     this.sentAt = { [Color.White]: 0, [Color.Black]: 0 };
     this.foeMoveUpAt = rand(...FOE_MOVE_UP_MS);
     this.craters = [];
@@ -316,9 +308,8 @@ export class TrenchesPlugin implements ModePlugin {
   }
 
   /**
-   * Each army files into its trenches: pawns into the front line, with one
-   * on the machine gun, and everyone else into the back line, the king in
-   * the middle of it
+   * Each army files into its trenches: pawns into the front line, and
+   * everyone else into the back line, the king in the middle of it
    */
   private digIn(board: Board): void {
     const moves: { from: SquareIndex; to: SquareIndex; piece: Piece }[] = [];
@@ -350,19 +341,6 @@ export class TrenchesPlugin implements ModePlugin {
       };
       const pawns = army.filter((a) => a.piece.type === PieceType.Pawn);
       const officers = army.filter((a) => a.piece.type !== PieceType.Pawn);
-      // The gunner takes the nest first
-      const nest = GUN_NESTS[color];
-      if (pawns.length > 0) {
-        const gunner = pawns.reduce((a, b) =>
-          Math.abs(fileOf(a.sq) - fileOf(nest)) <=
-          Math.abs(fileOf(b.sq) - fileOf(nest))
-            ? a
-            : b,
-        );
-        taken.add(nest);
-        moves.push({ from: gunner.sq, to: nest, piece: gunner.piece });
-        pawns.splice(pawns.indexOf(gunner), 1);
-      }
       for (const { sq, piece } of pawns) {
         const to = place([front, reserve, back], fileOf(sq));
         if (to !== null) moves.push({ from: sq, to, piece });
@@ -543,11 +521,53 @@ export class TrenchesPlugin implements ModePlugin {
     return true;
   }
 
-  /** A machine gunner who settles in a firing trench digs his gun in there, for good */
-  private digGun(sq: SquareIndex, piece: Piece): void {
-    if (piece.type === PieceType.Rook && FIRING_RANKS.includes(rankOf(sq))) {
-      if (coverAt(sq) === "trench") this.nests.add(sq);
+  /** A machine gunner who settles in a trench he can fire from digs his gun in there, for good */
+  private digGun(board: Board, sq: SquareIndex, piece: Piece): void {
+    if (
+      piece.type === PieceType.Rook &&
+      coverAt(sq) === "trench" &&
+      this.canFire(board, sq, piece.color)
+    ) {
+      this.nests.add(sq);
     }
+  }
+
+  /**
+   * Whether a man may fire from where he is. Anyone caught out of a trench
+   * fights where he stands. In the trenches the line nearest the enemy
+   * fires: a side's front trench, or its back trench once the front has
+   * fallen or emptied, and any enemy trench it has taken.
+   */
+  private canFire(board: Board, sq: SquareIndex, color: Color): boolean {
+    if (coverAt(sq) !== "trench") return true;
+    const { front, back } = TRENCH_RANKS[color];
+    const rank = rankOf(sq);
+    if (rank !== back) return true;
+    const frontLine = ALL_SQUARES.filter((s) => rankOf(s) === front);
+    const lost = frontLine.some((s) => board.get(s)?.color === opponent(color));
+    const empty = !frontLine.some((s) => board.get(s)?.color === color);
+    return lost || empty;
+  }
+
+  /**
+   * A summary of everything the board and your orders show, which changes
+   * whenever any of it does: every event, arrival, and death bumps the id
+   * count, men come up or duck down, charge or snag, and the cards' seconds
+   * tick down
+   */
+  signature(): string {
+    let exposed = 0;
+    let charging = 0;
+    let snagged = 0;
+    for (const [sq, u] of this.units) {
+      if (u.exposedUntil > this.clock) exposed += sq + 1;
+      if (u.order === "charge") charging += sq + 1;
+      if (u.snaggedUntil > this.clock) snagged += sq + 1;
+    }
+    const cards = SQUADS.map((s) =>
+      Math.ceil(this.readyIn(Color.White, s) / 1000),
+    ).join();
+    return `${this.nextId}|${this.events.length}|${exposed}|${charging}|${snagged}|${cards}|${this.nests.size}`;
   }
 
   /** How long until a side's squad is ready to go */
@@ -706,7 +726,7 @@ export class TrenchesPlugin implements ModePlugin {
     if (unit.order === "charge") {
       if (rankOf(sq) === unit.goal) {
         unit.order = "hold";
-        this.digGun(sq, piece);
+        this.digGun(board, sq, piece);
       } else if (this.advance(board, sq, unit, piece)) {
         return;
       } else if (this.lobGrenade(board, sq, piece, unit)) {
@@ -722,12 +742,12 @@ export class TrenchesPlugin implements ModePlugin {
     }
 
     // A machine gunner holding a firing trench digs his gun in where he stands
-    this.digGun(sq, piece);
+    this.digGun(board, sq, piece);
     if (this.fightInTrench(board, sq, unit, piece)) return;
     if (this.moveUp(board, sq, unit, piece)) return;
 
-    // Only the front line fires; the back trenches and the reserves keep their heads down
-    if (!FIRING_RANKS.includes(rankOf(sq))) {
+    // Only the line nearest the enemy fires; the back trench keeps its head down
+    if (!this.canFire(board, sq, piece.color)) {
       unit.readyIn = rand(800, 1600);
       return;
     }
@@ -986,7 +1006,7 @@ export class TrenchesPlugin implements ModePlugin {
     if (to === undefined) return false;
     const ms = Math.round(STEP_MS * (stranded ? 0.9 : 1.2));
     this.relocate(board, sq, to);
-    this.digGun(to, piece);
+    this.digGun(board, to, piece);
     this.emit({ kind: "move", unitId: unit.id, from: sq, to, ms, delayMs: 0 });
     unit.readyIn = ms + (stranded ? rand(50, 200) : rand(300, 900));
     if (this.wire.has(to)) {

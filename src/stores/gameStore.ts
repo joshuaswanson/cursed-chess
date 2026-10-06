@@ -396,6 +396,9 @@ function holdPause(ms: number): void {
   }, ms);
 }
 
+/** What the trenches looked like at the last redraw */
+let lastTrenchLook: string | undefined;
+
 function endGameSoon(
   winner: Color | null,
   delayMs: number = GAME_END_DELAY_MS,
@@ -1072,7 +1075,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (paused || isGameOver(status) || !pluginManager.isAutonomous()) return;
 
     const winner = pluginManager.invokeTickAutonomous(AUTONOMOUS_TICK_MS);
-    set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
+    // Trenches says when anything on screen has changed; the board redraws only then
+    const trenches = pluginManager.find<TrenchesPlugin>("trenches");
+    const look = trenches?.signature();
+    if (look === undefined || look !== lastTrenchLook) {
+      lastTrenchLook = look;
+      set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
+    }
     if (winner === null) return;
     set({ status: GameStatus.Checkmate });
     endGameSoon(winner);
