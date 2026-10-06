@@ -70,9 +70,6 @@ export function TrenchOrders() {
                   />
                 ))}
               </span>
-              <span className="card-cost" aria-hidden>
-                {ready ? "" : Math.ceil(card.readyInMs / 1000)}
-              </span>
               <span className="card-charge" aria-hidden />
             </span>
             <span className="card-label" aria-hidden>
