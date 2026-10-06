@@ -65,26 +65,35 @@ export function RainRipples() {
     let pools: Pool[] = [];
     let frame = 0;
     let surveyed = 0;
-    let scale = 1;
+    // The canvas covers only the part of the ground that is on screen
+    let view = { left: 0, top: 0 };
 
     // Each shell hole that rings with rain marks itself; its pool lies in
     // the middle half of its box, flattened by the slant the ground is seen at
     const survey = () => {
-      const box = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      const width = Math.round(box.width * dpr);
-      const height = Math.round(box.height * dpr);
+      const area = canvas.parentElement!.getBoundingClientRect();
+      const left = Math.max(area.left, 0);
+      const top = Math.max(area.top, 0);
+      const right = Math.min(area.right, window.innerWidth);
+      const bottom = Math.min(area.bottom, window.innerHeight);
+      const width = Math.max(0, Math.round(right - left));
+      const height = Math.max(0, Math.round(bottom - top));
+      canvas.style.left = `${left - area.left}px`;
+      canvas.style.top = `${top - area.top}px`;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      // Thin rings read the same at one pixel to one, at a quarter of the cost
       if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
         canvas.height = height;
       }
-      scale = dpr;
+      view = { left, top };
       pools = [...document.querySelectorAll<HTMLElement>("[data-ripples]")]
         .map((hole) => {
           const r = hole.getBoundingClientRect();
           return {
-            cx: r.left + r.width / 2 - box.left,
-            cy: r.top + r.height / 2 - box.top,
+            cx: r.left + r.width / 2 - view.left,
+            cy: r.top + r.height / 2 - view.top,
             span: r.width * 0.48,
             squash: Number(hole.dataset.squash) || 0.8,
             drops: dropsFor(Number(hole.dataset.ripples)),
@@ -93,11 +102,20 @@ export function RainRipples() {
         .filter(
           (p) =>
             p.cx + p.span > 0 &&
-            p.cx - p.span < box.width &&
+            p.cx - p.span < width &&
             p.cy + p.span > 0 &&
-            p.cy - p.span < box.height,
+            p.cy - p.span < height,
         );
     };
+
+    // Rings fading out, drawn in a handful of strengths, each strength in one stroke
+    const LEVELS = 6;
+    const shades = Array.from(
+      { length: LEVELS },
+      (_, i) =>
+        `rgba(220, 228, 230, ${((0.7 * (i + 0.5)) / LEVELS).toFixed(3)})`,
+    );
+    const paths: Path2D[] = [];
 
     const draw = (now: number) => {
       frame = requestAnimationFrame(draw);
@@ -105,9 +123,9 @@ export function RainRipples() {
         surveyed = now;
         survey();
       }
-      ctx.setTransform(scale, 0, 0, scale, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.lineWidth = 1;
+      for (let i = 0; i < LEVELS; i++) paths[i] = new Path2D();
       const t = now / 1000;
       for (const pool of pools) {
         for (const d of pool.drops) {
@@ -115,19 +133,17 @@ export function RainRipples() {
           // Spreads fast then slows, fading as it goes
           const grow = 0.1 + 0.9 * (1 - (1 - p) ** 2);
           const radius = (d.size * pool.span * grow) / 2;
-          ctx.strokeStyle = `rgba(220, 228, 230, ${(0.7 * (1 - p)).toFixed(3)})`;
-          ctx.beginPath();
-          ctx.ellipse(
-            pool.cx + d.x * pool.span,
-            pool.cy + d.y * pool.span * pool.squash,
-            radius,
-            radius * pool.squash,
-            0,
-            0,
-            Math.PI * 2,
-          );
-          ctx.stroke();
+          const x = pool.cx + d.x * pool.span;
+          const y = pool.cy + d.y * pool.span * pool.squash;
+          const path =
+            paths[Math.min(LEVELS - 1, Math.floor((1 - p) * LEVELS))];
+          path.moveTo(x + radius, y);
+          path.ellipse(x, y, radius, radius * pool.squash, 0, 0, Math.PI * 2);
         }
+      }
+      for (let i = 0; i < LEVELS; i++) {
+        ctx.strokeStyle = shades[i];
+        ctx.stroke(paths[i]);
       }
     };
     frame = requestAnimationFrame(draw);
@@ -139,11 +155,12 @@ export function RainRipples() {
   }, []);
 
   return (
-    <canvas
-      ref={ref}
+    <div
       className="rain-ripples"
       style={{ "--span": SPAN } as React.CSSProperties}
       aria-hidden
-    />
+    >
+      <canvas ref={ref} />
+    </div>
   );
 }

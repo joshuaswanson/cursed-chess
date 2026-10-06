@@ -9,6 +9,10 @@
   pointer-events: none;
 }
 
+.rain-ripples canvas {
+  position: absolute;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rain-ripples {
     display: none;
