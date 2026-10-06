@@ -33,6 +33,35 @@ function recolor(svg: string, body: string[]): string {
   );
 }
 
+/** A round head on a short neck, sized like the pawn's but bigger, for a helmet or cap to sit on */
+const HEAD =
+  '<path fill="url(#body)" d="M19.4 27 L20.3 21.5 H24.7 L25.6 27 Z"/>' +
+  '<circle fill="url(#body)" cx="22.5" cy="17" r="5.5"/>';
+
+/**
+ * The queen and king as soldiers: a crown or a cross cannot go under a
+ * helmet or a general's cap, so each has a head in its place. The queen's
+ * head rises from her collar; the king's sits between his broad shoulders.
+ */
+function soldierly(name: string, svg: string): string {
+  if (name.endsWith("Q"))
+    return svg
+      .replace(/<g stroke="none">(<circle[^>]*\/>)+<\/g>/, "")
+      .replace(/<path d="M8 12a2[^"]*"\/>/, "")
+      .replace(/<path[^>]*d="M9 26c8\.5-1\.5 21-1\.5 27 0l[^"]*"\/>/, "")
+      .replace(
+        '<path stroke-linecap="butt" d="M9 26c0 2',
+        (band) => HEAD + band,
+      );
+  if (name.endsWith("K"))
+    return svg
+      .replace(/<path stroke-linejoin="miter" d="M22\.5 11\.6[^"]*"\/>/, "")
+      .replace(/<path stroke-linejoin="miter" d="M20 8h5"\/>/, "")
+      .replace(/<path[^>]*d="M22\.5 25s4\.5-7\.5[^"]*"\/>/, "")
+      .replace("</g></svg>", `${HEAD}</g></svg>`);
+  return svg;
+}
+
 /** The piece's body gradient swapped for the mode's colors */
 function themed(name: string, theme: string, body: string[]): string | null {
   const key = `${theme}:${name}`;
@@ -40,7 +69,8 @@ function themed(name: string, theme: string, body: string[]): string | null {
   if (cached) return cached;
   const svg = artwork.get(name);
   if (!svg) return null;
-  const url = `data:image/svg+xml,${encodeURIComponent(recolor(svg, body))}`;
+  const drawn = theme === "trenches" ? soldierly(name, svg) : svg;
+  const url = `data:image/svg+xml,${encodeURIComponent(recolor(drawn, body))}`;
   recolored.set(key, url);
   return url;
 }
