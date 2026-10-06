@@ -1498,3 +1498,8 @@
 .battle-effects > .grenade-burst {
   scale: 0.6;
 }
+
+/* No glowing team discs under the men in the trenches */
+[data-theme="trenches"] .unit-base {
+  display: none;
+}
