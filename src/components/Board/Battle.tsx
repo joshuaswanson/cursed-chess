@@ -1076,12 +1076,16 @@ const Helmet = memo(function Helmet({
           patternUnits="userSpaceOnUse"
         >
           <image
-            href={`${GUN_TEXTURES}helmet_metal.jpg`}
+            href={`${GUN_TEXTURES}helmet_grain.png`}
             width="44"
             height="44"
             preserveAspectRatio="none"
           />
         </pattern>
+        <radialGradient id="helmet-sheen">
+          <stop offset="0.3" stopColor="#fffce6" stopOpacity="0.26" />
+          <stop offset="1" stopColor="#fffce6" stopOpacity="0" />
+        </radialGradient>
       </defs>
       {tommy ? (
         <>

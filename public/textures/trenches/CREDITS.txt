@@ -5,6 +5,6 @@ soil.jpg          excavated_soil_wall
 planks.jpg        weathered_planks
 duckboards.jpg    weathered_brown_planks
 hessian.jpg       hessian_230
-helmet_metal.jpg  green_metal_rust
+helmet_grain.png  green_metal_rust (as light and dark grain)
 gun_wood.jpg      wood_table_worn
 gun_steel.jpg     metal_plate_02 (tinted to gunmetal)

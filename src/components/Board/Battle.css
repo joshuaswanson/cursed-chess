@@ -1190,11 +1190,10 @@
   color: #e6dfcc;
 }
 
-/* Painted steel, scuffed and rusting, its grain laid over the helmet's own colour */
+/* Painted steel, scuffed and rusting: the grain's light and dark laid over the helmet's own colour */
 .unit-helmet .helmet-steel {
   fill: url(#helmet-steel);
-  mix-blend-mode: luminosity;
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
 /* --- Guns: photographed walnut and blued steel, lit to look round --- */
@@ -1365,8 +1364,7 @@
 
 /* A dull sheen where the light catches the paint */
 .unit-helmet .helmet-sheen {
-  fill: rgba(255, 252, 230, 0.22);
-  filter: blur(0.6px);
+  fill: url(#helmet-sheen);
 }
 
 /* --- In the trenches: crouched below the parapet, or up looking over it --- */
