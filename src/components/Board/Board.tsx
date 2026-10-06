@@ -263,6 +263,7 @@ export function Board() {
   // Portals only move once the last move has finished sliding or flying
   const portalsDue =
     pluginManager.find<PortalChessPlugin>("portal-chess")?.respawnDue ?? false;
+  const trenchPicked = useGameStore((s) => s.trenchPicked);
   const settlePortals = useGameStore((s) => s.settlePortals);
 
   const slides = useSlideAnimation({
@@ -623,6 +624,9 @@ export function Board() {
                   battle.units[sq]?.id ?? -1,
                 ) &&
                 inTrenchLine(sq)
+              }
+              picked={
+                trenchPicked === sq && !!overlays.trenches?.movable.includes(sq)
               }
               entrenched={
                 // Only the trench's own side takes cover behind its sandbags;

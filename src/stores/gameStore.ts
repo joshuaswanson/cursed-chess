@@ -205,6 +205,8 @@ export interface GameStore {
   moveHistory: MoveRecord[];
 
   selectedSquare: SquareIndex | null;
+  /** In Trenches, the man of yours picked out to be sent forward on his own */
+  trenchPicked: SquareIndex | null;
   legalMoveSquares: SquareIndex[];
   hasPortalMoves: boolean;
   portalEntrance: SquareIndex | null;
@@ -324,6 +326,7 @@ export interface GameStore {
 
 const CLEARED_SELECTION = {
   selectedSquare: null,
+  trenchPicked: null,
   legalMoveSquares: [],
   hasPortalMoves: false,
   portalEntrance: null,
@@ -660,7 +663,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (state.paused || state.gravityFalling || state.zombiesActing) return;
     if (state.pluginManager.isAutonomous()) {
       if (state.deployPieceType) state.deployPiece(square);
-      else state.trenchAdvanceMan(square);
+      else
+        set({
+          trenchPicked: state.trenchPicked === square ? null : square,
+        });
       return;
     }
     // The human always plays White
@@ -959,7 +965,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const trenches = pluginManager.find<TrenchesPlugin>("trenches");
     if (!trenches || paused) return false;
     const ordered = trenches.advanceMan(game.board, Color.White, square);
-    if (ordered) set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
+    set((s) => ({
+      trenchPicked: null,
+      autonomousTick: s.autonomousTick + (ordered ? 1 : 0),
+    }));
     return ordered;
   },
 

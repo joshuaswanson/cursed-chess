@@ -1567,7 +1567,33 @@
   filter: none;
 }
 
-/* Your men holding a trench answer a click by going forward on their own */
+/* The armies in their own drab: British khaki, German field grey */
+[data-theme="trenches"] .side-blue {
+  --team: #8a8250;
+  --team-light: #cbc28c;
+  --team-glow: rgba(120, 112, 66, 0.6);
+}
+
+[data-theme="trenches"] .side-red {
+  --team: #6b7770;
+  --team-light: #adb8b0;
+  --team-glow: rgba(92, 104, 98, 0.6);
+}
+
+/* The man you picked out, in the warm light of a lamp */
+[data-theme="trenches"] .battle-unit.is-picked .unit-base {
+  left: 4%;
+  right: 4%;
+  height: 26%;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 214, 130, 0.9),
+    rgba(255, 190, 90, 0.35) 60%,
+    transparent
+  );
+}
+
+/* Your men holding a trench can be picked out with a click, to send forward alone */
 [data-theme="trenches"]
   .square.trench:has(
     > .battle-unit.side-blue:not(.is-tower):not(.is-charging)

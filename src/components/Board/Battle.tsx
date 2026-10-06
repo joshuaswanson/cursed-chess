@@ -141,6 +141,7 @@ export function BattleUnit({
   stance,
   entrenched = false,
   aiming = false,
+  picked = false,
 }: {
   sq: SquareIndex;
   piece: Piece;
@@ -153,6 +154,8 @@ export function BattleUnit({
   entrenched?: boolean;
   /** Manning the front line, his rifle levelled at the enemy */
   aiming?: boolean;
+  /** Picked out by you, waiting on the order to go forward */
+  picked?: boolean;
 }) {
   const unit = view.units[sq];
   let arrival: ArrivalEvent | undefined;
@@ -204,7 +207,7 @@ export function BattleUnit({
   // A man behind the sandbags levels his rifle over them, so it is drawn
   // apart from him, above the bags he is behind
   const overParapet = entrenched && aiming;
-  const className = `battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}${entrenched ? " is-entrenched" : ""}${aiming ? " is-aiming" : ""}`;
+  const className = `battle-unit side-${team(piece.color)}${tower ? " is-tower" : ""}${stance ? ` is-${stance}` : ""}${entrenched ? " is-entrenched" : ""}${aiming ? " is-aiming" : ""}${picked ? " is-picked" : ""}`;
   const style = {
     ...arrivalStyle(arrival, flipped, squareSize),
     "--hunch": `${unit.id % 2 ? 9 : -9}deg`,

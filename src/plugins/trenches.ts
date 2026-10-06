@@ -167,6 +167,8 @@ export interface TrenchView {
   cards: { id: SquadId; readyInMs: number }[];
   /** Your trench lines with men in them who can be ordered forward, and whether forward is into the enemy or up to your own line */
   lines: { rank: number; kind: "attack" | "advance"; men: number }[];
+  /** Your men who can be sent forward on their own, by square */
+  movable: SquareIndex[];
   /** Men up looking over the parapet, the rest of those in the trenches crouched below it */
   exposed: number[];
   /** Whether each side has men out charging, and how many hold its front trench */
@@ -1546,6 +1548,10 @@ export class TrenchesPlugin implements ModePlugin {
         .map(([, u]) => u.id),
       charges: { ...this.charges },
       lines: this.orderLines(board, Color.White),
+      movable: this.trenchRanks(Color.White)
+        .filter((rank) => this.trenchAhead(Color.White, rank) !== undefined)
+        .flatMap((rank) => this.holding(board, Color.White, rank))
+        .map(([sq]) => sq),
       cards: SQUADS.map((squad) => ({
         id: squad.id,
         readyInMs: this.readyIn(Color.White, squad),

@@ -6,7 +6,8 @@ import "./Trenches.css";
 /**
  * A button beside each of your trench lines that holds men, sending them
  * forward for the next trench ahead: red where that means going over the
- * top for the enemy's, green where it is your own line in front.
+ * top for the enemy's, green where it is your own line in front. Over a man
+ * you have picked out, one that sends him forward alone.
  */
 export function LineOrders({
   view,
@@ -16,7 +17,10 @@ export function LineOrders({
   flipped: boolean;
 }) {
   const trenchAdvance = useGameStore((s) => s.trenchAdvance);
+  const trenchAdvanceMan = useGameStore((s) => s.trenchAdvanceMan);
+  const picked = useGameStore((s) => s.trenchPicked);
   const rowOf = (rank: number) => (flipped ? rank : 7 - rank);
+  const colOf = (file: number) => (flipped ? 7 - file : file);
   return (
     <div className="line-orders">
       {view.lines.map((line) => (
@@ -32,6 +36,21 @@ export function LineOrders({
           Advance
         </button>
       ))}
+      {picked !== null && view.movable.includes(picked) && (
+        <button
+          type="button"
+          className="line-order man-order advance"
+          style={{
+            left: `${(colOf(picked & 7) + 0.5) * 12.5}%`,
+            top: `${rowOf(picked >> 4) * 12.5}%`,
+          }}
+          onClick={() => {
+            if (trenchAdvanceMan(picked)) sfx.whistle(true);
+          }}
+        >
+          Advance
+        </button>
+      )}
     </div>
   );
 }

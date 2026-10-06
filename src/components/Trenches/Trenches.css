@@ -277,6 +277,23 @@
   background: linear-gradient(180deg, #6b7a3e, #434d24);
 }
 
+/* Over the one man you picked out, standing just above his head */
+.line-order.man-order {
+  right: auto;
+  translate: -50% -60%;
+  padding: 3px 9px;
+  font-size: calc(var(--square-size) * 0.16);
+  z-index: 1;
+}
+
+.line-order.man-order:hover {
+  translate: -50% calc(-60% - 2px);
+}
+
+.line-order.man-order:active {
+  translate: -50% calc(-60% + 2px);
+}
+
 .line-order:hover {
   translate: 0 calc(-50% - 2px);
   box-shadow: 3px 6px 0 var(--ink);
