@@ -204,6 +204,7 @@ export function BattleUnit({
           />
         )}
         {arms === "grenadier" && <GrenadeBelt />}
+        {arms === "vickers" && <CarriedVickers />}
         {held && (
           <Rifle
             kind={held}
@@ -476,6 +477,71 @@ export function TrenchGuns({
   );
 }
 
+/** The Vickers gun itself: water jacket, receiver, spade grips, flash hider, and its belt of rounds */
+function VickersBody() {
+  return (
+    <>
+      <GunDefs scale={34} />
+      {/* The belt of brass rounds feeding in from the side */}
+      <path d="M24 23 Q27 29 23 33.5" className="mg-belt-cloth" />
+      <path
+        d="M25.3 24 l3 -0.4 l0.5 2.8 l-3 0.4 Z M25.8 27.4 l3 0 l0.2 2.8 l-3 0 Z M25.4 30.8 l3 0.3 l-0.2 2.8 l-3 -0.3 Z"
+        className="mg-round"
+      />
+      {/* Spade grips and the thumb trigger between them */}
+      <path
+        d="M1 9 h7 a1.8 1.8 0 0 1 0 3.6 h-7 a1.8 1.8 0 0 1 0 -3.6 Z M1 20.4 h7 a1.8 1.8 0 0 1 0 3.6 h-7 a1.8 1.8 0 0 1 0 -3.6 Z"
+        className="gun-wood"
+      />
+      <path d="M7.4 8 h3.6 v18 h-3.6 Z" className="gun-steel" />
+      {/* The receiver box, riveted, with its feed block and rear sight */}
+      <path
+        d="M10.6 6.4 h23.4 q1.6 0 1.6 1.6 v18 q0 1.6 -1.6 1.6 h-23.4 Z"
+        className="gun-steel"
+      />
+      <path d="M12.5 9 H33 M12.5 25 H33" className="mg-seam" />
+      <path
+        d="M14 8 h.1 M20 8 h.1 M26 8 h.1 M32 8 h.1 M14 26 h.1 M20 26 h.1 M26 26 h.1 M32 26 h.1"
+        className="mg-rivets"
+      />
+      <path d="M23 18.5 h6 v9 h-6 Z" className="gun-steel" />
+      <path d="M17 3.2 h5 v3.4 h-5 Z" className="gun-steel" />
+      {/* The water jacket: a fluted steel drum around the barrel, rounded by the light */}
+      <path
+        d="M35 8.6 h40 q3.6 0 3.6 3.6 v9.6 q0 3.6 -3.6 3.6 h-40 Z"
+        className="mg-jacket"
+      />
+      <path
+        d="M40 9 V25 M45 9 V25 M50 9 V25 M55 9 V25 M60 9 V25 M65 9 V25 M70 9 V25 M75 9.3 V24.7"
+        className="mg-flutes"
+      />
+      <path
+        d="M35 8.6 h40 q3.6 0 3.6 3.6 v9.6 q0 3.6 -3.6 3.6 h-40 Z"
+        className="gun-round"
+      />
+      <path d="M36 11.5 H77" className="gun-shine" />
+      <circle cx="68" cy="25.6" r="1.4" className="gun-steel" />
+      {/* The muzzle and its cone of a flash hider */}
+      <path d="M78.4 14 h7 v6 h-7 Z" className="gun-steel" />
+      <path d="M85 12.6 L98.4 10 L98.4 24 L85 21.4 Z" className="gun-steel" />
+      <path d="M85.5 13.4 L97.8 11.2" className="gun-shine" />
+      <path
+        d="M10.6 6.4 h23.4 q1.6 0 1.6 1.6 v18 q0 1.6 -1.6 1.6 h-23.4 Z"
+        className="gun-round"
+      />
+    </>
+  );
+}
+
+/** A machine gunner's Vickers, carried over his shoulder until he digs it in */
+function CarriedVickers() {
+  return (
+    <svg className="carried-vickers" viewBox="0 0 100 34" aria-hidden>
+      <VickersBody />
+    </svg>
+  );
+}
+
 /**
  * The machine gun on its tripod in front of the gunner. It traverses onto
  * whatever it is firing at and stays trained there through the burst, then
@@ -504,54 +570,7 @@ function MachineGun({
         <circle cx="20" cy="20" r="4.5" className="mg-head" />
       </svg>
       <svg className="mg-gun" viewBox="0 0 100 34">
-        <GunDefs scale={34} />
-        {/* The belt of brass rounds feeding in from the side */}
-        <path d="M24 23 Q27 29 23 33.5" className="mg-belt-cloth" />
-        <path
-          d="M25.3 24 l3 -0.4 l0.5 2.8 l-3 0.4 Z M25.8 27.4 l3 0 l0.2 2.8 l-3 0 Z M25.4 30.8 l3 0.3 l-0.2 2.8 l-3 -0.3 Z"
-          className="mg-round"
-        />
-        {/* Spade grips and the thumb trigger between them */}
-        <path
-          d="M1 9 h7 a1.8 1.8 0 0 1 0 3.6 h-7 a1.8 1.8 0 0 1 0 -3.6 Z M1 20.4 h7 a1.8 1.8 0 0 1 0 3.6 h-7 a1.8 1.8 0 0 1 0 -3.6 Z"
-          className="gun-wood"
-        />
-        <path d="M7.4 8 h3.6 v18 h-3.6 Z" className="gun-steel" />
-        {/* The receiver box, riveted, with its feed block and rear sight */}
-        <path
-          d="M10.6 6.4 h23.4 q1.6 0 1.6 1.6 v18 q0 1.6 -1.6 1.6 h-23.4 Z"
-          className="gun-steel"
-        />
-        <path d="M12.5 9 H33 M12.5 25 H33" className="mg-seam" />
-        <path
-          d="M14 8 h.1 M20 8 h.1 M26 8 h.1 M32 8 h.1 M14 26 h.1 M20 26 h.1 M26 26 h.1 M32 26 h.1"
-          className="mg-rivets"
-        />
-        <path d="M23 18.5 h6 v9 h-6 Z" className="gun-steel" />
-        <path d="M17 3.2 h5 v3.4 h-5 Z" className="gun-steel" />
-        {/* The water jacket: a fluted steel drum around the barrel, rounded by the light */}
-        <path
-          d="M35 8.6 h40 q3.6 0 3.6 3.6 v9.6 q0 3.6 -3.6 3.6 h-40 Z"
-          className="mg-jacket"
-        />
-        <path
-          d="M40 9 V25 M45 9 V25 M50 9 V25 M55 9 V25 M60 9 V25 M65 9 V25 M70 9 V25 M75 9.3 V24.7"
-          className="mg-flutes"
-        />
-        <path
-          d="M35 8.6 h40 q3.6 0 3.6 3.6 v9.6 q0 3.6 -3.6 3.6 h-40 Z"
-          className="gun-round"
-        />
-        <path d="M36 11.5 H77" className="gun-shine" />
-        <circle cx="68" cy="25.6" r="1.4" className="gun-steel" />
-        {/* The muzzle and its cone of a flash hider */}
-        <path d="M78.4 14 h7 v6 h-7 Z" className="gun-steel" />
-        <path d="M85 12.6 L98.4 10 L98.4 24 L85 21.4 Z" className="gun-steel" />
-        <path d="M85.5 13.4 L97.8 11.2" className="gun-shine" />
-        <path
-          d="M10.6 6.4 h23.4 q1.6 0 1.6 1.6 v18 q0 1.6 -1.6 1.6 h-23.4 Z"
-          className="gun-round"
-        />
+        <VickersBody />
       </svg>
     </span>
   );

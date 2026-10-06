@@ -133,7 +133,8 @@ export type BattleEvent =
     };
 
 /** What a soldier carries: a rifle, the fixed machine gun he is manning, a sniper's scoped rifle, a rifle and a bag of grenades, or a general's cap and cane */
-export type Arms = "rifle" | "mg" | "sniper" | "grenadier" | "general";
+export type Arms =
+  "rifle" | "mg" | "vickers" | "sniper" | "grenadier" | "general";
 
 export interface BattleView {
   units: Record<number, Unit>;

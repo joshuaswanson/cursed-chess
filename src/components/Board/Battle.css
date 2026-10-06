@@ -1101,9 +1101,10 @@
 }
 
 .helmet-on-r {
-  left: 50%;
-  top: 3%;
-  width: 62%;
+  left: 60%;
+  top: -2%;
+  width: 46%;
+  rotate: calc(28deg + var(--tilt, 0deg));
 }
 
 .helmet-on-q {
@@ -1393,7 +1394,7 @@
 }
 
 [data-theme="trenches"] .battle-unit.is-crouched.is-entrenched .unit-body > * {
-  transform: translateY(calc(var(--square-size, 72px) * 0.3));
+  transform: translateY(calc(var(--square-size, 72px) * 0.19));
 }
 
 /* Up and looking over: raised clear of the parapet, so the men really lean over it */
@@ -1545,8 +1546,8 @@
 /* --- The general's cap and field glasses --- */
 
 .general-cap {
-  top: -4% !important;
-  width: 60% !important;
+  top: 4% !important;
+  width: 58% !important;
 }
 
 .general-cap .cap-edge {
@@ -1628,4 +1629,16 @@
 
 .glasses-lens {
   fill: #7d97a6;
+}
+
+/* A Vickers carried over the shoulder, muzzle up and back */
+.carried-vickers {
+  position: absolute;
+  left: 2%;
+  top: 30%;
+  width: 92%;
+  z-index: 4;
+  overflow: visible;
+  rotate: -32deg;
+  filter: drop-shadow(0.03em 0.06em 0 rgba(10, 8, 4, 0.55));
 }

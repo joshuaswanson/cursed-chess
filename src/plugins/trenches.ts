@@ -205,6 +205,8 @@ function armsFor(sq: SquareIndex, piece: Piece, nests: Set<SquareIndex>): Arms {
   switch (piece.type) {
     case PieceType.King:
       return "general";
+    case PieceType.Rook:
+      return "vickers";
     case PieceType.Bishop:
       return "sniper";
     case PieceType.Knight:
@@ -719,6 +721,8 @@ export class TrenchesPlugin implements ModePlugin {
       }
     }
 
+    // A machine gunner holding a firing trench digs his gun in where he stands
+    this.digGun(sq, piece);
     if (this.fightInTrench(board, sq, unit, piece)) return;
     if (this.moveUp(board, sq, unit, piece)) return;
 
@@ -756,6 +760,10 @@ export class TrenchesPlugin implements ModePlugin {
       case "general":
         // The general does not fight; he watches through his field glasses
         unit.readyIn = jitter(RIFLE_MS);
+        return;
+      case "vickers":
+        // A Vickers cannot be fired from the shoulder; until he digs it in, he waits
+        unit.readyIn = jitter(RIFLE_MS * 0.5);
         return;
     }
     this.fire(board, sq, piece, false);
