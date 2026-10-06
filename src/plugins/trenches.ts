@@ -119,8 +119,6 @@ export const SHELL_FALL_MS = 900;
 const SHELL_HIT = { trench: 0.3, reserve: 0.5, open: 0.8 };
 const SHELL_DAMAGE = 2;
 const BLAST_HIT = { trench: 0.08, reserve: 0.2, open: 0.35 };
-/** The widest a crater grows as shell holes run together, in squares */
-const MAX_CRATER = 1.4;
 /** A shell that lands on the wire sometimes blows a gap in it */
 const WIRE_CUT_CHANCE = 0.35;
 /** Events stay visible to the board for this long */
@@ -284,6 +282,7 @@ export class TrenchesPlugin implements ModePlugin {
     this.sentAt = { [Color.White]: 0, [Color.Black]: 0 };
     this.foeMoveUpAt = rand(...FOE_MOVE_UP_MS);
     this.craters = [];
+    this.pockMark();
     this.fallen = [];
     this.incoming = [];
     this.barrageAt = rand(...BARRAGE_MS);
@@ -741,6 +740,11 @@ export class TrenchesPlugin implements ModePlugin {
       } else if (this.lobGrenade(board, sq, piece, unit)) {
         return;
       } else if (Math.random() < 0.5) {
+        // Stuck short of the line, a machine gunner opens up from the ground
+        if (piece.type === PieceType.Rook && this.burst(board, sq, piece)) {
+          unit.readyIn = jitter(BURST_MS * 1.4);
+          return;
+        }
         this.fire(board, sq, piece, true);
         unit.readyIn = jitter(RIFLE_MS * 1.6);
         return;
@@ -791,7 +795,12 @@ export class TrenchesPlugin implements ModePlugin {
         unit.readyIn = jitter(RIFLE_MS);
         return;
       case "vickers":
-        // A Vickers cannot be fired from the shoulder; until he digs it in, he waits
+        // Caught in the open, he throws himself down and fires the gun off the
+        // ground where he is; in a trench he digs it in properly first
+        if (coverAt(sq) !== "trench" && this.burst(board, sq, piece)) {
+          unit.readyIn = jitter(BURST_MS * 1.4);
+          return;
+        }
         unit.readyIn = jitter(RIFLE_MS * 0.5);
         return;
     }
@@ -1316,14 +1325,8 @@ export class TrenchesPlugin implements ModePlugin {
     const landed = this.incoming.filter((s) => s.at <= this.clock);
     if (landed.length === 0) return;
     this.incoming = this.incoming.filter((s) => s.at > this.clock);
-    for (const { sq, spot } of landed) {
+    for (const { sq } of landed) {
       if (NO_MANS_LAND.includes(rankOf(sq))) {
-        this.blastCrater({
-          x: fileOf(sq) + spot.x,
-          y: rankOf(sq) + spot.y,
-          r: rand(0.32, 0.62),
-          seed: Math.floor(Math.random() * 1e9),
-        });
         if (this.wire.has(sq) && Math.random() < WIRE_CUT_CHANCE) {
           this.wire.delete(sq);
         }
@@ -1345,35 +1348,31 @@ export class TrenchesPlugin implements ModePlugin {
   }
 
   /**
-   * A new shell hole. Where it breaks into others, the blasts run together
-   * into one bigger crater, opened out to take in all of them.
+   * No man's land as the fighting finds it, already shelled to ruin: a few
+   * big craters and a scatter of small ones, and they stay as they are
    */
-  private blastCrater(fresh: Crater): void {
-    let crater = fresh;
-    let merged = true;
-    while (merged) {
-      merged = false;
-      for (const other of this.craters) {
-        const gap = Math.hypot(other.x - crater.x, other.y - crater.y);
-        if (gap >= other.r + crater.r) continue;
-        // The smallest circle around both, a touch wider for the churned edge
-        const r = Math.min(
-          MAX_CRATER,
-          Math.max(crater.r, other.r, (gap + crater.r + other.r) / 2) * 1.05,
-        );
-        const t = gap > 0 ? (r - crater.r) / gap : 0;
-        crater = {
-          x: crater.x + (other.x - crater.x) * Math.min(1, Math.max(0, t)),
-          y: crater.y + (other.y - crater.y) * Math.min(1, Math.max(0, t)),
+  private pockMark(): void {
+    const big = 2 + Math.floor(Math.random() * 2);
+    const small = 4 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < big + small; i++) {
+      const r = i < big ? rand(0.6, 0.85) : rand(0.28, 0.42);
+      // Each in ground of its own, clear of the others
+      for (let tries = 0; tries < 30; tries++) {
+        const hole = {
+          x: rand(r, 8 - r),
+          y: rand(NO_MANS_LAND[0] + 0.15, NO_MANS_LAND[1] + 0.85),
           r,
-          seed: other.seed ^ crater.seed,
+          seed: Math.floor(Math.random() * 1e9),
         };
-        this.craters = this.craters.filter((c) => c !== other);
-        merged = true;
-        break;
+        const clear = this.craters.every(
+          (c) => Math.hypot(c.x - hole.x, c.y - hole.y) > c.r + hole.r + 0.05,
+        );
+        if (clear) {
+          this.craters.push(hole);
+          break;
+        }
       }
     }
-    this.craters.push(crater);
   }
 
   private relocate(board: Board, from: SquareIndex, to: SquareIndex): void {

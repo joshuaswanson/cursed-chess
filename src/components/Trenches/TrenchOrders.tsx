@@ -7,6 +7,12 @@ import { Soldier } from "../Board/Battle";
 import { sfx } from "../../audio/sfx";
 import "./Trenches.css";
 
+/** Which of a squad's men stands at the front of its card: the one unlike the rest, or the first */
+function leadIndex(men: PieceType[]): number {
+  const odd = men.findIndex((t) => men.filter((u) => u === t).length === 1);
+  return odd >= 0 ? odd : 0;
+}
+
 /**
  * Your squads in Trenches: click one that is ready and its men run up to
  * your back trench. Sending any one starts every card readying again.
@@ -53,22 +59,28 @@ export function TrenchOrders() {
           >
             <span className="card-face">
               <span className="card-art" aria-hidden>
-                {squad.men.map((type, n) => (
-                  <span
-                    key={n}
-                    className="card-man"
-                    style={
-                      {
-                        "--n": n,
-                        "--of": squad.men.length,
-                        // Pawns are drawn small in their artwork; they stand up taller here
-                        "--grow": type === PieceType.Pawn ? 1.45 : 1,
-                      } as React.CSSProperties
-                    }
-                  >
-                    <Soldier type={type} color={Color.White} />
-                  </span>
-                ))}
+                {squad.men.map((type, n) => {
+                  // The squad's leader is listed first unless it is all one kind; the
+                  // lead man is the one who sets it apart, standing at the front
+                  const lead = leadIndex(squad.men);
+                  const back = n === lead ? -1 : n < lead ? n : n - 1;
+                  const slots = squad.men.length - 1;
+                  return (
+                    <span
+                      key={n}
+                      className={`card-man ${n === lead ? "lead" : "back"}`}
+                      style={
+                        {
+                          "--slot": back,
+                          "--slots": slots,
+                          "--far": Math.abs(back - (slots - 1) / 2),
+                        } as React.CSSProperties
+                      }
+                    >
+                      <Soldier type={type} color={Color.White} />
+                    </span>
+                  );
+                })}
               </span>
               <span className="card-charge" aria-hidden />
             </span>
