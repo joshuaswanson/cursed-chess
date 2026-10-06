@@ -5,9 +5,8 @@ import "./Trenches.css";
 
 /**
  * A button beside each of your trench lines that holds men, sending them
- * forward for the next trench ahead: red where that means going over the
- * top for the enemy's, green where it is your own line in front. Over a man
- * you have picked out, one that sends him forward alone.
+ * forward for the next trench ahead, and over a man you have picked out,
+ * one that sends him forward alone
  */
 export function LineOrders({
   view,
@@ -27,7 +26,7 @@ export function LineOrders({
         <button
           key={line.rank}
           type="button"
-          className={`line-order ${line.kind}`}
+          className="line-order advance"
           style={{ top: `${(rowOf(line.rank) + 0.5) * 12.5}%` }}
           onClick={() => {
             if (trenchAdvance(line.rank)) sfx.whistle(true);

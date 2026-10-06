@@ -269,10 +269,6 @@
   cursor: pointer;
 }
 
-.line-order.attack {
-  background: linear-gradient(180deg, #a3301f, #6e1a10);
-}
-
 .line-order.advance {
   background: linear-gradient(180deg, #6b7a3e, #434d24);
 }
