@@ -153,8 +153,13 @@ export function RainRipples({
     );
     const paths: Path2D[] = [];
 
+    let even = false;
     const draw = (now: number) => {
       frame = requestAnimationFrame(draw);
+      // Every other frame: the rings spread slowly, and each frame of the
+      // canvas is copied whole to the screen
+      even = !even;
+      if (even) return;
       if (now - surveyed > RESURVEY_MS) {
         surveyed = now;
         survey();

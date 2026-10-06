@@ -938,7 +938,9 @@ function Gunfire({
     const surface = surfaceOf(ref.current);
     const ctx = surface.getContext("2d");
     if (!ctx) return;
-    const scale = window.devicePixelRatio || 1;
+    // Thin streaks and quick sparks read the same at a pixel to a pixel, and
+    // each frame of the canvas is copied whole to the screen
+    const scale = 1;
     // A square's room all round the board, for damage rising off its edge
     const size = squareSize * 10;
     surface.width = Math.round(size * scale);
