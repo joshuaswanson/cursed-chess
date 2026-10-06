@@ -4,9 +4,9 @@ import { sfx } from "../../audio/sfx";
 import "./Trenches.css";
 
 /**
- * A button beside each of your trench lines that holds men: Attack sends
- * them over the top for the enemy's trench ahead, Advance sends them up to
- * your own line in front.
+ * A button beside each of your trench lines that holds men, sending them
+ * forward for the next trench ahead: red where that means going over the
+ * top for the enemy's, green where it is your own line in front.
  */
 export function LineOrders({
   view,
@@ -29,7 +29,7 @@ export function LineOrders({
             if (trenchAdvance(line.rank)) sfx.whistle(true);
           }}
         >
-          {line.kind === "attack" ? "Attack" : "Advance"}
+          Advance
         </button>
       ))}
     </div>
