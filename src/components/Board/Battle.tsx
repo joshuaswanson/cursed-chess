@@ -780,20 +780,8 @@ function MachineGun({
   );
 }
 
-/**
- * A rifle or machine gun round: a muzzle flash, a tracer streaking to the
- * target, and either a hit or a spray of mud where it went wide
- */
-function Gunshot({
-  event,
-  flipped,
-  squareSize,
-}: {
-  event: AttackEvent;
-  flipped: boolean;
-  squareSize: number;
-}) {
-  const fired = event.delayMs ?? 0;
+/** A round's path across the board, from the muzzle to where it lands */
+function shotLine(event: AttackEvent, flipped: boolean, squareSize: number) {
   const impact = event.impact ?? { x: 0, y: 0 };
   const sign = flipped ? -1 : 1;
   const end = {
@@ -824,64 +812,268 @@ function Gunshot({
     x: pivot.x + ((end.x - pivot.x) / toEnd) * reach,
     y: pivot.y + ((end.y - pivot.y) / toEnd) * reach,
   };
-  const length = Math.hypot(end.x - start.x, end.y - start.y);
-  const angle = Math.atan2(end.y - start.y, end.x - start.x);
-  const landed = { animationDelay: `${fired + event.hitMs}ms` };
-  const at = (p: { x: number; y: number }): Style => ({
-    left: px(p.x),
-    top: px(p.y),
-  });
+  return {
+    start,
+    end,
+    length: Math.hypot(end.x - start.x, end.y - start.y),
+    angle: Math.atan2(end.y - start.y, end.x - start.x),
+  };
+}
+
+/** Where a round that found its man lands: the spark and the damage it did */
+function Gunshot({
+  event,
+  flipped,
+  squareSize,
+}: {
+  event: AttackEvent;
+  flipped: boolean;
+  squareSize: number;
+}) {
+  if (event.miss) return null;
+  const { end } = shotLine(event, flipped, squareSize);
+  const landed = { animationDelay: `${(event.delayMs ?? 0) + event.hitMs}ms` };
   // Hit marks fill a square's worth of room, centred on where the round lands
-  const around = (p: { x: number; y: number }): Style => ({
-    left: px(p.x - squareSize / 2),
-    top: px(p.y - squareSize / 2),
-  });
+  const around: Style = {
+    left: px(end.x - squareSize / 2),
+    top: px(end.y - squareSize / 2),
+  };
   return (
     <>
+      <span className="hit-spark" style={css({ ...around, ...landed })} />
       <span
-        className={`muzzle-flash weapon-${event.weapon}`}
+        className={`hit-number${event.kill ? " is-kill" : ""}`}
         style={css({
-          ...at(start),
-          rotate: `${angle}rad`,
-          animationDelay: `${fired}ms`,
+          ...around,
+          ...landed,
+          "--drift": `${((event.id % 5) - 2) * 6}%`,
         })}
-      />
-      <span
-        className={`tracer weapon-${event.weapon}`}
-        style={css({
-          ...at(start),
-          transform: `rotate(${angle}rad)`,
-          "--length": px(length),
-          "--angle": `${angle}rad`,
-          animationDelay: `${fired}ms`,
-          animationDuration: `${event.hitMs}ms`,
-        })}
-      />
-      {event.miss ? (
-        <span
-          className="mud-splash"
-          style={css({ ...around(end), ...landed })}
-        />
-      ) : (
-        <>
-          <span
-            className="hit-spark"
-            style={css({ ...around(end), ...landed })}
-          />
-          <span
-            className={`hit-number${event.kill ? " is-kill" : ""}`}
-            style={css({
-              ...around(end),
-              ...landed,
-              "--drift": `${((event.id % 5) - 2) * 6}%`,
-            })}
-          >
-            -{event.damage}
-          </span>
-        </>
-      )}
+      >
+        -{event.damage}
+      </span>
     </>
   );
+}
+
+const TRACER = {
+  rifle: {
+    head: "#fffbe8",
+    body: "#ffe7a0",
+    glow: "rgba(255, 210, 110, 0.35)",
+    width: 2.5,
+  },
+  mg: {
+    head: "#fff1d6",
+    body: "#ffb36b",
+    glow: "rgba(255, 140, 60, 0.35)",
+    width: 2.5,
+  },
+  sniper: {
+    head: "#ffffff",
+    body: "#f4f7ff",
+    glow: "rgba(220, 232, 255, 0.35)",
+    width: 1.5,
+  },
+};
+const FLASH_MS = 110;
+const SPLASH_MS = 500;
+/** The clods a missed round throws up: where each sits across the splash, its size, and its colour */
+const SPLASH = [
+  { x: 0.5, y: 0.5, r: 0.09, color: "#3a2a18" },
+  { x: 0.34, y: 0.4, r: 0.06, color: "#5a4126" },
+  { x: 0.66, y: 0.38, r: 0.05, color: "#5a4126" },
+  { x: 0.44, y: 0.28, r: 0.04, color: "#6e5232" },
+  { x: 0.6, y: 0.6, r: 0.04, color: "#4a3520" },
+];
+
+interface Shot {
+  firedAt: number;
+  landsAt: number;
+  weapon: keyof typeof TRACER;
+  miss: boolean;
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+  length: number;
+  angle: number;
+}
+
+/**
+ * Every rifle and machine gun round in flight: the flash at the muzzle, the
+ * tracer streaking out, and the mud jumping where it goes wide, all drawn on
+ * one canvas, so a machine gun's stream of fire costs one layer
+ */
+function Gunfire({
+  events,
+  flipped,
+  squareSize,
+}: {
+  events: BattleEvent[];
+  flipped: boolean;
+  squareSize: number;
+}) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const shots = useRef(new Map<number, Shot>());
+  const wake = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const now = performance.now();
+    let fresh = false;
+    for (const e of events) {
+      if (e.kind !== "attack" || shots.current.has(e.id)) continue;
+      if (e.weapon !== "rifle" && e.weapon !== "mg" && e.weapon !== "sniper")
+        continue;
+      const firedAt = now + (e.delayMs ?? 0);
+      shots.current.set(e.id, {
+        firedAt,
+        landsAt: firedAt + e.hitMs,
+        weapon: e.weapon,
+        miss: !!e.miss,
+        ...shotLine(e, flipped, squareSize),
+      });
+      fresh = true;
+    }
+    if (fresh) wake.current();
+  }, [events, flipped, squareSize]);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    const scale = window.devicePixelRatio || 1;
+    const size = squareSize * 8;
+    canvas.width = Math.round(size * scale);
+    canvas.height = Math.round(size * scale);
+    let frame = 0;
+
+    const draw = (now: number) => {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      for (const [id, shot] of shots.current) {
+        if (now > shot.landsAt + SPLASH_MS) {
+          shots.current.delete(id);
+          continue;
+        }
+        if (now < shot.firedAt) continue;
+        drawFlash(ctx, shot, now, squareSize);
+        drawTracer(ctx, shot, now, squareSize);
+        if (shot.miss) drawSplash(ctx, shot, now, squareSize);
+      }
+      frame = shots.current.size > 0 ? requestAnimationFrame(draw) : 0;
+    };
+    wake.current = () => {
+      if (!frame) frame = requestAnimationFrame(draw);
+    };
+    wake.current();
+    return () => {
+      cancelAnimationFrame(frame);
+      wake.current = () => {};
+    };
+  }, [squareSize]);
+
+  return <canvas ref={ref} className="gunfire" />;
+}
+
+const easeOut = (p: number) => 1 - (1 - p) ** 2;
+
+/** The star of flame at the muzzle as the round leaves, swelling as it fades */
+function drawFlash(
+  ctx: CanvasRenderingContext2D,
+  shot: Shot,
+  now: number,
+  sq: number,
+) {
+  const p = (now - shot.firedAt) / FLASH_MS;
+  if (p >= 1) return;
+  const e = easeOut(p);
+  const w = sq * 0.34 * (0.6 + 0.7 * e);
+  const h = sq * 0.22 * (0.6 + 0.7 * e);
+  ctx.save();
+  ctx.translate(shot.start.x, shot.start.y);
+  ctx.rotate(shot.angle);
+  ctx.globalAlpha = 1 - e;
+  const glow = ctx.createRadialGradient(w * 0.3, 0, 0, w * 0.3, 0, w * 0.72);
+  glow.addColorStop(0.2, "#fffbe0");
+  glow.addColorStop(0.45, "#ffc24a");
+  glow.addColorStop(1, "rgba(255, 194, 74, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(w * 0.4, -h / 2);
+  ctx.lineTo(w * 0.55, -h * 0.15);
+  ctx.lineTo(w, 0);
+  ctx.lineTo(w * 0.55, h * 0.15);
+  ctx.lineTo(w * 0.4, h / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/** A bright round streaking from the muzzle to wherever it lands */
+function drawTracer(
+  ctx: CanvasRenderingContext2D,
+  shot: Shot,
+  now: number,
+  sq: number,
+) {
+  const flight = shot.landsAt - shot.firedAt;
+  const p = flight > 0 ? (now - shot.firedAt) / flight : 1;
+  if (p >= 1) return;
+  const look = TRACER[shot.weapon];
+  const streak = Math.min(sq * 0.38, shot.length);
+  const tail = p * (shot.length - streak);
+  ctx.save();
+  ctx.translate(shot.start.x, shot.start.y);
+  ctx.rotate(shot.angle);
+  ctx.globalAlpha = p < 0.9 ? 1 : (1 - p) / 0.1;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = look.glow;
+  ctx.lineWidth = look.width + 5;
+  ctx.beginPath();
+  ctx.moveTo(tail + streak * 0.3, 0);
+  ctx.lineTo(tail + streak, 0);
+  ctx.stroke();
+  const line = ctx.createLinearGradient(tail, 0, tail + streak, 0);
+  line.addColorStop(0, "rgba(255, 231, 160, 0)");
+  line.addColorStop(0.6, look.body);
+  line.addColorStop(1, look.head);
+  ctx.strokeStyle = line;
+  ctx.lineWidth = look.width;
+  ctx.beginPath();
+  ctx.moveTo(tail, 0);
+  ctx.lineTo(tail + streak, 0);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Where a round goes wide, the mud jumps */
+function drawSplash(
+  ctx: CanvasRenderingContext2D,
+  shot: Shot,
+  now: number,
+  sq: number,
+) {
+  const p = (now - shot.landsAt) / SPLASH_MS;
+  if (p < 0 || p >= 1) return;
+  const e = easeOut(p);
+  // Thrown up to its full spread, then settling a little lower as it fades
+  const grow = e < 0.6 ? 0.3 + (0.7 * e) / 0.6 : 1 + (0.1 * (e - 0.6)) / 0.4;
+  const lift = e < 0.6 ? -0.06 * (e / 0.6) : -0.06 + (0.08 * (e - 0.6)) / 0.4;
+  ctx.save();
+  ctx.globalAlpha = e < 0.6 ? 1 : 1 - (e - 0.6) / 0.4;
+  for (const clod of SPLASH) {
+    ctx.fillStyle = clod.color;
+    ctx.beginPath();
+    ctx.arc(
+      shot.end.x + (clod.x - 0.5) * sq * grow,
+      shot.end.y + (clod.y - 0.5 + lift) * sq * grow,
+      clod.r * sq * grow,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 const GUN_TEXTURES = `${import.meta.env.BASE_URL}textures/trenches/`;
@@ -1823,6 +2015,7 @@ export function BattleEffects({
       style={{ "--sq": px(squareSize) } as Style}
       aria-hidden
     >
+      <Gunfire events={view.events} flipped={flipped} squareSize={squareSize} />
       {view.events.map((event) => (
         <Effect
           key={event.id}
