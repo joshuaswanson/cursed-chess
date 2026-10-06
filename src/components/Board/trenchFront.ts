@@ -76,11 +76,22 @@ export interface Sandbag {
   tilt: number;
   /** How the burlap catches the light, 0 to 1 */
   tone: number;
+  /** How plump it is, and how far its fill has slumped to one end, -1 to 1 */
+  plump: number;
+  slump: number;
+  /** How weathered the sacking is: new and pale at 0, rotten and black with mud at 1 */
+  wear: number;
+  /** Mud caked on it, as blotches at points across the bag, -1 to 1 each way */
+  mud: { x: number; y: number; r: number }[];
+  /** Burst along a seam, earth spilling out */
+  split: boolean;
+  /** Which way its creases run */
+  creases: number;
 }
 
 /** A sandbag's size in the drawing: long and fat, the way a filled bag sags */
-const BAG_W = 26;
-const BAG_H = 15;
+const BAG_W = 36;
+const BAG_H = 21;
 /** How far above a trench's near edge its sandbags stand, as a share of a square */
 export const BAG_TOP = 0.08;
 
@@ -152,6 +163,16 @@ function layBags(
           h,
           tilt: tilt + (rand() - 0.5) * 12,
           tone: rand(),
+          plump: rand(),
+          slump: rand() * 2 - 1,
+          wear: rand() ** 1.6,
+          mud: Array.from({ length: Math.floor(rand() * 4) }, () => ({
+            x: rand() * 1.6 - 0.8,
+            y: rand() * 1.2 - 0.3,
+            r: 0.12 + rand() * 0.22,
+          })),
+          split: rand() < 0.07,
+          creases: rand(),
         });
       }
       x += w * (0.78 + rand() * 0.12);
@@ -284,7 +305,7 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
   // Behind the far lip
   const heapLumps = ragged(rand, xs.length, 9);
   const farWorks = enemyAbove
-    ? { bags: layBags(far, rand, 2, 10, -6), heap: null }
+    ? { bags: layBags(far, rand, 2, 14, -11), heap: null }
     : {
         bags: [],
         heap: toPath(
@@ -309,7 +330,7 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
     y: p.y + NEAR_SPREAD + Math.abs(bankLumps[i]) * 0.8,
   }));
   const nearBank = toPath([...bankTop, ...[...bankFoot].reverse()], true);
-  const nearBags = enemyAbove ? [] : layBags(near, rand, 1, 10, -1);
+  const nearBags = enemyAbove ? [] : layBags(near, rand, 1, 14, -3);
 
   // Duckboard slats laid across the floor, unevenly spaced, some skewed,
   // broken, or missing, in two tones of wet wood

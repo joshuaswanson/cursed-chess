@@ -203,3 +203,43 @@
   z-index: 0;
   will-change: auto;
 }
+
+/* The bag's weight pressing into the bag beneath, in shadow */
+.sandbag-cast {
+  fill: rgba(8, 6, 3, 0.45);
+  filter: url(#wt-soft-bag);
+}
+
+.sandbag-crease {
+  fill: none;
+  stroke: rgba(40, 30, 16, 0.45);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+
+/* Dried mud caked on the burlap where it caught the light */
+.sandbag-light {
+  fill: none;
+  stroke: rgba(235, 222, 180, 0.35);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+/* Mud caked on the sacking */
+.sandbag-mud {
+  fill: #3a2c1c;
+  opacity: 0.55;
+}
+
+/* A burst seam, dark inside, the fill showing */
+.sandbag-split {
+  fill: #2a1d10;
+  stroke: #1a120a;
+  stroke-width: 0.6;
+}
+
+.sandbag-spill {
+  fill: #5a4630;
+  stroke: #2a1f13;
+  stroke-width: 0.6;
+}

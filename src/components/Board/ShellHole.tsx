@@ -42,19 +42,22 @@ function blob(
   return `${d} Z`;
 }
 
+/** How many raindrops are ringing a pool at any moment */
+const RAINDROPS = 26;
+
 /** Rings from raindrops spreading across the water, each at its own spot and pace */
 function useRipples(seed: number, count: number) {
   return useMemo(() => {
     const rand = seeded(seed ^ 0x5bd1e995);
     return Array.from({ length: count }, () => {
       const a = rand() * Math.PI * 2;
-      const d = Math.sqrt(rand()) * 0.55;
+      const d = Math.sqrt(rand()) * 0.72;
       return {
         x: 50 + Math.cos(a) * d * 50,
         y: 50 + Math.sin(a) * d * 50,
-        size: 14 + rand() * 18,
-        delay: -rand() * 2,
-        duration: 0.9 + rand() * 0.9,
+        size: 6 + rand() * 14,
+        delay: -rand() * 1.4,
+        duration: 0.55 + rand() * 0.8,
       };
     });
   }, [seed, count]);
@@ -89,7 +92,7 @@ export function ShellHole({
     };
   }, [seed]);
   const id = `hole-${seed}`;
-  const ripples = useRipples(seed, rippling ? 5 : 0);
+  const ripples = useRipples(seed, rippling ? RAINDROPS : 0);
   return (
     <span
       className={`shell-hole${className ? ` ${className}` : ""}`}
@@ -145,10 +148,17 @@ export function ShellHole({
             <stop offset="0.55" stopColor="#000" stopOpacity="0.45" />
             <stop offset="1" stopColor="#000" stopOpacity="0.1" />
           </linearGradient>
+          <clipPath id={`${id}-pool`}>
+            <path d={shape.water} />
+          </clipPath>
+          <linearGradient id={`${id}-depth`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#1b2124" />
+            <stop offset="1" stopColor="#2d3539" />
+          </linearGradient>
           <linearGradient id={`${id}-sky`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#b9c2c4" stopOpacity="0.32" />
-            <stop offset="0.6" stopColor="#8e989a" stopOpacity="0.1" />
-            <stop offset="1" stopColor="#000" stopOpacity="0.25" />
+            <stop offset="0" stopColor="#c9d2d5" stopOpacity="0.5" />
+            <stop offset="0.35" stopColor="#9aa6aa" stopOpacity="0.2" />
+            <stop offset="1" stopColor="#5a6468" stopOpacity="0.15" />
           </linearGradient>
         </defs>
         <g mask={`url(#${id}-spread)`}>
@@ -161,8 +171,19 @@ export function ShellHole({
         <path d={shape.lip} fill={`url(#${id}-mud)`} className="hole-lip" />
         <path d={shape.bowl} fill={`url(#${id}-soil)`} className="hole-bowl" />
         <path d={shape.bowl} fill={`url(#${id}-slope)`} />
-        <path d={shape.water} fill={`url(#${id}-mud)`} className="hole-water" />
+        {/* Standing water: dark and still, the overcast sky lying on it */}
+        <path d={shape.water} fill={`url(#${id}-depth)`} />
+        <path d={shape.water} fill={`url(#${id}-mud)`} className="hole-silt" />
         <path d={shape.water} fill={`url(#${id}-sky)`} />
+        <g clipPath={`url(#${id}-pool)`}>
+          <ellipse
+            cx="-0.12"
+            cy={-0.18 * shape.squash}
+            rx="0.5"
+            ry={0.07 * shape.squash}
+            className="hole-glare"
+          />
+        </g>
         <path d={shape.water} className="hole-wet-edge" />
       </svg>
       {ripples.length > 0 && (

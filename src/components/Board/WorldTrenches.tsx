@@ -14,25 +14,68 @@ function Sandbags({ bags }: { bags: Sandbag[] }) {
       {bags.map((b, i) => {
         const w = b.w / 2;
         const h = b.h / 2;
-        const body = `M${-w} ${-h * 0.35} Q${-w * 0.92} ${-h * 1.05} ${-w * 0.55} ${-h} Q0 ${-h * 1.25} ${w * 0.55} ${-h} Q${w * 0.92} ${-h * 1.05} ${w} ${-h * 0.35} Q${w * 1.12} 0 ${w} ${h * 0.4} Q${w * 0.9} ${h * 1.05} ${w * 0.5} ${h} Q0 ${h * 1.15} ${-w * 0.5} ${h} Q${-w * 0.9} ${h * 1.05} ${-w} ${h * 0.4} Q${-w * 1.12} 0 ${-w} ${-h * 0.35} Z`;
+        // Fatter bags bulge, thinner ones lie flat; the fill sags to one end
+        const top = 0.9 + b.plump * 0.3;
+        const lo = b.slump > 0 ? 1 + b.slump * 0.18 : 1;
+        const ro = b.slump < 0 ? 1 - b.slump * 0.18 : 1;
+        const body = `M${-w * 0.96} ${-h * 0.2 * lo} Q${-w * 1.02} ${-h * 0.95 * lo} ${-w * 0.6} ${-h * 0.98 * lo} Q0 ${-h * (1.04 + top * 0.18)} ${w * 0.6} ${-h * 0.98 * ro} Q${w * 1.02} ${-h * 0.95 * ro} ${w * 0.96} ${-h * 0.2 * ro} Q${w * 1.1} ${h * 0.35} ${w * 0.9} ${h * 0.72} Q${w * 0.5} ${h * 1.08} 0 ${h * 1.04} Q${-w * 0.5} ${h * 1.08} ${-w * 0.9} ${h * 0.72} Q${-w * 1.1} ${h * 0.35} ${-w * 0.96} ${-h * 0.2 * lo} Z`;
+        // Fresh sacking is pale and warm, old sacking dark, grey, and filthy
+        const look = `brightness(${(1.12 - b.wear * 0.5 + (b.tone - 0.5) * 0.18).toFixed(2)}) saturate(${(1.05 - b.wear * 0.55).toFixed(2)}) sepia(${(b.tone * 0.25).toFixed(2)})`;
+        const crease =
+          b.creases < 0.33
+            ? `M${-w * 0.55} ${-h * 0.5} Q${-w * 0.1} ${-h * 0.15} ${w * 0.2} ${-h * 0.62} M${w * 0.1} ${h * 0.55} Q${w * 0.45} ${h * 0.2} ${w * 0.7} ${h * 0.45}`
+            : b.creases < 0.66
+              ? `M${-w * 0.2} ${-h * 0.75} Q${-w * 0.05} ${-h * 0.1} ${-w * 0.3} ${h * 0.6} M${w * 0.35} ${-h * 0.6} Q${w * 0.55} ${-h * 0.1} ${w * 0.4} ${h * 0.4}`
+              : `M${-w * 0.7} ${-h * 0.1} Q${-w * 0.3} ${-h * 0.45} ${w * 0.05} ${-h * 0.2} Q${w * 0.4} ${h * 0.05} ${w * 0.75} ${-h * 0.25}`;
         return (
           <g
             key={i}
             transform={`translate(${b.x.toFixed(1)} ${b.y.toFixed(1)}) rotate(${b.tilt.toFixed(1)})`}
           >
-            <path
-              d={body}
-              className="sandbag"
-              style={{ filter: `brightness(${0.75 + b.tone * 0.35})` }}
+            <ellipse
+              cx={w * 0.08}
+              cy={h * 0.95}
+              rx={w * 1.02}
+              ry={h * 0.35}
+              className="sandbag-cast"
             />
+            <path d={body} className="sandbag" style={{ filter: look }} />
+            {b.mud.map((m, k) => (
+              <ellipse
+                key={k}
+                cx={m.x * w}
+                cy={m.y * h}
+                rx={m.r * w}
+                ry={m.r * h * 0.8}
+                className="sandbag-mud"
+              />
+            ))}
             <path d={body} className="sandbag-shade" />
+            <path d={crease} className="sandbag-crease" />
             <path
-              d={`M${-w * 0.7} ${-h * 0.15} Q0 ${h * 0.1} ${w * 0.7} ${-h * 0.15}`}
+              d={`M${-w * 0.78} ${h * 0.05} Q0 ${h * 0.3} ${w * 0.78} ${h * 0.05}`}
               className="sandbag-seam"
             />
+            {b.split && (
+              <>
+                <path
+                  d={`M${-w * 0.2} ${h * 0.12} Q${w * 0.05} ${h * 0.5} ${w * 0.35} ${h * 0.15} Q${w * 0.1} ${h * 0.3} ${-w * 0.2} ${h * 0.12} Z`}
+                  className="sandbag-split"
+                />
+                <path
+                  d={`M${-w * 0.1} ${h * 0.4} q${w * 0.2} ${h * 0.6} ${w * 0.5} ${h * 0.75} q${-w * 0.3} ${h * 0.1} ${-w * 0.55} ${-h * 0.15} Z`}
+                  className="sandbag-spill"
+                />
+              </>
+            )}
             <path
-              d={`M${-w * 0.92} ${-h * 0.5} L${-w * 1.08} ${-h * 0.8} M${w * 0.92} ${-h * 0.5} L${w * 1.08} ${-h * 0.8}`}
+              d={`M${-w * 0.92} ${-h * 0.7} q${-w * 0.14} ${-h * 0.25} ${-w * 0.2} ${-h * 0.05} M${w * 0.92} ${-h * 0.7} q${w * 0.14} ${-h * 0.25} ${w * 0.2} ${-h * 0.05}`}
               className="sandbag-ears"
+            />
+            <path
+              d={`M${-w * 0.5} ${-h * 0.82} Q0 ${-h * 1.04} ${w * 0.45} ${-h * 0.84}`}
+              className="sandbag-light"
+              style={{ opacity: 1 - b.wear * 0.7 }}
             />
           </g>
         );
@@ -124,6 +167,9 @@ function EarthDefs() {
         <stop offset="0.5" stopColor="#000" stopOpacity="0.25" />
         <stop offset="1" stopColor="#000" stopOpacity="0.65" />
       </linearGradient>
+      <filter id="wt-soft-bag" x="-20%" y="-60%" width="140%" height="220%">
+        <feGaussianBlur stdDeviation="1.6" />
+      </filter>
       <filter id="wt-soft" x="-5%" y="-50%" width="110%" height="200%">
         <feGaussianBlur stdDeviation="5" />
       </filter>
@@ -131,11 +177,12 @@ function EarthDefs() {
       <PhotoPattern id="tx-soil" file="soil" size={180} />
       <PhotoPattern id="tx-planks" file="planks" size={110} />
       <PhotoPattern id="tx-duck" file="duckboards" size={90} />
-      <PhotoPattern id="tx-hessian" file="hessian" size={22} />
-      <radialGradient id="wt-shade" cx="0.45" cy="0.3" r="0.75">
-        <stop offset="0" stopColor="#fff" stopOpacity="0.18" />
-        <stop offset="0.55" stopColor="#000" stopOpacity="0" />
-        <stop offset="1" stopColor="#000" stopOpacity="0.55" />
+      <PhotoPattern id="tx-hessian" file="hessian" size={30} />
+      <radialGradient id="wt-shade" cx="0.42" cy="0.22" r="0.85">
+        <stop offset="0" stopColor="#fff" stopOpacity="0.22" />
+        <stop offset="0.45" stopColor="#000" stopOpacity="0" />
+        <stop offset="0.8" stopColor="#000" stopOpacity="0.4" />
+        <stop offset="1" stopColor="#000" stopOpacity="0.7" />
       </radialGradient>
       <radialGradient id="wt-crater">
         <stop offset="0" stopColor="#3a3f3e" />
@@ -186,7 +233,6 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
               <path d={line.farWorks.heap} className="earth-texture" />
             </>
           )}
-          <Sandbags bags={line.farWorks.bags} />
           <path d={line.outline} className="trench-cut" />
           <path d={line.outline} className="earth-texture trench-floor" />
           <path d={line.centre} className="duckboard-bed" />
@@ -225,6 +271,8 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
           <path d={line.farLip} className="lip-rim" />
           <path d={line.nearLip} className="lip-rim" />
           <path d={line.outline} className="trench-lip" />
+          {/* Sandbags piled along the lip, over the edge of the cut */}
+          <Sandbags bags={line.farWorks.bags} />
         </g>
       ))}
       {scene.wire.coils.map((d, i) => (
