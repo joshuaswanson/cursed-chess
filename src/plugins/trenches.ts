@@ -651,18 +651,26 @@ export class TrenchesPlugin implements ModePlugin {
     return color === Color.White ? ranks : ranks.reverse();
   }
 
-  /** The men of a side holding a trench line who could be ordered out of it; the gunner stays on his gun */
-  private holding(board: Board, color: Color, rank: number): TrenchUnit[] {
-    return [...this.units]
-      .filter(
-        ([sq, unit]) =>
-          rankOf(sq) === rank &&
-          board.get(sq)?.color === color &&
-          board.get(sq)?.type !== PieceType.King &&
-          !this.nests.has(sq) &&
-          unit.order === "hold",
-      )
-      .map(([, unit]) => unit);
+  /**
+   * The men of a side holding a trench line who could be ordered out of it,
+   * by square. A machine gunner packs up his own gun and goes with them;
+   * anyone else on a gun stays on it.
+   */
+  private holding(
+    board: Board,
+    color: Color,
+    rank: number,
+  ): [SquareIndex, TrenchUnit][] {
+    return [...this.units].filter(([sq, unit]) => {
+      const piece = board.get(sq);
+      return (
+        rankOf(sq) === rank &&
+        piece?.color === color &&
+        piece.type !== PieceType.King &&
+        (!this.nests.has(sq) || piece.type === PieceType.Rook) &&
+        unit.order === "hold"
+      );
+    });
   }
 
   /** The trench lines a side holds men in that it can send forward, to the next line ahead */
@@ -692,7 +700,8 @@ export class TrenchesPlugin implements ModePlugin {
     const next = ranks[ranks.indexOf(rank) + 1];
     if (next === undefined) return false;
     const men = this.holding(board, color, rank);
-    for (const unit of men) {
+    for (const [sq, unit] of men) {
+      if (board.get(sq)?.type === PieceType.Rook) this.nests.delete(sq);
       unit.order = "charge";
       unit.goal = next;
       unit.readyIn = rand(0, 450);
