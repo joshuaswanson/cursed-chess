@@ -974,6 +974,51 @@ const Helmet = memo(function Helmet({
   );
 });
 
+/**
+ * A soldier in his kit, standing still, for showing him off the board: on a
+ * squad card, his helmet, his weapon, and whatever else he carries
+ */
+export function Soldier({ type, color }: { type: PieceType; color: Color }) {
+  const piece = { type, color };
+  return (
+    <span className="soldier unit-body">
+      <img
+        src={pieceImage(piece)}
+        alt=""
+        className="unit-img"
+        draggable={false}
+      />
+      {type === PieceType.King ? (
+        <>
+          <GeneralCap color={color} tilt={0} />
+          <FieldGlasses />
+        </>
+      ) : (
+        <Helmet
+          color={color}
+          type={type}
+          tilt={type === PieceType.Rook ? 0 : -4}
+        />
+      )}
+      {type === PieceType.Knight && <GrenadeBelt />}
+      {type === PieceType.Rook && <CarriedVickers />}
+      {(type === PieceType.Pawn ||
+        type === PieceType.Knight ||
+        type === PieceType.Queen ||
+        type === PieceType.Bishop) && (
+        <Rifle
+          kind={type === PieceType.Bishop ? "sniper" : "rifle"}
+          rest={RIFLE_AT_SIDE}
+          grip={RIFLE_GRIP}
+          side={1}
+          aim={null}
+          fireMs={0}
+        />
+      )}
+    </span>
+  );
+}
+
 /** A rifle is carried upright at its man's side while he waits */
 const RIFLE_AT_SIDE = -90;
 /** Where a rifleman grips his rifle at his side, from his middle, in squares */

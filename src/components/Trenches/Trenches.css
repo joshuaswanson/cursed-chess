@@ -71,7 +71,7 @@
   box-shadow: inset 0 0 0 1.5px rgba(30, 24, 12, 0.7);
 }
 
-.card-art img {
+.card-man {
   position: absolute;
   bottom: 4%;
   width: calc(110% * var(--grow, 1) / (0.5 + var(--of) * 0.5));
@@ -79,9 +79,24 @@
     50% - 55% * var(--grow, 1) / (0.5 + var(--of) * 0.5) +
       (var(--n) - (var(--of) - 1) / 2) * (72% / var(--of))
   );
+  aspect-ratio: 1;
   translate: 0 calc(mod(var(--n), 2) * -8%);
   z-index: calc(10 - mod(var(--n), 2));
   filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5));
+}
+
+/* A man in his kit, filling his spot; his gear sits on him as it does on the board */
+.card-man .soldier {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  --square-size: 40px;
+}
+
+.card-man .unit-img {
+  width: 100%;
+  height: 100%;
 }
 
 /* Still readying: the card lies dimmed, the dimness draining away as it readies */

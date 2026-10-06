@@ -3,7 +3,7 @@ import { useGameStore } from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
 import { SQUADS } from "../../plugins/trenches";
 import type { TrenchesPlugin } from "../../plugins/trenches";
-import { pieceImage } from "../../utils/pieceImages";
+import { Soldier } from "../Board/Battle";
 import { sfx } from "../../audio/sfx";
 import "./Trenches.css";
 
@@ -54,11 +54,9 @@ export function TrenchOrders() {
             <span className="card-face">
               <span className="card-art" aria-hidden>
                 {squad.men.map((type, n) => (
-                  <img
+                  <span
                     key={n}
-                    src={pieceImage({ type, color: Color.White })}
-                    alt=""
-                    draggable={false}
+                    className="card-man"
                     style={
                       {
                         "--n": n,
@@ -67,7 +65,9 @@ export function TrenchOrders() {
                         "--grow": type === PieceType.Pawn ? 1.45 : 1,
                       } as React.CSSProperties
                     }
-                  />
+                  >
+                    <Soldier type={type} color={Color.White} />
+                  </span>
                 ))}
               </span>
               <span className="card-charge" aria-hidden />
