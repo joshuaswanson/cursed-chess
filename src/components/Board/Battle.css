@@ -626,12 +626,10 @@
   top: calc(var(--grip-y) - 12.5%);
   width: 80%;
   height: 25%;
-  z-index: 2;
   overflow: visible;
   transform-origin: 20% 50%;
   rotate: var(--rest);
   transition: rotate 0.25s ease-out;
-  filter: drop-shadow(0.03em 0.05em 0 rgba(10, 8, 4, 0.5));
 }
 
 /* Swung onto the target, fired with a kick, and lowered again */
@@ -1077,7 +1075,6 @@
   left: 50%;
   translate: -50% 0;
   overflow: visible;
-  filter: drop-shadow(0.02em 0.04em 0 rgba(10, 8, 4, 0.55));
 }
 
 /* Each helmet sized and seated on its own piece's head, from the artwork's measurements */
@@ -1431,7 +1428,6 @@
   width: 40%;
   z-index: 3;
   overflow: visible;
-  filter: drop-shadow(0.02em 0.04em 0 rgba(10, 8, 4, 0.55));
 }
 
 .mills-body {
@@ -1612,7 +1608,6 @@
   width: 32%;
   z-index: 3;
   overflow: visible;
-  filter: drop-shadow(0.02em 0.04em 0 rgba(10, 8, 4, 0.55));
 }
 
 .glasses-strap {
@@ -1640,7 +1635,6 @@
   z-index: 4;
   overflow: visible;
   rotate: -32deg;
-  filter: drop-shadow(0.03em 0.06em 0 rgba(10, 8, 4, 0.55));
 }
 
 /* --- German kit --- */
@@ -1689,4 +1683,14 @@
 
 .mg-sled .mg-legs {
   stroke-width: 2.6;
+}
+
+/* One shadow for the whole soldier, kit and all, where each piece of kit
+   once cast its own */
+[data-theme="trenches"] .unit-body {
+  filter: drop-shadow(0.03em 0.05em 0 rgba(10, 8, 4, 0.5));
+}
+
+[data-theme="trenches"] .unit-body .unit-img {
+  filter: none;
 }

@@ -243,11 +243,18 @@
   will-change: transform;
 }
 
+/* The far sheet stands still; the near one falling over it gives the motion */
 .rain-far {
-  opacity: 0.22;
+  opacity: 0.18;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='140'%3E%3Cg stroke='%23c8d2d8' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M10 0 l-6 26'/%3E%3Cpath d='M48 50 l-6 26'/%3E%3Cpath d='M75 15 l-6 26'/%3E%3Cpath d='M28 90 l-6 26'/%3E%3Cpath d='M66 104 l-6 26'/%3E%3C/g%3E%3C/svg%3E")
     0 0 / 90px 140px;
-  animation: rain-fall-far 0.52s linear infinite;
+  animation: rain-flicker 0.52s steps(2) infinite;
+}
+
+@keyframes rain-flicker {
+  to {
+    background-position: -12px 70px;
+  }
 }
 
 .rain-near {
