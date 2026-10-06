@@ -173,7 +173,8 @@
   z-index: 2;
   background: rgba(16, 13, 8, 0.62);
   transform-origin: 50% 0;
-  scale: 1 calc(1 - var(--charge, 1));
+  /* Shrinking on a layer of its own leaves the squad beneath unpainted */
+  will-change: transform;
 }
 
 .squad-card.ready .card-charge {

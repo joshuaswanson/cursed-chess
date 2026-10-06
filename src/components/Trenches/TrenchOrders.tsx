@@ -92,7 +92,6 @@ export function TrenchOrders() {
             aria-label={`${squad.name}${ready ? "" : `, ready in ${Math.ceil(card.readyInMs / 1000)} seconds`}`}
             style={
               {
-                "--charge": share,
                 "--fan": `${(i - (SQUADS.length - 1) / 2) * 3.5}deg`,
               } as React.CSSProperties
             }
@@ -100,7 +99,11 @@ export function TrenchOrders() {
           >
             <span className="card-face">
               <CardArt men={squad.men} />
-              <span className="card-charge" aria-hidden />
+              <span
+                className="card-charge"
+                style={{ transform: `scaleY(${1 - share})` }}
+                aria-hidden
+              />
             </span>
             <span className="card-label" aria-hidden>
               {squad.name}
