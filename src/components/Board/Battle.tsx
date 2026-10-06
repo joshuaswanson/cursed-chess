@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useLayoutEffect, useRef } from "react";
 import { Color, PieceType } from "../../engine";
 import type { Piece, SquareIndex } from "../../engine";
 import { DROP_MS } from "../../plugins/clashRoyale";
@@ -101,6 +101,23 @@ function actionStyle(
   };
 }
 
+/**
+ * Replays an element's CSS animations from the start each time the key
+ * changes: a new shot, flinch, or lunge, without building the element anew
+ */
+function useReplay<T extends Element>(key: number) {
+  const ref = useRef<T>(null);
+  useLayoutEffect(() => {
+    if (!key) return;
+    for (const animation of ref.current?.getAnimations() ?? []) {
+      if (!(animation instanceof CSSAnimation)) continue;
+      animation.currentTime = 0;
+      animation.play();
+    }
+  }, [key]);
+  return ref;
+}
+
 function HealthBar({ unit, tower }: { unit: Unit; tower: boolean }) {
   const share = `${Math.max(0, unit.hp) / unit.maxHp} 1`;
   return (
@@ -138,12 +155,9 @@ export function BattleUnit({
   aiming?: boolean;
 }) {
   const unit = view.units[sq];
-  if (!unit) return null;
-  const arms = view.arms?.[unit.id];
-
   let arrival: ArrivalEvent | undefined;
   let action: AttackEvent | undefined;
-  for (let i = view.events.length - 1; i >= 0; i--) {
+  for (let i = view.events.length - 1; unit && i >= 0; i--) {
     const e = view.events[i];
     if (!arrival && (e.kind === "move" || e.kind === "deploy")) {
       if (e.unitId === unit.id) arrival = e;
@@ -155,6 +169,9 @@ export function BattleUnit({
     }
   }
 
+  const bodyRef = useReplay<HTMLDivElement>(action?.id ?? 0);
+  if (!unit) return null;
+  const arms = view.arms?.[unit.id];
   const tower = piece.type === PieceType.King;
   const firing =
     action?.unitId === unit.id &&
@@ -182,7 +199,7 @@ export function BattleUnit({
     >
       <span className="unit-base" />
       <div
-        key={action?.id ?? 0}
+        ref={bodyRef}
         className="unit-body"
         style={actionStyle(action, unit, flipped, squareSize)}
       >
@@ -213,7 +230,7 @@ export function BattleUnit({
           <Rifle
             kind={held}
             // A burst's rounds are one swing onto the target, not one each
-            key={firing ? firing.id - (firing.round ?? 0) : "rest"}
+            shot={firing ? firing.id - (firing.round ?? 0) : 0}
             rest={aiming ? enemyAngle(piece.color, sq, flipped) : RIFLE_AT_SIDE}
             grip={aiming ? RIFLE_SHOULDER : RIFLE_GRIP}
             side={gripSide(sq, flipped)}
@@ -244,7 +261,10 @@ const Rifle = memo(function Rifle({
   fireMs,
   thrust = false,
   german = false,
+  shot,
 }: {
+  /** Which shot this is, so each new one swings the rifle up afresh */
+  shot: number;
   kind: "rifle" | "sniper";
   rest: number;
   /** Where he holds it, from his middle, in squares */
@@ -265,8 +285,10 @@ const Rifle = memo(function Rifle({
     "--aim": `${aim ?? rest}deg`,
     "--fire": `${fireMs}ms`,
   };
+  const ref = useReplay<SVGSVGElement>(shot);
   return (
     <svg
+      ref={ref}
       className={`unit-rifle${aim === null ? "" : thrust ? " thrusting" : " firing"}`}
       viewBox="0 0 72 22"
       style={style}
@@ -1199,6 +1221,7 @@ export function Soldier({ type, color }: { type: PieceType; color: Color }) {
           side={1}
           aim={null}
           fireMs={0}
+          shot={0}
           german={color === Color.Black}
         />
       )}
