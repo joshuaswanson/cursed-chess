@@ -203,8 +203,12 @@ export function BattleUnit({
             tilt={helmetTilt(unit.id)}
           />
         )}
-        {arms === "grenadier" && <GrenadeBelt />}
-        {arms === "vickers" && <CarriedVickers />}
+        {arms === "grenadier" && (
+          <GrenadeBelt german={piece.color === Color.Black} />
+        )}
+        {arms === "vickers" && (
+          <CarriedVickers german={piece.color === Color.Black} />
+        )}
         {held && (
           <Rifle
             kind={held}
@@ -216,6 +220,7 @@ export function BattleUnit({
             aim={firing ? aimAngle(firing, flipped) : null}
             fireMs={Math.max(0, (firing?.delayMs ?? 0) - AIM_MS)}
             thrust={firing?.weapon === "bayonet"}
+            german={piece.color === Color.Black}
           />
         )}
       </div>
@@ -238,6 +243,7 @@ const Rifle = memo(function Rifle({
   aim,
   fireMs,
   thrust = false,
+  german = false,
 }: {
   kind: "rifle" | "sniper";
   rest: number;
@@ -249,6 +255,8 @@ const Rifle = memo(function Rifle({
   fireMs: number;
   /** Driven forward with the bayonet, in place of firing */
   thrust?: boolean;
+  /** A German's Mauser, in place of a British Lee-Enfield */
+  german?: boolean;
 }) {
   const style: Style = {
     "--grip-x": `${50 + (side * grip.x * 100) / 0.9}%`,
@@ -265,10 +273,72 @@ const Rifle = memo(function Rifle({
       aria-hidden
     >
       <GunDefs scale={30} />
-      <Enfield scoped={kind === "sniper"} />
+      {german ? (
+        <Mauser scoped={kind === "sniper"} />
+      ) : (
+        <Enfield scoped={kind === "sniper"} />
+      )}
     </svg>
   );
 });
+
+/**
+ * A Gewehr 98: a long, slim Mauser with a straight wrist, its magazine flush
+ * in the stock, the bolt handle sticking straight out, and the long blade of
+ * a butcher bayonet fixed, or for a sniper a sight in its place
+ */
+function Mauser({ scoped }: { scoped: boolean }) {
+  return (
+    <>
+      <path d="M14 15 Q32 21 52 13.6" className="rifle-sling" />
+      <path
+        d="M1.6 6.6 Q1.4 5 3 5 L18 6.6 L28 8.2 L28 13.2 L18 14.6 L3.4 16.8 Q1.6 17 1.8 15 Z"
+        className="gun-wood"
+      />
+      <path
+        d="M1.6 6.6 Q1.4 5 3 5 L4 5.1 L4.2 16.8 L3.4 16.8 Q1.6 17 1.8 15 Z"
+        className="gun-steel"
+      />
+      <path d="M27 7.8 L37 7.9 L37 13.4 L27 13.6 Z" className="gun-steel" />
+      <path d="M33.6 7.9 L35 3.6" className="gun-bolt" />
+      <circle cx="35.2" cy="3.2" r="1.5" className="gun-steel" />
+      <path d="M25.6 13.4 Q26.8 16.6 30 16" className="gun-guard" />
+      <path d="M36.6 8.3 L61 9.1 L61 12.5 L36.6 13.1 Z" className="gun-wood" />
+      <path
+        d="M44 8.5 h1.8 v4.4 h-1.8 Z M56 8.9 h1.8 v3.6 h-1.8 Z"
+        className="gun-steel"
+      />
+      <path
+        d="M60.6 9.4 L66.4 9.7 L66.4 11.9 L60.6 12.2 Z"
+        className="gun-steel"
+      />
+      <path d="M37 9 L60 9.7" className="gun-shine" />
+      {scoped ? (
+        <>
+          <path d="M24.5 1.6 h17 v3.4 h-17 Z" className="gun-steel" />
+          <path
+            d="M22.6 0.8 h3 v5 h-3 Z M40.8 1 h3.2 v4.6 h-3.2 Z"
+            className="gun-steel"
+          />
+          <path d="M30 5 v2.6 M36 5 v2.6" className="gun-guard" />
+          <ellipse cx="44" cy="3.3" rx="0.7" ry="1.9" className="gun-lens" />
+        </>
+      ) : (
+        <>
+          <path
+            d="M62.5 12.2 L65 12.2 L72 10.9 Q73 11.6 72 12.6 L65 14.6 L62.5 14.4 Z"
+            className="gun-blade"
+          />
+          <path d="M65 13 L71.6 11.6" className="gun-blade-edge" />
+        </>
+      )}
+      <path
+        d="M1.6 6.6 Q1.4 5 3 5 L18 6.6 L28 8.2 L28 13.2 L18 14.6 L3.4 16.8 Q1.6 17 1.8 15 Z M36.6 8.3 L61 9.1 L61 12.5 L36.6 13.1 Z"
+        className="gun-round"
+      />
+    </>
+  );
+}
 
 /** A Lee-Enfield: walnut and blued steel, a bayonet fixed, or for a sniper a telescopic sight in its place */
 function Enfield({ scoped }: { scoped: boolean }) {
@@ -398,9 +468,54 @@ function MillsBomb({ id }: { id: string }) {
   );
 }
 
-/** Two Mills bombs hung on an assault trooper's belt */
-const GrenadeBelt = memo(function GrenadeBelt() {
+/**
+ * A German stick grenade, the potato masher: a sheet-steel can of
+ * explosive on a turned wooden handle, the pull cord's porcelain bead
+ * tucked in the end of the handle
+ */
+function StickGrenade() {
   return (
+    <>
+      <rect
+        x="-1.2"
+        y="-1"
+        width="2.4"
+        height="13"
+        rx="0.8"
+        className="stick-handle"
+      />
+      <path d="M-1.2 4 H1.2 M-1.2 8 H1.2" className="stick-grain" />
+      <circle cx="0" cy="12.4" r="0.7" className="stick-bead" />
+      <rect
+        x="-3.6"
+        y="-7.4"
+        width="7.2"
+        height="7"
+        rx="1.2"
+        className="stick-head"
+      />
+      <path d="M-3.6 -6.2 H3.6 M-3.6 -1.6 H3.6" className="stick-seam" />
+      <path d="M-2.6 -6.8 V-1" className="stick-shine" />
+    </>
+  );
+}
+
+/** Grenades hung on an assault trooper's belt: Mills bombs for your army, stick grenades for theirs */
+const GrenadeBelt = memo(function GrenadeBelt({
+  german = false,
+}: {
+  german?: boolean;
+}) {
+  return german ? (
+    <svg className="unit-grenades german" viewBox="-11 -9 22 23" aria-hidden>
+      <g transform="translate(-5 0) rotate(-14)">
+        <StickGrenade />
+      </g>
+      <g transform="translate(5 1) rotate(12)">
+        <StickGrenade />
+      </g>
+    </svg>
+  ) : (
     <svg className="unit-grenades" viewBox="-11 -7.5 22 15" aria-hidden>
       <g transform="translate(-5 0) rotate(-8)">
         <MillsBomb id="belt-a" />
@@ -478,7 +593,8 @@ export function TrenchGuns({
 }
 
 /** The Vickers gun itself: water jacket, receiver, spade grips, flash hider, and its belt of rounds */
-function VickersBody() {
+function VickersBody({ german = false }: { german?: boolean }) {
+  if (german) return <Mg08Body />;
   return (
     <>
       <GunDefs scale={34} />
@@ -533,11 +649,64 @@ function VickersBody() {
   );
 }
 
-/** A machine gunner's Vickers, carried over his shoulder until he digs it in */
-const CarriedVickers = memo(function CarriedVickers() {
+/**
+ * The MG 08, the German Maxim: a smooth, plump water jacket with its filler
+ * cap, the bulbous muzzle booster at its end, the receiver and spade grips
+ * behind, and its belt of rounds
+ */
+function Mg08Body() {
+  return (
+    <>
+      <GunDefs scale={34} />
+      <path d="M24 23 Q27 29 23 33.5" className="mg-belt-cloth" />
+      <path
+        d="M25.3 24 l3 -0.4 l0.5 2.8 l-3 0.4 Z M25.8 27.4 l3 0 l0.2 2.8 l-3 0 Z M25.4 30.8 l3 0.3 l-0.2 2.8 l-3 -0.3 Z"
+        className="mg-round"
+      />
+      <path
+        d="M1 9 h7 a1.8 1.8 0 0 1 0 3.6 h-7 a1.8 1.8 0 0 1 0 -3.6 Z M1 20.4 h7 a1.8 1.8 0 0 1 0 3.6 h-7 a1.8 1.8 0 0 1 0 -3.6 Z"
+        className="gun-wood"
+      />
+      <path d="M7.4 8 h3.6 v18 h-3.6 Z" className="gun-steel" />
+      <path
+        d="M10.6 6.8 h22 q1.6 0 1.6 1.6 v17.2 q0 1.6 -1.6 1.6 h-22 Z"
+        className="gun-steel"
+      />
+      <path d="M12.5 9.4 H31.6 M12.5 24.6 H31.6" className="mg-seam" />
+      <path d="M23 18.5 h6 v9 h-6 Z" className="gun-steel" />
+      {/* The jacket, smooth and fat, and its filler cap */}
+      <path
+        d="M33.6 8.2 h38 q4.4 0 4.4 4.4 v8.8 q0 4.4 -4.4 4.4 h-38 Z"
+        className="mg-jacket mg08-jacket"
+      />
+      <path d="M56 6.2 h4.4 v2.6 h-4.4 Z" className="gun-steel" />
+      <path
+        d="M33.6 8.2 h38 q4.4 0 4.4 4.4 v8.8 q0 4.4 -4.4 4.4 h-38 Z"
+        className="gun-round"
+      />
+      <path d="M35 11.2 H74" className="gun-shine" />
+      {/* The muzzle booster, a round bulb on the end of the barrel */}
+      <path d="M76 14.4 h6 v5.2 h-6 Z" className="gun-steel" />
+      <ellipse cx="88" cy="17" rx="7" ry="5.6" className="gun-steel" />
+      <ellipse cx="86.4" cy="15" rx="3.6" ry="1.6" className="gun-shine-fill" />
+      <path d="M94.6 15.4 h3.6 v3.2 h-3.6 Z" className="gun-steel" />
+      <path
+        d="M10.6 6.8 h22 q1.6 0 1.6 1.6 v17.2 q0 1.6 -1.6 1.6 h-22 Z"
+        className="gun-round"
+      />
+    </>
+  );
+}
+
+/** A machine gunner's Vickers, or a German's MG 08, carried over his shoulder until he digs it in */
+const CarriedVickers = memo(function CarriedVickers({
+  german = false,
+}: {
+  german?: boolean;
+}) {
   return (
     <svg className="carried-vickers" viewBox="0 0 100 34" aria-hidden>
-      <VickersBody />
+      <VickersBody german={german} />
     </svg>
   );
 });
@@ -564,13 +733,26 @@ function MachineGun({
   };
   return (
     <span className="unit-mg" style={style} aria-hidden>
-      <svg className="mg-tripod" viewBox="0 0 40 40">
-        <path d="M20 20 L5 35 M20 20 L35 35 M20 20 L20 3" className="mg-legs" />
-        <path d="M3 35 h5 M32 35 h5 M18 3 h4" className="mg-feet" />
-        <circle cx="20" cy="20" r="4.5" className="mg-head" />
-      </svg>
+      {color === Color.White ? (
+        <svg className="mg-tripod" viewBox="0 0 40 40">
+          <path
+            d="M20 20 L5 35 M20 20 L35 35 M20 20 L20 3"
+            className="mg-legs"
+          />
+          <path d="M3 35 h5 M32 35 h5 M18 3 h4" className="mg-feet" />
+          <circle cx="20" cy="20" r="4.5" className="mg-head" />
+        </svg>
+      ) : (
+        /* The MG 08's sled mount: a heavy steel frame that folds out flat */
+        <svg className="mg-tripod mg-sled" viewBox="0 0 40 40">
+          <path d="M8 36 L12 8 L28 8 L32 36" className="mg-legs" />
+          <path d="M10 24 H30 M11 15 H29" className="mg-legs" />
+          <path d="M6 36 h5 M29 36 h5" className="mg-feet" />
+          <circle cx="20" cy="20" r="4.5" className="mg-head" />
+        </svg>
+      )}
       <svg className="mg-gun" viewBox="0 0 100 34">
-        <VickersBody />
+        <VickersBody german={color === Color.Black} />
       </svg>
     </span>
   );
@@ -1000,8 +1182,12 @@ export function Soldier({ type, color }: { type: PieceType; color: Color }) {
           tilt={type === PieceType.Rook ? 0 : -4}
         />
       )}
-      {type === PieceType.Knight && <GrenadeBelt />}
-      {type === PieceType.Rook && <CarriedVickers />}
+      {type === PieceType.Knight && (
+        <GrenadeBelt german={color === Color.Black} />
+      )}
+      {type === PieceType.Rook && (
+        <CarriedVickers german={color === Color.Black} />
+      )}
       {(type === PieceType.Pawn ||
         type === PieceType.Knight ||
         type === PieceType.Queen ||
@@ -1013,6 +1199,7 @@ export function Soldier({ type, color }: { type: PieceType; color: Color }) {
           side={1}
           aim={null}
           fireMs={0}
+          german={color === Color.Black}
         />
       )}
     </span>
@@ -1402,7 +1589,11 @@ function Effect({
               }}
             >
               <svg className="grenade-bomb" viewBox="-6 -8 12 15">
-                <MillsBomb id={`thrown-${event.id}`} />
+                {event.color === Color.Black ? (
+                  <StickGrenade />
+                ) : (
+                  <MillsBomb id={`thrown-${event.id}`} />
+                )}
               </svg>
             </span>
           </span>

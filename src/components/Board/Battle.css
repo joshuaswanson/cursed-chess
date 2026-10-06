@@ -1642,3 +1642,51 @@
   rotate: -32deg;
   filter: drop-shadow(0.03em 0.06em 0 rgba(10, 8, 4, 0.55));
 }
+
+/* --- German kit --- */
+
+.stick-handle {
+  fill: #9a7446;
+  stroke: #3a2812;
+  stroke-width: 0.45;
+}
+
+.stick-grain {
+  stroke: rgba(60, 38, 14, 0.5);
+  stroke-width: 0.35;
+}
+
+.stick-bead {
+  fill: #e8e4d8;
+}
+
+.stick-head {
+  fill: #5c6560;
+  stroke: #1a1e1c;
+  stroke-width: 0.5;
+}
+
+.stick-seam {
+  stroke: rgba(15, 18, 16, 0.6);
+  stroke-width: 0.4;
+}
+
+.stick-shine {
+  stroke: rgba(230, 236, 232, 0.35);
+  stroke-width: 0.5;
+  stroke-linecap: round;
+}
+
+.unit-grenades.german {
+  width: 34%;
+  top: 52%;
+}
+
+/* The MG 08's jacket, painted field grey over the steel */
+.mg08-jacket {
+  filter: brightness(1.05) saturate(0.6);
+}
+
+.mg-sled .mg-legs {
+  stroke-width: 2.6;
+}
