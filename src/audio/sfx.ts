@@ -1520,4 +1520,60 @@ export const sfx = {
     hiss.start(t);
     hiss.stop(t + burnSeconds + 0.05);
   },
+
+  /** A sniper's shot: a hard, high crack and a long echo rolling away down the line */
+  sniper(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    for (const [at, loud, cut] of [
+      [0, 0.75, 2400],
+      [0.18, 0.18, 900],
+      [0.42, 0.09, 600],
+    ] as const) {
+      const src = noiseSource(c);
+      const band = c.createBiquadFilter();
+      band.type = at === 0 ? "highpass" : "lowpass";
+      band.frequency.value = cut;
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.0001, t + at);
+      gain.gain.exponentialRampToValueAtTime(loud, t + at + 0.004);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        t + at + (at === 0 ? 0.09 : 0.5),
+      );
+      src.connect(band).connect(gain).connect(out);
+      src.start(t + at, Math.random() * 0.5);
+      src.stop(t + at + 0.55);
+    }
+  },
+
+  /** A grenade bursting: a sharp bang, smaller than a shell, and earth pattering down */
+  grenade(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const thump = c.createOscillator();
+    thump.frequency.setValueAtTime(180, t);
+    thump.frequency.exponentialRampToValueAtTime(45, t + 0.25);
+    const thumpGain = c.createGain();
+    thumpGain.gain.setValueAtTime(0.7, t);
+    thumpGain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    thump.connect(thumpGain).connect(out);
+    thump.start(t);
+    thump.stop(t + 0.4);
+    const bang = noiseSource(c);
+    const low = c.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.value = 1800;
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.8, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    bang.connect(low).connect(gain).connect(out);
+    bang.start(t, Math.random() * 0.5);
+    bang.stop(t + 0.55);
+    for (let i = 0; i < 8; i++) crackle(c, out, 0.6);
+  },
 };
