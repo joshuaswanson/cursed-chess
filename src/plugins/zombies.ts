@@ -152,11 +152,15 @@ export class ZombiesPlugin implements ModePlugin {
    * Zombies are not on the engine's board, so it would let pieces walk
    * through them. They block like any piece: nothing slides past one, a pawn
    * cannot step onto one, and landing on one puts it down. Pawns take
-   * zombies diagonally.
+   * zombies diagonally. Nobody lands on a grave.
    */
   modifyLegalMoves(ctx: PluginContext, moves: Move[], color: Color): Move[] {
-    if (this.zombies.size === 0) return moves;
-    const kept = moves.filter((move) => {
+    // Nobody sets foot on a grave
+    const open = moves.filter(
+      (move) => !this.graves.some((g) => g.sq === move.to),
+    );
+    if (this.zombies.size === 0) return open;
+    const kept = open.filter((move) => {
       if (this.pathThroughZombie(move)) return false;
       if (move.piece.type === PieceType.Pawn && this.zombies.has(move.to)) {
         return fileOf(move.to) !== fileOf(move.from);
