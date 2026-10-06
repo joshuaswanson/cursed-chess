@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { surfaceOf } from "../../utils/surface";
 import "./RainRipples.css";
 
 /** How many raindrops are ringing a pool at any moment */
@@ -65,8 +66,10 @@ export function RainRipples({
 
   useEffect(() => {
     const canvas = ref.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
+    if (!canvas) return;
+    const surface = surfaceOf(canvas);
+    const ctx = surface.getContext("2d");
+    if (!ctx) return;
     let pools: Pool[] = [];
     let frame = 0;
     let surveyed = 0;
@@ -102,9 +105,9 @@ export function RainRipples({
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       // Thin rings read the same at one pixel to one, at a quarter of the cost
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
+      if (surface.width !== width || surface.height !== height) {
+        surface.width = width;
+        surface.height = height;
       }
       view = { left, top };
       pools = found
@@ -139,7 +142,7 @@ export function RainRipples({
         surveyed = now;
         survey();
       }
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, surface.width, surface.height);
       ctx.lineWidth = 1;
       for (let i = 0; i < LEVELS; i++) paths[i] = new Path2D();
       const t = now / 1000;

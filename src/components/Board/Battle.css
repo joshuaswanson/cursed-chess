@@ -790,9 +790,10 @@
 
 /* Rifle and machine gun fire, drawn across the whole board */
 .battle-effects > .gunfire {
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  left: -12.5%;
+  top: -12.5%;
+  width: 125%;
+  height: 125%;
 }
 
 /* --- A high-explosive burst, drawn on two canvases centred on the blast:

@@ -8,6 +8,7 @@ import type { BattleEvent, BattleView, Unit } from "../../plugins/clashRoyale";
 import { pieceImage } from "../../utils/pieceImages";
 import { offsetBetween, visualCol, visualRow } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
+import { surfaceOf } from "../../utils/surface";
 import "./Battle.css";
 
 type Style = React.CSSProperties & Record<`--${string}`, string>;
@@ -839,40 +840,7 @@ function shotLine(event: AttackEvent, flipped: boolean, squareSize: number) {
   };
 }
 
-/** Where a round that found its man lands: the spark and the damage it did */
-function Gunshot({
-  event,
-  flipped,
-  squareSize,
-}: {
-  event: AttackEvent;
-  flipped: boolean;
-  squareSize: number;
-}) {
-  if (event.miss) return null;
-  const { end } = shotLine(event, flipped, squareSize);
-  const landed = { animationDelay: `${(event.delayMs ?? 0) + event.hitMs}ms` };
-  // Hit marks fill a square's worth of room, centred on where the round lands
-  const around: Style = {
-    left: px(end.x - squareSize / 2),
-    top: px(end.y - squareSize / 2),
-  };
-  return (
-    <>
-      <span className="hit-spark" style={css({ ...around, ...landed })} />
-      <span
-        className={`hit-number${event.kill ? " is-kill" : ""}`}
-        style={css({
-          ...around,
-          ...landed,
-          "--drift": `${((event.id % 5) - 2) * 6}%`,
-        })}
-      >
-        -{event.damage}
-      </span>
-    </>
-  );
-}
+type Surface2D = OffscreenCanvasRenderingContext2D;
 
 const TRACER = {
   rifle: {
@@ -896,6 +864,8 @@ const TRACER = {
 };
 const FLASH_MS = 110;
 const SPLASH_MS = 500;
+const SPARK_MS = 420;
+const NUMBER_MS = 900;
 /** The clods a missed round throws up: where each sits across the splash, its size, and its colour */
 const SPLASH = [
   { x: 0.5, y: 0.5, r: 0.09, color: "#3a2a18" },
@@ -910,6 +880,8 @@ interface Shot {
   landsAt: number;
   weapon: keyof typeof TRACER;
   miss: boolean;
+  /** What a round that found its man did to him, shown where it landed */
+  hit: { damage: number; kill: boolean; drift: number } | null;
   start: { x: number; y: number };
   end: { x: number; y: number };
   length: number;
@@ -947,6 +919,13 @@ function Gunfire({
         landsAt: firedAt + e.hitMs,
         weapon: e.weapon,
         miss: !!e.miss,
+        hit: e.miss
+          ? null
+          : {
+              damage: e.damage,
+              kill: !!e.kill,
+              drift: ((e.id % 5) - 2) * 0.06,
+            },
         ...shotLine(e, flipped, squareSize),
       });
       fresh = true;
@@ -955,21 +934,30 @@ function Gunfire({
   }, [events, flipped, squareSize]);
 
   useEffect(() => {
-    const canvas = ref.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
+    if (!ref.current) return;
+    const surface = surfaceOf(ref.current);
+    const ctx = surface.getContext("2d");
+    if (!ctx) return;
     const scale = window.devicePixelRatio || 1;
-    const size = squareSize * 8;
-    canvas.width = Math.round(size * scale);
-    canvas.height = Math.round(size * scale);
+    // A square's room all round the board, for damage rising off its edge
+    const size = squareSize * 10;
+    surface.width = Math.round(size * scale);
+    surface.height = Math.round(size * scale);
     let frame = 0;
 
     const draw = (now: number) => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx.clearRect(0, 0, surface.width, surface.height);
+      ctx.setTransform(
+        scale,
+        0,
+        0,
+        scale,
+        squareSize * scale,
+        squareSize * scale,
+      );
       for (const [id, shot] of shots.current) {
-        if (now > shot.landsAt + SPLASH_MS) {
+        if (now > shot.landsAt + (shot.hit ? NUMBER_MS : SPLASH_MS)) {
           shots.current.delete(id);
           continue;
         }
@@ -977,6 +965,10 @@ function Gunfire({
         drawFlash(ctx, shot, now, squareSize);
         drawTracer(ctx, shot, now, squareSize);
         if (shot.miss) drawSplash(ctx, shot, now, squareSize);
+        if (shot.hit) {
+          drawSpark(ctx, shot, now, squareSize);
+          drawDamage(ctx, shot, shot.hit, now, squareSize);
+        }
       }
       frame = shots.current.size > 0 ? requestAnimationFrame(draw) : 0;
     };
@@ -996,12 +988,7 @@ function Gunfire({
 const easeOut = (p: number) => 1 - (1 - p) ** 2;
 
 /** The star of flame at the muzzle as the round leaves, swelling as it fades */
-function drawFlash(
-  ctx: CanvasRenderingContext2D,
-  shot: Shot,
-  now: number,
-  sq: number,
-) {
+function drawFlash(ctx: Surface2D, shot: Shot, now: number, sq: number) {
   const p = (now - shot.firedAt) / FLASH_MS;
   if (p >= 1) return;
   const e = easeOut(p);
@@ -1029,12 +1016,7 @@ function drawFlash(
 }
 
 /** A bright round streaking from the muzzle to wherever it lands */
-function drawTracer(
-  ctx: CanvasRenderingContext2D,
-  shot: Shot,
-  now: number,
-  sq: number,
-) {
+function drawTracer(ctx: Surface2D, shot: Shot, now: number, sq: number) {
   const flight = shot.landsAt - shot.firedAt;
   const p = flight > 0 ? (now - shot.firedAt) / flight : 1;
   if (p >= 1) return;
@@ -1065,13 +1047,76 @@ function drawTracer(
   ctx.restore();
 }
 
-/** Where a round goes wide, the mud jumps */
-function drawSplash(
-  ctx: CanvasRenderingContext2D,
+/** Where a round strikes a man: a burst of rays round a white-hot heart, swelling and turning as it fades */
+function drawSpark(ctx: Surface2D, shot: Shot, now: number, sq: number) {
+  const p = (now - shot.landsAt) / SPARK_MS;
+  if (p < 0 || p >= 1) return;
+  const e = easeOutCss(p);
+  const radius = (sq / 2) * (0.2 + 1.3 * e);
+  ctx.save();
+  ctx.translate(shot.end.x, shot.end.y);
+  ctx.rotate(((10 + 25 * e) * Math.PI) / 180);
+  ctx.globalAlpha = 1 - e;
+  ctx.fillStyle = "#fff6c2";
+  ctx.beginPath();
+  for (let ray = 0; ray < 9; ray++) {
+    const a = (ray * 40 * Math.PI) / 180;
+    const b = a + (7 * Math.PI) / 180;
+    ctx.moveTo(Math.cos(a) * radius * 0.3, Math.sin(a) * radius * 0.3);
+    ctx.lineTo(Math.cos(a) * radius * 0.75, Math.sin(a) * radius * 0.75);
+    ctx.lineTo(Math.cos(b) * radius * 0.75, Math.sin(b) * radius * 0.75);
+    ctx.lineTo(Math.cos(b) * radius * 0.3, Math.sin(b) * radius * 0.3);
+    ctx.closePath();
+  }
+  ctx.fill();
+  const core = ctx.createRadialGradient(0, 0, 0, 0, 0, radius * 0.44);
+  core.addColorStop(0, "#fff");
+  core.addColorStop(1, "rgba(255, 220, 120, 0)");
+  ctx.fillStyle = core;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius * 0.44, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/** The damage a round did, popping up over the man it hit and floating away */
+function drawDamage(
+  ctx: Surface2D,
   shot: Shot,
+  hit: NonNullable<Shot["hit"]>,
   now: number,
   sq: number,
 ) {
+  const p = (now - shot.landsAt) / NUMBER_MS;
+  if (p < 0 || p >= 1) return;
+  const grow =
+    p < 0.15
+      ? 0.4 + 0.95 * easeOutCss(p / 0.15)
+      : p < 0.3
+        ? 1.35 - 0.35 * easeOutCss((p - 0.15) / 0.15)
+        : 1;
+  const e = easeOutCss(p);
+  const size = sq * (hit.kill ? 0.46 : 0.36);
+  ctx.save();
+  // Centred on the square's middle, the number's top at the top of the square
+  ctx.translate(shot.end.x + hit.drift * sq * e, shot.end.y - sq * 0.85 * e);
+  ctx.scale(grow, grow);
+  ctx.globalAlpha = p < 0.75 ? 1 : 1 - easeOutCss((p - 0.75) / 0.25);
+  ctx.font = `900 ${size}px system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = sq * 0.03;
+  ctx.strokeStyle = "#2a0f1c";
+  ctx.fillStyle = hit.kill ? "#ffd23f" : "#fff";
+  const text = `-${hit.damage}`;
+  ctx.strokeText(text, 0, -sq / 2);
+  ctx.fillText(text, 0, -sq / 2);
+  ctx.restore();
+}
+
+/** Where a round goes wide, the mud jumps */
+function drawSplash(ctx: Surface2D, shot: Shot, now: number, sq: number) {
   const p = (now - shot.landsAt) / SPLASH_MS;
   if (p < 0 || p >= 1) return;
   const e = easeOut(p);
@@ -1654,15 +1699,17 @@ function ClodSpray({
 
   useEffect(() => {
     const canvas = ref.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
+    if (!canvas) return;
+    const surface = surfaceOf(canvas);
+    const ctx = surface.getContext("2d");
+    if (!ctx) return;
     const sq = parseFloat(getComputedStyle(canvas).getPropertyValue("--sq"));
     if (!sq) return;
     const reach = sq * size;
     const width = Math.ceil(reach * SPRAY.side * 2);
     const height = Math.ceil(reach * (SPRAY.up + SPRAY.down));
-    canvas.width = width;
-    canvas.height = height;
+    surface.width = width;
+    surface.height = height;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     canvas.style.left = `${-width / 2}px`;
@@ -1800,16 +1847,18 @@ function BlastCloud({
 
   useEffect(() => {
     const canvas = ref.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
+    if (!canvas) return;
+    const surface = surfaceOf(canvas);
+    const ctx = surface.getContext("2d");
+    if (!ctx) return;
     const sq = parseFloat(getComputedStyle(canvas).getPropertyValue("--sq"));
     if (!sq) return;
     const blast = sq * size;
     const width = Math.ceil(blast * CLOUD.side * 2);
     const height = Math.ceil(blast * (CLOUD.up + CLOUD.down));
     const detail = CLOUD_DETAIL * (window.devicePixelRatio || 1);
-    canvas.width = Math.ceil(width * detail);
-    canvas.height = Math.ceil(height * detail);
+    surface.width = Math.ceil(width * detail);
+    surface.height = Math.ceil(height * detail);
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     canvas.style.left = `${-width / 2}px`;
@@ -1848,7 +1897,7 @@ function BlastCloud({
     const start = performance.now() + delayMs;
     let frame = requestAnimationFrame(function draw(now) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, surface.width, surface.height);
       const t = now - start;
       if (t > last) return;
       frame = requestAnimationFrame(draw);
@@ -1973,11 +2022,8 @@ function Effect({
           </>
         );
       }
-      if (event.weapon) {
-        return (
-          <Gunshot event={event} flipped={flipped} squareSize={squareSize} />
-        );
-      }
+      // Rifle and machine gun rounds are all drawn on the gunfire canvas
+      if (event.weapon) return null;
       const travel = offsetBetween(event.to, event.from, flipped, squareSize);
       const hitAt = { animationDelay: `${event.hitMs}ms` };
       return (
