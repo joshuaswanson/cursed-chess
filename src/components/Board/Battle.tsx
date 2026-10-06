@@ -1381,6 +1381,121 @@ const scatter = (n: number) => {
   return v - Math.floor(v);
 };
 
+/** The point a CSS cubic-bezier easing reaches at progress `p` */
+function bezier(x1: number, y1: number, x2: number, y2: number, p: number) {
+  const at = (a: number, b: number, t: number) =>
+    3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 14; i++) {
+    const mid = (lo + hi) / 2;
+    if (at(x1, x2, mid) < p) lo = mid;
+    else hi = mid;
+  }
+  return at(y1, y2, (lo + hi) / 2);
+}
+
+/** How far the clods reach from the blast, in squares times the blast's size */
+const SPRAY = { side: 1.7, up: 3.1, down: 1.4 };
+
+/**
+ * Earth and clods hurled up in a column and raining back down, all drawn on
+ * one canvas, so a barrage's hundreds of clods cost one layer per blast
+ */
+function ClodSpray({
+  id,
+  size,
+  delayMs,
+}: {
+  id: number;
+  size: number;
+  delayMs: number;
+}) {
+  const ref = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    const sq = parseFloat(getComputedStyle(canvas).getPropertyValue("--sq"));
+    if (!sq) return;
+    const reach = sq * size;
+    const width = Math.ceil(reach * SPRAY.side * 2);
+    const height = Math.ceil(reach * (SPRAY.up + SPRAY.down));
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    canvas.style.left = `${-width / 2}px`;
+    canvas.style.top = `${-reach * SPRAY.up}px`;
+    const originX = width / 2;
+    const originY = reach * SPRAY.up;
+    const grain = sq * 0.012 * (0.6 + size * 0.5);
+
+    const clods = Array.from({ length: Math.round(34 * size + 10) }, (_, i) => {
+      const r = (k: number) => scatter(id * 97 + i * 13 + k);
+      const up = 0.6 + r(1) * 2.2;
+      const width = (2 + r(4) * 9) * grain;
+      const tone = r(7);
+      return {
+        dx: (r(2) * 2 - 1) * (0.4 + up * 0.35),
+        up,
+        fall: 0.2 + r(3) * 0.9,
+        dur: (0.7 + r(5) * 0.7) * 1000,
+        spin: (((r(6) * 2 - 1) * 900) / 180) * Math.PI,
+        color: tone > 0.6 ? "#2a1d12" : tone > 0.3 ? "#3d2c1c" : "#55402a",
+        rx: (width / 2) * (0.75 + r(8) * 0.5),
+        ry: (width / 2.4) * (0.75 + r(9) * 0.5),
+      };
+    });
+    const last = Math.max(...clods.map((c) => c.dur));
+
+    const start = performance.now() + delayMs;
+    let frame = requestAnimationFrame(function draw(now) {
+      ctx.clearRect(0, 0, width, height);
+      const t = now - start;
+      if (t > last) return;
+      frame = requestAnimationFrame(draw);
+      if (t < 0) return;
+      for (const c of clods) {
+        const p = Math.min(1, t / c.dur);
+        if (p >= 1) continue;
+        // Up to the top of its arc, then down to where it lands
+        let x: number;
+        let y: number;
+        let turn: number;
+        if (p < 0.45) {
+          const e = bezier(0.15, 0.7, 0.4, 1, p / 0.45);
+          x = c.dx * 0.55 * e;
+          y = -c.up * e;
+          turn = c.spin * 0.5 * e;
+        } else {
+          const e = bezier(0.6, 0, 0.9, 0.6, (p - 0.45) / 0.55);
+          x = c.dx * (0.55 + 0.45 * e);
+          y = -c.up + (c.up + c.fall) * e;
+          turn = c.spin * (0.5 + 0.5 * e);
+        }
+        ctx.globalAlpha = p < 0.92 ? 1 : (1 - p) / 0.08;
+        ctx.fillStyle = c.color;
+        ctx.beginPath();
+        ctx.ellipse(
+          originX + x * reach,
+          originY + y * reach,
+          c.rx,
+          c.ry,
+          turn,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [id, size, delayMs]);
+
+  return <canvas ref={ref} className="clod-spray" />;
+}
+
 /**
  * A high-explosive burst: a white-hot flash, a fireball rolling outward and
  * darkening to smoke, a column of earth and clods hurled up and raining back
@@ -1398,20 +1513,6 @@ function Explosion({
   delayMs: number;
   size: number;
 }) {
-  const clods = Array.from({ length: Math.round(34 * size + 10) }, (_, i) => {
-    const r = (k: number) => scatter(id * 97 + i * 13 + k);
-    const up = 0.6 + r(1) * 2.2;
-    return {
-      dx: (r(2) * 2 - 1) * (0.4 + up * 0.35),
-      up,
-      fall: 0.2 + r(3) * 0.9,
-      size: 2 + r(4) * 9,
-      dur: 0.7 + r(5) * 0.7,
-      spin: (r(6) * 2 - 1) * 900,
-      tone: r(7),
-      shape: `${30 + r(8) * 40}% ${30 + r(9) * 40}% ${30 + r(10) * 40}% ${30 + r(11) * 40}%`,
-    };
-  });
   const puffs = Array.from({ length: 9 }, (_, i) => {
     const r = (k: number) => scatter(id * 61 + i * 7 + k + 500);
     return {
@@ -1455,22 +1556,7 @@ function Explosion({
       </span>
       <span className="blast-flash" />
       <span className="blast-earth">
-        {clods.map((c, i) => (
-          <i
-            key={i}
-            style={css({
-              "--dx": String(c.dx),
-              "--up": String(c.up),
-              "--fall": String(c.fall),
-              "--size": String(c.size),
-              "--spin": `${c.spin}deg`,
-              "--tone":
-                c.tone > 0.6 ? "#2a1d12" : c.tone > 0.3 ? "#3d2c1c" : "#55402a",
-              borderRadius: c.shape,
-              animationDuration: `${c.dur.toFixed(2)}s`,
-            })}
-          />
-        ))}
+        <ClodSpray id={id} size={size} delayMs={delayMs} />
       </span>
     </span>
   );

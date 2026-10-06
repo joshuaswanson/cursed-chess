@@ -997,42 +997,9 @@
 }
 
 /* Earth and clods hurled up in a column and raining back down */
-.blast-earth i {
-  width: calc(var(--sq) * var(--size) * 0.012 * (0.6 + var(--blast) * 0.5));
-  aspect-ratio: 1.2;
-  translate: -50% -50%;
-  background: var(--tone);
-  opacity: 0;
-  animation-name: blast-clod;
-  animation-delay: var(--at);
-  animation-fill-mode: forwards;
-}
-
-@keyframes blast-clod {
-  0% {
-    opacity: 1;
-    transform: translate(0, 0) rotate(0deg);
-    animation-timing-function: cubic-bezier(0.15, 0.7, 0.4, 1);
-  }
-  45% {
-    transform: translate(
-        calc(var(--sq) * var(--dx) * 0.55 * var(--blast)),
-        calc(var(--sq) * var(--up) * -1 * var(--blast))
-      )
-      rotate(calc(var(--spin) * 0.5));
-    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.6);
-  }
-  92% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(
-        calc(var(--sq) * var(--dx) * var(--blast)),
-        calc(var(--sq) * var(--fall) * var(--blast))
-      )
-      rotate(var(--spin));
-  }
+.clod-spray {
+  position: absolute;
+  pointer-events: none;
 }
 
 /* A pall of black smoke, climbing, spreading, and hanging over the hole */
