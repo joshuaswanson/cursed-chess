@@ -117,6 +117,8 @@ interface TrenchLine {
   /** The near bank, standing in front of the men: earth, with sandbags on it if the enemy lies this way */
   nearBank: string;
   nearBags: Sandbag[];
+  /** The screen row of squares it runs through */
+  row: number;
 }
 
 /** Courses of sandbags laid along an edge, each course stepped back from the one below */
@@ -377,6 +379,7 @@ function digTrench(row: number, enemyAbove: boolean, seed: number): TrenchLine {
     farWorks,
     nearBank,
     nearBags,
+    row,
   };
 }
 
@@ -493,4 +496,52 @@ const fronts = new Map<boolean, ReturnType<typeof surveyFront>>();
 export function frontFor(flipped: boolean) {
   if (!fronts.has(flipped)) fronts.set(flipped, surveyFront(flipped));
   return fronts.get(flipped)!;
+}
+
+/** How finely the parapet's top is traced across a square */
+const TRACE_STEPS = 16;
+
+/**
+ * The outline that cuts a man off where the sandbags in front of him begin,
+ * traced along the bags' own lumpy tops, as a CSS clip-path for his body,
+ * which fills the middle nine-tenths of his square. Null if no sandbags
+ * stand in front of that square.
+ */
+export function parapetClip(
+  flipped: boolean,
+  row: number,
+  col: number,
+): string | null {
+  const line = frontFor(flipped).lines.find(
+    (l) => l.row === row && l.nearBags.length > 0,
+  );
+  if (!line) return null;
+  const rowTop = MARGIN + row * SQ;
+  const bags = line.nearBags.filter(
+    (b) =>
+      b.x + b.w > col * SQ - SQ * 0.2 && b.x - b.w < (col + 1) * SQ + SQ * 0.2,
+  );
+  // The highest bag top over each point across the square, or the lowest
+  // bag's middle where there is a gap between bags
+  const floor = Math.max(...bags.map((b) => b.y)) - rowTop;
+  const topAt = (x: number) => {
+    let top = floor;
+    for (const b of bags) {
+      const u = (x - b.x) / (b.w / 2);
+      if (Math.abs(u) >= 1) continue;
+      top = Math.min(
+        top,
+        b.y - rowTop - (b.h / 2) * 0.92 * Math.sqrt(1 - u * u),
+      );
+    }
+    return top / SQ;
+  };
+  const toBody = (share: number) => ((share - 0.05) / 0.9) * 100;
+  const points: string[] = [];
+  for (let i = TRACE_STEPS; i >= 0; i--) {
+    const sx = -0.15 + (1.3 * i) / TRACE_STEPS;
+    const y = topAt(col * SQ + sx * SQ);
+    points.push(`${toBody(sx).toFixed(1)}% ${toBody(y).toFixed(1)}%`);
+  }
+  return `polygon(-80% -80%, 180% -80%, 180% ${points[0].split(" ")[1]}, ${points.join(", ")}, -80% ${points[points.length - 1].split(" ")[1]})`;
 }

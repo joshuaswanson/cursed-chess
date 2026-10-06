@@ -28,6 +28,7 @@ import { Tombstone, ZombiePiece } from "./Zombies";
 import type { TrenchView } from "../../plugins/trenches";
 import { TRENCH_RANKS } from "../../plugins/trenches";
 import { BoardCraters, TrenchField } from "./TrenchField";
+import { parapetClip } from "./trenchFront";
 import {
   WorldCraters,
   WorldTrenches,
@@ -605,14 +606,13 @@ export function Board() {
                 Object.values(TRENCH_RANKS).some((t) => t.front === rankOf(sq))
               }
               entrenched={
-                overlays.trenches !== null &&
-                (Object.keys(TRENCH_RANKS) as Color[]).some(
-                  (color) =>
-                    // Only the trenches across the board hide the men in them
-                    (color === Color.White) === flipped &&
-                    (TRENCH_RANKS[color].front === rankOf(sq) ||
-                      TRENCH_RANKS[color].back === rankOf(sq)),
-                )
+                overlays.trenches
+                  ? parapetClip(
+                      flipped,
+                      rowOnScreen(sq, flipped),
+                      colOnScreen(sq, flipped),
+                    )
+                  : null
               }
             />
           )}

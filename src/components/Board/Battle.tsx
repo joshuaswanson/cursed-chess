@@ -4,7 +4,6 @@ import type { Piece, SquareIndex } from "../../engine";
 import { DROP_MS } from "../../plugins/clashRoyale";
 import { AIM_MS, SHELL_FALL_MS, TRENCH_RANKS } from "../../plugins/trenches";
 import { shakeBoard } from "./useBoardEffects";
-import { BAG_TOP, TRENCH_EDGE } from "./trenchFront";
 import type { BattleEvent, BattleView, Unit } from "../../plugins/clashRoyale";
 import { pieceImage } from "../../utils/pieceImages";
 import { offsetBetween, visualCol, visualRow } from "./boardGeometry";
@@ -123,7 +122,7 @@ export function BattleUnit({
   flipped,
   squareSize,
   stance,
-  entrenched = false,
+  entrenched,
   aiming = false,
 }: {
   sq: SquareIndex;
@@ -133,8 +132,8 @@ export function BattleUnit({
   squareSize: number;
   /** Charging across open ground, or caught on the wire */
   stance?: "charging" | "snagged";
-  /** Down in a trench, hidden below its near edge */
-  entrenched?: boolean;
+  /** Down in a trench behind sandbags, the clip-path that hides him below their tops */
+  entrenched?: string | null;
   /** Manning the front line, his rifle levelled at the enemy */
   aiming?: boolean;
 }) {
@@ -168,8 +167,7 @@ export function BattleUnit({
       style={
         {
           ...arrivalStyle(arrival, flipped, squareSize),
-          // Hidden from the top of the sandbags down
-          "--trench-edge": `${((0.95 - TRENCH_EDGE + BAG_TOP) / 0.9) * 100}%`,
+          ...(entrenched && { "--parapet": entrenched }),
         } as Style
       }
     >

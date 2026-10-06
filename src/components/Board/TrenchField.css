@@ -80,19 +80,18 @@
 
 /* The burning magnesium: a white-hot core with a green-white glare, flickering unevenly */
 .flare-core {
-  width: calc(var(--square-size, 72px) * 0.13);
+  /* One soft glow from a white-hot point outward, with no edge anywhere */
+  width: calc(var(--square-size, 72px) * 0.9);
   aspect-ratio: 1;
   background: radial-gradient(
     circle,
-    #fff 0 35%,
-    #f4ffe0 55%,
-    rgba(220, 255, 200, 0) 72%
+    #fff 0,
+    rgba(250, 255, 240, 0.95) 5%,
+    rgba(232, 252, 222, 0.6) 12%,
+    rgba(215, 245, 205, 0.25) 26%,
+    rgba(200, 238, 192, 0.08) 45%,
+    rgba(200, 238, 192, 0) 70%
   );
-  box-shadow:
-    0 0 calc(var(--square-size, 72px) * 0.12)
-      calc(var(--square-size, 72px) * 0.05) rgba(240, 255, 225, 0.95),
-    0 0 calc(var(--square-size, 72px) * 0.5)
-      calc(var(--square-size, 72px) * 0.18) rgba(200, 240, 190, 0.45);
   animation:
     flare-flicker 0.23s steps(1) infinite,
     flare-burnout var(--burn) var(--climb) ease-in both;
