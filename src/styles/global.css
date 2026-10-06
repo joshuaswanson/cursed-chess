@@ -155,6 +155,12 @@ button {
   }
 }
 
+/* In Trenches the hand of squad cards sits under the board, so the board
+   gives up enough height for both to fit on the screen without scrolling */
+.app[data-theme="trenches"] {
+  --square-size: clamp(34px, min(calc((100vh - 308px) / 8), 7.6vw), 86px);
+}
+
 /* Phones: the board fills the width of the screen and everything stacks under it */
 @media (max-width: 600px) {
   :root .app[data-theme] {
