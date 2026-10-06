@@ -56,6 +56,8 @@ export const SQUADS: Squad[] = [
 const FOE_MOVE_UP_MS: [number, number] = [9000, 16000];
 /** How often, on each tick a card is ready, the enemy sends one up */
 const FOE_SEND_CHANCE = 0.015;
+/** How likely the enemy is, each time it looks over its lines, to send its back trench on through a full front one */
+const FOE_SECOND_WAVE_CHANCE = 0.35;
 
 const HP: Record<PieceType, number> = {
   [PieceType.Pawn]: 3,
@@ -630,7 +632,11 @@ export class TrenchesPlugin implements ModePlugin {
     );
   }
 
-  /** The enemy moves men up from its back trench when its front line thins */
+  /**
+   * The enemy moves men up from its back trench when its front line thins,
+   * and now and then, with its front line full, sends them on through it
+   * and over the top
+   */
   private foeReinforces(board: Board): void {
     if (this.clock < this.foeMoveUpAt) return;
     this.foeMoveUpAt = this.clock + rand(...FOE_MOVE_UP_MS);
@@ -638,7 +644,11 @@ export class TrenchesPlugin implements ModePlugin {
     const gaps = ALL_SQUARES.filter(
       (s) => rankOf(s) === front && !board.get(s),
     ).length;
-    if (gaps >= 2) this.advanceLine(board, Color.Black, back);
+    const secondWave =
+      this.fullOfFriends(board, front, Color.Black) &&
+      this.holding(board, Color.Black, back).length >= 3 &&
+      Math.random() < FOE_SECOND_WAVE_CHANCE;
+    if (gaps >= 2 || secondWave) this.advanceLine(board, Color.Black, back);
   }
 
   /** Every trench line, in order from a side's own rear toward the enemy's */
