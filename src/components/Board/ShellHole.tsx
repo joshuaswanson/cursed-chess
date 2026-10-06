@@ -42,27 +42,6 @@ function blob(
   return `${d} Z`;
 }
 
-/** How many raindrops are ringing a pool at any moment */
-const RAINDROPS = 26;
-
-/** Rings from raindrops spreading across the water, each at its own spot and pace */
-function useRipples(seed: number, count: number) {
-  return useMemo(() => {
-    const rand = seeded(seed ^ 0x5bd1e995);
-    return Array.from({ length: count }, () => {
-      const a = rand() * Math.PI * 2;
-      const d = Math.sqrt(rand()) * 0.72;
-      return {
-        x: 50 + Math.cos(a) * d * 50,
-        y: 50 + Math.sin(a) * d * 50,
-        size: 6 + rand() * 14,
-        delay: -rand() * 1.4,
-        duration: 0.55 + rand() * 0.8,
-      };
-    });
-  }, [seed, count]);
-}
-
 /**
  * A shell hole: a torn rim of thrown-up earth, the bowl falling away into
  * shadow, and brown water pooled at the bottom, ringed constantly by the rain
@@ -92,11 +71,13 @@ export function ShellHole({
     };
   }, [seed]);
   const id = `hole-${seed}`;
-  const ripples = useRipples(seed, rippling ? RAINDROPS : 0);
   return (
     <span
       className={`shell-hole${className ? ` ${className}` : ""}`}
       style={style}
+      // Rain rings for its water are drawn by the board's ripple canvas
+      data-ripples={rippling ? seed : undefined}
+      data-squash={shape.squash}
     >
       <svg viewBox="-1.1 -1.1 2.2 2.2" aria-hidden>
         <defs>
@@ -186,25 +167,6 @@ export function ShellHole({
         </g>
         <path d={shape.water} className="hole-wet-edge" />
       </svg>
-      {ripples.length > 0 && (
-        <span
-          className="hole-ripples"
-          style={{ "--squash": shape.squash } as React.CSSProperties}
-        >
-          {ripples.map((r, i) => (
-            <i
-              key={i}
-              style={{
-                left: `${r.x}%`,
-                top: `${r.y}%`,
-                width: `${r.size}%`,
-                animationDelay: `${r.delay}s`,
-                animationDuration: `${r.duration}s`,
-              }}
-            />
-          ))}
-        </span>
-      )}
     </span>
   );
 }

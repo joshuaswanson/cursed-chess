@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import type { SquareIndex } from "../../engine";
 import type { TrenchView } from "../../plugins/trenches";
 import { visualCol, visualRow } from "./boardGeometry";
@@ -88,7 +88,7 @@ function useFlares(flipped: boolean): FlareShot[] {
  * What the fighting leaves on the board, between the ground and the pieces:
  * wire strung across no man's land, and flares drifting down over it all
  */
-export function TrenchField({
+function TrenchFieldLayer({
   view,
   flipped,
 }: {
@@ -120,7 +120,7 @@ export function TrenchField({
 }
 
 /** The shell holes the fighting has churned into the board, under the trench lines and their sandbags */
-export function BoardCraters({
+function BoardCratersLayer({
   view,
   flipped,
 }: {
@@ -149,3 +149,16 @@ export function BoardCraters({
     </div>
   );
 }
+
+type FieldProps = { view: TrenchView; flipped: boolean };
+
+/** Whether the wire and the shell holes are as they were, the only parts of the view these draw */
+const sameGround = (a: FieldProps, b: FieldProps) =>
+  a.flipped === b.flipped &&
+  a.view.wire.join() === b.view.wire.join() &&
+  a.view.craters.map((c) => c.seed).join() ===
+    b.view.craters.map((c) => c.seed).join();
+
+// The game re-renders the board many times a second; these redraw only when the ground changes
+export const TrenchField = memo(TrenchFieldLayer, sameGround);
+export const BoardCraters = memo(BoardCratersLayer, sameGround);

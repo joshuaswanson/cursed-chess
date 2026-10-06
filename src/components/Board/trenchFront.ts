@@ -5,7 +5,8 @@ import { NO_MANS_LAND, TRENCH_RANKS } from "../../plugins/trenches";
 export const SQ = 100;
 export const BOARD = SQ * 8;
 /** How far the ground runs off each side of the board, and above and below it */
-export const REACH = 40 * SQ;
+/** How far the front is drawn past the board each side; no screen shows more */
+export const REACH = 16 * SQ;
 export const MARGIN = SQ;
 /** Along each line, a fresh point this often */
 const STEP = 6;
@@ -509,7 +510,19 @@ const TRACE_STEPS = 16;
  * which fills the middle nine-tenths of his square. Null if no sandbags
  * stand in front of that square.
  */
+const clips = new Map<string, string | null>();
+
 export function parapetClip(
+  flipped: boolean,
+  row: number,
+  col: number,
+): string | null {
+  const key = `${flipped}:${row}:${col}`;
+  if (!clips.has(key)) clips.set(key, traceParapet(flipped, row, col));
+  return clips.get(key)!;
+}
+
+function traceParapet(
   flipped: boolean,
   row: number,
   col: number,

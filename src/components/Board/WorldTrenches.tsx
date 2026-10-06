@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { BOARD, MARGIN, REACH, SQ, frontFor } from "./trenchFront";
 import type { Sandbag } from "./trenchFront";
 import { ShellHole } from "./ShellHole";
@@ -207,7 +207,7 @@ const placement = {
  * wire and shell holes across no man's land, so the board is one stretch of
  * a war that goes on out of sight
  */
-export function WorldTrenches({ flipped }: { flipped: boolean }) {
+function WorldTrenchesLayer({ flipped }: { flipped: boolean }) {
   const scene = useMemo(() => frontFor(flipped), [flipped]);
 
   return (
@@ -293,7 +293,7 @@ export function WorldTrenches({ flipped }: { flipped: boolean }) {
 }
 
 /** The sandbags along the near edge of the enemy's trenches, drawn in front of the men in them */
-export function WorldTrenchesFront({ flipped }: { flipped: boolean }) {
+function WorldTrenchesFrontLayer({ flipped }: { flipped: boolean }) {
   const scene = useMemo(() => frontFor(flipped), [flipped]);
   return (
     <svg
@@ -312,11 +312,8 @@ export function WorldTrenchesFront({ flipped }: { flipped: boolean }) {
   );
 }
 
-/** How far off the board, in squares, shell holes still get rain rings; further out they are never on screen */
-const RIPPLE_REACH = 6 * SQ;
-
 /** The shell holes pocking the ground off the board, under the trench lines */
-export function WorldCraters({ flipped }: { flipped: boolean }) {
+function WorldCratersLayer({ flipped }: { flipped: boolean }) {
   const scene = useMemo(() => frontFor(flipped), [flipped]);
   const width = BOARD + REACH * 2;
   const height = BOARD + MARGIN * 2;
@@ -326,7 +323,6 @@ export function WorldCraters({ flipped }: { flipped: boolean }) {
         <ShellHole
           key={c.seed}
           seed={c.seed}
-          rippling={c.x > -RIPPLE_REACH && c.x < BOARD + RIPPLE_REACH}
           style={{
             left: `${((c.x - c.r + REACH) / width) * 100}%`,
             top: `${((c.y - c.r) / height) * 100}%`,
@@ -338,3 +334,9 @@ export function WorldCraters({ flipped }: { flipped: boolean }) {
     </div>
   );
 }
+
+// The front only changes when the board turns round, so these skip the
+// game's many re-renders a second
+export const WorldTrenches = memo(WorldTrenchesLayer);
+export const WorldTrenchesFront = memo(WorldTrenchesFrontLayer);
+export const WorldCraters = memo(WorldCratersLayer);

@@ -49,39 +49,3 @@
   stroke-width: 1px;
   vector-effect: non-scaling-stroke;
 }
-
-/* Rain rings, the water's surface seen at a slant, so they spread as ellipses */
-.hole-ripples {
-  position: absolute;
-  inset: 26%;
-  scale: 1 var(--squash, 0.8);
-}
-
-.hole-ripples i {
-  position: absolute;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  border: 1px solid rgba(220, 228, 230, 0.7);
-  opacity: 0;
-  animation-name: rain-ring;
-  animation-timing-function: ease-out;
-  animation-iteration-count: infinite;
-}
-
-@keyframes rain-ring {
-  0% {
-    scale: 0.1;
-    opacity: 0.9;
-  }
-  100% {
-    scale: 1;
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hole-ripples i {
-    animation: none;
-  }
-}

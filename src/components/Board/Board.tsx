@@ -29,6 +29,7 @@ import type { TrenchView } from "../../plugins/trenches";
 import { TRENCH_RANKS } from "../../plugins/trenches";
 import { BoardCraters, TrenchField } from "./TrenchField";
 import { parapetClip } from "./trenchFront";
+import { RainRipples } from "./RainRipples";
 import {
   WorldCraters,
   WorldTrenches,
@@ -797,6 +798,7 @@ export function Board() {
           {overlays.trenches && (
             <BoardCraters view={overlays.trenches} flipped={flipped} />
           )}
+          {overlays.trenches && <RainRipples />}
           {overlays.trenches && <WorldTrenches flipped={flipped} />}
           {overlays.trenches && <WorldTrenchesFront flipped={flipped} />}
           {overlays.trenches && battle && (
