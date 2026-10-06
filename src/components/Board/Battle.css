@@ -1566,3 +1566,18 @@
 [data-theme="trenches"] .unit-body .unit-img {
   filter: none;
 }
+
+/* Your men holding a trench answer a click by going forward on their own */
+[data-theme="trenches"]
+  .square.trench:has(
+    > .battle-unit.side-blue:not(.is-tower):not(.is-charging)
+  ) {
+  cursor: pointer;
+}
+
+[data-theme="trenches"]
+  .square.trench:hover
+  > .battle-unit.side-blue:not(.is-tower):not(.is-charging)
+  .unit-base {
+  filter: brightness(1.6);
+}

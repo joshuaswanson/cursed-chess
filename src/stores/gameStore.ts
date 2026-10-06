@@ -301,6 +301,8 @@ export interface GameStore {
   trenchAttack: () => boolean;
   /** Sends everyone holding one of your trench lines forward to the next */
   trenchAdvance: (rank: number) => boolean;
+  /** Send one of your men in Trenches out of his trench for the next one ahead */
+  trenchAdvanceMan: (square: SquareIndex) => boolean;
   /** Sends one of your squads up to your back trench in Trenches */
   trenchSend: (card: SquadId) => boolean;
   showAnnouncement: (
@@ -658,6 +660,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (state.paused || state.gravityFalling || state.zombiesActing) return;
     if (state.pluginManager.isAutonomous()) {
       if (state.deployPieceType) state.deployPiece(square);
+      else state.trenchAdvanceMan(square);
       return;
     }
     // The human always plays White
@@ -947,6 +950,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const trenches = pluginManager.find<TrenchesPlugin>("trenches");
     if (!trenches || paused) return false;
     const ordered = trenches.advanceLine(game.board, Color.White, rank);
+    if (ordered) set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
+    return ordered;
+  },
+
+  trenchAdvanceMan: (square) => {
+    const { game, pluginManager, paused } = get();
+    const trenches = pluginManager.find<TrenchesPlugin>("trenches");
+    if (!trenches || paused) return false;
+    const ordered = trenches.advanceMan(game.board, Color.White, square);
     if (ordered) set((s) => ({ autonomousTick: s.autonomousTick + 1 }));
     return ordered;
   },
