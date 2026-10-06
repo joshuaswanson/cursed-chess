@@ -20,7 +20,10 @@ function Sandbags({ bags }: { bags: Sandbag[] }) {
         const ro = b.slump < 0 ? 1 - b.slump * 0.18 : 1;
         const body = `M${-w * 0.96} ${-h * 0.2 * lo} Q${-w * 1.02} ${-h * 0.95 * lo} ${-w * 0.6} ${-h * 0.98 * lo} Q0 ${-h * (1.04 + top * 0.18)} ${w * 0.6} ${-h * 0.98 * ro} Q${w * 1.02} ${-h * 0.95 * ro} ${w * 0.96} ${-h * 0.2 * ro} Q${w * 1.1} ${h * 0.35} ${w * 0.9} ${h * 0.72} Q${w * 0.5} ${h * 1.08} 0 ${h * 1.04} Q${-w * 0.5} ${h * 1.08} ${-w * 0.9} ${h * 0.72} Q${-w * 1.1} ${h * 0.35} ${-w * 0.96} ${-h * 0.2 * lo} Z`;
         // Fresh sacking is pale and warm, old sacking dark, grey, and filthy
-        const look = `brightness(${(1.12 - b.wear * 0.5 + (b.tone - 0.5) * 0.18).toFixed(2)}) saturate(${(1.05 - b.wear * 0.55).toFixed(2)}) sepia(${(b.tone * 0.25).toFixed(2)})`;
+        // Fresh sacking is pale and warm, old sacking dark and filthy: a
+        // wash over the burlap, so each bag needs no filter of its own
+        const grime = `rgba(18, 14, 8, ${(0.08 + b.wear * 0.45).toFixed(2)})`;
+        const warmth = `rgba(150, 105, 40, ${(b.tone * 0.14).toFixed(2)})`;
         const crease =
           b.creases < 0.33
             ? `M${-w * 0.55} ${-h * 0.5} Q${-w * 0.1} ${-h * 0.15} ${w * 0.2} ${-h * 0.62} M${w * 0.1} ${h * 0.55} Q${w * 0.45} ${h * 0.2} ${w * 0.7} ${h * 0.45}`
@@ -39,7 +42,9 @@ function Sandbags({ bags }: { bags: Sandbag[] }) {
               ry={h * 0.35}
               className="sandbag-cast"
             />
-            <path d={body} className="sandbag" style={{ filter: look }} />
+            <path d={body} className="sandbag" />
+            <path d={body} fill={warmth} />
+            <path d={body} fill={grime} />
             {b.mud.map((m, k) => (
               <ellipse
                 key={k}
@@ -75,7 +80,7 @@ function Sandbags({ bags }: { bags: Sandbag[] }) {
             <path
               d={`M${-w * 0.5} ${-h * 0.82} Q0 ${-h * 1.04} ${w * 0.45} ${-h * 0.84}`}
               className="sandbag-light"
-              style={{ opacity: 1 - b.wear * 0.7 }}
+              strokeOpacity={(0.35 * (1 - b.wear * 0.7)).toFixed(2)}
             />
           </g>
         );
@@ -89,10 +94,13 @@ function PhotoPattern({
   id,
   file,
   size,
+  shade = 0,
 }: {
   id: string;
   file: string;
   size: number;
+  /** How much darker than the photograph, 0 to 1, baked into the tile so the shapes it fills need no filter */
+  shade?: number;
 }) {
   return (
     <pattern id={id} width={size} height={size} patternUnits="userSpaceOnUse">
@@ -102,6 +110,9 @@ function PhotoPattern({
         height={size}
         preserveAspectRatio="none"
       />
+      {shade > 0 && (
+        <rect width={size} height={size} fill="#000" fillOpacity={shade} />
+      )}
     </pattern>
   );
 }
@@ -167,16 +178,22 @@ function EarthDefs() {
         <stop offset="0.5" stopColor="#000" stopOpacity="0.25" />
         <stop offset="1" stopColor="#000" stopOpacity="0.65" />
       </linearGradient>
-      <filter id="wt-soft-bag" x="-20%" y="-60%" width="140%" height="220%">
-        <feGaussianBlur stdDeviation="1.6" />
-      </filter>
       <filter id="wt-soft" x="-5%" y="-50%" width="110%" height="200%">
         <feGaussianBlur stdDeviation="5" />
       </filter>
       <PhotoPattern id="tx-mud" file="mud" size={240} />
+      <PhotoPattern id="tx-mud-deep" file="mud" size={240} shade={0.55} />
       <PhotoPattern id="tx-soil" file="soil" size={180} />
+      <PhotoPattern id="tx-soil-shade" file="soil" size={180} shade={0.3} />
       <PhotoPattern id="tx-planks" file="planks" size={110} />
+      <PhotoPattern id="tx-planks-shade" file="planks" size={110} shade={0.2} />
       <PhotoPattern id="tx-duck" file="duckboards" size={90} />
+      <PhotoPattern
+        id="tx-duck-shade"
+        file="duckboards"
+        size={90}
+        shade={0.25}
+      />
       <PhotoPattern id="tx-hessian" file="hessian" size={30} />
       <radialGradient id="wt-shade" cx="0.42" cy="0.22" r="0.85">
         <stop offset="0" stopColor="#fff" stopOpacity="0.22" />

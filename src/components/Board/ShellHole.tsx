@@ -109,20 +109,11 @@ export function ShellHole({
               preserveAspectRatio="none"
             />
           </pattern>
-          {/* The thrown earth thins out into the ground around it */}
+          {/* The thrown earth, lighter than the mud, thinning out into the ground around it */}
           <radialGradient id={`${id}-fade`}>
-            <stop offset="0.55" stopColor="#fff" />
-            <stop offset="1" stopColor="#fff" stopOpacity="0" />
+            <stop offset="0.5" stopColor="#7d6a50" stopOpacity="0.55" />
+            <stop offset="1" stopColor="#7d6a50" stopOpacity="0" />
           </radialGradient>
-          <mask id={`${id}-spread`} maskContentUnits="userSpaceOnUse">
-            <rect
-              x="-1.1"
-              y="-1.1"
-              width="2.2"
-              height="2.2"
-              fill={`url(#${id}-fade)`}
-            />
-          </mask>
           {/* Light from above: the bowl's far side in shadow, its near side lit */}
           <linearGradient id={`${id}-slope`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#000" stopOpacity="0.85" />
@@ -142,19 +133,15 @@ export function ShellHole({
             <stop offset="1" stopColor="#5a6468" stopOpacity="0.15" />
           </linearGradient>
         </defs>
-        <g mask={`url(#${id}-spread)`}>
-          <path
-            d={shape.spoil}
-            fill={`url(#${id}-mud)`}
-            className="hole-spoil"
-          />
-        </g>
+        <path d={shape.spoil} fill={`url(#${id}-fade)`} />
         <path d={shape.lip} fill={`url(#${id}-mud)`} className="hole-lip" />
-        <path d={shape.bowl} fill={`url(#${id}-soil)`} className="hole-bowl" />
+        <path d={shape.lip} fill="rgba(255, 250, 235, 0.12)" />
+        <path d={shape.bowl} fill={`url(#${id}-soil)`} />
+        <path d={shape.bowl} fill="rgba(6, 5, 3, 0.55)" />
         <path d={shape.bowl} fill={`url(#${id}-slope)`} />
         {/* Standing water: dark and still, the overcast sky lying on it */}
         <path d={shape.water} fill={`url(#${id}-depth)`} />
-        <path d={shape.water} fill={`url(#${id}-mud)`} className="hole-silt" />
+        <path d={shape.water} fill={`url(#${id}-mud)`} fillOpacity={0.18} />
         <path d={shape.water} fill={`url(#${id}-sky)`} />
         <g clipPath={`url(#${id}-pool)`}>
           <ellipse

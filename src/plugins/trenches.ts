@@ -34,13 +34,13 @@ export const SQUADS: Squad[] = [
   {
     id: "rifles",
     name: "Rifle squad",
-    men: [PieceType.Pawn, PieceType.Pawn, PieceType.Pawn],
+    men: [PieceType.Pawn, PieceType.Pawn, PieceType.Pawn, PieceType.Pawn],
     readyMs: 9000,
   },
   {
     id: "guns",
     name: "Machine gun team",
-    men: [PieceType.Rook, PieceType.Pawn],
+    men: [PieceType.Rook, PieceType.Pawn, PieceType.Pawn],
     readyMs: 16000,
   },
   { id: "sniper", name: "Sniper", men: [PieceType.Bishop], readyMs: 11000 },

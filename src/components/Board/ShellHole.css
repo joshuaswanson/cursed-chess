@@ -13,33 +13,16 @@
   overflow: visible;
 }
 
-/* Earth thrown out by the blast, piled around the rim */
-.hole-spoil {
-  filter: brightness(1.05) saturate(0.9);
-}
-
 /* The rim, raised and catching the light */
 .hole-lip {
-  filter: brightness(1.2) saturate(0.85);
   stroke: rgba(20, 14, 8, 0.5);
   stroke-width: 1px;
   vector-effect: non-scaling-stroke;
 }
 
-.hole-bowl {
-  filter: brightness(0.45) saturate(0.5);
-}
-
-/* Silt clouding the water */
-.hole-silt {
-  opacity: 0.18;
-  mix-blend-mode: overlay;
-}
-
 /* The pale sky glaring off the surface */
 .hole-glare {
   fill: rgba(225, 232, 235, 0.35);
-  filter: blur(0.03px);
 }
 
 /* A wet sheen where the water meets the mud */

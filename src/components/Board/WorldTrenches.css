@@ -19,13 +19,12 @@
 
 /* Turned earth, clods and all */
 .earth-texture {
-  fill: url(#tx-soil);
-  opacity: 0.85;
-  mix-blend-mode: multiply;
+  fill: url(#tx-soil-shade);
+  fill-opacity: 0.6;
 }
 
 .earth-texture.trench-floor {
-  opacity: 0.75;
+  fill-opacity: 0.5;
 }
 
 /* The spoil thrown up behind a trench */
@@ -35,14 +34,12 @@
 
 /* The cut: a dark wet floor */
 .trench-cut {
-  fill: url(#tx-mud);
-  filter: brightness(0.45);
+  fill: url(#tx-mud-deep);
 }
 
 /* The far wall, lit from the front, shored with stakes and woven wattle */
 .far-wall {
-  fill: url(#tx-soil);
-  filter: brightness(0.7);
+  fill: url(#tx-soil-shade);
 }
 
 /* Duckboards along the bottom, gaps and all */
@@ -51,20 +48,7 @@
   fill: #3f4748;
   stroke: #5f6a6b;
   stroke-width: 1;
-  opacity: 0.85;
-}
-
-/* The near bank: earth heaped along the near edge, lit along its crest */
-.near-bank {
-  fill: #5e4b35;
-  filter: drop-shadow(0 -2px 2px rgba(0, 0, 0, 0.45));
-}
-
-.near-bank-lip {
-  fill: none;
-  stroke: #2a1f13;
-  stroke-width: 1.6;
-  stroke-linejoin: round;
+  fill-opacity: 0.85;
 }
 
 .comms-cut {
@@ -113,7 +97,7 @@
 }
 
 .planks-dark {
-  filter: brightness(0.8);
+  fill: url(#tx-planks-shade);
 }
 
 .stakes {
@@ -155,7 +139,7 @@
 }
 
 .slats-dark {
-  filter: brightness(0.75);
+  fill: url(#tx-duck-shade);
 }
 
 /* Shadow pooled along the foot of both walls, where the light cannot reach */
@@ -179,8 +163,7 @@
 
 /* The bag's weight pressing into the bag beneath, in shadow */
 .sandbag-cast {
-  fill: rgba(8, 6, 3, 0.45);
-  filter: url(#wt-soft-bag);
+  fill: rgba(8, 6, 3, 0.35);
 }
 
 .sandbag-crease {
@@ -193,7 +176,7 @@
 /* Dried mud caked on the burlap where it caught the light */
 .sandbag-light {
   fill: none;
-  stroke: rgba(235, 222, 180, 0.35);
+  stroke: rgb(235, 222, 180);
   stroke-width: 1.6;
   stroke-linecap: round;
 }
@@ -201,7 +184,7 @@
 /* Mud caked on the sacking */
 .sandbag-mud {
   fill: #3a2c1c;
-  opacity: 0.55;
+  fill-opacity: 0.55;
 }
 
 /* A burst seam, dark inside, the fill showing */
