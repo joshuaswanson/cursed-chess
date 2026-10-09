@@ -122,21 +122,18 @@ function useSpeechMood(speaking: boolean): ChessbotMood {
  */
 function ComputerCard() {
   const stage = useGameStore((s) => s.curseStage);
-  const revealed = stage === "hello";
-  const gone = stage !== null && stage !== "hello";
   const aside = useGameStore((s) => s.aside);
-  // He flickers through while he is breaking in, hardest while he types,
-  // and not at all once he has been shut out again
-  const slipping =
-    stage !== null || aside === "said" || aside === null
-      ? 0
-      : aside === "glitch"
-        ? 1
-        : 2;
+  // His true form shows over the grey square while he has the floor: for
+  // his remark on your first move, and again for his speech
+  const revealed = stage === "hello" || aside === "typing";
+  const ejected = aside === "leaving";
+  const gone = stage !== null && stage !== "hello";
+  // He flickers through the icon as he breaks in
+  const slipping = stage === null && aside === "glitch" ? 2 : 0;
   const mood = useSpeechMood(revealed);
   return (
     <div
-      className={`boring-player boring-bot slipping-${slipping}${revealed ? " revealed" : ""}${gone ? " vacated renamed" : ""}`}
+      className={`boring-player boring-bot slipping-${slipping}${revealed ? " revealed" : ""}${ejected ? " ejected" : ""}${gone ? " vacated renamed" : ""}`}
     >
       <div className="boring-avatar boring-bot-avatar" aria-hidden>
         <svg className="boring-bot-icon" viewBox="0 0 32 32">
@@ -242,8 +239,7 @@ function BotTyping({
               {">"}
             </span>
             {text.slice(0, typed - starts[i])}
-            {/* The caret goes once a passing remark is finished; through his speech it stays */}
-            {i === current && (acted || typed < delays.length) && (
+            {i === current && (
               <span ref={caret} className="boring-caret" aria-hidden />
             )}
           </p>
@@ -303,6 +299,7 @@ function MoveList() {
           lines={remark}
           lead={ASIDE_LEAD_MS}
           leaving={aside === "leaving"}
+          acted
         />,
       );
       if (black) rows.push(<MoveRow key="1b" no={1} black={black} />);

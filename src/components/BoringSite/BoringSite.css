@@ -321,6 +321,19 @@
   }
 }
 
+/* Shut out after his remark: he glitches off the square, and the grey icon is back */
+.boring-bot.ejected .boring-bot-icon {
+  visibility: hidden;
+}
+
+.boring-bot.ejected .boring-bot-avatar {
+  animation: bot-slip 0.18s steps(1) 4;
+}
+
+.boring-bot.ejected .boring-bot-avatar > .boring-bot-true {
+  animation: bot-glitches-out 0.7s steps(1) forwards;
+}
+
 /* His say said, he glitches out of the card and leaves the frame empty */
 .boring-bot.vacated .boring-bot-icon {
   visibility: hidden;

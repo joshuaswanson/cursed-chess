@@ -454,6 +454,8 @@ function endGameSoon(
 /** How long the plain site glitches after your first move, before he says anything */
 const ASIDE_GLITCH_MS = 1300;
 
+/** How long your first move is left to land before anything goes wrong */
+const ASIDE_WAIT_MS = 1000;
 /** How long his terminal takes to glitch shut once he has had his say */
 const ASIDE_LEAVE_MS = 700;
 
@@ -465,10 +467,11 @@ const ASIDE_LEAVE_MS = 700;
 function startAside(): void {
   const opening = useGameStore.getState().moveHistory[0]?.san ?? "e4";
   const typing = introDuration(introScript(opening).slice(0, 1), ASIDE_LEAD_MS);
-  const leaveAt = ASIDE_GLITCH_MS + typing;
+  const typeAt = ASIDE_WAIT_MS + ASIDE_GLITCH_MS;
+  const leaveAt = typeAt + typing;
   holdPause(leaveAt + ASIDE_LEAVE_MS);
-  useGameStore.setState({ aside: "glitch" });
-  schedule(() => useGameStore.setState({ aside: "typing" }), ASIDE_GLITCH_MS);
+  schedule(() => useGameStore.setState({ aside: "glitch" }), ASIDE_WAIT_MS);
+  schedule(() => useGameStore.setState({ aside: "typing" }), typeAt);
   schedule(() => useGameStore.setState({ aside: "leaving" }), leaveAt);
   schedule(
     () => useGameStore.setState({ aside: "said" }),
