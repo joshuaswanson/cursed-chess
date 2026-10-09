@@ -883,6 +883,7 @@ export function Board() {
                 defender={defender}
                 attacked={defender === Color.Black}
                 shotChance={defender === Color.Black ? shotChance : null}
+                shotExitFile={shot?.exitFile ?? null}
                 noShotReason={noShotReason}
                 scoredKick={
                   football.lastKick?.outcome === "goal" &&
@@ -903,7 +904,11 @@ export function Board() {
             <FootballLayer
               view={football}
               carried={game.board.get(football.ball) !== null}
-              shotExitFile={shot?.exitFile ?? null}
+              shotExitFile={
+                selectedSquare === football.ball
+                  ? (shot?.exitFile ?? null)
+                  : null
+              }
               flipped={flipped}
               squareSize={squareSize}
             />

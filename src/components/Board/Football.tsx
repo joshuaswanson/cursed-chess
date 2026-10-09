@@ -155,6 +155,7 @@ export function Goal({
   defender,
   attacked,
   shotChance,
+  shotExitFile,
   noShotReason,
   scoredKick,
   postKick,
@@ -166,6 +167,8 @@ export function Goal({
   /** The goal you shoot at */
   attacked: boolean;
   shotChance: number | null;
+  /** Where along the goal line that shot would cross it */
+  shotExitFile: number | null;
   noShotReason: string;
   scoredKick: Kick | null;
   /** A shot that just struck this goal's woodwork */
@@ -305,7 +308,13 @@ export function Goal({
         <>
           {/* Marked the way a pass is: a dashed outline round the mouth, and a turning ring to aim at */}
           <span className="shot-frame" aria-hidden />
-          <span className="shot-ring" aria-hidden />
+          <span
+            className="shot-ring"
+            style={{
+              left: `${(((flipped ? 7 - (shotExitFile ?? 3.5) : (shotExitFile ?? 3.5)) + 0.5 - 2) / 4) * 100}%`,
+            }}
+            aria-hidden
+          />
           <span className="shoot-label">
             Shoot <b>{Math.round(shotChance * 100)}%</b>
           </span>
@@ -524,10 +533,6 @@ function ShotLine({ from, to }: { from: Point; to: Point }) {
     >
       <path
         d={`M${from.x} ${from.y} L${to.x} ${to.y}`}
-        className="shot-line-edge"
-      />
-      <path
-        d={`M${from.x} ${from.y} L${to.x} ${to.y}`}
         className="shot-line-dash"
       />
       <path
@@ -548,7 +553,7 @@ export function FootballLayer({
 }: {
   view: FootballView;
   carried: boolean;
-  /** Where along the goal line your shot would cross it, when you have one */
+  /** Where along the goal line your shot would cross it, while your carrier is picked and has one */
   shotExitFile: number | null;
   flipped: boolean;
   squareSize: number;

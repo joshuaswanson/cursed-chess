@@ -181,44 +181,33 @@
   }
 }
 
-/* The way to goal: dashes running from the carrier into the net */
+/* The way to goal, drawn like the rings on a pass: thin glowing dashes
+   running from the carrier into the net */
 .shot-line {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   overflow: visible;
-}
-
-.shot-line path {
-  fill: none;
-  stroke-linecap: round;
-}
-
-.shot-line-edge {
-  stroke: var(--ink);
-  stroke-width: 0.13;
-  stroke-dasharray: 0.26 0.2;
-  animation: shot-line 0.6s linear infinite;
+  filter: drop-shadow(0 0 5px var(--accent));
 }
 
 .shot-line-dash {
+  fill: none;
   stroke: var(--accent);
-  stroke-width: 0.07;
-  stroke-dasharray: 0.26 0.2;
+  stroke-width: 3px;
+  stroke-dasharray: 9 7;
+  vector-effect: non-scaling-stroke;
   animation: shot-line 0.6s linear infinite;
 }
 
-.shot-line .shot-line-head {
+.shot-line-head {
   fill: var(--accent);
-  stroke: var(--ink);
-  stroke-width: 0.04;
-  stroke-linejoin: round;
 }
 
 @keyframes shot-line {
   to {
-    stroke-dashoffset: -0.46;
+    stroke-dashoffset: -16;
   }
 }
 
