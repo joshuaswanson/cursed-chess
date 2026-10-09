@@ -12,11 +12,16 @@ interface Reaction {
   variant?: number;
 }
 
+/** What his visor flashes when the game turns on him. He is too rattled to say anything else while it does. */
+export const RATTLED = "UH OH";
+/** How long it stays there */
+export const RATTLED_MS = 2200;
+
 /** How many different ways he has of being angry */
 const ANGRY_WAYS = 5;
 
 /** The pieces he cannot stand to lose */
-const PRIZED: PieceType[] = [PieceType.Queen, PieceType.Rook];
+export const PRIZED: PieceType[] = [PieceType.Queen, PieceType.Rook];
 
 /**
  * How Chessbot is taking the game: smug by default, proud of each new mode
@@ -58,7 +63,7 @@ export function useChessbot(): Reaction {
       if (checked) {
         return now.turn === Color.White
           ? react("smug", 1800, "CHECK")
-          : react("panic", 1800, "UH OH");
+          : react("panic", RATTLED_MS, RATTLED);
       }
       if (now.moveHistory.length > before.moveHistory.length) {
         const { move } = now.moveHistory[now.moveHistory.length - 1];
@@ -67,7 +72,7 @@ export function useChessbot(): Reaction {
         // You took one of his: a prized piece rattles him, anything else makes him cross
         if (move.piece.color === Color.White) {
           return PRIZED.includes(lost.type)
-            ? react("panic", 2200, "UH OH")
+            ? react("panic", RATTLED_MS, RATTLED)
             : react("angry", 2100);
         }
         // He took one of yours, and finds it very funny

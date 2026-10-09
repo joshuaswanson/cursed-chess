@@ -14,7 +14,7 @@ import {
   VERDICTS,
   spoken,
 } from "./lines";
-import { useChessbot } from "./useChessbot";
+import { PRIZED, RATTLED, RATTLED_MS, useChessbot } from "./useChessbot";
 
 interface Fidget {
   /** The look on his visor, if it changes */
@@ -105,10 +105,15 @@ function useQuip(): string | undefined {
     let saidPortals = false;
     let saidMines = false;
     let late: number | undefined;
+    let calm: number | undefined;
     const say = (text: string) => {
       window.clearTimeout(clear);
       setLine(text);
       clear = window.setTimeout(() => setLine(undefined), QUIP_MS);
+    };
+    const sayOnceCalm = (text: string) => {
+      window.clearTimeout(calm);
+      calm = window.setTimeout(() => say(text), RATTLED_MS);
     };
     const muse = () => {
       const [least, most] = IDLE_QUIP_MS;
@@ -155,13 +160,19 @@ function useQuip(): string | undefined {
         now.status === GameStatus.Check &&
         (now.status !== before.status || now.turn !== before.turn);
       if (checked) {
-        say(pick(now.turn === Color.White ? QUIPS.checks : QUIPS.checked));
+        // Checked himself, he is too rattled to speak until it has passed
+        if (now.turn === Color.White) say(pick(QUIPS.checks));
+        else sayOnceCalm(pick(QUIPS.checked));
         return;
       }
       if (now.moveHistory.length > before.moveHistory.length) {
         const { move } = now.moveHistory[now.moveHistory.length - 1];
         if (!move.captured || move.captured.color === move.piece.color) return;
-        say(pick(move.piece.color === Color.White ? QUIPS.lost : QUIPS.took));
+        const yours = move.piece.color === Color.White;
+        // Losing a piece he prizes leaves him speechless for a moment too
+        if (yours && PRIZED.includes(move.captured.type)) {
+          sayOnceCalm(pick(QUIPS.lost));
+        } else say(pick(yours ? QUIPS.lost : QUIPS.took));
       }
     });
     return () => {
@@ -169,6 +180,7 @@ function useQuip(): string | undefined {
       window.clearTimeout(clear);
       window.clearTimeout(idle);
       window.clearTimeout(late);
+      window.clearTimeout(calm);
     };
   }, []);
   return line;
@@ -306,7 +318,8 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
     (s) =>
       s.moveHistory.filter((m) => m.move.piece.color === Color.Black).length,
   );
-  const bubble = useBubble(line);
+  // Whatever he was saying, he drops it the moment he is rattled
+  const bubble = useBubble(bot.says === RATTLED ? undefined : line);
 
   return (
     <aside
