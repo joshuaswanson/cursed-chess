@@ -1,7 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { rankOf, toIndex } from "../../utils/squareUtils";
-import { Color, GameStatus, PieceType, isGameOver } from "../../engine";
+import {
+  Color,
+  GameStatus,
+  PieceType,
+  generatePseudoLegalMoves,
+  isGameOver,
+} from "../../engine";
 import type { SquareIndex } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import { useKitImages } from "../../utils/kitImages";
@@ -377,6 +383,27 @@ export function Board() {
     hillWhite > hillBlack ? "white" : hillBlack > hillWhite ? "black" : null;
   const arrivals = new Map(reinforcements.map((r) => [r.sq, r]));
   const football = overlays.football;
+  // In the dark, a check on you shows your king and whatever is giving it
+  const kingInCheck =
+    overlays.lanterns &&
+    status === GameStatus.Check &&
+    game.turn === Color.White
+      ? game.board.findKing(Color.White)
+      : null;
+  const shownByCheck =
+    kingInCheck === null
+      ? []
+      : [
+          kingInCheck,
+          ...generatePseudoLegalMoves(
+            game.board,
+            Color.Black,
+            game.enPassant,
+            game.pawnRules,
+          )
+            .filter((move) => move.to === kingInCheck)
+            .map((move) => move.from),
+        ];
   const footballRules = pluginManager.find<FootballPlugin>("football");
   const ourBall =
     football !== null && game.board.get(football.ball)?.color === Color.White;
@@ -892,6 +919,7 @@ export function Board() {
           {overlays.lanterns && (
             <LanternDark
               lanterns={overlays.lanterns}
+              shown={shownByCheck}
               targets={legalMoveSquares}
               flipped={flipped}
               squareSize={squareSize}

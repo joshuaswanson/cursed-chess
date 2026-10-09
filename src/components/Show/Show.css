@@ -1781,6 +1781,116 @@
   }
 }
 
+/* --- Lanterns: a black band, and a lantern carried across it that shows
+   each letter as its light gets there --- */
+
+[data-card-theme="lanterns"] .card-band {
+  background: #04030a;
+  border-color: #04030a;
+}
+
+/* The lantern and the pool of light it carries, crossing from one end of
+   the band to the other just ahead of the letters it lights */
+.card-lamp {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: clamp(40px, 6vw, 84px);
+  aspect-ratio: 32 / 46;
+  translate: -50% -50%;
+  opacity: 0;
+  animation: lamp-cross 1.25s 0.3s linear both;
+}
+
+.card-lamp-catch {
+  animation-delay: 1.8s;
+}
+
+.card-lamp::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 520%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    rgba(255, 190, 90, 0.42),
+    rgba(255, 150, 50, 0.14) 45%,
+    transparent 70%
+  );
+}
+
+.card-lamp .lantern-held {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+}
+
+@keyframes lamp-cross {
+  0% {
+    left: 14%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    left: 90%;
+    opacity: 0;
+  }
+}
+
+/* Each letter is there in the dark all along, and takes light as the
+   lantern passes it, then goes on glowing with a flame's unsteadiness */
+[data-card-theme="lanterns"] .card-letter {
+  color: #ffe6ad;
+  text-shadow:
+    0 0 0.12em rgba(255, 190, 90, 0.9),
+    0 0 0.5em rgba(255, 140, 40, 0.55);
+  animation:
+    letter-lit 0.5s both,
+    letter-flicker 1.7s ease-in-out infinite;
+  animation-delay:
+    calc(var(--beat-start, 0.4s) + var(--i) * 70ms),
+    calc(var(--beat-start, 0.4s) + var(--i) * 70ms + 0.5s);
+}
+
+@keyframes letter-lit {
+  0% {
+    color: #0b0914;
+    text-shadow: none;
+    opacity: 0.2;
+  }
+  55% {
+    color: #fff8e0;
+    text-shadow:
+      0 0 0.2em #fff,
+      0 0 0.9em rgba(255, 170, 60, 0.95);
+    opacity: 1;
+  }
+}
+
+@keyframes letter-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  38% {
+    opacity: 0.86;
+  }
+  52% {
+    opacity: 0.97;
+  }
+  71% {
+    opacity: 0.8;
+  }
+}
+
 /* --- Zombies: a sickly moon over the title, with ooze dripping off the band --- */
 
 [data-card-theme="zombies"] .card-band {

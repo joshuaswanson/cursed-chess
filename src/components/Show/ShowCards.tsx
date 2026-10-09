@@ -10,6 +10,7 @@ import { ROPE_TILE } from "../Board/ropeTexture";
 import { Color, PieceType } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import "./Show.css";
+import { LanternIcon } from "../Board/Lanterns";
 
 const CLOSE_MS = 450;
 
@@ -141,6 +142,18 @@ function Flair({ theme }: { theme: ThemeId }) {
             <path d="M0 10 Q10 0 20 10 T40 10 T60 10 T80 10 T100 10 T120 10 T140 10 T160 10 T180 10 T200 10 T220 10 T240 10 T260 10 T280 10 T300 10 T320 10 T340 10 T360 10 T380 10 T400 10" />
             <path d="M15 6 l4 -4 M55 14 l4 4 M95 6 l4 -4 M135 14 l4 4 M175 6 l4 -4 M215 14 l4 4 M255 6 l4 -4 M295 14 l4 4 M335 6 l4 -4 M375 14 l4 4" />
           </svg>
+        </>
+      );
+    case "lanterns":
+      return (
+        <>
+          {/* A lantern is carried across the dark, once for the title and once for what follows, and the letters show as its light reaches them */}
+          <span className="card-lamp card-lamp-title">
+            <LanternIcon count={1} />
+          </span>
+          <span className="card-lamp card-lamp-catch">
+            <LanternIcon count={1} />
+          </span>
         </>
       );
     case "zombies":

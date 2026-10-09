@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { SquareIndex } from "../../engine";
+import { useGameStore } from "../../stores/gameStore";
 import type { Lantern } from "../../plugins/lanterns";
 import { visualCol, visualRow } from "./boardGeometry";
 import "./Lanterns.css";
@@ -24,6 +25,8 @@ const FALLOFF: [squares: number, cleared: number][] = [
 ];
 /** The rest of the board is pitch black */
 const DARKNESS = "rgb(4, 3, 10)";
+/** How quickly the lanterns come up once they are lit, as the share of the way gained each frame */
+const KINDLE = 0.07;
 /** How quickly a light catches up with its carrier, as the share of the gap closed each frame */
 const FOLLOW = 0.22;
 const FRAME_MS = 40;
@@ -137,20 +140,25 @@ export function LanternIcon({ count }: { count: number }) {
  */
 export function LanternDark({
   lanterns,
+  shown,
   targets,
   flipped,
   squareSize,
 }: {
   lanterns: Lantern[];
+  /** Squares lit with no lantern near: your king in check, and the piece checking it */
+  shown: SquareIndex[];
   targets: SquareIndex[];
   flipped: boolean;
   squareSize: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // The lanterns stay out while the mode's title cards are up, and are lit as play begins
+  const lit = useGameStore((s) => s.introDone);
   // Read by the drawing loop, which outlives any one render
-  const scene = useRef({ lanterns, targets, flipped, squareSize });
+  const scene = useRef({ lanterns, shown, targets, flipped, squareSize, lit });
   useEffect(() => {
-    scene.current = { lanterns, targets, flipped, squareSize };
+    scene.current = { lanterns, shown, targets, flipped, squareSize, lit };
   });
 
   useEffect(() => {
@@ -161,12 +169,16 @@ export function LanternDark({
     const at = new Map<number, { x: number; y: number }>();
     let frame = 0;
     let last = 0;
+    /** How far up the lanterns are, from out to fully alight */
+    let glow = 0;
 
     const draw = (now: number) => {
       frame = requestAnimationFrame(draw);
       if (now - last < FRAME_MS) return;
       last = now;
-      const { lanterns, targets, flipped, squareSize } = scene.current;
+      const { lanterns, shown, targets, flipped, squareSize, lit } =
+        scene.current;
+      glow += ((lit ? 1 : 0) - glow) * KINDLE;
       const scale = Math.min(2, window.devicePixelRatio || 1);
       const size = Math.round(squareSize * 8 * scale);
       if (canvas.width !== size) {
@@ -239,19 +251,42 @@ export function LanternDark({
         for (const [squares, cleared] of FALLOFF) {
           pool.addColorStop(
             squares / REACH_SQUARES,
-            `rgba(0, 0, 0, ${cleared})`,
+            `rgba(0, 0, 0, ${cleared * glow})`,
           );
         }
         ctx.fillStyle = pool;
         ctx.fillRect(x * sq - reach, y * sq - reach, reach * 2, reach * 2);
       }
+      // A red-edged pool, pulsing, on each square a check brings to light
+      for (const square of shown) {
+        const { x, y } = centre(square);
+        wear(x, y, 0.42, 0.8, 0.9 * glow);
+      }
       for (const target of targets) {
         const { x, y } = centre(target);
-        wear(x, y, 0.08, 0.34, 0.55);
+        wear(x, y, 0.08, 0.34, 0.55 * glow);
       }
 
       // Lamplight is warm
       ctx.globalCompositeOperation = "source-over";
+      for (const square of shown) {
+        const { x, y } = centre(square);
+        const reach = 0.8 * sq;
+        const danger = ctx.createRadialGradient(
+          x * sq,
+          y * sq,
+          0.3 * sq,
+          x * sq,
+          y * sq,
+          reach,
+        );
+        const pulse = 0.4 + 0.2 * Math.sin(now / 160);
+        danger.addColorStop(0, "rgba(255, 60, 60, 0)");
+        danger.addColorStop(0.6, `rgba(255, 60, 60, ${pulse * glow})`);
+        danger.addColorStop(1, "rgba(255, 60, 60, 0)");
+        ctx.fillStyle = danger;
+        ctx.fillRect(x * sq - reach, y * sq - reach, reach * 2, reach * 2);
+      }
       for (const { x, y, flicker } of lights) {
         const reach = REACH_SQUARES * flicker * sq;
         const warm = ctx.createRadialGradient(
@@ -262,7 +297,7 @@ export function LanternDark({
           y * sq,
           reach,
         );
-        warm.addColorStop(0, "rgba(255, 176, 64, 0.22)");
+        warm.addColorStop(0, `rgba(255, 176, 64, ${0.22 * glow})`);
         warm.addColorStop(1, "rgba(255, 140, 40, 0)");
         ctx.fillStyle = warm;
         ctx.fillRect(x * sq - reach, y * sq - reach, reach * 2, reach * 2);
