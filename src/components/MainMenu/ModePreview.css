@@ -375,7 +375,7 @@
 /* The flag: its shape cut in ink, with the red cloth set just inside it */
 .pv-flag {
   left: 48.5%;
-  top: 59%;
+  top: calc(59% - 1px);
   width: 7%;
   height: 25%;
   background: var(--plum-ink);
