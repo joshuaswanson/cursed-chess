@@ -34,7 +34,7 @@ function ModeCard({ theme, onPlay }: { theme: ModeTheme; onPlay: () => void }) {
       <ModePreview theme={theme.id} />
       <span className="menu-mode-text">
         <span className="menu-mode-title">{theme.title}</span>
-        <span className="menu-mode-tagline">{theme.tagline}</span>
+        <span className="menu-mode-tagline">{theme.catchphrase}</span>
       </span>
     </button>
   );

@@ -20,7 +20,7 @@
   flex-direction: column;
   align-items: center;
   gap: 22px;
-  width: min(760px, 100%);
+  width: min(1040px, 100%);
 }
 
 .menu-sheet .logo {
@@ -67,22 +67,21 @@
   opacity: 0.85;
 }
 
-/* The modes, in a column to scroll through */
+/* The modes, three across, to scroll through */
 .menu-modes {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
   width: 100%;
   padding-bottom: 150px;
 }
 
 .menu-mode {
-  display: grid;
-  grid-template-columns: minmax(180px, 300px) 1fr;
-  align-items: center;
-  gap: 20px;
-  padding: 12px;
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 12px 16px;
+  text-align: center;
   color: var(--paper);
   background: linear-gradient(
     135deg,
@@ -106,7 +105,7 @@
 
 .menu-mode-title {
   font-family: var(--font-display);
-  font-size: clamp(20px, 2.6vw, 30px);
+  font-size: clamp(18px, 2vw, 24px);
   line-height: 1;
   text-shadow: 2px 3px 0 var(--plum-ink);
 }
@@ -151,5 +150,17 @@
   .menu-adventure,
   .menu-mode {
     transition: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .menu-modes {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 540px) {
+  .menu-modes {
+    grid-template-columns: 1fr;
   }
 }

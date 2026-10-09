@@ -1,5 +1,11 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { ThemeId } from "../../theme/themes";
+import { PieceType } from "../../engine";
+import { zombieImage } from "../../utils/pieceImages";
+import { ROPE_TILE } from "../Board/ropeTexture";
+import { SoccerBall } from "../Board/Football";
+import { Portal } from "../Board/Portal";
+import { Tombstone } from "../Board/Zombies";
 import "./ModePreview.css";
 
 const PIECES = `${import.meta.env.BASE_URL}pieces/party/`;
@@ -11,6 +17,7 @@ function Piece({
   y,
   size = 26,
   className = "",
+  src,
   children,
 }: {
   /** Colour and kind, as in the artwork's file names: wN, bQ */
@@ -19,6 +26,8 @@ function Piece({
   y: number;
   size?: number;
   className?: string;
+  /** Artwork of its own, in place of the plain piece */
+  src?: string;
   children?: ReactNode;
 }) {
   return (
@@ -28,9 +37,109 @@ function Piece({
         { left: `${x}%`, top: `${y}%`, width: `${size}%` } as CSSProperties
       }
     >
-      <img src={`${PIECES}${is}.svg`} alt="" draggable={false} />
+      <img src={src ?? `${PIECES}${is}.svg`} alt="" draggable={false} />
       {children}
     </span>
+  );
+}
+
+/** The dead pawn coming up out of its grave, in the rotten look it has in the game */
+function Undead() {
+  return (
+    <Piece
+      is="bP"
+      src={zombieImage(PieceType.Pawn)}
+      x={50}
+      y={50}
+      size={100}
+      className="pv-undead"
+    />
+  );
+}
+
+/** A short sword: a pointed blade with a groove down it, a crossguard, a wrapped grip, and a pommel */
+function Sword() {
+  return (
+    <svg className="pv-sword" viewBox="0 0 16 64">
+      <path
+        d="M8 1 L11.5 9 V42 H4.5 V9 Z"
+        fill="#eef3f8"
+        stroke="#1b1033"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M8 9 V39" stroke="#9fb0c2" strokeWidth="1.4" />
+      <rect
+        x="0.8"
+        y="41"
+        width="14.4"
+        height="4.2"
+        rx="2"
+        fill="#e2b84a"
+        stroke="#1b1033"
+        strokeWidth="1.6"
+      />
+      <rect
+        x="6"
+        y="45"
+        width="4"
+        height="11"
+        fill="#7a4a22"
+        stroke="#1b1033"
+        strokeWidth="1.4"
+      />
+      <circle
+        cx="8"
+        cy="59"
+        r="3.2"
+        fill="#e2b84a"
+        stroke="#1b1033"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}
+
+/** The size of a hexagon in the hex scene, in a drawing 200 wide and 100 tall */
+const HEX_R = 19;
+const HEX_H = Math.sqrt(3) * HEX_R;
+const HEX_TONES = ["#ff2e88", "#7a1fd6", "#21c8e6"];
+/** The column of each cell the bishop stops on, along the middle row */
+const BISHOP_COLUMNS = [1, 3, 5];
+const hexX = (q: number) => 10 + q * HEX_R * 1.5;
+const BISHOP_STOPS = BISHOP_COLUMNS.map((q) => hexX(q) / 2);
+
+/**
+ * A board of regular hexagons in three colours, no two alike side by side,
+ * as hexagonal chess is played on. A bishop keeps to one colour, moving
+ * from cell to cell through the corners between them.
+ */
+function HexBoard() {
+  const cells = [];
+  for (let q = 0; q <= 7; q++) {
+    for (let row = -1; row <= 3; row++) {
+      const x = hexX(q);
+      const y = 50 + (row - 1) * HEX_H + (q % 2 ? HEX_H / 2 : 0);
+      const tone = (((q - (row - (q - (q % 2)) / 2)) % 3) + 3) % 3;
+      const corners = Array.from({ length: 6 }, (_, i) => {
+        const a = (Math.PI / 3) * i;
+        return `${(x + HEX_R * Math.cos(a)).toFixed(1)},${(y + HEX_R * Math.sin(a)).toFixed(1)}`;
+      }).join(" ");
+      const onPath = row === 1 && BISHOP_COLUMNS.includes(q);
+      cells.push(
+        <polygon
+          key={`${q}:${row}`}
+          points={corners}
+          fill={HEX_TONES[tone]}
+          className={onPath ? "pv-hex-path" : undefined}
+        />,
+      );
+    }
+  }
+  return (
+    <svg className="pv-hexes" viewBox="0 0 200 100" preserveAspectRatio="none">
+      {cells}
+    </svg>
   );
 }
 
@@ -39,11 +148,12 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // A knight steps into the blue portal and bursts out of the orange one
   portals: (
     <>
-      <span className="pv-portal pv-blue" style={{ left: "24%", top: "56%" }} />
-      <span
-        className="pv-portal pv-orange"
-        style={{ left: "76%", top: "56%" }}
-      />
+      <span className="pv-portal" style={{ left: "24%", top: "56%" }}>
+        <Portal color="blue" />
+      </span>
+      <span className="pv-portal" style={{ left: "76%", top: "56%" }}>
+        <Portal color="orange" />
+      </span>
       <Piece is="wN" x={24} y={50} className="pv-into-portal" />
       <Piece is="wN" x={76} y={50} className="pv-out-of-portal" />
     </>
@@ -65,7 +175,9 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
     <>
       <span className="pv-goal" />
       <Piece is="wR" x={22} y={56} className="pv-kicker" />
-      <span className="pv-ball" />
+      <span className="pv-ball">
+        <SoccerBall />
+      </span>
       <span className="pv-shout pv-goal-shout">GOAL!</span>
     </>
   ),
@@ -74,12 +186,15 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
     <>
       <span className="pv-mud" />
       <span className="pv-tug">
-        <span className="pv-rope" />
-        <span className="pv-flag" />
         <Piece is="wP" x={12} y={50} size={22} />
         <Piece is="wN" x={28} y={48} size={24} />
         <Piece is="bN" x={72} y={48} size={24} />
         <Piece is="bP" x={88} y={50} size={22} />
+        <span
+          className="pv-rope"
+          style={{ "--rope": ROPE_TILE } as CSSProperties}
+        />
+        <span className="pv-flag" />
       </span>
     </>
   ),
@@ -116,14 +231,16 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <Piece is="wK" x={50} y={50} size={24} className="pv-nervous" />
     </>
   ),
-  // Two pieces go at each other on their own, health bars draining
+  // Two pieces go at each other with swords, on their own, health bars draining
   clash: (
     <>
       <Piece is="wN" x={32} y={58} className="pv-lunge-right">
         <span className="pv-hp pv-hp-blue" />
+        <Sword />
       </Piece>
       <Piece is="bB" x={68} y={58} className="pv-lunge-left">
         <span className="pv-hp pv-hp-red" />
+        <Sword />
       </Piece>
       <span className="pv-spark" style={{ left: "50%", top: "52%" }} />
     </>
@@ -140,23 +257,32 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       </span>
     </>
   ),
-  // The board turns on its side and everything slides down it
+  // The board turns and turns, and pieces tumble down across it
   gravity: (
-    <span className="pv-tilting">
-      <Piece is="wP" x={24} y={30} size={22} className="pv-falls pv-falls-a" />
-      <Piece is="bN" x={50} y={30} size={24} className="pv-falls pv-falls-b" />
-      <Piece is="wR" x={76} y={30} size={22} className="pv-falls pv-falls-c" />
-    </span>
+    <>
+      <span className="pv-ground" />
+      <Piece is="wR" x={22} y={50} size={22} className="pv-tumbles" />
+      <Piece
+        is="bN"
+        x={52}
+        y={50}
+        size={24}
+        className="pv-tumbles pv-tumbles-b"
+      />
+      <Piece
+        is="wP"
+        x={80}
+        y={50}
+        size={20}
+        className="pv-tumbles pv-tumbles-c"
+      />
+    </>
   ),
-  // A bishop glides across a board of hexagons
+  // A bishop makes its hexagonal move: along a line of cells of its own colour
   hex: (
     <>
-      <span className="pv-hexes">
-        {Array.from({ length: 18 }, (_, i) => (
-          <i key={i} style={{ "--n": i % 3 } as CSSProperties} />
-        ))}
-      </span>
-      <Piece is="wB" x={24} y={66} size={22} className="pv-glides" />
+      <HexBoard />
+      <Piece is="wB" x={BISHOP_STOPS[0]} y={47} size={22} className="pv-hops" />
     </>
   ),
   // A pawn attacks a hidden piece, which turns out to be a queen
@@ -177,12 +303,14 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // A captured pawn claws its way back out of its grave
   zombies: (
     <>
-      <span className="pv-grave" />
-      <span className="pv-rises">
-        <Piece is="bP" x={50} y={50} size={100} className="pv-undead" />
+      <span className="pv-plot">
+        <Tombstone look={0} part="stone" stirring />
+        <span className="pv-rises">
+          <Undead />
+        </span>
+        <Tombstone look={0} part="heap" />
       </span>
-      <span className="pv-dirt" />
-      <Piece is="wP" x={76} y={64} size={22} className="pv-shivers" />
+      <Piece is="wP" x={80} y={64} size={22} className="pv-shivers" />
     </>
   ),
   // Rifle fire crosses no man's land in the rain, and a shell lands short

@@ -60,31 +60,11 @@
 
 /* --- Portals --- */
 
+/* The game's own portals, each on a square of its own */
 .pv-portal {
-  width: 24%;
+  width: 22%;
   aspect-ratio: 1;
   translate: -50% -50%;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    #000 0 20%,
-    var(--p) 45%,
-    #fff 55%,
-    var(--p) 70%,
-    #000 100%
-  );
-  box-shadow:
-    0 0 0 3px var(--p),
-    0 0 18px 4px var(--p);
-  animation: pv-spin 1.4s linear infinite;
-}
-
-.pv-blue {
-  --p: #2f9bff;
-}
-
-.pv-orange {
-  --p: #ff8a1a;
 }
 
 .pv-into-portal {
@@ -93,12 +73,6 @@
 
 .pv-out-of-portal {
   animation: pv-out-of-portal 3.6s ease-out infinite;
-}
-
-@keyframes pv-spin {
-  to {
-    rotate: 360deg;
-  }
 }
 
 @keyframes pv-into-portal {
@@ -218,21 +192,26 @@
     );
 }
 
+/* He swings from the head, so it is his base that comes through the ball */
 .pv-kicker {
+  transform-origin: 50% 15%;
   animation: pv-kicker 3.4s ease-in-out infinite;
 }
 
 .pv-ball {
   left: 36%;
   top: 66%;
-  width: 8%;
+  width: 9%;
   aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff 0 45%, #b9bcc4 100%);
-  box-shadow:
-    inset 0 0 0 2px var(--plum-ink),
-    0 2px 0 rgba(0, 0, 0, 0.3);
+  translate: -50% -50%;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
   animation: pv-ball 3.4s infinite;
+}
+
+.pv-ball > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .pv-goal-shout {
@@ -248,9 +227,12 @@
     translate: -50% -50%;
     rotate: 0deg;
   }
+  24% {
+    rotate: 14deg;
+  }
   33% {
-    translate: -30% -50%;
-    rotate: 12deg;
+    translate: -40% -50%;
+    rotate: -28deg;
   }
   45%,
   85% {
@@ -325,14 +307,16 @@
   animation: pv-heave 2.8s ease-in-out infinite;
 }
 
+/* The game's own rope, which is drawn running down the page, laid on its side */
 .pv-rope {
-  left: 4%;
-  right: 4%;
-  top: 60%;
-  height: 5%;
-  border-radius: 99px;
-  background: repeating-linear-gradient(115deg, #d9b77a 0 5px, #a67c43 0 10px);
-  box-shadow: 0 0 0 2px var(--plum-ink);
+  left: 50%;
+  top: 62%;
+  width: 4.6%;
+  height: 186%;
+  translate: -50% -50%;
+  rotate: 90deg;
+  background: var(--rope) 0 0 / 100% auto repeat-y;
+  filter: drop-shadow(2px 0 0 rgba(0, 0, 0, 0.35));
 }
 
 .pv-flag {
@@ -553,6 +537,42 @@
   animation-delay: -0.75s;
 }
 
+/* A sword held out toward the other, swung down as its owner lunges */
+.pv-sword {
+  position: absolute;
+  bottom: 22%;
+  width: 20%;
+  height: 80%;
+  overflow: visible;
+  transform-origin: 50% 80%;
+  animation: pv-swing 1.5s ease-in-out infinite;
+}
+
+.pv-lunge-right .pv-sword {
+  right: -8%;
+  --dir: 1;
+}
+
+.pv-lunge-left .pv-sword {
+  left: -8%;
+  --dir: -1;
+  animation-delay: -0.75s;
+}
+
+@keyframes pv-swing {
+  0%,
+  100% {
+    rotate: calc(var(--dir) * 20deg);
+  }
+  40% {
+    rotate: calc(var(--dir) * -35deg);
+  }
+  50%,
+  58% {
+    rotate: calc(var(--dir) * 95deg);
+  }
+}
+
 .pv-spark {
   width: 18%;
   aspect-ratio: 1;
@@ -621,11 +641,11 @@
 
 .pv-hill {
   left: 50%;
-  top: 56%;
-  width: 34%;
-  aspect-ratio: 1.4;
+  top: 54%;
+  width: 30%;
+  aspect-ratio: 1;
   translate: -50% -50%;
-  border-radius: 14%;
+  border-radius: 6%;
   background: radial-gradient(closest-side, #ffe98a, #ffb81f 70%, #c9730a);
   box-shadow:
     0 0 0 3px var(--plum-ink),
@@ -708,60 +728,52 @@
 
 /* --- Gravity --- */
 
-.pv-tilting {
-  inset: 8% 22%;
-  border: 3px solid var(--plum-ink);
-  border-radius: 6px;
-  background: repeating-conic-gradient(
-      rgba(255, 255, 255, 0.16) 0 25%,
-      rgba(0, 0, 0, 0.16) 0 50%
-    )
-    0 0 / 33.4% 50%;
-  animation: pv-tilt 5s ease-in-out infinite;
+/* The whole board, far bigger than the window, turning without end */
+.pv-ground {
+  left: 50%;
+  top: 50%;
+  width: 130%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background:
+    repeating-conic-gradient(
+        rgba(255, 255, 255, 0.14) 0 25%,
+        rgba(0, 0, 0, 0.16) 0 50%
+      )
+      0 0 / 25% 25%,
+    linear-gradient(160deg, var(--chip-a), var(--chip-b));
+  animation: pv-turn 9s linear infinite;
 }
 
-.pv-falls {
-  animation: pv-falls 5s infinite;
+/* Pieces falling in at the top and out at the bottom, turning over as they go */
+.pv-tumbles {
+  animation: pv-tumbles 2.6s cubic-bezier(0.5, 0, 0.9, 0.6) infinite;
 }
 
-.pv-falls-b {
-  animation-delay: 0.08s;
+.pv-tumbles-b {
+  animation-delay: -0.9s;
+  animation-duration: 3.1s;
 }
 
-.pv-falls-c {
-  animation-delay: 0.16s;
+.pv-tumbles-c {
+  animation-delay: -1.8s;
+  animation-duration: 2.3s;
 }
 
-@keyframes pv-tilt {
-  0%,
-  12% {
-    rotate: 0deg;
-  }
-  30%,
-  62% {
-    rotate: 90deg;
-  }
-  80%,
-  100% {
-    rotate: 180deg;
+@keyframes pv-turn {
+  to {
+    rotate: 360deg;
   }
 }
 
-@keyframes pv-falls {
-  0%,
-  26% {
-    left: var(--x, inherit);
-    translate: -50% -50%;
-    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.5);
+@keyframes pv-tumbles {
+  from {
+    top: -30%;
+    rotate: -40deg;
   }
-  40%,
-  74% {
-    translate: 140% -50%;
-    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.5);
-  }
-  90%,
-  100% {
-    translate: 140% 120%;
+  to {
+    top: 130%;
+    rotate: 320deg;
   }
 }
 
@@ -772,57 +784,54 @@
 }
 
 .pv-hexes {
-  inset: -6% -4%;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 2px 0;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.pv-hexes i {
-  position: static !important;
-  aspect-ratio: 1.1547;
-  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
-  scale: 1.3 1.02;
-  background: #ff2e88;
-  animation: pv-hex-pulse 2.4s ease-in-out infinite alternate;
-  animation-delay: calc(var(--n) * -0.8s);
+.pv-hexes polygon {
+  stroke: #12041d;
+  stroke-width: 1.2;
+  opacity: 0.55;
 }
 
-.pv-hexes i:nth-child(even) {
-  translate: 0 52%;
+/* The cells along the bishop's line, all of its own colour */
+.pv-hexes .pv-hex-path {
+  opacity: 1;
 }
 
-.pv-hexes i:nth-child(3n) {
-  background: #7a1fd6;
+/* One cell at a time, with a little hop over each corner */
+.pv-hops {
+  animation: pv-hops 4.8s ease-in-out infinite;
 }
 
-.pv-hexes i:nth-child(3n + 1) {
-  background: #21c8e6;
-}
-
-.pv-glides {
-  animation: pv-glides 3.6s ease-in-out infinite alternate;
-}
-
-@keyframes pv-hex-pulse {
-  from {
-    filter: brightness(0.75);
-  }
-  to {
-    filter: brightness(1.15);
-  }
-}
-
-@keyframes pv-glides {
+@keyframes pv-hops {
   0%,
   12% {
-    left: 24%;
-    top: 66%;
+    left: 19.25%;
+    translate: -50% -50%;
   }
-  88%,
+  21% {
+    translate: -50% -80%;
+  }
+  30%,
+  46% {
+    left: 47.75%;
+    translate: -50% -50%;
+  }
+  55% {
+    translate: -50% -80%;
+  }
+  64%,
+  90% {
+    left: 76.25%;
+    translate: -50% -50%;
+    opacity: 1;
+  }
   100% {
-    left: 76%;
-    top: 30%;
+    left: 76.25%;
+    opacity: 0;
   }
 }
 
@@ -898,40 +907,27 @@
   background: linear-gradient(180deg, #1b2a24, #0d1512);
 }
 
-.pv-grave {
-  left: 40%;
-  top: 22%;
-  width: 20%;
-  height: 46%;
-  border-radius: 46% 46% 6% 6% / 34% 34% 6% 6%;
-  background: linear-gradient(160deg, #9aa3a0, #5c6462);
-  box-shadow: 0 0 0 3px var(--plum-ink);
+/* The game's own headstone and heap of earth, on a square of their own,
+   with the dead coming up between them */
+.pv-plot {
+  left: 46%;
+  top: 52%;
+  width: 40%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
 }
 
 .pv-rises {
-  left: 37%;
-  top: 34%;
-  width: 26%;
-  aspect-ratio: 1;
+  left: 22%;
+  top: 14%;
+  width: 56%;
+  height: 62%;
   overflow: hidden;
+  z-index: 2;
 }
 
 .pv-undead {
   animation: pv-rise 4.4s ease-out infinite;
-}
-
-.pv-undead > img {
-  filter: hue-rotate(250deg) saturate(1.6) brightness(1.1);
-}
-
-.pv-dirt {
-  left: 30%;
-  top: 70%;
-  width: 40%;
-  height: 20%;
-  border-radius: 50% 50% 20% 20%;
-  background: radial-gradient(closest-side at 50% 30%, #6b4a2a, #3a2714);
-  box-shadow: 0 0 0 3px var(--plum-ink);
 }
 
 .pv-shivers {
@@ -949,17 +945,17 @@
     rotate: -8deg;
   }
   56% {
-    top: 74%;
+    top: 80%;
     rotate: 8deg;
   }
   70%,
   92% {
-    top: 50%;
+    top: 64%;
     rotate: 0deg;
     opacity: 1;
   }
   100% {
-    top: 50%;
+    top: 64%;
     opacity: 0;
   }
 }
@@ -991,32 +987,34 @@
   bottom: 8%;
 }
 
+/* Rounds crossing no man's land, from one trench to the other and back */
 .pv-tracer {
-  left: 0;
-  width: 12%;
-  height: 2px;
+  top: 22%;
+  width: 2px;
+  height: 14%;
   border-radius: 2px;
-  background: linear-gradient(90deg, transparent, #ffe7a0 60%, #fffbe8);
+  background: linear-gradient(180deg, transparent, #ffe7a0 60%, #fffbe8);
   box-shadow: 0 0 5px rgba(255, 210, 110, 0.9);
-  animation: pv-tracer 1.1s linear infinite;
+  animation: pv-tracer 0.32s linear infinite;
 }
 
 .pv-tracer-a {
-  top: 34%;
-  rotate: 8deg;
+  left: 24%;
+  rotate: -6deg;
 }
 
 .pv-tracer-b {
-  top: 52%;
-  rotate: -5deg;
-  animation-delay: -0.4s;
+  left: 52%;
+  rotate: 4deg;
+  scale: 1 -1;
+  animation-delay: -0.12s;
   animation-direction: reverse;
 }
 
 .pv-tracer-c {
-  top: 66%;
-  rotate: 3deg;
-  animation-delay: -0.75s;
+  left: 80%;
+  rotate: -3deg;
+  animation-delay: -0.22s;
 }
 
 .pv-shell {
@@ -1048,10 +1046,10 @@
 
 @keyframes pv-tracer {
   from {
-    left: -14%;
+    top: 20%;
   }
   to {
-    left: 104%;
+    top: 70%;
   }
 }
 
