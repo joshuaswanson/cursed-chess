@@ -377,7 +377,9 @@
 /* The flag: its shape cut in ink, with the red cloth set just inside it */
 .pv-flag {
   left: 48.5%;
-  top: calc(59% - 1px);
+  /* Hung from the rope's top edge, which rises and falls as the rope thins
+     and thickens about its middle at 62% */
+  top: calc(62% - (2.5% + 2px) * var(--thick, 1));
   width: 7%;
   height: 25%;
   background: var(--plum-ink);
@@ -477,22 +479,28 @@
   0%,
   100% {
     translate: 0 0;
+    top: calc(62% - (2.5% + 2px) * 1.1);
   }
   15% {
     translate: -4.2cqw 0;
+    top: calc(62% - (2.5% + 2px) * 0.95);
   }
   30% {
     translate: 3.6cqw 0;
+    top: calc(62% - (2.5% + 2px) * 0.95);
   }
   45%,
   58% {
     translate: 0 0;
+    top: calc(62% - (2.5% + 2px) * 0.72);
   }
   72% {
     translate: 6.6cqw 0;
+    top: calc(62% - (2.5% + 2px) * 0.95);
   }
   86% {
     translate: 1.2cqw 0;
+    top: calc(62% - (2.5% + 2px) * 1);
   }
 }
 
