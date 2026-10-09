@@ -64,16 +64,14 @@ export function MainMenu() {
       <div className="menu-sheet">
         <header className="menu-head">
           <Logo />
-          <p className="menu-credit">
-            Made by{" "}
-            <a
-              href="https://joshuaswanson.github.io"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Joshua Swanson
-            </a>
-          </p>
+          <a
+            className="menu-credit"
+            href="https://joshuaswanson.github.io"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Made by <b>Joshua Swanson</b>
+          </a>
         </header>
         <div className="menu-modes">
           <ModeCard

@@ -40,25 +40,35 @@
   max-width: 100%;
 }
 
+/* A sticker slapped on under the logo, in the same ink and hard shadow as the cards */
 .menu-credit {
-  margin: 0;
-  font-family: var(--font-ui);
-  font-weight: 600;
-  font-size: 16px;
-  color: var(--paper);
-  opacity: 0.8;
+  padding: 7px 16px 6px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--plum-ink);
+  background: var(--lemon);
+  border: 3px solid var(--plum-ink);
+  border-radius: 999px;
+  box-shadow: 3px 4px 0 var(--plum-ink);
+  rotate: -2deg;
+  transition:
+    translate 0.15s ease-out,
+    rotate 0.15s ease-out,
+    box-shadow 0.15s ease-out;
 }
 
-.menu-credit a {
-  color: inherit;
-  font-weight: 800;
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
+.menu-credit b {
+  font-weight: inherit;
+  color: #c81e78;
 }
 
-.menu-credit a:hover {
-  color: var(--lemon);
+.menu-credit:hover {
+  translate: -1px -2px;
+  rotate: 1.5deg;
+  box-shadow: 5px 7px 0 var(--plum-ink);
 }
 
 /* The modes, three across, to scroll through */
@@ -140,7 +150,8 @@
     animation: none;
   }
 
-  .menu-mode {
+  .menu-mode,
+  .menu-credit {
     transition: none;
   }
 }
