@@ -113,6 +113,8 @@ export interface GameMode {
   kingsSitOut?: boolean;
   /** Modes with no clock that run until one side wins, kings and all */
   untilWon?: boolean;
+  /** Left out of the adventure: played only when picked from the main menu */
+  singleOnly?: boolean;
 }
 
 export const GAME_MODES: GameMode[] = [
@@ -192,8 +194,14 @@ export const GAME_MODES: GameMode[] = [
     create: () => [new TrenchesPlugin()],
     noReinforcements: true,
     untilWon: true,
+    singleOnly: true,
   },
 ];
+
+/** The next mode of the adventure after this one, or -1 once the last has been played */
+function nextAdventureMode(after: number): number {
+  return GAME_MODES.findIndex((mode, i) => i > after && !mode.singleOnly);
+}
 
 export type AnnouncementType = "mode" | "win" | "lose" | "draw";
 
@@ -1269,16 +1277,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // and the adventure once its last mode has
     if (index === undefined && currentModeIndex >= 0) {
       const over =
-        get().playMode === "single" ||
-        currentModeIndex === GAME_MODES.length - 1;
+        get().playMode === "single" || nextAdventureMode(currentModeIndex) < 0;
       if (over) {
         get().openMenu();
         return;
       }
     }
-    const nextIndex =
-      index ??
-      (currentModeIndex < 0 ? 0 : (currentModeIndex + 1) % GAME_MODES.length);
+    const nextIndex = index ?? Math.max(0, nextAdventureMode(currentModeIndex));
     const mode = GAME_MODES[nextIndex];
 
     cancelScheduled();
