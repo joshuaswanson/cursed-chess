@@ -14,15 +14,15 @@ export interface LanternView {
   lanterns: Lantern[];
 }
 
-/** How many lanterns each side's men start with, besides the one its king carries */
+/** How many lanterns each side starts with */
 const LANTERNS_EACH = 2;
 /** The files their first carriers are picked from, in order of preference: b and g first */
 const CARRIER_FILES = [1, 6, 2, 5, 0, 7, 3, 4];
 
 /**
- * The board is dark. Each side's king and two of its pawns carry a lantern,
- * and only the squares round a lantern can be seen. Whoever takes a piece
- * carrying one carries it from then on, so there are always six alight.
+ * The board is dark. Two pawns on each side carry a lantern, and only the
+ * three by three squares round a lantern can be seen. Whoever takes a piece
+ * carrying one carries it from then on, so there are always four alight.
  */
 export class LanternsPlugin implements ModePlugin {
   id = "lanterns";
@@ -38,7 +38,7 @@ export class LanternsPlugin implements ModePlugin {
       .map((sq, id) => ({ id, sq }));
   }
 
-  /** The pieces that start with a lantern: the king, and two pawns where there are any, or two other pieces where there are not */
+  /** The pieces that start with a lantern: pawns where there are any, anyone but the king where there are not */
   private firstCarriers(board: Board, color: Color): SquareIndex[] {
     const byFile = (a: SquareIndex, b: SquareIndex) =>
       CARRIER_FILES.indexOf(fileOf(a)) - CARRIER_FILES.indexOf(fileOf(b));
@@ -52,11 +52,7 @@ export class LanternsPlugin implements ModePlugin {
         return type !== PieceType.Pawn && type !== PieceType.King;
       })
       .sort(byFile);
-    const king = board.findKing(color);
-    return [
-      ...[...pawns, ...others].slice(0, LANTERNS_EACH),
-      ...(king === null ? [] : [king]),
-    ];
+    return [...pawns, ...others].slice(0, LANTERNS_EACH);
   }
 
   onAfterMove(_ctx: PluginContext, move: Move): void {
