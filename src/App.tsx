@@ -50,10 +50,12 @@ function App() {
     document.title = cursed ? "CURSED CHESS" : "Totally Normal Chess";
   }, [cursed]);
 
-  // The soundtrack kicks in once the curse takes hold
+  // The soundtrack kicks in once the curse takes hold. It stays off in the
+  // trenches, where there is only the guns and the rain.
+  const musicOn = cursed && theme.id !== "trenches";
   useEffect(() => {
-    music.set(cursed);
-  }, [cursed]);
+    music.set(musicOn);
+  }, [musicOn]);
 
   const board = isHexMode ? (
     <div className={hexTransition === "morph-in" ? "hex-morph-in" : ""}>
