@@ -214,6 +214,25 @@ function HexBoard() {
   );
 }
 
+/** A repeatable scatter in [0, 1) */
+const scatter = (n: number) => {
+  const v = Math.sin(n * 78.233 + 12.9898) * 43758.5453;
+  return v - Math.floor(v);
+};
+
+/**
+ * The rifle fire in the trench scene: each round from its own spot, at its
+ * own slant, either way across, and fired again after its own uneven wait,
+ * so the shooting comes in ragged bursts with lulls between
+ */
+const TRACERS = Array.from({ length: 16 }, (_, i) => ({
+  x: 4 + scatter(i * 3 + 1) * 92,
+  lean: (scatter(i * 3 + 2) * 2 - 1) * 24,
+  back: scatter(i * 3 + 3) > 0.5,
+  every: 0.45 + scatter(i * 7 + 4) * 1.5,
+  delay: scatter(i * 7 + 5) * 2,
+}));
+
 /** Something that happens in each mode, played on a loop in a little window */
 const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // A knight hops up to the blue portal, is sucked in, and walks out of the orange one
@@ -387,16 +406,16 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <span className="pv-trench pv-trench-far" />
       <span className="pv-trench pv-trench-near" />
       <span className="pv-wire" />
-      {Array.from({ length: 9 }, (_, i) => (
+      {TRACERS.map((t, i) => (
         <span
           key={i}
-          className={`pv-tracer${i % 2 ? " pv-tracer-back" : ""}`}
+          className={`pv-tracer${t.back ? " pv-tracer-back" : ""}`}
           style={
             {
-              left: `${8 + i * 10.5}%`,
-              rotate: `${((i * 37) % 13) - 6}deg`,
-              animationDelay: `${-((i * 0.073) % 0.2)}s`,
-              animationDuration: `${0.16 + ((i * 29) % 7) / 100}s`,
+              left: `${t.x}%`,
+              rotate: `${t.lean}deg`,
+              animationDelay: `${-t.delay}s`,
+              animationDuration: `${t.every}s`,
             } as CSSProperties
           }
         />

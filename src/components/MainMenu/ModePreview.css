@@ -1147,12 +1147,20 @@
   animation: pv-rain 0.35s linear infinite;
 }
 
+/* A round is in the air for a fraction of the wait between shots */
 @keyframes pv-tracer {
-  from {
+  0% {
     top: 24%;
+    opacity: 1;
   }
-  to {
+  16% {
     top: 62%;
+    opacity: 1;
+  }
+  17%,
+  100% {
+    top: 62%;
+    opacity: 0;
   }
 }
 
