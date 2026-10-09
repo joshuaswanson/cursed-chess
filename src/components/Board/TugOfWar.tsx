@@ -10,6 +10,7 @@ import {
 } from "./ropeTexture";
 import { useTugStruggle } from "./tugStruggle";
 import "./TugOfWar.css";
+import { surfaceOf } from "../../utils/surface";
 
 type Style = React.CSSProperties & Record<`--${string}`, string | number>;
 
@@ -48,8 +49,6 @@ const COIL_GIVE = 0.08;
 const COIL_HAUL = 0.6;
 /** How quickly the pile takes up or pays out rope after a heave, in seconds */
 const COIL_FEED_S = 0.3;
-/** Enough pieces to lay the longest stretch of slack rope */
-const LEAD_POOL = 60;
 
 type Point = { x: number; y: number };
 
@@ -121,6 +120,17 @@ function arcLengths(points: Point[]): number[] {
   return at;
 }
 
+/** One short piece of rope: where it lies, how it is turned, how wide it is, and where along the texture it starts */
+interface RopePiece {
+  at: number;
+  phase: number;
+  x: number;
+  y: number;
+  turn: number;
+  width: number;
+  flip: number;
+}
+
 /**
  * Short pieces of rope laid end to end along a path, each placed and turned to
  * follow it, with the texture carried on from one piece to the next. The rope
@@ -134,7 +144,7 @@ function piecesAlong(
 ) {
   const along = arcLengths(points);
   const total = along[along.length - 1];
-  const pieces: { transform: string; at: number; phase: number }[] = [];
+  const pieces: RopePiece[] = [];
   let i = 1;
   // Laid backward, each piece covers the stretch behind it, so one more is needed to reach the end
   const reach = total + (backward ? PIECE : 0);
@@ -152,7 +162,11 @@ function piecesAlong(
     pieces.push({
       at,
       phase,
-      transform: `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${angle.toFixed(1)}) scale(${width.toFixed(3)} ${backward ? -1 : 1}) translate(${(-COIL_ROPE / 2).toFixed(2)} ${(-phase).toFixed(2)})`,
+      x,
+      y,
+      turn: (angle * Math.PI) / 180,
+      width,
+      flip: backward ? -1 : 1,
     });
   }
   return pieces;
@@ -172,29 +186,74 @@ const SPIRAL_LENGTH = SPIRAL_ALONG[SPIRAL_ALONG.length - 1];
 /** The pile's pieces, the free end in the middle first: the order the rope was laid */
 const SPIRAL_PIECES = piecesAlong(COIL_SPIRAL).reverse();
 
-/** One short piece of the rope, filled with the rope's own texture */
-function RopePiece({
-  fill,
-  phase,
-  transform,
-  innerRef,
-}: {
-  fill: string;
-  phase: number;
-  transform?: string;
-  innerRef?: (el: SVGGElement | null) => void;
-}) {
-  return (
-    <g ref={innerRef} transform={transform}>
-      <rect
-        x="0"
-        y={phase.toFixed(2)}
-        width={COIL_ROPE}
-        height={PIECE + 0.7}
-        fill={`url(#${fill})`}
-      />
-    </g>
+/** The coil's drawing runs 100 units across and from -12 to 60 down; its canvases reach this far past it for the slack rope */
+const COIL_VIEW = { left: -20, top: -40, width: 140, height: 100 };
+
+/** How many texture pixels there are to each pixel of rope drawn */
+const TILE_DETAIL = 3;
+
+let ropeTile: Promise<HTMLImageElement> | undefined;
+/** The rope's shaded texture, loaded once */
+function loadRopeTile(): Promise<HTMLImageElement> {
+  ropeTile ??= new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.src = ROPE_TILE_SHADED_URL;
+  });
+  return ropeTile;
+}
+
+/**
+ * A surface to lay pieces of rope on, scaled so that drawing is done in the
+ * coil's own units, with the rope's texture as its fill
+ */
+function ropeSurface(
+  canvas: HTMLCanvasElement,
+  unit: number,
+  tile: HTMLImageElement,
+) {
+  const surface = surfaceOf(canvas);
+  const ctx = surface.getContext("2d");
+  if (!ctx) return null;
+  const px = unit * (window.devicePixelRatio || 1);
+  surface.width = Math.ceil(COIL_VIEW.width * px);
+  surface.height = Math.ceil(COIL_VIEW.height * px);
+  // The texture several times the size it is drawn, so its fine strands
+  // stay crisp however each piece is turned
+  const stamp = new OffscreenCanvas(
+    Math.max(1, Math.round(COIL_ROPE * px * TILE_DETAIL)),
+    Math.max(1, Math.round(TILE_STEP * px * TILE_DETAIL)),
   );
+  ctx.imageSmoothingQuality = "high";
+  stamp.getContext("2d")?.drawImage(tile, 0, 0, stamp.width, stamp.height);
+  const fill = ctx.createPattern(stamp, "repeat");
+  fill?.setTransform(
+    new DOMMatrix().scale(COIL_ROPE / stamp.width, TILE_STEP / stamp.height),
+  );
+  return {
+    /** Wipes the surface and lays these pieces, in order, each over the last */
+    lay(pieces: RopePiece[]) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, surface.width, surface.height);
+      if (!fill) return;
+      ctx.fillStyle = fill;
+      for (const piece of pieces) {
+        ctx.setTransform(
+          px,
+          0,
+          0,
+          px,
+          -COIL_VIEW.left * px,
+          -COIL_VIEW.top * px,
+        );
+        ctx.translate(piece.x, piece.y);
+        ctx.rotate(piece.turn);
+        ctx.scale(piece.width, piece.flip);
+        ctx.translate(-COIL_ROPE / 2, -piece.phase);
+        ctx.fillRect(0, piece.phase, COIL_ROPE, PIECE + 0.7);
+      }
+    },
+  };
 }
 
 /**
@@ -202,12 +261,14 @@ function RopePiece({
  * as the rest of it. Its free end stays put in the middle of the pile; rope
  * pulled out of the pile comes off its outside loops, and rope hauled into it
  * winds fresh loops back round the outside. The rope lies slack between the
- * board and wherever the outside loop starts.
+ * board and wherever the outside loop starts. The pile and the slack rope
+ * are each drawn on a canvas, so however the rope thrashes about, the page
+ * itself is never repainted for it.
  */
 function Coil({ end, hauled }: { end: "top" | "bottom"; hauled: number }) {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const pieceRefs = useRef<(SVGGElement | null)[]>([]);
-  const leadRefs = useRef<(SVGGElement | null)[]>([]);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const pileRef = useRef<HTMLCanvasElement>(null);
+  const leadRef = useRef<HTMLCanvasElement>(null);
   // Read by the drawing loop, which outlives each render
   const haulRef = useRef(hauled);
   useEffect(() => {
@@ -215,81 +276,93 @@ function Coil({ end, hauled }: { end: "top" | "bottom"; hauled: number }) {
   }, [hauled]);
 
   useEffect(() => {
-    const board = svgRef.current?.closest<HTMLElement>(".tug-layer");
+    const box = boxRef.current;
+    const board = box?.closest<HTMLElement>(".tug-layer");
     const rope = board?.querySelector<HTMLElement>(".tug-rope");
+    if (!box || !rope || !pileRef.current || !leadRef.current) return;
+    const pileCanvas = pileRef.current;
+    const leadCanvas = leadRef.current;
     let frame = 0;
-    let shown = -1;
-    let shownEntry = { x: NaN, y: NaN };
-    let shownThin = NaN;
-    let feeding = haulRef.current;
-    let last = performance.now();
-    // The slack rope follows the rope in play thirty times a second: each
-    // look measures the page and each redraw repaints the whole lead
-    let skip = false;
-    const draw = (now: number) => {
-      skip = !skip;
-      if (skip) {
-        frame = requestAnimationFrame(draw);
-        return;
-      }
-      const dt = Math.min(0.1, (now - last) / 1000);
-      last = now;
-      const svg = svgRef.current;
-      if (!svg || !rope) {
-        frame = requestAnimationFrame(draw);
-        return;
-      }
-      // How thick the rope in play is right now, stretched by the struggle or springing after a heave
-      const scale = getComputedStyle(rope).scale;
-      const thin = scale === "none" ? 1 : parseFloat(scale) || 1;
-      const pull = parseFloat(
-        board?.style.getPropertyValue("--rope-pull") || "0",
-      );
-      // After a heave the pile takes up or pays out the rope it gained or lost
-      feeding +=
-        (haulRef.current - feeding) * (1 - Math.exp(-dt / COIL_FEED_S));
-      // Rope moving down the screen piles into the bottom coil and comes out of the top one
-      const toward = end === "bottom" ? 1 : -1;
-      const held = Math.min(
-        1,
-        Math.max(
-          0.15,
-          COIL_REST +
-            toward * (pull * COIL_GIVE + (feeding / WIN_LINE) * COIL_HAUL),
-        ),
-      );
+    let live = true;
 
-      // The slack rope starts right at the end of the rope in play, wherever
-      // the struggle and the heaves have put it, in the coil's own drawing
-      const box = svg.getBoundingClientRect();
-      const ends = rope.getBoundingClientRect();
-      const unit = box.width / 100;
-      const tuck = (rope.offsetWidth * ROPE_FADE_WIDTHS) / unit;
-      const entry = {
-        x: ((ends.left + ends.right) / 2 - box.left) / unit,
-        y:
-          (end === "bottom"
-            ? (ends.bottom - box.top) / unit
-            : (box.bottom - ends.top) / unit) - 12,
-      };
-      if (
-        // Redrawn only once the rope has moved enough to see: the constant
-        // small shake of the struggle would otherwise repaint it every time
-        Math.abs(held - shown) > 0.012 ||
-        Math.abs(entry.x - shownEntry.x) > 0.5 ||
-        Math.abs(entry.y - shownEntry.y) > 0.5 ||
-        Math.abs(thin - shownThin) > 0.03
-      ) {
+    loadRopeTile().then((tile) => {
+      if (!live) return;
+      let unit = 0;
+      let pile: ReturnType<typeof ropeSurface> = null;
+      let lead: ReturnType<typeof ropeSurface> = null;
+      let shown = -1;
+      let shownEntry = { x: NaN, y: NaN };
+      let shownThin = NaN;
+      let shownOff = NaN;
+      let feeding = haulRef.current;
+      let last = performance.now();
+
+      const draw = (now: number) => {
+        frame = requestAnimationFrame(draw);
+        const dt = Math.min(0.1, (now - last) / 1000);
+        last = now;
+        const frameBox = box.getBoundingClientRect();
+        // The surfaces are made again whenever the board changes size
+        if (Math.abs(frameBox.width / 100 - unit) > 0.001) {
+          unit = frameBox.width / 100;
+          if (unit === 0) return;
+          pile = ropeSurface(pileCanvas, unit, tile);
+          lead = ropeSurface(leadCanvas, unit, tile);
+          shown = -1;
+          shownOff = NaN;
+        }
+        if (!pile || !lead) return;
+        // How thick the rope in play is right now, stretched by the struggle or springing after a heave
+        const scale = getComputedStyle(rope).scale;
+        const thin = scale === "none" ? 1 : parseFloat(scale) || 1;
+        const pull = parseFloat(
+          board?.style.getPropertyValue("--rope-pull") || "0",
+        );
+        // After a heave the pile takes up or pays out the rope it gained or lost
+        feeding +=
+          (haulRef.current - feeding) * (1 - Math.exp(-dt / COIL_FEED_S));
+        // Rope moving down the screen piles into the bottom coil and comes out of the top one
+        const toward = end === "bottom" ? 1 : -1;
+        const held = Math.min(
+          1,
+          Math.max(
+            0.15,
+            COIL_REST +
+              toward * (pull * COIL_GIVE + (feeding / WIN_LINE) * COIL_HAUL),
+          ),
+        );
+
+        // The slack rope starts right at the end of the rope in play, wherever
+        // the struggle and the heaves have put it, in the coil's own drawing
+        const ends = rope.getBoundingClientRect();
+        const tuck = (rope.offsetWidth * ROPE_FADE_WIDTHS) / unit;
+        const entry = {
+          x: ((ends.left + ends.right) / 2 - frameBox.left) / unit,
+          y:
+            (end === "bottom"
+              ? (ends.bottom - frameBox.top) / unit
+              : (frameBox.bottom - ends.top) / unit) - 12,
+        };
+        if (
+          Math.abs(held - shown) < 0.003 &&
+          Math.abs(entry.x - shownEntry.x) < 0.2 &&
+          Math.abs(entry.y - shownEntry.y) < 0.2 &&
+          Math.abs(thin - shownThin) < 0.01
+        ) {
+          return;
+        }
         shown = held;
         shownEntry = entry;
         shownThin = thin;
 
         // Rope pulled out of the pile comes off its outside first
         const off = (1 - held) * SPIRAL_LENGTH;
-        SPIRAL_PIECES.forEach((piece, n) => {
-          const el = pieceRefs.current[n];
-          if (el) el.style.display = piece.at < off ? "none" : "";
-        });
+        const first = SPIRAL_PIECES.findIndex((piece) => piece.at < off);
+        const kept = first < 0 ? SPIRAL_PIECES.length : first;
+        if (kept !== shownOff) {
+          shownOff = kept;
+          pile.lay(SPIRAL_PIECES.slice(0, kept));
+        }
 
         // The slack rope runs from the board to where the outside loop now starts
         const found = SPIRAL_ALONG.findIndex((at) => at >= off);
@@ -315,86 +388,32 @@ function Coil({ end, hauled }: { end: "top" | "bottom"; hauled: number }) {
         // The strands carry on from the rope in play's own. Its texture runs
         // down the screen from its top, and the top coil is drawn upside
         // down, so that coil lays them backward to keep them the right way up.
-        const tile = rope.offsetWidth * ROPE_TILE_RATIO;
-        const lead =
+        const tileLength = rope.offsetWidth * ROPE_TILE_RATIO;
+        lead.lay(
           end === "bottom"
             ? piecesAlong(
                 curve,
-                ((rope.offsetHeight % tile) / tile) * TILE_STEP - tuck,
+                ((rope.offsetHeight % tileLength) / tileLength) * TILE_STEP -
+                  tuck,
                 widthAt,
               )
-            : piecesAlong(curve, tuck, widthAt, true);
-        leadRefs.current.forEach((el, k) => {
-          if (!el) return;
-          const piece = lead[k];
-          if (!piece) {
-            el.style.display = "none";
-            return;
-          }
-          el.style.display = "";
-          el.setAttribute("transform", piece.transform);
-          el.firstElementChild?.setAttribute("y", piece.phase.toFixed(2));
-        });
-      }
+            : piecesAlong(curve, tuck, widthAt, true),
+        );
+      };
       frame = requestAnimationFrame(draw);
+    });
+    return () => {
+      live = false;
+      cancelAnimationFrame(frame);
     };
-    frame = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(frame);
   }, [end, haulRef]);
 
-  // The pile and the rope leading into it are drawn on separate layers, so
-  // the lead moving every frame never redraws the whole pile
-  const layer = (part: "pile" | "lead") => (
-    <svg
-      ref={part === "pile" ? svgRef : undefined}
-      className={`tug-coil coil-${end} coil-${part}`}
-      viewBox="0 -12 100 72"
-      aria-hidden
-    >
-      <defs>
-        <pattern
-          id={`rope-${end}-${part}`}
-          patternUnits="userSpaceOnUse"
-          width={COIL_ROPE}
-          height={TILE_STEP}
-        >
-          <image
-            href={ROPE_TILE_SHADED_URL}
-            width={COIL_ROPE}
-            height={TILE_STEP}
-            preserveAspectRatio="none"
-          />
-        </pattern>
-      </defs>
-      {part === "pile"
-        ? SPIRAL_PIECES.map((piece, n) => (
-            <RopePiece
-              key={n}
-              fill={`rope-${end}-pile`}
-              phase={piece.phase}
-              transform={piece.transform}
-              innerRef={(el) => {
-                pieceRefs.current[n] = el;
-              }}
-            />
-          ))
-        : Array.from({ length: LEAD_POOL }, (_, k) => (
-            <RopePiece
-              key={k}
-              fill={`rope-${end}-lead`}
-              phase={0}
-              innerRef={(el) => {
-                leadRefs.current[k] = el;
-              }}
-            />
-          ))}
-    </svg>
-  );
+  // The pile lies lowest and the slack rope over it, each casting its own shadow
   return (
-    <>
-      {layer("pile")}
-      {layer("lead")}
-    </>
+    <div ref={boxRef} className={`coil-box coil-${end}`} aria-hidden>
+      <canvas ref={pileRef} className="tug-coil coil-pile" />
+      <canvas ref={leadRef} className="tug-coil coil-lead" />
+    </div>
   );
 }
 

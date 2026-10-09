@@ -124,21 +124,14 @@
   filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.3));
 }
 
-.tug-coil {
-  filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.3));
-  will-change: transform;
-}
-
-/* The pile lies lowest, the slack rope over it, and the rope in play over
-   both, fading out over the slack rope it carries on into */
-
-.tug-coil {
+/* A coil's place at one end of the rope: a box 100 units across and 72 down */
+.coil-box {
   position: absolute;
   z-index: 0;
   left: 50%;
   width: calc(var(--square-size, 72px) * 1.35);
+  aspect-ratio: 100 / 72;
   translate: -50% 0;
-  overflow: visible;
 }
 
 .coil-bottom {
@@ -148,6 +141,19 @@
 .coil-top {
   top: calc(var(--square-size, 72px) * -0.55);
   scale: 1 -1;
+}
+
+/* The pile lies lowest, the slack rope over it, and the rope in play over
+   both, fading out over the slack rope it carries on into. Each canvas
+   reaches past the box, for the slack rope on its way in. */
+.tug-coil {
+  position: absolute;
+  left: -20%;
+  top: calc(-28 / 72 * 100%);
+  width: 140%;
+  height: calc(100 / 72 * 100%);
+  filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.3));
+  will-change: transform;
 }
 
 .tug-rope {
@@ -284,6 +290,9 @@
   width: 100%;
   overflow: visible;
   filter: drop-shadow(3px 4px 0 rgba(42, 26, 16, 0.4));
+  /* The cloth is redrawn as it swings; on a layer of its own, that redraws
+     the flag and nothing else */
+  will-change: transform;
 }
 
 /* The fly end of the cloth sweeps up and down as the rope jolts back and
@@ -329,6 +338,9 @@
   translate: 0 var(--rope-shift, 0px);
   rotate: calc(var(--side) * var(--flip, 1) * -1 * var(--lean-white, 9deg));
   scale: 1 var(--squash-white, 1);
+  /* Each on a layer of its own, so leaning and swaying only moves the layer
+     and the board beneath is never repainted */
+  will-change: transform;
 }
 
 [data-theme="tug"] .square.rope-black .piece-img {

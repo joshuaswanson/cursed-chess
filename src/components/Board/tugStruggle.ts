@@ -64,17 +64,9 @@ export function useTugStruggle(
     const black = rest(last);
     let frame = 0;
 
-    // The struggle is worked out thirty times a second: each step restyles
-    // the rope and every piece on it, and the wobble reads the same at half the cost
-    let skip = false;
     const tick = (ms: number) => {
-      skip = !skip;
-      if (skip) {
-        frame = requestAnimationFrame(tick);
-        return;
-      }
       const now = ms / 1000;
-      const dt = Math.min(0.08, now - last);
+      const dt = Math.min(0.05, now - last);
       last = now;
       for (const [team, other] of [
         [white, black],
