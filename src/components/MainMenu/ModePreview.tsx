@@ -534,3 +534,13 @@ export function AdventurePreview() {
     </span>
   );
 }
+
+/** Two kings squaring up across a board, for the mode that is not here yet */
+export function MultiplayerPreview() {
+  return (
+    <span className="mode-preview scene-multiplayer" aria-hidden>
+      <Piece is="wK" x={20} y={54} size={34} />
+      <Piece is="bK" x={80} y={54} size={34} />
+    </span>
+  );
+}

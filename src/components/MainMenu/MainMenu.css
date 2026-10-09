@@ -160,6 +160,42 @@
   box-shadow: 2px 2px 0 var(--plum-ink);
 }
 
+/* A mode that is on its way: dimmed, and stamped to say so */
+.menu-mode.is-soon {
+  position: relative;
+  cursor: default;
+}
+
+.menu-mode.is-soon:hover,
+.menu-mode.is-soon:active {
+  translate: none;
+  box-shadow: 5px 6px 0 var(--plum-ink);
+}
+
+.menu-mode.is-soon > .mode-preview,
+.menu-mode.is-soon > .menu-mode-text {
+  opacity: 0.5;
+  filter: saturate(0.6);
+}
+
+.menu-soon {
+  position: absolute;
+  top: 34%;
+  left: 50%;
+  translate: -50% -50%;
+  rotate: -8deg;
+  padding: 8px 18px 7px;
+  font-family: var(--font-display);
+  font-size: clamp(15px, 1.8vw, 20px);
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: var(--plum-ink);
+  background: var(--lemon);
+  border: 3px solid var(--plum-ink);
+  border-radius: 999px;
+  box-shadow: 3px 4px 0 var(--plum-ink);
+}
+
 .menu-mode:focus-visible {
   outline: 3px solid #ffd23f;
   outline-offset: 3px;

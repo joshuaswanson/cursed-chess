@@ -2,7 +2,11 @@ import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { THEMES } from "../../theme/themes";
-import { AdventurePreview, ModePreview } from "./ModePreview";
+import {
+  AdventurePreview,
+  ModePreview,
+  MultiplayerPreview,
+} from "./ModePreview";
 import { Logo } from "../Logo/Logo";
 import "./MainMenu.css";
 
@@ -96,6 +100,23 @@ export function MainMenu() {
               </ModeCard>
             );
           })}
+          {/* Not a button: there is nothing to play yet */}
+          <div
+            className="menu-mode is-soon"
+            style={
+              {
+                "--chip-a": "#6b2fd6",
+                "--chip-b": "#3ee6b0",
+              } as React.CSSProperties
+            }
+          >
+            <MultiplayerPreview />
+            <span className="menu-mode-text">
+              <span className="menu-mode-title">Multiplayer</span>
+              <span className="menu-mode-tagline">Curse your friends!</span>
+            </span>
+            <span className="menu-soon">Coming soon</span>
+          </div>
         </div>
       </div>
     </div>
