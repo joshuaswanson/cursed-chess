@@ -143,7 +143,47 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
   width: 100%;
-  padding-bottom: 150px;
+}
+
+/* The links under everything: who made it, where to report a bug, and how to say thanks */
+.menu-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 14px;
+  padding: 26px 0 120px;
+}
+
+.menu-foot a {
+  padding: 8px 16px 7px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--paper);
+  background: color-mix(in srgb, var(--paper) 10%, transparent);
+  border: 3px solid var(--plum-ink);
+  border-radius: 999px;
+  box-shadow: 3px 4px 0 var(--plum-ink);
+  transition:
+    translate 0.15s ease-out,
+    box-shadow 0.15s ease-out;
+}
+
+.menu-foot a:hover {
+  translate: -1px -2px;
+  box-shadow: 5px 7px 0 var(--plum-ink);
+}
+
+.menu-foot a:focus-visible {
+  outline: 3px solid #ffd23f;
+  outline-offset: 3px;
+}
+
+.menu-foot .menu-foot-coffee {
+  color: var(--plum-ink);
+  background: var(--lemon);
 }
 
 .menu-mode {
@@ -252,7 +292,8 @@
   }
 
   .menu-mode,
-  .menu-credit {
+  .menu-credit,
+  .menu-foot a {
     transition: none;
   }
 }
@@ -284,6 +325,9 @@
   .menu-modes {
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
+  }
+
+  .menu-foot {
     padding-bottom: 40px;
   }
 }

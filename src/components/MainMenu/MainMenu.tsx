@@ -55,6 +55,11 @@ function ModeCard({
   );
 }
 
+const SITE_URL = "https://joshuaswanson.github.io";
+const BUGS_URL = "https://github.com/joshuaswanson/cursed-chess/issues";
+/** Where a coffee can be bought, once there is somewhere to buy one */
+const COFFEE_URL: string | null = null;
+
 /**
  * The main menu, where every game ends up: play the adventure through
  * again, or pick one mode and play just that
@@ -70,7 +75,7 @@ export function MainMenu() {
           <Logo />
           <a
             className="menu-credit"
-            href="https://joshuaswanson.github.io"
+            href={SITE_URL}
             target="_blank"
             rel="noreferrer"
           >
@@ -125,6 +130,24 @@ export function MainMenu() {
               );
             })}
           </div>
+          <footer className="menu-foot">
+            <a href={SITE_URL} target="_blank" rel="noreferrer">
+              Made by Joshua Swanson
+            </a>
+            <a href={BUGS_URL} target="_blank" rel="noreferrer">
+              Report a bug
+            </a>
+            {COFFEE_URL && (
+              <a
+                className="menu-foot-coffee"
+                href={COFFEE_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Enjoyed playing? Buy me a coffee
+              </a>
+            )}
+          </footer>
         </div>
       </div>
     </div>
