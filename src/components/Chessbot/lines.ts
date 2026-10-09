@@ -2,7 +2,7 @@ import type { ThemeId } from "../../theme/themes";
 
 /** Chessbot's pitch for each mode he has patched into chess, said once its title card clears. Portals, the first, he lets speak for itself. */
 export const PITCHES: Partial<Record<ThemeId, string>> = {
-  fog: "i ordered some fog. it only settled on your half. weird.",
+  fog: "let's try something new. you won't see it coming.",
   fifa: "analysis shows humans prefer this other game. i have merged them.",
   tug: "chess, but you can also just pull.",
   mines: "i hid some surprises. i forgot where.",
