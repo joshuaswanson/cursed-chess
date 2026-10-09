@@ -4,50 +4,125 @@ import type { Lantern } from "../../plugins/lanterns";
 import { visualCol, visualRow } from "./boardGeometry";
 import "./Lanterns.css";
 
+/** How far a lantern's light reaches from its carrier's middle, in squares */
+const REACH_SQUARES = 1.9;
 /**
- * A lantern lights the three by three squares round its carrier with a round
- * pool of light. It is fully lit out to this many squares from the carrier's
- * middle, which takes in the pieces on the corner squares, and gone by the
- * second number, short of the pieces two squares away.
+ * How much of the dark the light clears at each distance, in squares: only
+ * the carrier stands in real light, and it falls away fast, so the pieces
+ * on the eight squares round it can barely be made out
  */
-const LIT_SQUARES = 1.46;
-const REACH_SQUARES = 1.8;
+const FALLOFF: [squares: number, cleared: number][] = [
+  [0, 1],
+  [0.25, 0.95],
+  [0.45, 0.7],
+  [0.65, 0.42],
+  [0.85, 0.25],
+  [1.05, 0.15],
+  [1.3, 0.08],
+  [1.6, 0.03],
+  [REACH_SQUARES, 0],
+];
 /** The rest of the board is pitch black */
 const DARKNESS = "rgb(4, 3, 10)";
 /** How quickly a light catches up with its carrier, as the share of the gap closed each frame */
 const FOLLOW = 0.22;
 const FRAME_MS = 40;
 
+const BRASS = "#d9a441";
+const BRASS_DARK = "#8a5f1c";
+const LAMP_INK = "#2a1706";
+
 /** The lantern a piece carries, hung beside it: one for each it holds */
 export function LanternIcon({ count }: { count: number }) {
   return (
     <span className="lantern-held" aria-hidden>
       {Array.from({ length: count }, (_, i) => (
-        <svg key={i} viewBox="0 0 24 34">
+        <svg key={i} viewBox="0 0 32 46">
+          <defs>
+            <radialGradient id="lantern-glass" cx="0.5" cy="0.6" r="0.7">
+              <stop offset="0" stopColor="#fffbe0" />
+              <stop offset="0.55" stopColor="#ffd666" />
+              <stop offset="1" stopColor="#ff9d2e" />
+            </radialGradient>
+          </defs>
+          {/* The carrying ring */}
           <path
-            d="M7 8 Q12 0 17 8"
+            d="M9 13 Q16 -3 23 13"
             fill="none"
-            stroke="#3a2a12"
-            strokeWidth="2.2"
+            stroke={LAMP_INK}
+            strokeWidth="4.4"
             strokeLinecap="round"
           />
-          <rect x="6" y="7" width="12" height="4" rx="1.5" fill="#5a4320" />
-          <rect
-            x="5"
-            y="11"
-            width="14"
-            height="17"
-            rx="4"
-            fill="#ffd77a"
-            stroke="#3a2a12"
+          <path
+            d="M9 13 Q16 -3 23 13"
+            fill="none"
+            stroke={BRASS}
             strokeWidth="2"
+            strokeLinecap="round"
+          />
+          {/* The chimney and the cap over the glass */}
+          <rect
+            x="13"
+            y="8.5"
+            width="6"
+            height="4.5"
+            rx="1"
+            fill={BRASS_DARK}
+            stroke={LAMP_INK}
+            strokeWidth="1.6"
+          />
+          <path
+            d="M9.5 12.5 h13 l3 5 h-19 z"
+            fill={BRASS}
+            stroke={LAMP_INK}
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+          {/* The glass, wider at the foot, with the flame inside */}
+          <path
+            d="M8 17.5 h16 l2.5 16 h-21 z"
+            fill="url(#lantern-glass)"
+            stroke={LAMP_INK}
+            strokeWidth="1.8"
+            strokeLinejoin="round"
           />
           <path
             className="lantern-flame"
-            d="M12 14 q5 6 0 11 q-5 -5 0 -11 z"
-            fill="#ff8a1a"
+            d="M16 20.5 q5.5 6.5 0 11.5 q-5.5 -5 0 -11.5 z"
+            fill="#ff7a1a"
           />
-          <rect x="6" y="27" width="12" height="4" rx="1.5" fill="#5a4320" />
+          <path
+            className="lantern-flame"
+            d="M16 25 q2.6 3.4 0 6.4 q-2.6 -3 0 -6.4 z"
+            fill="#fff3b0"
+          />
+          {/* The wire guards across the glass */}
+          <path
+            d="M12.4 17.5 L11.2 33.5 M19.6 17.5 L20.8 33.5 M6.8 25.5 H25.2"
+            fill="none"
+            stroke={LAMP_INK}
+            strokeWidth="1.3"
+            strokeLinecap="round"
+            opacity="0.75"
+          />
+          {/* The oil pot it stands on */}
+          <path
+            d="M4.5 33.5 h23 l-1.5 6 h-20 z"
+            fill={BRASS}
+            stroke={LAMP_INK}
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+          <rect
+            x="7"
+            y="39.5"
+            width="18"
+            height="4"
+            rx="1.5"
+            fill={BRASS_DARK}
+            stroke={LAMP_INK}
+            strokeWidth="1.6"
+          />
         </svg>
       ))}
     </span>
@@ -155,7 +230,23 @@ export function LanternDark({
         return { ...next, flicker };
       });
       for (const { x, y, flicker } of lights) {
-        wear(x, y, LIT_SQUARES * flicker, REACH_SQUARES * flicker, 1);
+        const reach = REACH_SQUARES * flicker * sq;
+        const pool = ctx.createRadialGradient(
+          x * sq,
+          y * sq,
+          0,
+          x * sq,
+          y * sq,
+          reach,
+        );
+        for (const [squares, cleared] of FALLOFF) {
+          pool.addColorStop(
+            squares / REACH_SQUARES,
+            `rgba(0, 0, 0, ${cleared})`,
+          );
+        }
+        ctx.fillStyle = pool;
+        ctx.fillRect(x * sq - reach, y * sq - reach, reach * 2, reach * 2);
       }
       if (selected !== null) {
         const { x, y } = centre(selected);
