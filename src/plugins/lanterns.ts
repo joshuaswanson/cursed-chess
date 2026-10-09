@@ -16,8 +16,8 @@ export interface LanternView {
 
 /** How many lanterns each side starts with */
 const LANTERNS_EACH = 2;
-/** The files their first carriers are picked from, nearest first: c and f, then outward */
-const CARRIER_FILES = [2, 5, 1, 6, 3, 4, 0, 7];
+/** The files their first carriers are picked from, in order of preference: b and g first */
+const CARRIER_FILES = [1, 6, 2, 5, 0, 7, 3, 4];
 
 /**
  * The board is dark. Two pawns on each side carry a lantern, and only the
