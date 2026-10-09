@@ -5,6 +5,8 @@
   inset: 0;
   z-index: 50;
   display: grid;
+  /* One column exactly as wide as the window, whatever is inside it */
+  grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   align-items: start;
   padding: 40px 24px 24px;
@@ -16,6 +18,7 @@
 }
 
 .menu-sheet {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -108,7 +111,8 @@
 /* The modes, three across, to scroll through */
 .menu-modes {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Columns that shrink with the window: no card may hold one open */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
   width: 100%;
   padding-bottom: 150px;
@@ -117,6 +121,7 @@
 .menu-mode {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 12px;
   padding: 12px 12px 16px;
   text-align: center;
@@ -193,7 +198,7 @@
 
 @media (max-width: 860px) {
   .menu-modes {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -207,7 +212,7 @@
   }
 
   .menu-modes {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 14px;
     padding-bottom: 40px;
   }

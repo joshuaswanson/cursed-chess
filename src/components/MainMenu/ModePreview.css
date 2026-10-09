@@ -3,6 +3,8 @@
 .mode-preview {
   position: relative;
   display: block;
+  width: 100%;
+  min-width: 0;
   aspect-ratio: 2 / 1;
   overflow: hidden;
   border: 3px solid var(--plum-ink);
