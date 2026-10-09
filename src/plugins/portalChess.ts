@@ -546,6 +546,15 @@ export class PortalChessPlugin implements ModePlugin {
   }
 
   /** Add an entrance-portal move that redirects to the real landing move */
+  /**
+   * What this move takes, counting what a move onto a portal takes where it
+   * comes out. Only good for the moves generated last.
+   */
+  capturedBy(move: Move): Piece | undefined {
+    const landing = this.portalRedirects.get(`${move.from}-${move.to}`);
+    return (landing ?? move).captured;
+  }
+
   private addEntranceMove(
     result: Move[],
     originalMove: Move,

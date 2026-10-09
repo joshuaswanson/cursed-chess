@@ -362,6 +362,9 @@ export interface GameStore {
   startSingle: (index: number) => void;
 }
 
+/** How many moves had been played when the current mode began */
+let modeStartPly = 0;
+
 const CLEARED_SELECTION = {
   selectedSquare: null,
   trenchPicked: null,
@@ -1134,10 +1137,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
+    const portals = get().pluginManager.find<PortalChessPlugin>("portal-chess");
+    /** The moves that would take a king, which in Portals can happen outright */
+    const regicides = new Set<Move>();
     const moves = ALL_SQUARES.filter(
       (sq) => game.board.get(sq)?.color === game.turn,
     )
-      .flatMap((sq) => get().legalMovesFrom(sq))
+      .flatMap((sq) => {
+        const from = get().legalMovesFrom(sq);
+        for (const move of from) {
+          const taken = portals ? portals.capturedBy(move) : move.captured;
+          if (taken?.type === PieceType.King) regicides.add(move);
+        }
+        return from;
+      })
       .filter((m) => !m.promotion || m.promotion === PieceType.Queen);
 
     // Mode rules can remove every move the engine allows
@@ -1162,11 +1175,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
         : null;
     if (kick != null && get().kick(kick)) return;
 
+    // He does not take your king with his first move of Portals, before
+    // you have had a chance to see how the portals work
+    const firstInPortals =
+      portals !== undefined &&
+      !get()
+        .moveHistory.slice(modeStartPly)
+        .some((m) => m.move.piece.color === Color.Black);
+    const sparing = moves.filter((m) => !regicides.has(m));
+    const allowed = firstInPortals && sparing.length > 0 ? sparing : moves;
+
     const pick =
       game.turn === Color.Black
         ? chooseMove(
             game,
-            moves,
+            allowed,
             modeSquareBonus(get().pluginManager, game.board),
           )
         : moves[Math.floor(Math.random() * moves.length)];
@@ -1296,6 +1319,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const mode = GAME_MODES[nextIndex];
 
     cancelScheduled();
+    modeStartPly = get().moveHistory.length;
 
     // Surviving pieces carry over between the square and hex boards
     const armies = isHexMode && hexGame ? hexGame.armies() : game.armies();
