@@ -131,28 +131,26 @@ export function LanternIcon({ count }: { count: number }) {
 
 /**
  * The dark that lies over the whole board, with a pool of light worn
- * through it round each lantern. The piece you have picked up shows as a
- * faint glimmer, and so does each square it could go to, so you can still
- * find your way about in the dark.
+ * through it round each lantern. Each square the piece you have picked up
+ * could go to shows as a faint glimmer, so you can still find your way
+ * about in the dark. The piece itself stays unlit.
  */
 export function LanternDark({
   lanterns,
-  selected,
   targets,
   flipped,
   squareSize,
 }: {
   lanterns: Lantern[];
-  selected: SquareIndex | null;
   targets: SquareIndex[];
   flipped: boolean;
   squareSize: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Read by the drawing loop, which outlives any one render
-  const scene = useRef({ lanterns, selected, targets, flipped, squareSize });
+  const scene = useRef({ lanterns, targets, flipped, squareSize });
   useEffect(() => {
-    scene.current = { lanterns, selected, targets, flipped, squareSize };
+    scene.current = { lanterns, targets, flipped, squareSize };
   });
 
   useEffect(() => {
@@ -168,8 +166,7 @@ export function LanternDark({
       frame = requestAnimationFrame(draw);
       if (now - last < FRAME_MS) return;
       last = now;
-      const { lanterns, selected, targets, flipped, squareSize } =
-        scene.current;
+      const { lanterns, targets, flipped, squareSize } = scene.current;
       const scale = Math.min(2, window.devicePixelRatio || 1);
       const size = Math.round(squareSize * 8 * scale);
       if (canvas.width !== size) {
@@ -247,10 +244,6 @@ export function LanternDark({
         }
         ctx.fillStyle = pool;
         ctx.fillRect(x * sq - reach, y * sq - reach, reach * 2, reach * 2);
-      }
-      if (selected !== null) {
-        const { x, y } = centre(selected);
-        wear(x, y, 0.2, 0.75, 0.5);
       }
       for (const target of targets) {
         const { x, y } = centre(target);

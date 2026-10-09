@@ -881,7 +881,6 @@ export function Board() {
           {overlays.lanterns && (
             <LanternDark
               lanterns={overlays.lanterns}
-              selected={selectedSquare}
               targets={legalMoveSquares}
               flipped={flipped}
               squareSize={squareSize}
