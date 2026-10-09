@@ -273,6 +273,23 @@
   }
 }
 
+/* The skin slides one panel along while the ball is on the move, which
+   loops without a seam and keeps bringing new panels round */
+.ball-svg.spinning .ball-skin,
+.ball-rest.carried .ball-skin,
+.mode-preview .ball-skin {
+  animation-name: ball-roll;
+  animation-duration: 0.55s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes ball-roll {
+  to {
+    transform: translate(46px, 0);
+  }
+}
+
 .ball-shadow {
   position: absolute;
   left: 12%;

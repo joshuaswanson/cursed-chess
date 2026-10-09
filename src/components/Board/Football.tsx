@@ -32,9 +32,22 @@ function legLengths(points: Point[]): number[] {
 
 const pct = (squares: number) => `${squares * 12.5}%`;
 
-/** A classic black and white panelled ball */
+/** How far apart the ball's black panels sit across its skin, and from row to row */
+const PANEL_GAP = 46;
+const PANEL_ROW = 40;
+/** The panels of the ball's skin, laid out well past its edges so the skin can roll */
+const PANELS = [-2, -1, 0, 1, 2].flatMap((row) =>
+  [-3, -2, -1, 0, 1, 2, 3].map((col) => ({
+    x: col * PANEL_GAP + (row % 2 ? PANEL_GAP / 2 : 0),
+    y: row * PANEL_ROW,
+  })),
+);
+
+/**
+ * A classic black and white panelled ball. Its skin is wider than the ball
+ * and slides across it as it rolls, so new panels keep coming round.
+ */
 export function SoccerBall({ className }: { className?: string }) {
-  const patches = [0, 72, 144, 216, 288];
   return (
     <svg className={className} viewBox="-50 -50 100 100" aria-hidden>
       <defs>
@@ -43,24 +56,35 @@ export function SoccerBall({ className }: { className?: string }) {
           <stop offset="0.65" stopColor="#e9edf2" />
           <stop offset="1" stopColor="#9aa3ad" />
         </radialGradient>
+        {/* Darkens toward the rim, so the flat skin reads as a round ball */}
+        <radialGradient id="ball-round" cx="0.4" cy="0.36" r="0.72">
+          <stop offset="0.55" stopColor="#0b0e12" stopOpacity="0" />
+          <stop offset="1" stopColor="#0b0e12" stopOpacity="0.5" />
+        </radialGradient>
         <clipPath id="ball-clip">
           <circle r="46" />
         </clipPath>
       </defs>
       <circle r="47" fill="url(#ball-shade)" stroke="#1a1d22" strokeWidth="3" />
-      <g clipPath="url(#ball-clip)" fill="#1a1d22">
-        <path d="M0 -15 L14.3 -4.6 L8.8 12.1 L-8.8 12.1 L-14.3 -4.6 Z" />
-        {patches.map((a) => (
-          <g key={a} transform={`rotate(${a})`}>
-            <path d="M-11 -50 L11 -50 L14 -38 L0 -30 L-14 -38 Z" />
-            <path
-              d="M0 -15 L0 -30"
-              stroke="#1a1d22"
-              strokeWidth="2.5"
-              fill="none"
-            />
-          </g>
-        ))}
+      <g clipPath="url(#ball-clip)">
+        <g className="ball-skin" fill="#1a1d22" stroke="#1a1d22">
+          {PANELS.map(({ x, y }) => (
+            <g key={`${x},${y}`} transform={`translate(${x} ${y})`}>
+              {/* The seams running to the panels beside and below */}
+              <path
+                d={`M0 0 H${PANEL_GAP} M0 0 L${PANEL_GAP / 2} ${PANEL_ROW} M0 0 L${-PANEL_GAP / 2} ${PANEL_ROW}`}
+                strokeWidth="2.2"
+                fill="none"
+              />
+              <path
+                d="M0 -13 L12.4 -4 L7.6 10.5 L-7.6 10.5 L-12.4 -4 Z"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+            </g>
+          ))}
+        </g>
+        <circle r="47" fill="url(#ball-round)" />
       </g>
       <ellipse
         cx="-16"
