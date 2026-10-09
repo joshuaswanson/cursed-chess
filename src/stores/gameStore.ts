@@ -255,10 +255,11 @@ export interface GameStore {
   /** Adventure runs every mode once in order; a single mode is played alone. Either ends at the main menu. */
   playMode: "adventure" | "single";
   /**
-   * His remark on your opening move, typed into the plain site's move list
-   * before he replies: the site glitches, then he types, then it stays
+   * His remark on your opening move: the plain site glitches, a terminal
+   * opens in the move list and he types into it, then it glitches shut and
+   * is gone, as if he had broken through for a moment and been shut out
    */
-  aside: "glitch" | "typing" | "said" | null;
+  aside: "glitch" | "typing" | "leaving" | "said" | null;
   /** How Chessbot looks at this point in his opening speech */
   introMood: ChessbotMood;
 
@@ -455,19 +456,25 @@ function endGameSoon(
 /** How long the plain site glitches after your first move, before he says anything */
 const ASIDE_GLITCH_MS = 1300;
 
+/** How long his terminal takes to glitch shut once he has had his say */
+const ASIDE_LEAVE_MS = 700;
+
 /**
- * Your first move sets him off: the plain site glitches for a moment, then
- * he types what he thinks of it into the move list, and only then replies
+ * Your first move lets him through for a moment: the plain site glitches,
+ * he types what he thinks of it into the move list, then the terminal
+ * glitches shut, everything settles, and the computer simply replies
  */
 function startAside(): void {
   const opening = useGameStore.getState().moveHistory[0]?.san ?? "e4";
   const typing = introDuration(introScript(opening).slice(0, 1), ASIDE_LEAD_MS);
-  holdPause(ASIDE_GLITCH_MS + typing);
+  const leaveAt = ASIDE_GLITCH_MS + typing;
+  holdPause(leaveAt + ASIDE_LEAVE_MS);
   useGameStore.setState({ aside: "glitch" });
   schedule(() => useGameStore.setState({ aside: "typing" }), ASIDE_GLITCH_MS);
+  schedule(() => useGameStore.setState({ aside: "leaving" }), leaveAt);
   schedule(
     () => useGameStore.setState({ aside: "said" }),
-    ASIDE_GLITCH_MS + typing,
+    leaveAt + ASIDE_LEAVE_MS,
   );
 }
 

@@ -81,9 +81,14 @@ function App() {
     (curseStage ? ` curse-${curseStage}` : "") +
     // Still glitching while he gloats
     (curseStage === "oops" ? " curse-glitch" : "") +
-    // Your first move makes the plain site glitch for a moment, and then it
-    // holds still: while he types, and while you think over your next move
-    (!cursed && aside === "glitch" ? " unease-burst" : "");
+    // Your first move lets him through: the plain site glitches hard as he
+    // breaks in and again as he is shut out, twitches while he types, and
+    // then holds still while you think over your next move
+    (cursed || !aside || aside === "said"
+      ? ""
+      : aside === "typing"
+        ? " unease-typing"
+        : " unease-burst");
 
   return (
     <div className={appClass} style={themeVars(theme)} data-theme={theme.id}>

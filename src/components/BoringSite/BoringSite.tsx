@@ -115,21 +115,25 @@ function useSpeechMood(speaking: boolean): ChessbotMood {
 
 /**
  * The computer opponent's card. Its plain grey icon is Chessbot keeping up
- * appearances, and with each move of the opening game he slips more:
- * tearing sideways and showing his real face for an instant. After the
+ * appearances. Your first move lets him slip through for a moment, tearing
+ * sideways and showing his real face, before he is shut out again. After the
  * third he pops out as himself right there in the icon's place, looks
  * about, and has his say in the move list. Then he glitches out of the
  * card altogether, and the name on it gives way to his own.
  */
 function ComputerCard() {
-  const plies = useGameStore((s) => s.moveHistory.length);
   const stage = useGameStore((s) => s.curseStage);
   const revealed = stage === "hello";
   const gone = stage !== null && stage !== "hello";
   const aside = useGameStore((s) => s.aside);
-  // He flickers through hardest while he is typing his remark
+  // He flickers through while he is breaking in, hardest while he types,
+  // and not at all once he has been shut out again
   const slipping =
-    stage !== null ? 0 : aside === "typing" ? 2 : Math.min(2, plies);
+    stage !== null || aside === "said" || aside === null
+      ? 0
+      : aside === "glitch"
+        ? 1
+        : 2;
   const mood = useSpeechMood(revealed);
   return (
     <div
@@ -188,12 +192,15 @@ function BotTyping({
   lines,
   lead,
   acted = false,
+  leaving = false,
 }: {
   lines: IntroLine[];
   /** How long before the first letter */
   lead: number;
   /** Whether his face follows the words, for when he is out where it can be seen */
   acted?: boolean;
+  /** Glitching shut, on its way out */
+  leaving?: boolean;
 }) {
   const delays = useMemo(() => introDelays(lines, lead), [lines, lead]);
   const [typed, setTyped] = useState(0);
@@ -223,7 +230,7 @@ function BotTyping({
   }, [acted, mood]);
 
   return (
-    <li className="boring-bot-block">
+    <li className={`boring-bot-block${leaving ? " is-leaving" : ""}`}>
       {/* The process that has no business running in a move list */}
       <span className="boring-bot-tag" aria-hidden>
         chessbot.exe
@@ -282,9 +289,8 @@ function MoveList() {
   const script = useMemo(() => introScript(opening), [opening]);
   const remark = useMemo(() => script.slice(0, 1), [script]);
   const speech = useMemo(() => script.slice(1), [script]);
-  // His remark comes between your first move and his reply, so that row is
-  // split in two around it
-  const remarked = aside === "typing" || aside === "said";
+  // His remark opens under your first move and is gone again before the reply comes
+  const remarked = aside === "typing" || aside === "leaving";
   const rows: ReactNode[] = [];
   for (let i = 0; i < history.length; i += 2) {
     const no = i / 2 + 1;
@@ -292,7 +298,14 @@ function MoveList() {
     const black = history[i + 1]?.san;
     if (i === 0 && remarked) {
       rows.push(<MoveRow key="1w" no={1} white={white} />);
-      rows.push(<BotTyping key="remark" lines={remark} lead={ASIDE_LEAD_MS} />);
+      rows.push(
+        <BotTyping
+          key="remark"
+          lines={remark}
+          lead={ASIDE_LEAD_MS}
+          leaving={aside === "leaving"}
+        />,
+      );
       if (black) rows.push(<MoveRow key="1b" no={1} black={black} />);
     } else {
       rows.push(<MoveRow key={no} no={no} white={white} black={black} />);

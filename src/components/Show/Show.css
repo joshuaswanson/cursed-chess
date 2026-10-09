@@ -37,6 +37,11 @@
 
 /* Before it breaks, the plain site only glitches once: a burst of jolts
    right after your first move */
+/* While he is typing: a jolt every so often */
+.app.unease-typing {
+  --twitch: 1.5s;
+}
+
 /* The moment after your first move: everything jolts hard, over and over */
 .app.unease-burst {
   --twitch: 0.34s;

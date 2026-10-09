@@ -460,6 +460,51 @@
   animation: bot-breaks-in 0.4s steps(1) both;
 }
 
+/* Shut out again: it tears, flickers, collapses to a line, and is gone */
+.boring-bot-block.is-leaving {
+  animation: bot-shut-out 0.7s steps(1) both;
+}
+
+@keyframes bot-shut-out {
+  0% {
+    translate: 0 0;
+    filter: none;
+  }
+  12% {
+    translate: 9px 0;
+    clip-path: inset(0 0 55% 0);
+    filter: hue-rotate(120deg) brightness(1.6);
+  }
+  24% {
+    translate: -7px 0;
+    clip-path: inset(35% 0 0 0);
+    filter: invert(1);
+  }
+  36% {
+    opacity: 0;
+  }
+  46% {
+    opacity: 1;
+    translate: 4px 0;
+    clip-path: inset(20% 0 20% 0);
+    filter: hue-rotate(-90deg);
+  }
+  60% {
+    translate: -3px 0;
+    clip-path: inset(46% 0 46% 0);
+    filter: brightness(3);
+  }
+  78% {
+    opacity: 1;
+    clip-path: inset(49% 30% 49% 30%);
+  }
+  88%,
+  100% {
+    opacity: 0;
+    clip-path: inset(50% 50% 50% 50%);
+  }
+}
+
 /* The name of whatever is running in there, in the corner */
 .boring-bot-tag {
   position: absolute;
