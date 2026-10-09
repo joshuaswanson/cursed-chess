@@ -249,11 +249,13 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     tagline:
       "The board is dark. Each lantern lights the squares round its carrier. Take a piece carrying one to carry it yourself.",
     catchphrase: "Who put the lights out?",
-    sky: ["#030208", "#0b0820", "#1d1430"],
+    // The night and the board's frame are the same black as the dark over
+    // the squares, so the edges of the board cannot be seen
+    sky: ["#04030a", "#04030a", "#04030a"],
     accent: "#ffb347",
     accent2: "#7a5cff",
-    ink: "#05030c",
-    frame: "#241a36",
+    ink: "#04030a",
+    frame: "#04030a",
     light: "#c9b892",
     dark: "#7a6648",
     text: "#f3e6c8",

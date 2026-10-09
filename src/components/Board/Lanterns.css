@@ -63,3 +63,14 @@
     animation: none;
   }
 }
+
+/* --- Nothing but the lamplight: the board's frame loses its highlight and
+   shadow, and the backdrop its dot pattern, so no edge of the board shows --- */
+
+.app[data-theme="lanterns"] .board-shell {
+  box-shadow: none;
+}
+
+.app[data-theme="lanterns"] .backdrop-halftone {
+  display: none;
+}
