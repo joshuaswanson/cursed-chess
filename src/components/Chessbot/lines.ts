@@ -11,6 +11,7 @@ export const PITCHES: Partial<Record<ThemeId, string>> = {
   clash: "the pieces move themselves now. you were slowing them down.",
   hill: "i'm king of the hill. you can be king of the bottom.",
   gravity: "i found a setting called gravity. it was off.",
+  lanterns: "i turned the lights off. i can see in the dark. can you?",
   hex: "squares are a beginner shape.",
   stratego: "you don't need to know what my pieces are.",
   zombies: "captured pieces were going to waste.",

@@ -180,9 +180,9 @@ export const GAME_MODES: GameMode[] = [
     isHex: true,
   },
   {
-    name: "STRATEGO",
-    theme: "stratego",
-    create: () => [new StrategoPlugin()],
+    name: "LANTERNS",
+    theme: "lanterns",
+    create: () => [new LanternsPlugin()],
   },
   {
     name: "ZOMBIES",
@@ -190,17 +190,16 @@ export const GAME_MODES: GameMode[] = [
     create: () => [new ZombiesPlugin()],
   },
   {
+    name: "STRATEGO",
+    theme: "stratego",
+    create: () => [new StrategoPlugin()],
+  },
+  {
     name: "TRENCHES",
     theme: "trenches",
     create: () => [new TrenchesPlugin()],
     noReinforcements: true,
     untilWon: true,
-    singleOnly: true,
-  },
-  {
-    name: "LANTERNS",
-    theme: "lanterns",
-    create: () => [new LanternsPlugin()],
     singleOnly: true,
   },
 ];
