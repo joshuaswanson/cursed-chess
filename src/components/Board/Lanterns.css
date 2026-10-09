@@ -1,0 +1,64 @@
+/* --- Lanterns: the dark over the board, and the lamps carried through it --- */
+
+/* Over every square and piece, and under nothing that needs clicking */
+.lantern-dark {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Hung at the carrier's shoulder */
+.lantern-held {
+  position: absolute;
+  right: 2%;
+  top: 6%;
+  z-index: 3;
+  display: flex;
+  width: 30%;
+  pointer-events: none;
+  filter: drop-shadow(0 0 5px rgba(255, 176, 64, 0.9));
+  animation: lantern-sway 2.4s ease-in-out infinite alternate;
+  transform-origin: 50% 0;
+}
+
+.lantern-held svg {
+  display: block;
+  width: 100%;
+  flex: none;
+}
+
+/* A second lantern hangs half over the first */
+.lantern-held svg + svg {
+  margin-left: -55%;
+}
+
+@keyframes lantern-sway {
+  from {
+    rotate: -7deg;
+  }
+  to {
+    rotate: 7deg;
+  }
+}
+
+.lantern-flame {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: lantern-flame 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes lantern-flame {
+  to {
+    transform: scale(0.82, 1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lantern-held,
+  .lantern-flame {
+    animation: none;
+  }
+}

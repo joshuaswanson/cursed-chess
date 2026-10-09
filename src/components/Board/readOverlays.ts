@@ -7,6 +7,7 @@ import type { FootballView } from "../../plugins/football";
 import type { TugView } from "../../plugins/tugOfWar";
 import type { ZombieView } from "../../plugins/zombies";
 import type { TrenchView } from "../../plugins/trenches";
+import type { Lantern, LanternView } from "../../plugins/lanterns";
 
 export interface PortalPair {
   a: SquareIndex;
@@ -24,6 +25,8 @@ export interface BoardOverlays {
   tug: TugView | null;
   zombies: ZombieView | null;
   trenches: TrenchView | null;
+  /** The lanterns alight on a dark board, or nothing when the board is lit */
+  lanterns: Lantern[] | null;
   hillSquares: SquareIndex[];
   /** Rounds each side has held the hill in a row, and how many it takes to win */
   hillStreak: { white: number; black: number; needed: number };
@@ -48,6 +51,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     tug: null,
     zombies: null,
     trenches: null,
+    lanterns: null,
     hillSquares: [],
     hillStreak: { white: 0, black: 0, needed: 3 },
     battleRoyale: null,
@@ -73,6 +77,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
       }
       case "fog-overlay":
         result.hasFog = true;
+        break;
+      case "lanterns":
+        result.lanterns = (overlay.data as LanternView).lanterns;
         break;
       case "rally-resources":
         result.hasRally = true;

@@ -336,6 +336,16 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <span className="pv-fog pv-fog-d" />
     </>
   ),
+  // A pawn carries its lantern across the dark, and a knight nobody could see turns up in its light
+  lanterns: (
+    <>
+      <Piece is="bN" x={70} y={46} className="pv-lurker" />
+      <span className="pv-dark" />
+      <span className="pv-lamplight">
+        <Piece is="wP" x={50} y={52} size={72} />
+      </span>
+    </>
+  ),
   // A rook runs up and belts the ball into the net
   fifa: (
     <>

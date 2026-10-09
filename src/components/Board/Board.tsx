@@ -11,6 +11,7 @@ import { BoardShatter } from "../HexWarp/HexWarp";
 import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
 import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
+import { LanternDark, LanternIcon } from "./Lanterns";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
@@ -479,6 +480,8 @@ export function Board() {
       if (isDeployTarget) className += " deploy-target";
       if (minesArmed.has(sq)) className += " mine-armed";
       const passChance = kickOptions.find((k) => k.to === sq)?.chance;
+      const lanternsHeld =
+        overlays.lanterns?.filter((lantern) => lantern.sq === sq).length ?? 0;
       if (passChance !== undefined) className += " kick-target";
       className += riverClasses(file, rank, sq);
 
@@ -698,6 +701,7 @@ export function Board() {
 
           {minesArmed.has(sq) && <span className="mine-pop" aria-hidden />}
           {passChance !== undefined && <PassMarker chance={passChance} />}
+          {lanternsHeld > 0 && <LanternIcon count={lanternsHeld} />}
           {fall && piece && (
             <span
               key={`dust-${gravityShift?.id}`}
@@ -874,6 +878,15 @@ export function Board() {
             />
           )}
           {football && <Pitch />}
+          {overlays.lanterns && (
+            <LanternDark
+              lanterns={overlays.lanterns}
+              selected={selectedSquare}
+              targets={legalMoveSquares}
+              flipped={flipped}
+              squareSize={squareSize}
+            />
+          )}
           {football &&
             [Color.Black, Color.White].map((defender) => (
               <Goal

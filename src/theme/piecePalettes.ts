@@ -59,6 +59,11 @@ export const PIECE_PALETTES: Partial<
     light: ["#e2d6ac", "#a8955e", "#4f4528"],
     dark: ["#a7afb1", "#5c676b", "#22292c"],
   },
+  // Pale bone against deep indigo, both warm where the lamplight falls
+  lanterns: {
+    light: ["#fff6dc", "#f0d79a", "#b98f4a"],
+    dark: ["#8f86c9", "#3b3378", "#141033"],
+  },
   stratego: {
     light: ["#e9f0ff", "#86a6e2", "#2b569c"],
     dark: ["#ffb4ab", "#d1352e", "#560e0a"],

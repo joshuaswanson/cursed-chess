@@ -1958,3 +1958,47 @@
     animation-play-state: paused;
   }
 }
+
+/* --- Lanterns --- */
+
+/* The dark over the scene, with a pool of light following the pawn across it */
+.scene-lanterns .pv-dark {
+  inset: 0;
+  background: #05030c;
+  mask:
+    linear-gradient(#000, #000),
+    radial-gradient(closest-side, #000 72%, transparent) var(--at, 22%) 50% /
+      38% 76% no-repeat;
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: pv-dark 5s ease-in-out infinite alternate;
+}
+
+@keyframes pv-dark {
+  from {
+    mask-position:
+      0 0,
+      8% 50%;
+  }
+  to {
+    mask-position:
+      0 0,
+      92% 50%;
+  }
+}
+
+/* The pawn and the warm of its lamp, keeping to the middle of that pool */
+.scene-lanterns .pv-lamplight {
+  left: 5%;
+  top: 12%;
+  width: 38%;
+  height: 76%;
+  background: radial-gradient(rgba(255, 176, 64, 0.35), transparent 70%);
+  animation: pv-lamplight 5s ease-in-out infinite alternate;
+}
+
+@keyframes pv-lamplight {
+  to {
+    left: 57%;
+  }
+}

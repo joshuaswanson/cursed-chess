@@ -12,7 +12,8 @@ export type ThemeId =
   | "stratego"
   | "tug"
   | "zombies"
-  | "trenches";
+  | "trenches"
+  | "lanterns";
 
 /** Which animated scene sits behind the board */
 export type BackdropKind = ThemeId;
@@ -241,6 +242,21 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#7d6a50",
     dark: "#5a4a36",
     text: "#e6dfcc",
+  },
+  lanterns: {
+    id: "lanterns",
+    title: "Lanterns",
+    tagline:
+      "The board is dark. Each lantern lights the squares round its carrier. Take a piece carrying one to carry it yourself.",
+    catchphrase: "Who put the lights out?",
+    sky: ["#030208", "#0b0820", "#1d1430"],
+    accent: "#ffb347",
+    accent2: "#7a5cff",
+    ink: "#05030c",
+    frame: "#241a36",
+    light: "#c9b892",
+    dark: "#7a6648",
+    text: "#f3e6c8",
   },
 };
 

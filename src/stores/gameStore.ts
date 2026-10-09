@@ -20,6 +20,7 @@ import { RallyPlugin } from "../plugins/clashRoyale";
 import { MinefieldPlugin } from "../plugins/minefield";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
+import { LanternsPlugin } from "../plugins/lanterns";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
 import { TugOfWarPlugin } from "../plugins/tugOfWar";
@@ -194,6 +195,12 @@ export const GAME_MODES: GameMode[] = [
     create: () => [new TrenchesPlugin()],
     noReinforcements: true,
     untilWon: true,
+    singleOnly: true,
+  },
+  {
+    name: "LANTERNS",
+    theme: "lanterns",
+    create: () => [new LanternsPlugin()],
     singleOnly: true,
   },
 ];
