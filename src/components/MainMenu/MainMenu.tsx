@@ -80,7 +80,7 @@ export function MainMenu() {
         <div className="menu-modes">
           <ModeCard
             title="Adventure"
-            tagline="Every mode, one after another!"
+            tagline="One mode after another!"
             colors={["#6a1fd6", "#ff2e88"]}
             onPlay={startAdventure}
           >
