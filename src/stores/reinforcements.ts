@@ -1,6 +1,6 @@
 import { Color, PieceType, isSquareAttacked, opponent } from "../engine";
 import type { Board, Piece, SquareIndex } from "../engine";
-import { ALL_SQUARES, fileOf, rankOf } from "../utils/squareUtils";
+import { ALL_SQUARES, fileOf, lastRank, rankOf } from "../utils/squareUtils";
 
 /** Pieces besides the king that every side gets to start a mode with */
 export const MIN_TROOPS = 6;
@@ -39,12 +39,13 @@ export interface Reinforcement {
 
 /** Ranks counted from a side's own back rank */
 const ownRank = (color: Color, n: number) =>
-  color === Color.White ? n : 7 - n;
+  color === Color.White ? n : lastRank() - n;
 
 /** Empty squares on the given ranks, nearest the back rank first, then nearest the center file */
 function openSquares(board: Board, color: Color, ranks: number[]) {
   const depth = (sq: SquareIndex) => Math.abs(rankOf(sq) - ownRank(color, 0));
-  const spread = (sq: SquareIndex) => Math.abs(fileOf(sq) - 3.5);
+  // The king's own file wins a tie with the queen's
+  const spread = (sq: SquareIndex) => Math.abs(fileOf(sq) - 3.6);
   return ALL_SQUARES.filter(
     (sq) =>
       !board.get(sq) && ranks.some((n) => rankOf(sq) === ownRank(color, n)),

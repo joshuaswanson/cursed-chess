@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
-import { rankOf, toIndex } from "../../utils/squareUtils";
+import { boardRanks, rankOf, toIndex } from "../../utils/squareUtils";
 import {
   Color,
   GameStatus,
@@ -383,6 +383,7 @@ export function Board() {
     hillWhite > hillBlack ? "white" : hillBlack > hillWhite ? "black" : null;
   const arrivals = new Map(reinforcements.map((r) => [r.sq, r]));
   const football = overlays.football;
+  const heistLit = new Set(overlays.heist?.lit ?? []);
   // In the dark, a check on you shows your king and whatever is giving it
   const kingInCheck =
     overlays.lanterns &&
@@ -462,8 +463,9 @@ export function Board() {
   };
 
   const rows = [];
-  for (let visualRow = 0; visualRow < 8; visualRow++) {
-    const rank = flipped ? visualRow : 7 - visualRow;
+  const ranks = boardRanks();
+  for (let visualRow = 0; visualRow < ranks; visualRow++) {
+    const rank = flipped ? visualRow : ranks - 1 - visualRow;
     const cols = [];
     for (let visualCol = 0; visualCol < 8; visualCol++) {
       const file = flipped ? 7 - visualCol : visualCol;
@@ -480,8 +482,18 @@ export function Board() {
       const grave = overlays.zombies?.graves.find((g) => g.sq === sq);
       const zombieAct = zombieActs.get(sq);
       const rising = zombieAct?.kind === "rise" ? zombieAct : null;
+      // In the dark of the heist a move leaves no mark to give it away
       const isLastMove =
-        !battle && lastMove && (sq === lastMove.from || sq === lastMove.to);
+        !battle &&
+        !overlays.heist &&
+        lastMove &&
+        (sq === lastMove.from || sq === lastMove.to);
+      // Their pieces cannot be seen there, except in a searchlight or holding the jewel
+      const unseen =
+        overlays.heist != null &&
+        piece?.color === Color.Black &&
+        !heistLit.has(sq) &&
+        overlays.heist.sq !== sq;
       const isCheck =
         gravityFalls.size === 0 &&
         piece?.type === PieceType.King &&
@@ -503,6 +515,7 @@ export function Board() {
       if (sq === selectedSquare) className += " selected";
       if (isLastMove && !isDead) className += " last-move";
       if (isCheck) className += " in-check";
+      if (unseen) className += " heist-unseen";
       if (menace?.king === sq) className += " zombie-target";
       if (drag?.isDragging && isLegalTarget) className += " drag-target";
       if (isDeployTarget) className += " deploy-target";
@@ -629,7 +642,9 @@ export function Board() {
           {isLegalTarget && !drag?.isDragging && (
             <div
               className={
-                piece || zombie !== undefined ? "capture-hint" : "move-hint"
+                (piece && !unseen) || zombie !== undefined
+                  ? "capture-hint"
+                  : "move-hint"
               }
             />
           )}
@@ -730,15 +745,9 @@ export function Board() {
           {minesArmed.has(sq) && <span className="mine-pop" aria-hidden />}
           {passChance !== undefined && <PassMarker chance={passChance} />}
           {lanternsHeld > 0 && <LanternIcon count={lanternsHeld} />}
-          {overlays.heist?.jewels
-            .filter((jewel) => jewel.sq === sq)
-            .map((jewel) => (
-              <HeistLoot
-                key={jewel.owner}
-                held={jewel.carried}
-                yours={jewel.owner === Color.White}
-              />
-            ))}
+          {overlays.heist?.sq === sq && (
+            <HeistLoot held={overlays.heist.carrier !== null} />
+          )}
           {fall && piece && (
             <span
               key={`dust-${gravityShift?.id}`}
@@ -778,7 +787,7 @@ export function Board() {
           {visualCol === 0 && (
             <span className="coord coord-rank">{rank + 1}</span>
           )}
-          {visualRow === 7 && (
+          {visualRow === ranks - 1 && (
             <span className="coord coord-file">{FILES[file]}</span>
           )}
         </div>,
@@ -918,6 +927,7 @@ export function Board() {
           {overlays.heist && (
             <HeistLights
               view={overlays.heist}
+              targets={legalMoveSquares}
               flipped={flipped}
               squareSize={squareSize}
             />

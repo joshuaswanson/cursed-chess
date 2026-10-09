@@ -1,6 +1,13 @@
 import { Color, PieceType } from "./types";
 import type { Piece, SquareIndex, CastlingRights, GameState } from "./types";
-import { toIndex, isValidSquare, indexToAlgebraic } from "../utils/squareUtils";
+import {
+  MAX_RANKS,
+  boardRanks,
+  indexToAlgebraic,
+  isValidSquare,
+  lastRank,
+  toIndex,
+} from "../utils/squareUtils";
 
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -28,7 +35,7 @@ export class Board {
   squares: (Piece | null)[];
 
   constructor() {
-    this.squares = new Array(128).fill(null);
+    this.squares = new Array(MAX_RANKS * 16).fill(null);
   }
 
   get(sq: SquareIndex): Piece | null {
@@ -49,7 +56,7 @@ export class Board {
   }
 
   findKing(color: Color): SquareIndex | null {
-    for (let rank = 0; rank < 8; rank++) {
+    for (let rank = 0; rank < boardRanks(); rank++) {
       for (let file = 0; file < 8; file++) {
         const sq = toIndex(file, rank);
         const piece = this.squares[sq];
@@ -66,7 +73,7 @@ export class Board {
     type?: PieceType,
   ): { sq: SquareIndex; piece: Piece }[] {
     const result: { sq: SquareIndex; piece: Piece }[] = [];
-    for (let rank = 0; rank < 8; rank++) {
+    for (let rank = 0; rank < boardRanks(); rank++) {
       for (let file = 0; file < 8; file++) {
         const sq = toIndex(file, rank);
         const piece = this.squares[sq];
@@ -80,7 +87,7 @@ export class Board {
 
   clone(): Board {
     const copy = new Board();
-    for (let i = 0; i < 128; i++) {
+    for (let i = 0; i < this.squares.length; i++) {
       copy.squares[i] = this.squares[i] ? { ...this.squares[i]! } : null;
     }
     return copy;
@@ -102,7 +109,8 @@ export class Board {
     this.clear();
 
     // Parse piece placement
-    let rank = 7;
+    // The first row given is the furthest from White, however many rows there are
+    let rank = piecePlacement.split("/").length - 1;
     let file = 0;
     for (const ch of piecePlacement) {
       if (ch === "/") {
@@ -138,7 +146,7 @@ export class Board {
     let enPassantSq: SquareIndex | null = null;
     if (enPassant !== "-") {
       const epFile = enPassant.charCodeAt(0) - 97;
-      const epRank = parseInt(enPassant[1]) - 1;
+      const epRank = parseInt(enPassant.slice(1)) - 1;
       enPassantSq = toIndex(epFile, epRank);
     }
 
@@ -156,7 +164,7 @@ export class Board {
     let fen = "";
 
     // Piece placement
-    for (let rank = 7; rank >= 0; rank--) {
+    for (let rank = lastRank(); rank >= 0; rank--) {
       let empty = 0;
       for (let file = 0; file < 8; file++) {
         const piece = this.squares[toIndex(file, rank)];
@@ -203,27 +211,45 @@ export class Board {
     return { board, state };
   }
 
-  /** Fill each side's half from its home rank outward: king and pieces first, then pawns. */
+  /**
+   * Sets a side out at its own end the way a game of chess begins: each
+   * piece on its usual file of the back rank, pawns in front. Anyone there
+   * is no usual place for fills in from the back rank outward. A place
+   * nobody takes, like an absent king's, is left empty.
+   */
   placeArmy(color: Color, pieces: Piece[]): void {
-    const homeRanks = color === Color.White ? [0, 1, 2, 3] : [7, 6, 5, 4];
-    const cells = homeRanks.flatMap((rank) =>
-      CENTER_OUT_FILES.map((file) => toIndex(file, rank)),
+    const rankFromHome = (n: number) =>
+      color === Color.White ? n : lastRank() - n;
+    const usual = new Map<PieceType, SquareIndex[]>(
+      Object.entries(USUAL_FILES).map(([type, files]) => [
+        type as PieceType,
+        files.map((file) => toIndex(file, rankFromHome(0))),
+      ]),
     );
-    const pawnStart = CENTER_OUT_FILES.length;
-    const placed = new Set<SquareIndex>();
-    const take = (preferred: number) => {
-      const sq =
-        cells.slice(preferred).find((c) => !placed.has(c)) ??
-        cells.find((c) => !placed.has(c));
-      if (sq !== undefined) placed.add(sq);
-      return sq;
-    };
-
+    usual.set(
+      PieceType.Pawn,
+      CENTER_OUT_FILES.map((file) => toIndex(file, rankFromHome(1))),
+    );
+    const spare = [0, 1, 2, 3].flatMap((n) =>
+      CENTER_OUT_FILES.map((file) => toIndex(file, rankFromHome(n))),
+    );
     const ordered = [...pieces].sort(
       (a, b) => PLACEMENT_ORDER[a.type] - PLACEMENT_ORDER[b.type],
     );
+    const unplaced: Piece[] = [];
     for (const piece of ordered) {
-      const sq = take(piece.type === PieceType.Pawn ? pawnStart : 0);
+      const sq = usual.get(piece.type)?.find((to) => !this.squares[to]);
+      if (sq === undefined) unplaced.push(piece);
+      else this.put(sq, { ...piece });
+    }
+    // Whoever is left over stands clear of the places still waiting for their usual piece
+    const reserved = new Set(
+      pieces.some((p) => p.type === PieceType.King)
+        ? []
+        : [toIndex(USUAL_FILES[PieceType.King][0], rankFromHome(0))],
+    );
+    for (const piece of unplaced) {
+      const sq = spare.find((to) => !this.squares[to] && !reserved.has(to));
       if (sq === undefined) return;
       this.put(sq, { ...piece });
     }
@@ -231,6 +257,15 @@ export class Board {
 }
 
 const CENTER_OUT_FILES = [4, 3, 5, 2, 6, 1, 7, 0];
+
+/** The files each piece starts a game of chess on */
+const USUAL_FILES: Record<Exclude<PieceType, "p">, number[]> = {
+  [PieceType.King]: [4],
+  [PieceType.Queen]: [3],
+  [PieceType.Rook]: [0, 7],
+  [PieceType.Bishop]: [2, 5],
+  [PieceType.Knight]: [1, 6],
+};
 
 const PLACEMENT_ORDER: Record<PieceType, number> = {
   [PieceType.King]: 0,

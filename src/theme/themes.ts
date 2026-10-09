@@ -265,8 +265,8 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "heist",
     title: "Heist",
     tagline:
-      "Break into their vault, lift their jewel, and carry it home to your first two rows. A thief can only creep one square at a time. Take a thief to send your jewel back.",
-    catchphrase: "Rob them before they rob you!",
+      "It is dark, and you cannot see their pieces. Get the jewel out of the vault and home to your first two rows. Whoever carries it creeps one square at a time, and anything caught in a searchlight cannot move.",
+    catchphrase: "Stay out of the lights!",
     sky: ["#05070f", "#0c1428", "#1b2440"],
     accent: "#f5c542",
     accent2: "#e2304a",

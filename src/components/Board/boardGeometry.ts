@@ -1,4 +1,4 @@
-import { fileOf, rankOf } from "../../utils/squareUtils";
+import { fileOf, lastRank, rankOf } from "../../utils/squareUtils";
 import type { SquareIndex } from "../../engine";
 
 /** Column on screen, 0 at the left edge */
@@ -8,7 +8,7 @@ export function visualCol(sq: SquareIndex, flipped: boolean): number {
 
 /** Row on screen, 0 at the top edge */
 export function visualRow(sq: SquareIndex, flipped: boolean): number {
-  return flipped ? rankOf(sq) : 7 - rankOf(sq);
+  return flipped ? rankOf(sq) : lastRank() - rankOf(sq);
 }
 
 /** Pixel offset from `to` back to `from`, for animations that start at `from` */

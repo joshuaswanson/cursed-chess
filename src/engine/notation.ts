@@ -1,6 +1,6 @@
 import { Color, PieceType, MoveFlag } from "./types";
 import type { Move } from "./types";
-import { indexToAlgebraic, fileOf } from "../utils/squareUtils";
+import { fileOf, indexToAlgebraic, lastRank } from "../utils/squareUtils";
 import { isSquareAttacked, opponent } from "./moves";
 import type { Board } from "./board";
 
@@ -73,12 +73,12 @@ export function moveToSan(ctx: SanContext, move: Move): string {
     boardClone.remove(move.to + dir);
   }
   if (move.flags & MoveFlag.KingsideCastle) {
-    const rank = ctx.turn === Color.White ? 0 : 7;
+    const rank = ctx.turn === Color.White ? 0 : lastRank();
     boardClone.remove(rank * 16 + 7);
     boardClone.put(rank * 16 + 5, { type: PieceType.Rook, color: ctx.turn });
   }
   if (move.flags & MoveFlag.QueensideCastle) {
-    const rank = ctx.turn === Color.White ? 0 : 7;
+    const rank = ctx.turn === Color.White ? 0 : lastRank();
     boardClone.remove(rank * 16);
     boardClone.put(rank * 16 + 3, { type: PieceType.Rook, color: ctx.turn });
   }

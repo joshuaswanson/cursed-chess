@@ -12,7 +12,7 @@ export const PITCHES: Partial<Record<ThemeId, string>> = {
   hill: "i'm king of the hill. you can be king of the bottom.",
   gravity: "i found a setting called gravity. it was off.",
   lanterns: "i turned the lights off. i can see in the dark. can you?",
-  heist: "you have a jewel. i have a jewel. soon i will have two.",
+  heist: "i turned off the lights again. try not to trip the alarm.",
   hex: "squares are a beginner shape.",
   stratego: "you don't need to know what my pieces are.",
   zombies: "captured pieces were going to waste.",

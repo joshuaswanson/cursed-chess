@@ -11,7 +11,12 @@ import {
 import type { Board, SquareIndex, Move, MoveRecord, Piece } from "../engine";
 import { PluginManager } from "../plugins/manager";
 import type { ModePlugin } from "../plugins/types";
-import { rankOf, ALL_SQUARES } from "../utils/squareUtils";
+import {
+  ALL_SQUARES,
+  boardRanks,
+  rankOf,
+  setBoardRanks,
+} from "../utils/squareUtils";
 import { PortalChessPlugin } from "../plugins/portalChess";
 import type { PortalMoveInfo } from "../plugins/portalChess";
 import { FogOfWarPlugin } from "../plugins/fogOfWar";
@@ -21,7 +26,7 @@ import { MinefieldPlugin } from "../plugins/minefield";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { LanternsPlugin } from "../plugins/lanterns";
-import { HeistPlugin } from "../plugins/heist";
+import { HEIST_RANKS, HeistPlugin } from "../plugins/heist";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
 import { TugOfWarPlugin } from "../plugins/tugOfWar";
@@ -115,6 +120,8 @@ export interface GameMode {
   kingsSitOut?: boolean;
   /** Modes with no clock that run until one side wins, kings and all */
   untilWon?: boolean;
+  /** How many ranks deep its board is, where that is not the usual eight */
+  ranks?: number;
   /** Left out of the adventure: played only when picked from the main menu */
   singleOnly?: boolean;
 }
@@ -189,7 +196,9 @@ export const GAME_MODES: GameMode[] = [
     name: "HEIST",
     theme: "heist",
     create: () => [new HeistPlugin()],
-    untilWon: true,
+    ranks: HEIST_RANKS,
+    kingsSitOut: true,
+    noReinforcements: true,
   },
   {
     name: "ZOMBIES",
@@ -1011,6 +1020,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   newGame: () => {
     cancelScheduled();
+    setBoardRanks();
     const game = new Game();
     set({
       game,
@@ -1065,6 +1075,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
 
     schedule(() => {
+      setBoardRanks();
       set({ game: new Game(), ...FRESH_BOARD });
       get().switchMode();
     }, RESULT_HOLD_MS);
@@ -1341,6 +1352,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   openMenu: () => {
     cancelScheduled();
+    setBoardRanks();
     const game = new Game();
     set((s) => ({
       game,
@@ -1452,9 +1464,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    const nextGame = isHexMode
-      ? Game.fromArmies(armies[Color.White], armies[Color.Black])
-      : game;
+    // A board of a different depth is laid out afresh, each side at its own end
+    const depth = mode.ranks ?? 8;
+    const resized = depth !== boardRanks();
+    setBoardRanks(depth);
+    const nextGame =
+      isHexMode || resized
+        ? Game.fromArmies(armies[Color.White], armies[Color.Black])
+        : game;
     // A turned board's pawn rules end with its mode
     nextGame.pawnRules = null;
 
@@ -1513,7 +1530,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       pluginManager: freshPluginManager(nextGame, mode.create()),
       turn: nextGame.turn,
       moveHistory: [...nextGame.history],
-      ...(isHexMode ? { lastMove: null } : {}),
+      ...(isHexMode || resized ? { lastMove: null } : {}),
     });
     schedule(() => {
       get().pluginManager.invokeOnIntroEnd();

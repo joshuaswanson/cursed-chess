@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { SquareIndex } from "../../engine";
 import type { HeistView } from "../../plugins/heist";
+import { boardRanks } from "../../utils/squareUtils";
 import { visualCol, visualRow } from "./boardGeometry";
 import "./Heist.css";
 
@@ -36,19 +37,18 @@ export function Jewel({ className = "" }: { className?: string }) {
   );
 }
 
-/** A jewel where it stands on the board: on the cushion in its vault, or held up by the thief who has it. Yours is blue, theirs red. */
-export function HeistLoot({ held, yours }: { held: boolean; yours: boolean }) {
-  const whose = yours ? "is-yours" : "is-theirs";
+/** The jewel where it stands on the board: on its cushion in the vault, or held up by whoever has it */
+export function HeistLoot({ held }: { held: boolean }) {
   if (held) {
     return (
-      <span className={`heist-held ${whose}`} aria-hidden>
+      <span className="heist-held" aria-hidden>
         <Jewel />
         <i className="heist-glint" />
       </span>
     );
   }
   return (
-    <span className={`heist-plinth ${whose}`} aria-hidden>
+    <span className="heist-plinth" aria-hidden>
       <span className="heist-cushion" />
       <Jewel />
       <i className="heist-glint" />
@@ -56,45 +56,43 @@ export function HeistLoot({ held, yours }: { held: boolean; yours: boolean }) {
   );
 }
 
-/** How dark the hall is between the lights */
-const GLOOM = "rgba(5, 8, 20, 0.62)";
-/** How wide a light's pool is, in squares, out to where it is gone */
-const POOL_SQUARES = 2.3;
+/** How dark the hall is where no light falls */
+const GLOOM = "rgba(3, 4, 12, 0.89)";
+/** How far a searchlight reaches from the middle of its four squares: fully lit, then gone, in squares */
+const LIGHT_LIT = 1.0;
+const LIGHT_REACH = 1.55;
 const FRAME_MS = 40;
-/** The searchlights: how far each swings, how fast, and where in its swing it starts */
-const LIGHTS = [
-  { swingX: 3.3, swingY: 2.6, speedX: 0.41, speedY: 0.29, phase: 0 },
-  { swingX: 2.8, swingY: 3.3, speedX: 0.27, speedY: 0.38, phase: 2.1 },
-  { swingX: 3.4, swingY: 3.0, speedX: 0.33, speedY: 0.22, phase: 4.4 },
-];
-/** How quickly a light closes on the thief once the alarm is up, as the share of the gap closed each frame */
-const LOCK_ON = 0.09;
+/** How quickly a light glides to its new squares, as the share of the gap closed each frame */
+const GLIDE = 0.16;
 
 /**
- * The museum's lights: a dim hall with searchlights sweeping the floor.
- * When a jewel leaves its vault the alarm goes up, the hall pulses red,
- * and a light swings round and stays on whoever has it.
+ * The dark of the hall and what shows through it: the searchlights, the
+ * squares the piece you have picked up could go to, the vault, and the
+ * jewel. With the jewel out of the vault the whole hall pulses red.
  */
 export function HeistLights({
   view,
+  targets,
   flipped,
   squareSize,
 }: {
   view: HeistView;
+  targets: SquareIndex[];
   flipped: boolean;
   squareSize: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const scene = useRef({ view, flipped, squareSize });
+  const scene = useRef({ view, targets, flipped, squareSize });
   useEffect(() => {
-    scene.current = { view, flipped, squareSize };
+    scene.current = { view, targets, flipped, squareSize };
   });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    const at = LIGHTS.map(() => ({ x: 4, y: 4 }));
+    /** Where each light is on screen now, in squares, as it glides after its squares */
+    const at = new Map<number, { x: number; y: number }>();
     let frame = 0;
     let last = 0;
 
@@ -102,69 +100,84 @@ export function HeistLights({
       frame = requestAnimationFrame(draw);
       if (now - last < FRAME_MS) return;
       last = now;
-      const { view, flipped, squareSize } = scene.current;
+      const { view, targets, flipped, squareSize } = scene.current;
       const scale = Math.min(2, window.devicePixelRatio || 1);
-      const size = Math.round(squareSize * 8 * scale);
-      if (canvas.width !== size) {
-        canvas.width = size;
-        canvas.height = size;
+      const ranks = boardRanks();
+      const width = Math.round(squareSize * 8 * scale);
+      const height = Math.round(squareSize * ranks * scale);
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
       }
-      const sq = size / 8;
-      const stolen = view.jewels.filter((jewel) => jewel.carried);
-      const alarm = stolen.length > 0;
-      const t = now / 1000;
-      const thief = (square: SquareIndex) => ({
+      const sq = width / 8;
+      const alarm = view.carrier !== null;
+      const centre = (square: SquareIndex) => ({
         x: visualCol(square, flipped) + 0.5,
         y: visualRow(square, flipped) + 0.5,
       });
+      /** The middle of a two by two block, on screen, from its corner nearest a1 */
+      const block = (file: number, rank: number) => ({
+        x: flipped ? 7 - file - 1 : file + 1,
+        y: flipped ? rank + 1 : ranks - rank - 1,
+      });
+      const wear = (
+        x: number,
+        y: number,
+        lit: number,
+        reach: number,
+        depth: number,
+      ) => {
+        const glow = ctx.createRadialGradient(
+          x * sq,
+          y * sq,
+          lit * sq,
+          x * sq,
+          y * sq,
+          reach * sq,
+        );
+        glow.addColorStop(0, `rgba(0, 0, 0, ${depth})`);
+        glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(
+          (x - reach) * sq,
+          (y - reach) * sq,
+          reach * 2 * sq,
+          reach * 2 * sq,
+        );
+      };
 
-      LIGHTS.forEach((light, i) => {
-        // With the alarm up, the lights sweep faster
-        const rate = alarm ? 1.9 : 1;
-        const sweep = {
-          x: 4 + light.swingX * Math.sin(t * light.speedX * rate + light.phase),
-          y:
-            4 +
-            light.swingY *
-              Math.sin(t * light.speedY * rate + light.phase * 1.7),
+      const lights = view.lights.map((light) => {
+        const goal = block(light.file, light.rank);
+        const here = at.get(light.id) ?? goal;
+        const next = {
+          x: here.x + (goal.x - here.x) * GLIDE,
+          y: here.y + (goal.y - here.y) * GLIDE,
         };
-        // One light for each thief at large; the rest keep sweeping
-        const hunted = stolen[i];
-        const goal = hunted ? thief(hunted.sq) : sweep;
-        const ease = hunted ? LOCK_ON : 0.2;
-        at[i].x += (goal.x - at[i].x) * ease;
-        at[i].y += (goal.y - at[i].y) * ease;
+        at.set(light.id, next);
+        return next;
       });
 
       ctx.globalCompositeOperation = "source-over";
-      ctx.clearRect(0, 0, size, size);
+      ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = GLOOM;
-      ctx.fillRect(0, 0, size, size);
+      ctx.fillRect(0, 0, width, height);
 
-      // Each light wears a pool through the gloom
       ctx.globalCompositeOperation = "destination-out";
-      for (const { x, y } of at) {
-        const reach = POOL_SQUARES * sq;
-        const pool = ctx.createRadialGradient(
-          x * sq,
-          y * sq,
-          0,
-          x * sq,
-          y * sq,
-          reach,
-        );
-        pool.addColorStop(0, "rgba(0, 0, 0, 1)");
-        pool.addColorStop(0.45, "rgba(0, 0, 0, 0.92)");
-        pool.addColorStop(0.7, "rgba(0, 0, 0, 0.4)");
-        pool.addColorStop(1, "rgba(0, 0, 0, 0)");
-        ctx.fillStyle = pool;
-        ctx.fillRect(x * sq - reach, y * sq - reach, reach * 2, reach * 2);
+      // The vault is never quite dark, so there is always somewhere to make for
+      const vault = block(view.vault.file + 1, view.vault.rank + 1);
+      wear(vault.x, vault.y, 0.6, 3.1, 0.28);
+      for (const { x, y } of lights) wear(x, y, LIGHT_LIT, LIGHT_REACH, 1);
+      for (const target of targets) {
+        const { x, y } = centre(target);
+        wear(x, y, 0.08, 0.34, 0.6);
       }
+      const jewel = centre(view.sq);
+      wear(jewel.x, jewel.y, 0.25, 0.8, 0.85);
 
-      // The light itself: cool white, or red once the alarm is up
       ctx.globalCompositeOperation = "source-over";
-      at.forEach(({ x, y }, i) => {
-        const reach = POOL_SQUARES * 0.8 * sq;
+      for (const { x, y } of lights) {
+        // The beam itself: cold white, or red once the alarm is up
+        const reach = LIGHT_REACH * sq;
         const tint = ctx.createRadialGradient(
           x * sq,
           y * sq,
@@ -173,18 +186,17 @@ export function HeistLights({
           y * sq,
           reach,
         );
-        const hunting = i < stolen.length;
         tint.addColorStop(
           0,
-          hunting ? "rgba(255, 70, 70, 0.3)" : "rgba(210, 230, 255, 0.2)",
+          alarm ? "rgba(255, 80, 80, 0.3)" : "rgba(215, 232, 255, 0.24)",
         );
         tint.addColorStop(1, "rgba(255, 255, 255, 0)");
         ctx.fillStyle = tint;
         ctx.fillRect(x * sq - reach, y * sq - reach, reach * 2, reach * 2);
-      });
+      }
       if (alarm) {
-        ctx.fillStyle = `rgba(255, 30, 40, ${0.07 + 0.07 * Math.sin(t * 7)})`;
-        ctx.fillRect(0, 0, size, size);
+        ctx.fillStyle = `rgba(255, 30, 40, ${0.06 + 0.06 * Math.sin(now / 140)})`;
+        ctx.fillRect(0, 0, width, height);
       }
     };
     frame = requestAnimationFrame(draw);

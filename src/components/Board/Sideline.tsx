@@ -8,6 +8,7 @@ import { pieceImage } from "../../utils/pieceImages";
 import { useKitImages } from "../../utils/kitImages";
 import { visualCol, visualRow } from "./boardGeometry";
 import "./Sideline.css";
+import { boardRanks } from "../../utils/squareUtils";
 
 type Style = React.CSSProperties & Record<`--${string}`, string | number>;
 
@@ -155,13 +156,15 @@ export function Sideline({
       (color) => bench.filter(({ piece }) => piece.color === color).length,
     ),
   );
+  /** How tall each side's half of the touchline is */
+  const halfHeight = (boardRanks() / 2) * squareSize;
   const layoutAt = (scale: number) => {
     const cell = squareSize * scale;
     const gap = Math.min(squareSize * FRAME, Math.max(0, room - cell));
     const columns = Math.max(1, Math.floor((room - gap) / cell));
-    const rows = Math.floor((4 * squareSize) / cell);
+    const rows = Math.floor(halfHeight / cell);
     const coachRow = Math.floor(rows / 2);
-    const inset = (4 * squareSize - rows * cell) / 2;
+    const inset = (halfHeight - rows * cell) / 2;
     // The rows left for players on each side: clear of the coach, who
     // stands a full square tall, and of the fourth official's board at
     // halfway
@@ -186,7 +189,7 @@ export function Sideline({
   // With no room at all, as on a phone, the touchline overlaps the board's edge
   const spotAt = (side: "near" | "far", column: number, row: number) => ({
     x: Math.max(-room, -gap - cell * (Math.min(column, columns - 1) + 1)),
-    y: (side === "far" ? 0 : 4 * squareSize) + inset + row * cell,
+    y: (side === "far" ? 0 : halfHeight) + inset + row * cell,
   });
   // Seats in the order they fill: down the column beside the coach, then the
   // next one out

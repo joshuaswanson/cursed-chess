@@ -10,10 +10,17 @@ import type {
 } from "./types";
 import { Board, STARTING_FEN } from "./board";
 import { generatePseudoLegalMoves, isSquareAttacked, opponent } from "./moves";
-import { toIndex, fileOf, rankOf } from "../utils/squareUtils";
+import {
+  boardRanks,
+  fileOf,
+  lastRank,
+  rankOf,
+  toIndex,
+} from "../utils/squareUtils";
 import { moveToSan } from "./notation";
 
-const EMPTY_FEN = "8/8/8/8/8/8/8/8 w - - 0 1";
+/** A board of the depth in play with nothing on it */
+const emptyFen = () => `${Array(boardRanks()).fill("8").join("/")} w - - 0 1`;
 
 function cloneCastling(c: CastlingRights): CastlingRights {
   return {
@@ -45,7 +52,7 @@ export class Game {
   }
 
   static fromArmies(white: Piece[], black: Piece[]): Game {
-    const game = new Game(EMPTY_FEN);
+    const game = new Game(emptyFen());
     game.board.placeArmy(Color.White, white);
     game.board.placeArmy(Color.Black, black);
     return game;
@@ -128,7 +135,7 @@ export class Game {
   private generateCastlingMoves(): Move[] {
     const moves: Move[] = [];
     const color = this.turn;
-    const rank = color === Color.White ? 0 : 7;
+    const rank = color === Color.White ? 0 : lastRank();
     const kingSq = toIndex(4, rank);
     const king = this.board.get(kingSq);
 
@@ -268,13 +275,13 @@ export class Game {
 
     // Handle castling
     if (move.flags & MoveFlag.KingsideCastle) {
-      const rank = this.turn === Color.White ? 0 : 7;
+      const rank = this.turn === Color.White ? 0 : lastRank();
       const rookFrom = toIndex(7, rank);
       const rookTo = toIndex(5, rank);
       const rook = this.board.remove(rookFrom)!;
       this.board.put(rookTo, rook);
     } else if (move.flags & MoveFlag.QueensideCastle) {
-      const rank = this.turn === Color.White ? 0 : 7;
+      const rank = this.turn === Color.White ? 0 : lastRank();
       const rookFrom = toIndex(0, rank);
       const rookTo = toIndex(3, rank);
       const rook = this.board.remove(rookFrom)!;
@@ -362,11 +369,11 @@ export class Game {
 
     // Undo castling rook move
     if (move.flags & MoveFlag.KingsideCastle) {
-      const rank = color === Color.White ? 0 : 7;
+      const rank = color === Color.White ? 0 : lastRank();
       const rook = this.board.remove(toIndex(5, rank))!;
       this.board.put(toIndex(7, rank), rook);
     } else if (move.flags & MoveFlag.QueensideCastle) {
-      const rank = color === Color.White ? 0 : 7;
+      const rank = color === Color.White ? 0 : lastRank();
       const rook = this.board.remove(toIndex(3, rank))!;
       this.board.put(toIndex(0, rank), rook);
     }

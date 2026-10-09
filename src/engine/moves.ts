@@ -1,7 +1,13 @@
 import { Color, PieceType, MoveFlag } from "./types";
 import type { Piece, SquareIndex, Move, PawnRule, PawnRules } from "./types";
 import type { Board } from "./board";
-import { toIndex, rankOf, isValidSquare } from "../utils/squareUtils";
+import {
+  boardRanks,
+  isValidSquare,
+  lastRank,
+  rankOf,
+  toIndex,
+} from "../utils/squareUtils";
 
 // Direction offsets in 0x88
 const NORTH = 16;
@@ -52,8 +58,8 @@ function generatePawnMoves(
   const moves: Move[] = [];
   const color = piece.color;
   const direction = color === Color.White ? NORTH : SOUTH;
-  const startRank = color === Color.White ? 1 : 6;
-  const promoRank = color === Color.White ? 7 : 0;
+  const startRank = color === Color.White ? 1 : lastRank() - 1;
+  const promoRank = color === Color.White ? lastRank() : 0;
 
   // Single push
   const oneStep = sq + direction;
@@ -267,7 +273,7 @@ export function generatePseudoLegalMoves(
 ): Move[] {
   const moves: Move[] = [];
 
-  for (let rank = 0; rank < 8; rank++) {
+  for (let rank = 0; rank < boardRanks(); rank++) {
     for (let file = 0; file < 8; file++) {
       const sq = toIndex(file, rank);
       const piece = board.get(sq);
