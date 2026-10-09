@@ -428,27 +428,35 @@
   font-size: 15px;
 }
 
-.boring-moves li {
+/* A row of moves: its number, White's move, Black's, with a hairline under it */
+.boring-move-row {
   display: grid;
   grid-template-columns: 40px 1fr 1fr;
-  padding: 4px 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid #ececec;
 }
 
-.boring-moves li:nth-child(even) {
-  background: #f7f7f7;
+/* Something Chessbot has typed between the moves: a block of its own,
+   tinted and ruled down one side, with room above and below */
+.boring-bot-block {
+  margin: 8px 10px;
+  padding: 8px 12px;
+  background: #fff1f8;
+  border-left: 3px solid #d6006f;
+  border-radius: 3px;
 }
 
-/* Chessbot's asides, typed where a move should be */
-.boring-moves li.boring-bot-says {
-  display: block;
-  padding-left: 2.6em;
-  text-indent: -1.2em;
-  line-height: 1.35;
-  background: none;
+.boring-bot-says {
+  margin: 0;
   font-family: "Courier New", Courier, monospace;
   font-size: 13.5px;
   font-weight: bold;
+  line-height: 1.4;
   color: #d6006f;
+}
+
+.boring-bot-says + .boring-bot-says {
+  margin-top: 6px;
 }
 
 /* The caret, blinking where his next letter will land */
@@ -495,6 +503,7 @@
 
 .boring-moves li.boring-empty {
   display: block;
+  padding: 6px 12px;
 }
 
 .boring-footer button {

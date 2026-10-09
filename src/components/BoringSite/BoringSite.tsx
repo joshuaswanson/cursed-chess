@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { THEMES } from "../../theme/themes";
 import type { SiteTab } from "../../stores/gameStore";
@@ -7,7 +8,14 @@ import type { AuthMode } from "./AuthDialog";
 import "./BoringSite.css";
 import { Chessbot } from "../Chessbot/Chessbot";
 import type { ChessbotMood } from "../Chessbot/Chessbot";
-import { introDelays, introMood, introScript } from "../Chessbot/intro";
+import {
+  ASIDE_LEAD_MS,
+  SPEECH_LEAD_MS,
+  introDelays,
+  introMood,
+  introScript,
+} from "../Chessbot/intro";
+import type { IntroLine } from "../Chessbot/intro";
 
 const NAV_LINKS: SiteTab[] = ["Play", "Puzzles", "Learn", "Watch", "Community"];
 
@@ -118,7 +126,10 @@ function ComputerCard() {
   const stage = useGameStore((s) => s.curseStage);
   const revealed = stage === "hello";
   const gone = stage !== null && stage !== "hello";
-  const slipping = stage === null ? Math.min(2, plies) : 0;
+  const aside = useGameStore((s) => s.aside);
+  // He flickers through hardest while he is typing his remark
+  const slipping =
+    stage !== null ? 0 : aside === "typing" ? 2 : Math.min(2, plies);
   const mood = useSpeechMood(revealed);
   return (
     <div
@@ -169,12 +180,22 @@ function ComputerCard() {
 }
 
 /**
- * Chessbot's speech appearing in the move list the way someone types it: a
- * letter at a time, with a caret blinking where the next one will land
+ * Something Chessbot types into the move list, the way someone types it: a
+ * letter at a time, with a caret blinking where the next one will land. It
+ * sits in a block of its own, set apart from the moves around it.
  */
-function BotTyping({ opening }: { opening: string }) {
-  const lines = useMemo(() => introScript(opening), [opening]);
-  const delays = useMemo(() => introDelays(lines), [lines]);
+function BotTyping({
+  lines,
+  lead,
+  acted = false,
+}: {
+  lines: IntroLine[];
+  /** How long before the first letter */
+  lead: number;
+  /** Whether his face follows the words, for when he is out where it can be seen */
+  acted?: boolean;
+}) {
+  const delays = useMemo(() => introDelays(lines, lead), [lines, lead]);
   const [typed, setTyped] = useState(0);
   const caret = useRef<HTMLSpanElement>(null);
 
@@ -198,51 +219,85 @@ function BotTyping({ opening }: { opening: string }) {
   );
   const mood = introMood(lines[current], typed - starts[current]);
   useEffect(() => {
-    useGameStore.setState({ introMood: mood });
-  }, [mood]);
+    if (acted) useGameStore.setState({ introMood: mood });
+  }, [acted, mood]);
 
   return (
-    <>
+    <li className="boring-bot-block">
       {lines.map(({ text }, i) => {
         if (i > current) return null;
         return (
-          <li key={i} className="boring-bot-says">
-            {"> "}
+          <p key={i} className="boring-bot-says">
             {text.slice(0, typed - starts[i])}
-            {i === current && (
+            {/* The caret goes once a passing remark is finished; through his speech it stays */}
+            {i === current && (acted || typed < delays.length) && (
               <span ref={caret} className="boring-caret" aria-hidden />
             )}
-          </li>
+          </p>
         );
       })}
-    </>
+    </li>
+  );
+}
+
+/** One line of the move list: a move number, White's move, and Black's */
+function MoveRow({
+  no,
+  white,
+  black,
+}: {
+  no: number;
+  /** Left out for a row that carries on after something was said in between */
+  white?: string;
+  black?: string;
+}) {
+  return (
+    <li className="boring-move-row">
+      <span className="boring-move-no">{no}.</span>
+      <span>{white ?? "\u2026"}</span>
+      <span>{black ?? ""}</span>
+    </li>
   );
 }
 
 function MoveList() {
   const history = useGameStore((s) => s.moveHistory);
-  // Once he is out of his icon, he has things to say
-  const typing = useGameStore((s) => s.curseStage !== null);
+  // He remarks on your first move before he answers it
+  const aside = useGameStore((s) => s.aside);
+  // Once he is out of his icon, he has more to say
+  const speaking = useGameStore((s) => s.curseStage !== null);
   const listRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [history.length]);
 
-  const rows: { white: string; black?: string }[] = [];
+  const opening = history[0]?.san ?? "e4";
+  const script = useMemo(() => introScript(opening), [opening]);
+  const remark = useMemo(() => script.slice(0, 1), [script]);
+  const speech = useMemo(() => script.slice(1), [script]);
+  // His remark comes between your first move and his reply, so that row is
+  // split in two around it
+  const remarked = aside === "typing" || aside === "said";
+  const rows: ReactNode[] = [];
   for (let i = 0; i < history.length; i += 2) {
-    rows.push({ white: history[i].san, black: history[i + 1]?.san });
+    const no = i / 2 + 1;
+    const white = history[i].san;
+    const black = history[i + 1]?.san;
+    if (i === 0 && remarked) {
+      rows.push(<MoveRow key="1w" no={1} white={white} />);
+      rows.push(<BotTyping key="remark" lines={remark} lead={ASIDE_LEAD_MS} />);
+      if (black) rows.push(<MoveRow key="1b" no={1} black={black} />);
+    } else {
+      rows.push(<MoveRow key={no} no={no} white={white} black={black} />);
+    }
   }
   return (
     <ol className="boring-moves" ref={listRef}>
-      {rows.length === 0 && <li className="boring-empty">White to move</li>}
-      {rows.map((row, i) => (
-        <li key={i}>
-          <span className="boring-move-no">{i + 1}.</span>
-          <span>{row.white}</span>
-          <span>{row.black ?? ""}</span>
-        </li>
-      ))}
-      {typing && <BotTyping opening={history[0]?.san ?? "e4"} />}
+      {history.length === 0 && <li className="boring-empty">White to move</li>}
+      {rows}
+      {speaking && (
+        <BotTyping key="speech" lines={speech} lead={SPEECH_LEAD_MS} acted />
+      )}
     </ol>
   );
 }

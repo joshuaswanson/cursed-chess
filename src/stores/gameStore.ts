@@ -39,7 +39,12 @@ import { chooseMove, PIECE_VALUE } from "../ai/chooseMove";
 import type { ThemeId } from "../theme/themes";
 import type { SquareBonus } from "../ai/chooseMove";
 import type { HexCoord, HexMove } from "../engine/hex";
-import { introDuration, introScript } from "../components/Chessbot/intro";
+import {
+  ASIDE_LEAD_MS,
+  SPEECH_LEAD_MS,
+  introDuration,
+  introScript,
+} from "../components/Chessbot/intro";
 import type { ChessbotMood } from "../components/Chessbot/Chessbot";
 
 export type { PortalMoveInfo };
@@ -249,6 +254,11 @@ export interface GameStore {
   menuOpen: boolean;
   /** Adventure runs every mode once in order; a single mode is played alone. Either ends at the main menu. */
   playMode: "adventure" | "single";
+  /**
+   * His remark on your opening move, typed into the plain site's move list
+   * before he replies: the site glitches, then he types, then it stays
+   */
+  aside: "glitch" | "typing" | "said" | null;
   /** How Chessbot looks at this point in his opening speech */
   introMood: ChessbotMood;
 
@@ -442,6 +452,25 @@ function endGameSoon(
   schedule(() => useGameStore.getState().handleGameEnd(winner), wait);
 }
 
+/** How long the plain site glitches after your first move, before he says anything */
+const ASIDE_GLITCH_MS = 1300;
+
+/**
+ * Your first move sets him off: the plain site glitches for a moment, then
+ * he types what he thinks of it into the move list, and only then replies
+ */
+function startAside(): void {
+  const opening = useGameStore.getState().moveHistory[0]?.san ?? "e4";
+  const typing = introDuration(introScript(opening).slice(0, 1), ASIDE_LEAD_MS);
+  holdPause(ASIDE_GLITCH_MS + typing);
+  useGameStore.setState({ aside: "glitch" });
+  schedule(() => useGameStore.setState({ aside: "typing" }), ASIDE_GLITCH_MS);
+  schedule(
+    () => useGameStore.setState({ aside: "said" }),
+    ASIDE_GLITCH_MS + typing,
+  );
+}
+
 /**
  * Chessbot shows himself in his icon on the plain chess site and types what
  * he thinks of it into the move list. Then he leaves the card and peeks up
@@ -451,7 +480,8 @@ function endGameSoon(
 function startCursedIntro(): void {
   const opening = useGameStore.getState().moveHistory[0]?.san ?? "e4";
   const helloAt = GAME_END_DELAY_MS;
-  const peekAt = helloAt + introDuration(introScript(opening));
+  const peekAt =
+    helloAt + introDuration(introScript(opening).slice(1), SPEECH_LEAD_MS);
   const glitchAt = peekAt + CURSE_PEEK_MS;
   const oopsAt = glitchAt + CURSE_GLITCH_MS;
   const boomAt = oopsAt + CURSE_OOPS_MS;
@@ -618,6 +648,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   cursed: false,
   curseStage: null,
   introMood: "happy",
+  aside: null,
   menuOpen: false,
   playMode: "adventure",
   autonomousTick: 0,
@@ -878,6 +909,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     if (isNormalChess && game.history.length === NORMAL_CHESS_PLIES) {
       startCursedIntro();
+    } else if (isNormalChess && game.history.length === 1) {
+      startAside();
     }
     skipStuckTurn();
   },
@@ -919,6 +952,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       introMood: "happy",
       menuOpen: false,
       playMode: "adventure",
+      aside: null,
     });
   },
 

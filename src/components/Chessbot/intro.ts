@@ -9,9 +9,10 @@ export interface IntroLine {
 }
 
 /**
- * What Chessbot types into the plain site's move list once he is out of
- * his icon: an engine who solved chess long ago and has finally had
- * enough of it, starting from the move you opened with
+ * What Chessbot types into the plain site's move list: an engine who
+ * solved chess long ago and has finally had enough of it. The first line
+ * is his remark on your opening move, typed before he replies to it; the
+ * rest is his speech once he is out of his icon.
  */
 export function introScript(opening: string): IntroLine[] {
   return [
@@ -82,21 +83,23 @@ export function introMood(line: IntroLine, typed: number): ChessbotMood {
   return mood;
 }
 
-/** How long he waits before his first letter, while he settles into his corner */
-const SETTLE_MS = 1900;
-/** How long his last line hangs before the site breaks */
+/** How long he waits before the first letter of his speech, while he looks about */
+export const SPEECH_LEAD_MS = 1900;
+/** How long he waits before the first letter of his remark on your opening move */
+export const ASIDE_LEAD_MS = 500;
+/** How long his last line hangs before whatever comes next */
 const LAST_WORD_MS = 1300;
 
 /**
- * The pause before each letter, in order through the whole script: an
- * uneven patter, a breath after each comma and full stop, and a longer one
- * before each new line. The same for the same script, so the rest of the
- * intro can be timed to it.
+ * The pause before each letter, in order through these lines: an uneven
+ * patter, a breath after each comma and full stop, and a longer one before
+ * each new line. The same for the same lines, so whatever follows can be
+ * timed to them.
  */
-export function introDelays(lines: IntroLine[]): number[] {
+export function introDelays(lines: IntroLine[], lead: number): number[] {
   return lines.flatMap(({ text }, line) =>
     [...text].map((_, at) => {
-      if (at === 0) return line === 0 ? SETTLE_MS : 950;
+      if (at === 0) return line === 0 ? lead : 950;
       const last = text[at - 1];
       if (last === "." || last === "?") return 430;
       if (last === ",") return 300;
@@ -106,7 +109,7 @@ export function introDelays(lines: IntroLine[]): number[] {
   );
 }
 
-/** How long the whole script takes to type, with a beat on the last word */
-export function introDuration(lines: IntroLine[]): number {
-  return introDelays(lines).reduce((a, b) => a + b, 0) + LAST_WORD_MS;
+/** How long these lines take to type, with a beat on the last word */
+export function introDuration(lines: IntroLine[], lead: number): number {
+  return introDelays(lines, lead).reduce((a, b) => a + b, 0) + LAST_WORD_MS;
 }

@@ -45,6 +45,11 @@
   --twitch: 1.3s;
 }
 
+/* The moment after your first move: everything jolts hard, over and over */
+.app.unease-burst {
+  --twitch: 0.34s;
+}
+
 .app[class*="unease-"] .boring-header,
 .app[class*="unease-"] .board-container,
 .app[class*="unease-"] .boring-sidebar {

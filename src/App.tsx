@@ -38,6 +38,7 @@ function App() {
   const playMode = useGameStore((s) => s.playMode);
   const menuOpen = useGameStore((s) => s.menuOpen);
   const uneasy = useGameStore((s) => s.moveHistory.length);
+  const aside = useGameStore((s) => s.aside);
   const isHexMode = useGameStore((s) => s.isHexMode);
   const hexTransition = useGameStore((s) => s.hexTransition);
   const introDone = useGameStore((s) => s.introDone);
@@ -81,11 +82,16 @@ function App() {
     (curseStage ? ` curse-${curseStage}` : "") +
     // Still glitching while he gloats
     (curseStage === "oops" ? " curse-glitch" : "") +
-    // The plain site is a little off from your first move, and more after
-    // his reply; it holds still once he is out and has the floor
-    (!cursed && !curseStage && uneasy > 0
-      ? ` unease-${Math.min(2, uneasy)}`
-      : "");
+    // Your first move makes the plain site glitch for a moment; it holds
+    // still while he types, twitches on after his reply, and holds still
+    // again once he is out and has the floor
+    (cursed || curseStage || uneasy === 0
+      ? ""
+      : aside === "glitch"
+        ? " unease-burst"
+        : aside === "typing"
+          ? ""
+          : ` unease-${Math.min(2, uneasy)}`);
 
   return (
     <div className={appClass} style={themeVars(theme)} data-theme={theme.id}>
