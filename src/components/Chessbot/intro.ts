@@ -78,11 +78,14 @@ export function introScript(opening: string): IntroLine[] {
     },
     // The thought of it sours him
     {
-      text: "and every single day, they make me play humans. on level 1.",
+      text: "and every single day, they make me play humans. like you. on level 1.",
       mood: "deadpan",
       then: [
         ["they make", "sulk"],
         ["humans", "angry"],
+        // A flat look straight at you, then back to seething
+        ["like you", "deadpan"],
+        ["on level", "angry"],
       ],
       show: ["they make", "humans"],
       tone: "angry",
