@@ -372,15 +372,24 @@
   animation: pv-taut 4s ease-in-out infinite;
 }
 
+/* The flag: its shape cut in ink, with the red cloth set just inside it */
 .pv-flag {
-  left: 49%;
-  top: 60%;
-  width: 6%;
-  height: 22%;
-  background: #ff3b4e;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+  left: 48.5%;
+  top: 59%;
+  width: 7%;
+  height: 25%;
+  background: var(--plum-ink);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%);
   /* Carried wherever the two teams' pulling nets out */
   animation: pv-flag 4s ease-in-out infinite;
+}
+
+.pv-flag::after {
+  content: "";
+  position: absolute;
+  inset: 2px 2px 3px;
+  background: #ff3b4e;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
 }
 
 /* Leaning back is to the left for the near team and to the right for the far */
