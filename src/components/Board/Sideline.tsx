@@ -12,8 +12,10 @@ import "./Sideline.css";
 type Style = React.CSSProperties & Record<`--${string}`, string | number>;
 
 const BENCH_WALK_MS = 1100;
-/** How much of a square each touchline spot takes, so the players stand as big as their coach */
-const CELL = 1;
+/** The sizes a spot can shrink to, biggest first, as more players come off */
+const SPOT_SCALES = [1, 0.85, 0.7, 0.6, 0.5, 0.42, 0.36];
+/** How far either side of halfway is kept clear for the fourth official's board, in squares */
+const HALFWAY_CLEAR = 0.65;
 /** The board frame's width beyond the squares, kept clear of the touchline */
 const FRAME = 0.32;
 /** Breathing room left at the screen's edge */
@@ -145,31 +147,54 @@ export function Sideline({
   const half = (color: Color) => (color === nearColor ? "near" : "far");
 
   // Lay the touchline out in the room actually left of the board, so
-  // everyone on it stays on screen however wide the window is
-  const cell = squareSize * CELL;
-  const gap = Math.min(squareSize * FRAME, Math.max(0, room - cell));
-  const columns = Math.max(1, Math.floor((room - gap) / cell));
-  const rows = Math.floor((4 * squareSize) / cell);
-  const coachRow = Math.floor(rows / 2);
+  // everyone on it stays on screen however wide the window is. The spots
+  // shrink until there is one for everybody taken off, so nobody ever has
+  // to stand on top of someone else.
+  const crowd = Math.max(
+    ...[Color.White, Color.Black].map(
+      (color) => bench.filter(({ piece }) => piece.color === color).length,
+    ),
+  );
+  const layoutAt = (scale: number) => {
+    const cell = squareSize * scale;
+    const gap = Math.min(squareSize * FRAME, Math.max(0, room - cell));
+    const columns = Math.max(1, Math.floor((room - gap) / cell));
+    const rows = Math.floor((4 * squareSize) / cell);
+    const coachRow = Math.floor(rows / 2);
+    const inset = (4 * squareSize - rows * cell) / 2;
+    // The rows left for players on each side: clear of the coach, who
+    // stands a full square tall, and of the fourth official's board at
+    // halfway
+    const free = (side: "near" | "far") =>
+      Array.from({ length: rows }, (_, row) => row).filter((row) => {
+        const fromCoach = Math.abs(row - coachRow) * cell;
+        const fromHalfway =
+          inset + (side === "far" ? rows - 1 - row : row) * cell;
+        return (
+          fromCoach >= (squareSize + cell) / 2 - 1 &&
+          fromHalfway >= squareSize * HALFWAY_CLEAR
+        );
+      });
+    return { cell, gap, columns, rows, coachRow, inset, free };
+  };
+  const fits = (scale: number) => {
+    const { columns, free } = layoutAt(scale);
+    return columns * Math.min(free("near").length, free("far").length) >= crowd;
+  };
+  const scale = SPOT_SCALES.find(fits) ?? SPOT_SCALES[SPOT_SCALES.length - 1];
+  const { cell, gap, columns, coachRow, inset, free } = layoutAt(scale);
   // With no room at all, as on a phone, the touchline overlaps the board's edge
   const spotAt = (side: "near" | "far", column: number, row: number) => ({
     x: Math.max(-room, -gap - cell * (Math.min(column, columns - 1) + 1)),
-    y:
-      (side === "far" ? 0 : 4 * squareSize) +
-      (4 * squareSize - rows * cell) / 2 +
-      row * cell,
+    y: (side === "far" ? 0 : 4 * squareSize) + inset + row * cell,
   });
   // Seats in the order they fill: down the column beside the coach, then the
-  // next one out. The spots either side of halfway are kept clear for the
-  // fourth official's board.
+  // next one out
   const seat = (side: "near" | "far", n: number) => {
-    const halfway = side === "far" ? rows - 1 : 0;
-    const free = Array.from({ length: rows }, (_, row) => row).filter(
-      (row) => row !== coachRow && row !== halfway,
-    );
+    const rows = free(side);
     return {
-      column: Math.floor(n / free.length),
-      row: free[n % free.length],
+      column: Math.floor(n / Math.max(1, rows.length)),
+      row: rows[n % Math.max(1, rows.length)] ?? 0,
     };
   };
 
