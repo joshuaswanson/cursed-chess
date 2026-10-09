@@ -43,6 +43,10 @@ export function useChessbot(): Reaction {
       timer = window.setTimeout(() => setReaction(null), ms);
     };
     const stop = useGameStore.subscribe((now, before) => {
+      // Gravity turns, and he is thrown about with everything else
+      if (now.gravityFalling && !before.gravityFalling) {
+        return react("dizzy", 2600);
+      }
       if (now.scoreWhite > before.scoreWhite) return react("sulk", 5000);
       if (now.scoreBlack > before.scoreBlack) return react("proud", 4000);
       if (now.currentModeIndex !== before.currentModeIndex) {

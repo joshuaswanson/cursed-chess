@@ -21,7 +21,9 @@ export type ChessbotMood =
   | "eyeroll"
   | "sly"
   // Working out his move
-  | "thinking";
+  | "thinking"
+  // Spun about, as when gravity turns
+  | "dizzy";
 
 const INK = "#1b1033";
 const EYE = "#ffffff";
@@ -276,6 +278,25 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
           <path d="M126 78 l4 9.5 l9.5 4 l-9.5 4 l-4 9.5 l-4 -9.5 l-9.5 -4 l9.5 -4 z" />
         </g>
       );
+    case "dizzy":
+      return (
+        <g
+          fill="none"
+          stroke={EYE}
+          strokeWidth="4.5"
+          strokeLinecap="round"
+          filter={glow}
+        >
+          <path
+            className="chessbot-swirl"
+            d="M71 93 a3 3 0 1 1 6 0 a6 6 0 1 1 -12 0 a9 9 0 1 1 18 0 a12 12 0 0 1 -12 12"
+          />
+          <path
+            className="chessbot-swirl"
+            d="M123 93 a3 3 0 1 1 6 0 a6 6 0 1 1 -12 0 a9 9 0 1 1 18 0 a12 12 0 0 1 -12 12"
+          />
+        </g>
+      );
     case "thinking":
       return (
         <g fill={EYE} filter={glow}>
@@ -347,6 +368,8 @@ const POSE: Record<ChessbotMood, Pose> = {
   love: UPRIGHT,
   stars: UPRIGHT,
   smug: LEANING,
+  // His antenna flops over as he reels
+  dizzy: { ...UPRIGHT, droop: 38 },
   // Head up, antenna reaching
   thinking: { ...UPRIGHT, lift: -3, stretch: 1.12 },
   proud: { ...UPRIGHT, lift: -8 },
