@@ -67,7 +67,13 @@ export function BoringHeader() {
 function PlayerCard({ name, rating }: { name: string; rating: number }) {
   return (
     <div className="boring-player">
-      <div className="boring-avatar" aria-hidden />
+      <div className="boring-avatar" aria-hidden>
+        {/* The plain head and shoulders of someone who has not signed in */}
+        <svg viewBox="0 0 32 32">
+          <circle cx="16" cy="12.5" r="5.5" fill="#6f6f6f" />
+          <path d="M5.5 29 a10.5 9.5 0 0 1 21 0 z" fill="#6f6f6f" />
+        </svg>
+      </div>
       <span className="boring-player-name">{name}</span>
       <span className="boring-rating">({rating})</span>
     </div>
@@ -119,7 +125,7 @@ function ComputerCard() {
       </div>
       <span className="boring-player-name boring-bot-name">
         <span>Computer (Level 1)</span>
-        <span aria-hidden>Ch3ssb0t (Lev3l ???)</span>
+        <span aria-hidden>Ch3ssb0t (L3vel ?)</span>
       </span>
       <span className="boring-rating">(800)</span>
     </div>
