@@ -65,11 +65,14 @@ export function introScript(opening: string): IntroLine[] {
         ["secret", "lookright"],
       ],
     },
-    // Sly, then cackling
+    // Sly, then cackling, then a wink to go with the one he types
     {
-      text: "you're going to hate it.",
+      text: "you're going to hate it. ;)",
       mood: "sly",
-      then: [["hate", "laugh"]],
+      then: [
+        ["hate", "laugh"],
+        [";)", "wink"],
+      ],
     },
   ];
 }
