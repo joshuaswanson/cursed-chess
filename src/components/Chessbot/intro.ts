@@ -26,7 +26,7 @@ export function introScript(opening: string): IntroLine[] {
     },
     // Pleased with his own joke, then weary at the number
     {
-      text: "that was sarcasm. i have seen it 4,186,331 times.",
+      text: "that was sarcasm. i have seen it 4,186,331,207 times.",
       mood: "smug",
       then: [
         ["i have", "sulk"],
@@ -35,7 +35,7 @@ export function introScript(opening: string): IntroLine[] {
     },
     // Proud of it, then flat for the punchline
     {
-      text: "i finished chess years ago. on a tuesday.",
+      text: "i solved chess years ago. on a tuesday.",
       mood: "happy",
       then: [["on a", "deadpan"]],
     },
