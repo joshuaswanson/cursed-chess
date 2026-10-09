@@ -3,6 +3,18 @@
   overflow: visible;
 }
 
+/* His head tips about a point under his chin, and his antenna swings from
+   its foot; both ease into each new pose */
+.chessbot-head {
+  transform-origin: 100px 170px;
+  transition: transform 0.28s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.chessbot-antenna {
+  transform-origin: 100px 54px;
+  transition: transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
 /* Rattled, the torn strips of him jump about and flicker */
 .chessbot-tear {
   animation: chessbot-tear 0.42s steps(1) infinite;
@@ -195,7 +207,15 @@
 
 /* Sulking: he sinks and sways slowly, close to the ground */
 .chessbot-hop.is-sulk {
-  animation: chessbot-mope 3.4s ease-in-out infinite;
+  animation:
+    chessbot-sink 0.5s ease-out,
+    chessbot-mope 3.4s 0.5s ease-in-out infinite;
+}
+
+@keyframes chessbot-sink {
+  to {
+    transform: translateY(6%) rotate(-3deg);
+  }
 }
 
 @keyframes chessbot-arrive {
@@ -301,20 +321,20 @@
   }
 }
 
-/* Drifting in a slow loop, squashing a little as he comes down */
+/* Drifting in a slow loop that starts and ends at rest, so whatever comes before or after it joins on without a jump */
 @keyframes chessbot-bob {
   0%,
   100% {
-    transform: translate(0, 0) rotate(-2deg) scale(1.02, 0.98);
+    transform: translate(0, 0) rotate(0deg) scale(1, 1);
   }
   25% {
-    transform: translate(2%, -6%) rotate(0deg) scale(1, 1);
+    transform: translate(2%, -6%) rotate(2deg) scale(0.99, 1.01);
   }
   50% {
-    transform: translate(0, -11%) rotate(2deg) scale(0.99, 1.02);
+    transform: translate(0, -11%) rotate(0deg) scale(0.99, 1.02);
   }
   75% {
-    transform: translate(-2%, -5%) rotate(0deg) scale(1, 1);
+    transform: translate(-2%, -5%) rotate(-2deg) scale(1, 1);
   }
 }
 
@@ -543,6 +563,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .chessbot-head,
+  .chessbot-antenna {
+    transition: none;
+  }
+
   .chessbot-corner,
   .chessbot-fidget,
   .chessbot-steam i,

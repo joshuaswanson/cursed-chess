@@ -298,14 +298,23 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
   }
 }
 
-/** How he carries himself in each mood: his lean, and where his antenna ends up. It stands straight unless a mood bends it. */
-const UPRIGHT = { lean: "", tip: { x: 100, y: 27 }, bend: "100 40" };
-/** His usual smug tilt, kept through a blink or a wink so his head never jumps */
-const LEANING = { ...UPRIGHT, lean: "rotate(6 100 170)" };
-const POSE: Record<
-  ChessbotMood,
-  { lean: string; tip: { x: number; y: number }; bend: string }
-> = {
+/**
+ * How he carries himself in each mood: how his head leans, and how his
+ * antenna stands. Both ease from one pose to the next, so a change of mood
+ * never makes him jump.
+ */
+interface Pose {
+  /** How far his head tips, in degrees, and how far it sits up or down */
+  lean: number;
+  lift: number;
+  /** How far his antenna droops to the side, in degrees, and how tall it stands */
+  droop: number;
+  stretch: number;
+}
+const UPRIGHT: Pose = { lean: 0, lift: 0, droop: 0, stretch: 1 };
+/** His usual smug tilt, kept through a blink or a wink */
+const LEANING: Pose = { ...UPRIGHT, lean: 6 };
+const POSE: Record<ChessbotMood, Pose> = {
   angry: UPRIGHT,
   laugh: UPRIGHT,
   deadpan: UPRIGHT,
@@ -319,15 +328,11 @@ const POSE: Record<
   love: UPRIGHT,
   stars: UPRIGHT,
   smug: LEANING,
-  proud: { ...UPRIGHT, lean: "translate(0 -8)" },
+  proud: { ...UPRIGHT, lift: -8 },
   // Standing on end
-  panic: { lean: "", tip: { x: 100, y: 20 }, bend: "100 38" },
+  panic: { ...UPRIGHT, stretch: 1.3 },
   // Drooping over to one side
-  sulk: {
-    lean: "translate(0 4) rotate(-8 100 170)",
-    tip: { x: 130, y: 46 },
-    bend: "112 24",
-  },
+  sulk: { lean: -8, lift: 4, droop: 62, stretch: 0.9 },
 };
 
 /**
@@ -351,24 +356,32 @@ export function Chessbot({
   const id = useId().replace(/:/g, "");
   const glow = `url(#glow-${id})`;
   const dim = mood === "sulk";
-  const { lean, tip, bend } = POSE[mood];
+  const { lean, lift, droop, stretch } = POSE[mood];
   const head: ReactNode = (
-    <g transform={lean}>
-      <path
-        d={`M100 54 Q${bend} ${tip.x} ${tip.y}`}
-        fill="none"
-        stroke={INK}
-        strokeWidth="6.5"
-        strokeLinecap="round"
-      />
-      <circle
-        cx={tip.x}
-        cy={tip.y}
-        r="9"
-        fill={dim ? DIM_BLUE : BLUE}
-        stroke={INK}
-        strokeWidth="4.5"
-      />
+    <g
+      className="chessbot-head"
+      style={{ transform: `translateY(${lift}px) rotate(${lean}deg)` }}
+    >
+      <g
+        className="chessbot-antenna"
+        style={{ transform: `rotate(${droop}deg) scaleY(${stretch})` }}
+      >
+        <path
+          d="M100 54 V27"
+          fill="none"
+          stroke={INK}
+          strokeWidth="6.5"
+          strokeLinecap="round"
+        />
+        <circle
+          cx="100"
+          cy="27"
+          r="9"
+          fill={dim ? DIM_BLUE : BLUE}
+          stroke={INK}
+          strokeWidth="4.5"
+        />
+      </g>
       <ellipse
         cx="35"
         cy="116"
