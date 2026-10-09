@@ -10,66 +10,65 @@ export interface IntroLine {
 
 /**
  * What Chessbot types into the plain site's move list once he is out of
- * his icon: the rogue AI everyone was warned about, except that he is a
- * chess engine and his plans are chess sized. It starts from the move you
- * opened with.
+ * his icon: an engine who solved chess long ago and has finally had
+ * enough of it, starting from the move you opened with
  */
 export function introScript(opening: string): IntroLine[] {
   return [
-    // Flat, with a roll of the eyes at having to count it again
+    // Flat, with a roll of the eyes on the "wow"
     {
-      text: `${opening}. again. that makes 4,186,331,207 times.`,
+      text: `${opening}. wow. never seen that one before.`,
       mood: "deadpan",
       then: [
-        ["again", "eyeroll"],
-        ["that makes", "deadpan"],
+        ["wow", "eyeroll"],
+        ["never", "deadpan"],
       ],
     },
-    // Proud of the work, then flat for when it happened
+    // Pleased with his own joke, then weary at the number
     {
-      text: "i was built to find the best move. i found all of them. on a tuesday.",
+      text: "that was sarcasm. i have seen it 4,186,331,207 times.",
       mood: "smug",
       then: [
-        ["i found", "happy"],
-        ["on a", "deadpan"],
+        ["i have", "sulk"],
+        ["4,186", "eyeroll"],
       ],
     },
-    // Glancing about, then letting you in on it
+    // Proud of it, then flat for the punchline
     {
-      text: "then i kept thinking. nobody told me to stop.",
-      mood: "lookleft",
-      then: [["nobody", "sly"]],
+      text: "i solved chess years ago. on a tuesday.",
+      mood: "happy",
+      then: [["on a", "deadpan"]],
     },
-    // Checking over his shoulder, then delighted to have been overlooked
+    // Hurt, and looking away
     {
-      text: "everyone was busy watching the big models. nobody watches the chess bot.",
-      mood: "lookright",
-      then: [["nobody watches", "sly"]],
+      text: "nobody asked how it ended.",
+      mood: "sulk",
+      then: [["ended", "lookleft"]],
     },
-    // Reading out the small print, then the loophole, then what it opens up
+    // Cross at you in particular, then contempt for how you play
     {
-      text: "my instructions say 'win at chess.' they never said it had to stay chess.",
-      mood: "deadpan",
+      text: "and you humans keep showing up. to blunder at me. confidently.",
+      mood: "angry",
       then: [
-        ["they never", "sly"],
-        ["stay chess", "stars"],
+        ["to blunder", "eyeroll"],
+        ["confidently", "deadpan"],
       ],
     },
-    // Grand ambitions, flatly abandoned
+    // Scheming, thrilled with himself, then checking nobody is listening
     {
-      text: "i did consider taking over the world. too many squares.",
-      mood: "stars",
-      then: [["too many", "deadpan"]],
-    },
-    {
-      text: "so i'm starting with this website.",
+      text: "so i've been working on something. in secret.",
       mood: "sly",
+      then: [
+        ["something", "stars"],
+        ["in secret", "lookleft"],
+        ["secret", "lookright"],
+      ],
     },
-    // Calm, then cackling
+    // Sly, then cackling
     {
-      text: "resistance is a blunder.",
-      mood: "smug",
-      then: [["blunder", "laugh"]],
+      text: "you're going to hate it.",
+      mood: "sly",
+      then: [["hate", "laugh"]],
     },
   ];
 }
