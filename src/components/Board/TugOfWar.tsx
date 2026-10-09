@@ -787,7 +787,8 @@ export function TugLayer({
               className={`tug-flag-body${view.heave > 0 ? " heaving" : ""}`}
               style={{ "--yank": yank } as Style}
             >
-              <svg viewBox="0 0 70 44" className="tug-flag-cloth">
+              {/* Drawn with room above and below the cloth, so its fly end stays inside the picture however far it swings */}
+              <svg viewBox="0 -34 70 112" className="tug-flag-cloth">
                 {part === "cloth" ? (
                   /* The cloth ripples between two shapes as it flies off the
                      rope, and swings about its knots as the rope jolts */
