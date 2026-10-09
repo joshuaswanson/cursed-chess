@@ -1,13 +1,27 @@
 import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { THEMES } from "../../theme/themes";
-import type { ModeTheme } from "../../theme/themes";
-import { ModePreview } from "./ModePreview";
+import { AdventurePreview, ModePreview } from "./ModePreview";
 import { Logo } from "../Logo/Logo";
 import "./MainMenu.css";
 
-/** One mode on the menu: its scene playing while it is on screen, its name, and what it is */
-function ModeCard({ theme, onPlay }: { theme: ModeTheme; onPlay: () => void }) {
+/** One thing to play on the menu: its scene playing while it is on screen, its name, and its tagline */
+function ModeCard({
+  title,
+  tagline,
+  colors,
+  onPlay,
+  children,
+}: {
+  title: string;
+  tagline: string;
+  /** The two colours its card and scene are washed in */
+  colors: [string, string];
+  onPlay: () => void;
+  /** Its little scene */
+  children: ReactNode;
+}) {
   const ref = useRef<HTMLButtonElement>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
@@ -24,17 +38,14 @@ function ModeCard({ theme, onPlay }: { theme: ModeTheme; onPlay: () => void }) {
       type="button"
       className={`menu-mode${inView ? " in-view" : ""}`}
       style={
-        {
-          "--chip-a": theme.sky[1],
-          "--chip-b": theme.accent,
-        } as React.CSSProperties
+        { "--chip-a": colors[0], "--chip-b": colors[1] } as React.CSSProperties
       }
       onClick={onPlay}
     >
-      <ModePreview theme={theme.id} />
+      {children}
       <span className="menu-mode-text">
-        <span className="menu-mode-title">{theme.title}</span>
-        <span className="menu-mode-tagline">{theme.catchphrase}</span>
+        <span className="menu-mode-title">{title}</span>
+        <span className="menu-mode-tagline">{tagline}</span>
       </span>
     </button>
   );
@@ -52,34 +63,29 @@ export function MainMenu() {
     <div className="main-menu" role="dialog" aria-label="Main menu">
       <div className="menu-sheet">
         <Logo />
-        <button
-          type="button"
-          className="menu-adventure"
-          onClick={startAdventure}
-        >
-          <span className="menu-adventure-title">Adventure</span>
-          <span className="menu-adventure-sub">
-            Every mode, one after another
-          </span>
-          {/* The road ahead: a stop for each mode, in its own colour */}
-          <span className="menu-trail" aria-hidden>
-            {GAME_MODES.map((mode) => (
-              <i
-                key={mode.theme}
-                style={{ background: THEMES[mode.theme].accent }}
-              />
-            ))}
-          </span>
-        </button>
-        <h2 className="menu-heading">Or play just one</h2>
         <div className="menu-modes">
-          {GAME_MODES.map((mode, i) => (
-            <ModeCard
-              key={mode.theme}
-              theme={THEMES[mode.theme]}
-              onPlay={() => startSingle(i)}
-            />
-          ))}
+          <ModeCard
+            title="Adventure"
+            tagline="Every mode, one after another!"
+            colors={["#6a1fd6", "#ff2e88"]}
+            onPlay={startAdventure}
+          >
+            <AdventurePreview />
+          </ModeCard>
+          {GAME_MODES.map((mode, i) => {
+            const theme = THEMES[mode.theme];
+            return (
+              <ModeCard
+                key={mode.theme}
+                title={theme.title}
+                tagline={theme.catchphrase}
+                colors={[theme.sky[1], theme.accent]}
+                onPlay={() => startSingle(i)}
+              >
+                <ModePreview theme={theme.id} />
+              </ModeCard>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import type { ThemeId } from "../../theme/themes";
 import { PieceType } from "../../engine";
 import { zombieImage } from "../../utils/pieceImages";
 import { SoccerBall } from "../Board/Football";
+import { Chessbot } from "../Chessbot/Chessbot";
 import { MineBlast } from "../Board/MineBlast";
 import { Portal } from "../Board/Portal";
 import { Tombstone } from "../Board/Zombies";
@@ -512,6 +513,24 @@ export function ModePreview({ theme }: { theme: ThemeId }) {
   return (
     <span className={`mode-preview scene-${theme}`} aria-hidden>
       {SCENES[theme]}
+    </span>
+  );
+}
+
+/**
+ * The adventure's scene: Chessbot popping up over a plain green chess board
+ * that glitches into colour around him
+ */
+export function AdventurePreview() {
+  return (
+    <span className="mode-preview scene-adventure" aria-hidden>
+      <span className="pv-plain-board" />
+      <span className="pv-cursed-board" />
+      <span className="pv-host">
+        <Chessbot mood="smug" grounded={false} />
+      </span>
+      <span className="pv-glitch-bar pv-glitch-bar-a" />
+      <span className="pv-glitch-bar pv-glitch-bar-b" />
     </span>
   );
 }
