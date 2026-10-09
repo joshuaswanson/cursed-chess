@@ -50,10 +50,12 @@ const AI_MOVE_SECONDS = 1;
 const UNLIMITED_SECONDS = 999;
 /** Battle Royale ends this many seconds after the board stops shrinking */
 const BATTLE_ROYALE_FINAL_SECONDS = 5;
-/** Plies of normal chess before the cursed modes begin (white, black, white) */
-const NORMAL_CHESS_PLIES = 3;
-/** When the plain site's glitching gives way to the curse */
-const CURSE_BOOM_MS = 2600;
+/** Plies of normal chess before Chessbot steps in: your first move */
+const NORMAL_CHESS_PLIES = 1;
+/** How long Chessbot stands on the plain site saying his piece before he breaks it */
+const CURSE_HELLO_MS = 3600;
+/** How long the plain site glitches before the curse bursts through */
+const CURSE_GLITCH_MS = 2000;
 /** How long the curse's title card owns the screen */
 const CURSE_REVEAL_MS = 3200;
 
@@ -237,7 +239,8 @@ export interface GameStore {
   devMode: boolean;
   /** False while the game still poses as a plain chess website */
   cursed: boolean;
-  curseStage: "glitch" | "boom" | null;
+  /** The plain site's end: Chessbot shows himself, the site glitches, the curse bursts through */
+  curseStage: "hello" | "glitch" | "boom" | null;
 
   deployPieceType: PieceType | null;
   /** Bumped every autonomous tick, since plugins change resources and the board in place */
@@ -421,21 +424,24 @@ function endGameSoon(
   schedule(() => useGameStore.getState().handleGameEnd(winner), wait);
 }
 
-/** The plain chess site starts glitching, then the curse bursts through */
+/** Chessbot shows himself on the plain chess site, breaks it, and the curse bursts through */
 function startCursedIntro(): void {
-  holdPause(CURSE_BOOM_MS + CURSE_REVEAL_MS);
+  const glitchAt = GAME_END_DELAY_MS + CURSE_HELLO_MS;
+  const boomAt = glitchAt + CURSE_GLITCH_MS;
+  holdPause(boomAt + CURSE_REVEAL_MS);
   schedule(
-    () => useGameStore.setState({ curseStage: "glitch" }),
+    () => useGameStore.setState({ curseStage: "hello" }),
     GAME_END_DELAY_MS,
   );
+  schedule(() => useGameStore.setState({ curseStage: "glitch" }), glitchAt);
   schedule(
     () => useGameStore.setState({ curseStage: "boom", cursed: true }),
-    CURSE_BOOM_MS,
+    boomAt,
   );
   schedule(() => {
     useGameStore.setState({ curseStage: null });
     useGameStore.getState().switchMode();
-  }, CURSE_BOOM_MS + CURSE_REVEAL_MS);
+  }, boomAt + CURSE_REVEAL_MS);
 }
 
 /** Ends the turn for an action that does not move a piece, like a kick or a battering */

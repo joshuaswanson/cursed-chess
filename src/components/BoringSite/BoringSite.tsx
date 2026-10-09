@@ -5,7 +5,6 @@ import type { SiteTab } from "../../stores/gameStore";
 import { AuthDialog } from "./AuthDialog";
 import type { AuthMode } from "./AuthDialog";
 import "./BoringSite.css";
-import { Chessbot } from "../Chessbot/Chessbot";
 
 const NAV_LINKS: SiteTab[] = ["Play", "Puzzles", "Learn", "Watch", "Community"];
 
@@ -82,17 +81,19 @@ function PlayerCard({ name, rating }: { name: string; rating: number }) {
 
 /**
  * The computer opponent's card. Its plain grey icon is Chessbot keeping up
- * appearances: with every move of the opening game he slips a little more,
- * tearing sideways and showing his real face for an instant, until the
- * site breaks and he drops the act.
+ * appearances. After your first move he steps out of it to speak for
+ * himself, leaving the frame empty, and as he breaks the site the name on
+ * the card gives way to his own.
  */
 function ComputerCard() {
-  const plies = useGameStore((s) => s.moveHistory.length);
-  const breaking = useGameStore((s) => s.curseStage !== null);
-  const slipping = breaking ? 4 : Math.min(3, plies);
+  const stage = useGameStore((s) => s.curseStage);
+  const out = stage !== null;
+  const breaking = stage === "glitch" || stage === "boom";
   return (
-    <div className={`boring-player boring-bot slipping-${slipping}`}>
-      <div className="boring-avatar boring-bot-avatar" aria-hidden>
+    <div
+      className={`boring-player boring-bot${out ? " vacated" : ""}${breaking ? " renamed" : ""}`}
+    >
+      <div className="boring-avatar" aria-hidden>
         <svg className="boring-bot-icon" viewBox="0 0 32 32">
           <path d="M16 9.5 V5.5" stroke="#6f6f6f" strokeWidth="1.6" />
           <circle cx="16" cy="4.8" r="1.7" fill="#6f6f6f" />
@@ -121,7 +122,6 @@ function ComputerCard() {
             strokeLinecap="round"
           />
         </svg>
-        <Chessbot className="boring-bot-true" mood="smug" grounded={false} />
       </div>
       <span className="boring-player-name boring-bot-name">
         <span>Computer (Level 1)</span>

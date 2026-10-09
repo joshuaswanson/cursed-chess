@@ -163,7 +163,8 @@
 
 .glitch-notice {
   position: absolute;
-  right: 24px;
+  /* Clear of Chessbot, who stands in the other corner breaking things */
+  left: 24px;
   bottom: 24px;
   padding: 12px 16px;
   font-family: Arial, Helvetica, sans-serif;
@@ -424,27 +425,6 @@
   from {
     translate: 0 -80vh;
     rotate: -10deg;
-  }
-}
-
-.boom-tagline {
-  margin-top: 2vmin;
-  padding: 10px 18px;
-  font-size: clamp(14px, 1.8vw, 22px);
-  font-weight: 800;
-  color: #1b1033;
-  background: #ffd23f;
-  border: 3px solid #1b1033;
-  border-radius: 10px;
-  box-shadow: 5px 6px 0 #1b1033;
-  rotate: -2deg;
-  animation: sticker-in 0.45s 1.3s cubic-bezier(0.3, 1.8, 0.5, 1) both;
-}
-
-@keyframes sticker-in {
-  from {
-    scale: 0;
-    rotate: 20deg;
   }
 }
 

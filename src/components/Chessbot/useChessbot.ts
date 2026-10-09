@@ -15,9 +15,10 @@ const PRIZED: PieceType[] = [PieceType.Queen, PieceType.Rook];
 
 /**
  * How Chessbot is taking the game: smug by default, proud of each new mode
- * and each point he takes, sulking over each one he loses, and rattled
- * when you check him or take a piece he prizes. His visor flashes CHECK as
- * he checks you and UH OH when it goes against him.
+ * and each point he takes, sulking over each one he loses, cross when you
+ * take one of his pieces and rattled when it is one he prizes or you check
+ * him, and cackling when he takes one of yours. His visor flashes CHECK as
+ * he checks you, UH OH when it goes against him, and HA HA over a prize.
  */
 export function useChessbot(): Reaction {
   const [reaction, setReaction] = useState<Reaction | null>(null);
@@ -49,13 +50,15 @@ export function useChessbot(): Reaction {
       if (now.moveHistory.length > before.moveHistory.length) {
         const { move } = now.moveHistory[now.moveHistory.length - 1];
         const lost = move.captured;
-        if (
-          move.piece.color === Color.White &&
-          lost?.color === Color.Black &&
-          PRIZED.includes(lost.type)
-        ) {
-          react("panic", 2200, "UH OH");
+        if (!lost || lost.color === move.piece.color) return;
+        // You took one of his: a prized piece rattles him, anything else makes him cross
+        if (move.piece.color === Color.White) {
+          return PRIZED.includes(lost.type)
+            ? react("panic", 2200, "UH OH")
+            : react("angry", 1700);
         }
+        // He took one of yours, and finds it very funny
+        react("laugh", 1900, PRIZED.includes(lost.type) ? "HA HA" : undefined);
       }
     });
     return () => {

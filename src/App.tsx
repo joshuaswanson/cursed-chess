@@ -79,7 +79,7 @@ function App() {
   return (
     <div className={appClass} style={themeVars(theme)} data-theme={theme.id}>
       {cursed && <Backdrop theme={theme.id} />}
-      {cursed && <ChessbotCorner />}
+      {(cursed || curseStage) && <ChessbotCorner />}
       {cursed ? (
         <header className="topbar">
           <Logo />
@@ -98,7 +98,7 @@ function App() {
             <div className="board-stack">
               {board}
               <MoveCountdown />
-              <SkipBanner />
+              {!cursed && <SkipBanner />}
             </div>
             {cursed && <YourRallyBar />}
             {cursed && theme.id === "trenches" && <TrenchOrders />}

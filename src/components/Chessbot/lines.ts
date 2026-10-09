@@ -23,3 +23,21 @@ export const VERDICTS = {
   lose: "as predicted.",
   draw: "a draw is a win for me. i checked.",
 } as const;
+
+/** What he says as he shows himself on the plain chess site, and then as he breaks it */
+export const ENTRANCE = {
+  hello: "this game has been solved. by me. it's boring. let me fix it.",
+  glitch: "patching chess. do not turn off your device.",
+} as const;
+
+/** What he says when a turn is missed: by whom, and why */
+export const SKIPS = {
+  time: {
+    you: "time's up. too slow. i'll take that turn.",
+    foe: "time's up for me? that clock is broken. go again.",
+  },
+  stuck: {
+    you: "none of your pieces can move. skipping you.",
+    foe: "i have nothing to move. this is fine. go again.",
+  },
+} as const;

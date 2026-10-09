@@ -96,9 +96,6 @@ function CurseBoom() {
           ))}
         </div>
         <div className="boom-chess">CHESS</div>
-        <p className="boom-tagline">
-          The rules change every 45 seconds. Good luck.
-        </p>
       </div>
       <Confetti count={140} seed={3} delayMs={850} />
     </div>

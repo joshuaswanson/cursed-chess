@@ -7,6 +7,8 @@ export type ChessbotMood =
   | "proud"
   | "panic"
   | "sulk"
+  | "angry"
+  | "laugh"
   // Passing looks on his visor while nothing much is happening
   | "blink"
   | "wink"
@@ -83,6 +85,48 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
             fill="#8fe9ff"
             stroke={INK}
             strokeWidth="2.5"
+          />
+        </>
+      );
+    case "angry":
+      return (
+        <>
+          <g fill="#ff5a5a" filter={glow}>
+            <path d="M62 88 L86 96 v2 a12 9 0 0 1 -24 0 z" />
+            <path d="M138 88 L114 96 v2 a12 9 0 0 0 24 0 z" />
+          </g>
+          <path
+            d="M56 76 L90 88 M110 88 L144 76"
+            stroke="#ff5a5a"
+            strokeWidth="5.5"
+            strokeLinecap="round"
+            filter={glow}
+          />
+          <g stroke="#ff5a5a" strokeWidth="4" strokeLinecap="round">
+            <path d="M160 44 l8 -8 M168 48 l10 -3 M156 36 l3 -10" />
+          </g>
+        </>
+      );
+    case "laugh":
+      return (
+        <>
+          <g
+            fill="none"
+            stroke={EYE}
+            strokeWidth="9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter={glow}
+          >
+            <path d="M62 86 L84 95 L62 104" />
+            <path d="M138 86 L116 95 L138 104" />
+          </g>
+          <path
+            d="M57 72 L89 80 M111 80 L143 72"
+            stroke={EYE}
+            strokeWidth="4.5"
+            strokeLinecap="round"
+            filter={glow}
           />
         </>
       );
@@ -173,18 +217,22 @@ const POSE: Record<
   ChessbotMood,
   { lean: string; tip: { x: number; y: number }; bend: string }
 > = {
+  angry: UPRIGHT,
+  laugh: UPRIGHT,
   blink: LEANING,
   wink: LEANING,
   happy: UPRIGHT,
   love: UPRIGHT,
   stars: UPRIGHT,
   smug: LEANING,
-  proud: { lean: "translate(0 -8)", tip: { x: 124, y: 28 }, bend: "112 40" },
-  panic: { lean: "", tip: { x: 116, y: 24 }, bend: "120 40" },
+  proud: { ...UPRIGHT, lean: "translate(0 -8)" },
+  // Standing on end
+  panic: { lean: "", tip: { x: 100, y: 20 }, bend: "100 38" },
+  // Drooping over to one side
   sulk: {
     lean: "translate(0 4) rotate(-8 100 170)",
-    tip: { x: 136, y: 46 },
-    bend: "126 40",
+    tip: { x: 130, y: 46 },
+    bend: "112 24",
   },
 };
 
@@ -213,7 +261,7 @@ export function Chessbot({
   const head: ReactNode = (
     <g transform={lean}>
       <path
-        d={`M108 54 Q${bend} ${tip.x} ${tip.y}`}
+        d={`M100 54 Q${bend} ${tip.x} ${tip.y}`}
         fill="none"
         stroke={INK}
         strokeWidth="6.5"

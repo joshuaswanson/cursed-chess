@@ -131,27 +131,18 @@
   font-weight: bold;
 }
 
-/* --- The computer's icon: Chessbot keeping up appearances, and slipping --- */
+/* --- The computer's icon: Chessbot keeping up appearances --- */
 
-.boring-bot-avatar {
-  position: relative;
-  overflow: visible;
+/* He has stepped out to speak for himself, and the frame stands empty */
+.boring-bot.vacated .boring-bot-icon {
+  animation: bot-leaves 0.35s steps(3) forwards;
 }
 
-.boring-bot-icon {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-/* His real face, hidden behind the icon until a slip shows it */
-.boring-bot-avatar > .boring-bot-true {
-  position: absolute;
-  left: -22%;
-  top: -34%;
-  width: 144%;
-  height: 144%;
-  opacity: 0;
+@keyframes bot-leaves {
+  to {
+    opacity: 0;
+    translate: 0 -40%;
+  }
 }
 
 /* The name he really goes by, laid over the one on his card without widening it */
@@ -168,143 +159,33 @@
   color: #d6006f;
 }
 
-/* Each move he slips more often: a rare flicker, then tears, then barely holding together */
-.slipping-1 {
-  --slip: 5.5s;
-}
-
-.slipping-2 {
-  --slip: 2.4s;
-}
-
-.slipping-3 {
-  --slip: 0.9s;
-}
-
-.slipping-1 .boring-bot-avatar,
-.slipping-2 .boring-bot-avatar,
-.slipping-3 .boring-bot-avatar {
-  animation: bot-slip var(--slip) steps(1) infinite;
-}
-
-.slipping-1 .boring-bot-true,
-.slipping-2 .boring-bot-true,
-.slipping-3 .boring-bot-true {
-  animation: bot-true-flash var(--slip) steps(1) infinite;
-}
-
-.slipping-2 .boring-bot-name > span,
-.slipping-3 .boring-bot-name > span {
-  animation: bot-name-slip var(--slip) steps(1) infinite;
-}
-
-.slipping-2 .boring-bot-name > span + span,
-.slipping-3 .boring-bot-name > span + span {
-  animation-name: bot-name-true;
-}
-
-/* The site is breaking: he drops the act */
-.slipping-4 .boring-bot-icon {
+/* As he breaks the site, the name on the card gives way to his own */
+.boring-bot.renamed .boring-bot-name > span {
   visibility: hidden;
 }
 
-.slipping-4 .boring-bot-true {
-  opacity: 1;
-}
-
-.slipping-4 .boring-bot-avatar {
-  background: none;
-  animation: bot-slip 0.35s steps(1) infinite;
-}
-
-.slipping-4 .boring-bot-name > span {
-  visibility: hidden;
-}
-
-.slipping-4 .boring-bot-name > span + span {
+.boring-bot.renamed .boring-bot-name > span + span {
   visibility: visible;
+  animation: bot-name-jitter 0.3s steps(1) infinite;
 }
 
-@keyframes bot-slip {
+@keyframes bot-name-jitter {
   0%,
   100% {
     translate: 0 0;
-    clip-path: none;
-    filter: none;
   }
-  87% {
-    translate: -3px 0;
-    clip-path: inset(18% 0 46% 0);
-    filter: drop-shadow(3px 0 0 #21e6ff);
-  }
-  90% {
-    translate: 1px 0;
-    clip-path: none;
-    filter: none;
-  }
-  94% {
-    translate: 4px 0;
-    clip-path: inset(52% 0 12% 0);
-    filter: drop-shadow(-3px 0 0 #ff2e88);
-  }
-  97% {
-    translate: -1px 1px;
-    clip-path: none;
-    filter: none;
-  }
-}
-
-/* His real face, whole, in the instant between two tears */
-@keyframes bot-true-flash {
-  0%,
-  100% {
-    opacity: 0;
-  }
-  90% {
-    opacity: 1;
-  }
-  94% {
-    opacity: 0;
-  }
-}
-
-@keyframes bot-name-slip {
-  0%,
-  100% {
-    visibility: visible;
-    translate: 0 0;
-  }
-  89% {
-    translate: 2px 0;
-  }
-  91% {
-    visibility: hidden;
-  }
-  95% {
-    visibility: visible;
-    translate: -1px 0;
-  }
-}
-
-@keyframes bot-name-true {
-  0%,
-  100% {
-    visibility: hidden;
-  }
-  91% {
-    visibility: visible;
+  33% {
     translate: -2px 0;
   }
-  95% {
-    visibility: hidden;
+  66% {
+    translate: 2px 1px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .boring-bot-avatar,
-  .boring-bot-true,
+  .boring-bot-icon,
   .boring-bot-name > span {
-    animation: none !important;
+    animation-duration: 0.01s !important;
   }
 }
 
