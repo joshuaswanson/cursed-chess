@@ -174,7 +174,12 @@ function Sword() {
 /** The size of a hexagon in the hex scene, in a drawing 200 wide and 100 tall */
 const HEX_R = 19;
 const HEX_H = Math.sqrt(3) * HEX_R;
-const HEX_TONES = ["#ff2e88", "#7a1fd6", "#21c8e6"];
+/** Three tones of one dusk: plum, orchid, and a warm rose, each lit from above */
+const HEX_TONES = [
+  ["#5a2a9c", "#3a176e"],
+  ["#d6489f", "#a02c7c"],
+  ["#ffb38a", "#f07f7a"],
+];
 /** The column of each cell the bishop stops on, along the middle row */
 const BISHOP_COLUMNS = [1, 3, 5];
 const hexX = (q: number) => 10 + q * HEX_R * 1.5;
@@ -186,7 +191,8 @@ const BISHOP_STOPS = BISHOP_COLUMNS.map((q) => hexX(q) / 2);
  * from cell to cell through the corners between them.
  */
 function HexBoard() {
-  const cells = [];
+  const cells: ReactNode[] = [];
+  const path: ReactNode[] = [];
   for (let q = 0; q <= 7; q++) {
     for (let row = -1; row <= 3; row++) {
       const x = hexX(q);
@@ -197,11 +203,12 @@ function HexBoard() {
         return `${(x + HEX_R * Math.cos(a)).toFixed(1)},${(y + HEX_R * Math.sin(a)).toFixed(1)}`;
       }).join(" ");
       const onPath = row === 1 && BISHOP_COLUMNS.includes(q);
-      cells.push(
+      // The bishop's cells are drawn last, so their outline lies over their neighbours
+      (onPath ? path : cells).push(
         <polygon
           key={`${q}:${row}`}
           points={corners}
-          fill={HEX_TONES[tone]}
+          fill={`url(#pv-hex-${tone})`}
           className={onPath ? "pv-hex-path" : undefined}
         />,
       );
@@ -209,7 +216,23 @@ function HexBoard() {
   }
   return (
     <svg className="pv-hexes" viewBox="0 0 200 100" preserveAspectRatio="none">
+      <defs>
+        {HEX_TONES.map(([top, bottom], i) => (
+          <linearGradient
+            key={i}
+            id={`pv-hex-${i}`}
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="1"
+          >
+            <stop offset="0" stopColor={top} />
+            <stop offset="1" stopColor={bottom} />
+          </linearGradient>
+        ))}
+      </defs>
       {cells}
+      {path}
     </svg>
   );
 }
