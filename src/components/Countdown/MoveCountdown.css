@@ -106,13 +106,17 @@
 
 /* --- Battle royale: molten digits slam down --- */
 
+/* A solid glowing ember: a see-through gradient fill let the board show
+   through the digit and left it too faint to read */
 [data-countdown="royale"] .countdown-digit {
-  color: #ffd27a;
-  background: linear-gradient(180deg, #fff1a8, #ff8a1a 55%, #c2250a);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 18px #ff5a00);
+  color: #ffc23d;
+  -webkit-text-stroke: 0.05em #3a0d02;
+  paint-order: stroke fill;
+  text-shadow:
+    0.04em 0.05em 0 #3a0d02,
+    0.08em 0.1em 0 #3a0d02,
+    0 0 0.2em #ff7a00,
+    0 0 0.55em #ff3c00;
   animation: count-slam 0.35s cubic-bezier(0.5, 0, 0.9, 0.5);
 }
 
