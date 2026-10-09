@@ -7,7 +7,7 @@ import { ALL_SQUARES, fileOf, rankOf, toIndex } from "../utils/squareUtils";
 
 /** Files c to f: the mouth of each goal */
 export const GOAL_FILES = [2, 3, 4, 5];
-/** Chance that one enemy next to a pass's path steps in and steals it */
+/** Chance that one enemy next to a pass's path jumps into it and takes the ball */
 const INTERCEPT_CHANCE = 0.2;
 /** Chance that an enemy standing in a shot's path blocks it */
 const BLOCK_CHANCE: Record<PieceType, number> = {
@@ -51,7 +51,7 @@ export interface Kick {
   outcome: KickOutcome;
   /** The ball's flight, starting at the kicker */
   waypoints: Spot[];
-  /** Defenders who threw themselves into a shot's path, and where they landed */
+  /** Defenders who threw themselves into the ball's path, and where they landed */
   dives: Dive[];
   /** Defenders already standing in a shot's path, who jump to block it */
   jumps: SquareIndex[];
@@ -67,7 +67,7 @@ export type KickTarget = SquareIndex | "goal";
 export interface PassOption {
   to: SquareIndex;
   chance: number;
-  /** Enemies next to the path, in the order the ball passes them, with where it passes them */
+  /** Enemies next to the path, in the order the ball passes them, with the square each would jump onto to cut it out */
   threats: { sq: SquareIndex; near: SquareIndex }[];
 }
 
@@ -231,7 +231,12 @@ export class FootballPlugin implements ModePlugin {
         const piece = board.get(sq);
         if (piece) {
           if (piece.color === kicker.color) {
-            const threats = this.threatsAlong(board, path, kicker.color);
+            // Only the open squares short of the receiver can be jumped onto
+            const threats = this.threatsAlong(
+              board,
+              path.slice(0, -1),
+              kicker.color,
+            );
             options.push({
               to: sq,
               chance: Math.pow(1 - INTERCEPT_CHANCE, threats.length),
@@ -416,11 +421,16 @@ export class FootballPlugin implements ModePlugin {
     if (!pass) return null;
     for (const { sq, near } of pass.threats) {
       if (Math.random() < INTERCEPT_CHANCE) {
-        this.ball = sq;
+        // They jump into the ball's path, take it there, and stay there
+        dives = [{ from: sq, to: near }];
+        board.put(near, board.get(sq)!);
+        board.remove(sq);
+        this.carryShirt(sq, near);
+        this.ball = near;
         return finish({
           kind: "pass",
           outcome: "intercepted",
-          waypoints: [start, spotOf(near), spotOf(sq)],
+          waypoints: [start, spotOf(near)],
         });
       }
     }

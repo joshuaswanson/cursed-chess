@@ -250,9 +250,10 @@ export interface DiveSlide {
 }
 
 /**
- * Defenders throwing themselves at a shot: those beside its path leap from
- * where they stood to where they land, and those already in it jump on the
- * spot, each timed to meet the ball as it comes past.
+ * Defenders throwing themselves at the ball: those beside its path leap
+ * from where they stood to where they land, whether to stop a shot or cut
+ * out a pass, and those already in a shot's path jump on the spot, each
+ * timed to meet the ball as it comes past.
  */
 export function useShotDives(
   kick: Kick | null,
@@ -270,7 +271,9 @@ export function useShotDives(
       const squares = start
         ? Math.hypot((sq & 7) - start.file, (sq >> 4) - start.rank)
         : 0;
-      return Math.max(0, squares * SHOT_MS_PER_SQUARE - DIVE_LEAD_MS);
+      const perSquare =
+        kick?.kind === "pass" ? PASS_MS_PER_SQUARE : SHOT_MS_PER_SQUARE;
+      return Math.max(0, squares * perSquare - DIVE_LEAD_MS);
     };
     for (const { from, to } of kick?.dives ?? []) {
       next.set(to, {
