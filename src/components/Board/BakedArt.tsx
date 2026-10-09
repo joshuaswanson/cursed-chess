@@ -37,6 +37,10 @@ interface Art {
   height: number;
 }
 
+/** How much bigger than first shown a drawing baked to pixels may later be drawn, and the most pixels across it gets */
+const PIXEL_HEADROOM = 1.3;
+const MAX_PIXELS = 400;
+
 const done = new Map<string, Art>();
 const underway = new Map<string, Promise<Art>>();
 
@@ -45,7 +49,7 @@ const underway = new Map<string, Promise<Art>>();
  * the look the stylesheets gave it, textures come along as data, and the
  * image reaches as far as the shapes do, past the drawing's own box.
  */
-async function bake(svg: SVGSVGElement): Promise<Art> {
+async function bake(svg: SVGSVGElement, pixels: boolean): Promise<Art> {
   const view = svg.viewBox.baseVal;
   const reach = svg.getBBox();
   const x = Math.min(view.x, reach.x - MARGIN);
@@ -77,14 +81,38 @@ async function bake(svg: SVGSVGElement): Promise<Art> {
       image.setAttribute("href", await inline(image.getAttribute("href")!)),
     ),
   );
-  const url = URL.createObjectURL(
-    new Blob([new XMLSerializer().serializeToString(copy)], {
-      type: "image/svg+xml",
-    }),
-  );
+  const drawing = new XMLSerializer().serializeToString(copy);
   const image = new Image();
-  image.src = url;
+  // As data, so a browser strict about where images come from will still
+  // let it be copied to a canvas
+  image.src = pixels
+    ? `data:image/svg+xml,${encodeURIComponent(drawing)}`
+    : URL.createObjectURL(new Blob([drawing], { type: "image/svg+xml" }));
   await image.decode();
+  let url = image.src;
+  if (pixels) {
+    // Drawn out to pixels, at a size that stays sharp when it is shown bigger
+    // Its laid-out size: what it is drawn into may be shrunk to nothing just now
+    const shown = (svg.clientWidth || view.width) / view.width;
+    const scale = Math.min(
+      shown * (window.devicePixelRatio || 1) * PIXEL_HEADROOM,
+      MAX_PIXELS / Math.max(right - x, bottom - y),
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil((right - x) * scale);
+    canvas.height = Math.ceil((bottom - y) * scale);
+    canvas
+      .getContext("2d")
+      ?.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => {
+      try {
+        canvas.toBlob(resolve);
+      } catch {
+        resolve(null);
+      }
+    });
+    if (blob) url = URL.createObjectURL(blob);
+  }
   return {
     url,
     left: ((x - view.x) / view.width) * 100,
@@ -103,11 +131,17 @@ async function bake(svg: SVGSVGElement): Promise<Art> {
 export function BakedArt({
   name,
   viewBox,
+  pixels = false,
   children,
 }: {
   /** Which drawing this is; every drawing with the same name looks the same */
   name: string;
   viewBox: string;
+  /**
+   * Bake to a plain bitmap, for drawings built on filters: some browsers
+   * redraw a filtered drawing every frame it moves, image or not
+   */
+  pixels?: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<SVGSVGElement>(null);
@@ -119,7 +153,7 @@ export function BakedArt({
     let live = true;
     let making = underway.get(name);
     if (!making && ref.current) {
-      making = bake(ref.current).then((made) => {
+      making = bake(ref.current, pixels).then((made) => {
         done.set(name, made);
         return made;
       });
@@ -129,7 +163,7 @@ export function BakedArt({
     return () => {
       live = false;
     };
-  }, [name]);
+  }, [name, pixels]);
 
   if (!art)
     return (

@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { BakedArt } from "./BakedArt";
 import type { PortalColor } from "../../plugins/portalChess";
 
 export type PortalState = "idle" | "spawn" | "despawn" | "surge";
@@ -167,15 +168,15 @@ export function Portal({
 
         <div className="portal-corona">
           <div className="portal-layer portal-flame-spin">
-            <svg viewBox={VIEW_BOX}>
+            <BakedArt name={`portal:${color}:flame`} viewBox={VIEW_BOX} pixels>
               <defs>{plasma("flame", 1)}</defs>
               <g filter={ref("flame")}>
                 <circle r={DISC_RADIUS + 4} className="portal-flame" />
               </g>
-            </svg>
+            </BakedArt>
           </div>
           <div className="portal-layer portal-flame-spin portal-flame-spin-outer">
-            <svg viewBox={VIEW_BOX}>
+            <BakedArt name={`portal:${color}:flare`} viewBox={VIEW_BOX} pixels>
               <defs>{plasma("flare", 2)}</defs>
               <g filter={ref("flare")}>
                 <circle
@@ -183,26 +184,33 @@ export function Portal({
                   className="portal-flame portal-flame-outer"
                 />
               </g>
-            </svg>
+            </BakedArt>
           </div>
         </div>
 
         <div className="portal-body">
-          <svg className="portal-layer" viewBox={VIEW_BOX}>
-            <defs>
-              <radialGradient id={`disc-${id}`}>
-                <stop offset="0%" stopColor="#000" />
-                <stop offset="22%" stopColor="#02030a" />
-                <stop offset="55%" className="portal-stop-deep" />
-                <stop offset="86%" className="portal-stop-mid" />
-                <stop offset="100%" className="portal-stop-hi" />
-              </radialGradient>
-            </defs>
-            <circle r={DISC_RADIUS} fill={ref("disc")} />
-          </svg>
+          <div className="portal-layer">
+            {" "}
+            <BakedArt name={`portal:${color}:disc`} viewBox={VIEW_BOX} pixels>
+              <defs>
+                <radialGradient id={`disc-${id}`}>
+                  <stop offset="0%" stopColor="#000" />
+                  <stop offset="22%" stopColor="#02030a" />
+                  <stop offset="55%" className="portal-stop-deep" />
+                  <stop offset="86%" className="portal-stop-mid" />
+                  <stop offset="100%" className="portal-stop-hi" />
+                </radialGradient>
+              </defs>
+              <circle r={DISC_RADIUS} fill={ref("disc")} />
+            </BakedArt>
+          </div>
           {["portal-arms", "portal-arms portal-arms-inner"].map((layer, k) => (
             <div key={layer} className={`portal-layer ${layer}`}>
-              <svg viewBox={VIEW_BOX}>
+              <BakedArt
+                name={`portal:${color}:arms:${k}`}
+                viewBox={VIEW_BOX}
+                pixels
+              >
                 <defs>
                   <radialGradient
                     id={`arm-${k}-${id}`}
@@ -243,38 +251,49 @@ export function Portal({
                     <path key={i} d={d} className="portal-arm" />
                   ))}
                 </g>
-              </svg>
+              </BakedArt>
             </div>
           ))}
-          <svg className="portal-layer" viewBox={VIEW_BOX}>
-            <defs>
-              <radialGradient id={`core-${id}`}>
-                <stop offset="0%" stopColor="#000" />
-                <stop offset="65%" stopColor="#000" />
-                <stop offset="100%" stopColor="#000" stopOpacity="0" />
-              </radialGradient>
-              {blur}
-              {wobble}
-            </defs>
-            <circle r="13" fill={ref("core")} />
-            <circle
-              r={DISC_RADIUS}
-              className="portal-rim-glow"
-              filter={ref("blur")}
-            />
-            <circle
-              r={DISC_RADIUS}
-              className="portal-rim"
-              filter={ref("wobble")}
-            />
-          </svg>
-          <svg className="portal-layer portal-rim-flare" viewBox={VIEW_BOX}>
-            <circle
-              r={DISC_RADIUS}
-              className="portal-rim portal-rim-thick"
-              filter={ref("wobble")}
-            />
-          </svg>
+          <div className="portal-layer">
+            {" "}
+            <BakedArt name={`portal:${color}:rim`} viewBox={VIEW_BOX} pixels>
+              <defs>
+                <radialGradient id={`core-${id}`}>
+                  <stop offset="0%" stopColor="#000" />
+                  <stop offset="65%" stopColor="#000" />
+                  <stop offset="100%" stopColor="#000" stopOpacity="0" />
+                </radialGradient>
+                {blur}
+                {wobble}
+              </defs>
+              <circle r="13" fill={ref("core")} />
+              <circle
+                r={DISC_RADIUS}
+                className="portal-rim-glow"
+                filter={ref("blur")}
+              />
+              <circle
+                r={DISC_RADIUS}
+                className="portal-rim"
+                filter={ref("wobble")}
+              />
+            </BakedArt>
+          </div>
+          <div className="portal-layer portal-rim-flare">
+            {" "}
+            <BakedArt
+              name={`portal:${color}:flare-rim`}
+              viewBox={VIEW_BOX}
+              pixels
+            >
+              <defs>{wobble}</defs>
+              <circle
+                r={DISC_RADIUS}
+                className="portal-rim portal-rim-thick"
+                filter={ref("wobble")}
+              />
+            </BakedArt>
+          </div>
         </div>
 
         <div className="portal-layer portal-bolts">
@@ -288,14 +307,19 @@ export function Portal({
                   animationDelay: `${b.delay}s`,
                 }}
               >
-                <svg viewBox={VIEW_BOX}>
+                <BakedArt
+                  name={`portal:${color}:bolt:${i}`}
+                  viewBox={VIEW_BOX}
+                  pixels
+                >
+                  <defs>{blur}</defs>
                   <path
                     d={b.d}
                     className="portal-bolt-glow"
                     filter={ref("blur")}
                   />
                   <path d={b.d} className="portal-bolt-core" />
-                </svg>
+                </BakedArt>
               </div>
             ))}
           </div>
