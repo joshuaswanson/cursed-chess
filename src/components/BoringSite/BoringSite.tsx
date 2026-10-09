@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import type { SiteTab } from "../../stores/gameStore";
@@ -7,13 +7,6 @@ import type { AuthMode } from "./AuthDialog";
 import "./BoringSite.css";
 import { Chessbot } from "../Chessbot/Chessbot";
 import type { ChessbotMood } from "../Chessbot/Chessbot";
-import {
-  ASIDE_LEAD_MS,
-  introDelays,
-  introMood,
-  introScript,
-} from "../Chessbot/intro";
-import type { IntroLine } from "../Chessbot/intro";
 
 const LEET: Record<string, string> = {
   a: "4",
@@ -215,76 +208,6 @@ function ComputerCard() {
   );
 }
 
-/**
- * Something Chessbot types into the move list, the way someone types it: a
- * letter at a time, with a caret blinking where the next one will land. It
- * sits in a block of its own, a terminal he has forced open among the moves.
- */
-function BotTyping({
-  lines,
-  lead,
-  acted = false,
-  leaving = false,
-}: {
-  lines: IntroLine[];
-  /** How long before the first letter */
-  lead: number;
-  /** Whether his face follows the words, for when he is out where it can be seen */
-  acted?: boolean;
-  /** Glitching shut, on its way out */
-  leaving?: boolean;
-}) {
-  const delays = useMemo(() => introDelays(lines, lead), [lines, lead]);
-  const [typed, setTyped] = useState(0);
-  const caret = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    caret.current?.scrollIntoView({ block: "nearest" });
-    if (typed >= delays.length) return;
-    const timer = window.setTimeout(
-      () => setTyped((n) => n + 1),
-      delays[typed],
-    );
-    return () => window.clearTimeout(timer);
-  }, [typed, delays]);
-
-  const starts = lines.map((_, i) =>
-    lines.slice(0, i).reduce((n, line) => n + line.text.length, 0),
-  );
-  // The last line he has begun
-  const current = Math.max(
-    0,
-    starts.filter((start) => typed > start).length - 1,
-  );
-  const mood = introMood(lines[current], typed - starts[current]);
-  useEffect(() => {
-    if (acted) useGameStore.setState({ introMood: mood });
-  }, [acted, mood]);
-
-  return (
-    <li className={`boring-bot-block${leaving ? " is-leaving" : ""}`}>
-      {/* The process that has no business running in a move list */}
-      <span className="boring-bot-tag" aria-hidden>
-        chessbot.exe
-      </span>
-      {lines.map(({ text }, i) => {
-        if (i > current) return null;
-        return (
-          <p key={i} className="boring-bot-says">
-            <span className="boring-prompt" aria-hidden>
-              {">"}
-            </span>
-            {text.slice(0, typed - starts[i])}
-            {i === current && (
-              <span ref={caret} className="boring-caret" aria-hidden />
-            )}
-          </p>
-        );
-      })}
-    </li>
-  );
-}
-
 /** One line of the move list: a move number, White's move, and Black's */
 function MoveRow({
   no,
@@ -292,14 +215,13 @@ function MoveRow({
   black,
 }: {
   no: number;
-  /** Left out for a row that carries on after something was said in between */
-  white?: string;
+  white: string;
   black?: string;
 }) {
   return (
     <li className="boring-move-row">
       <span className="boring-move-no">{no}.</span>
-      <span>{white ?? "\u2026"}</span>
+      <span>{white}</span>
       <span>{black ?? ""}</span>
     </li>
   );
@@ -307,38 +229,22 @@ function MoveRow({
 
 function MoveList() {
   const history = useGameStore((s) => s.moveHistory);
-  // He remarks on your first move before he answers it
-  const aside = useGameStore((s) => s.aside);
   const listRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [history.length]);
 
-  const opening = history[0]?.san ?? "e4";
-  const script = useMemo(() => introScript(opening), [opening]);
-  const remark = useMemo(() => script.slice(0, 1), [script]);
-  // His remark opens under your first move and is gone again before the reply comes
-  const remarked = aside === "typing" || aside === "leaving";
   const rows: ReactNode[] = [];
   for (let i = 0; i < history.length; i += 2) {
     const no = i / 2 + 1;
-    const white = history[i].san;
-    const black = history[i + 1]?.san;
-    if (i === 0 && remarked) {
-      rows.push(<MoveRow key="1w" no={1} white={white} />);
-      rows.push(
-        <BotTyping
-          key="remark"
-          lines={remark}
-          lead={ASIDE_LEAD_MS}
-          leaving={aside === "leaving"}
-          acted
-        />,
-      );
-      if (black) rows.push(<MoveRow key="1b" no={1} black={black} />);
-    } else {
-      rows.push(<MoveRow key={no} no={no} white={white} black={black} />);
-    }
+    rows.push(
+      <MoveRow
+        key={no}
+        no={no}
+        white={history[i].san}
+        black={history[i + 1]?.san}
+      />,
+    );
   }
   return (
     <ol className="boring-moves" ref={listRef}>

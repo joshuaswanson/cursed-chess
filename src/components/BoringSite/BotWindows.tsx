@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { CURSE_PEEK_MS, useGameStore } from "../../stores/gameStore";
 import {
+  ASIDE_LEAD_MS,
   LAST_WORD_MS,
   SPEECH_LEAD_MS,
   introDelays,
@@ -9,7 +10,7 @@ import {
   introScript,
 } from "../Chessbot/intro";
 import { BEATEN } from "../Chessbot/intro";
-import type { IntroExhibit } from "../Chessbot/intro";
+import type { IntroExhibit, IntroLine } from "../Chessbot/intro";
 import "./BotWindows.css";
 
 /** One of the windows he throws open over the plain site, placed by how far across and down the page it sits */
@@ -279,16 +280,7 @@ function Speech({
   leaving: boolean;
 }) {
   const lines = useMemo(() => introScript(opening).slice(1), [opening]);
-  const delays = useMemo(() => introDelays(lines, SPEECH_LEAD_MS), [lines]);
-  const [typed, setTyped] = useState(0);
-  useEffect(() => {
-    if (typed >= delays.length) return;
-    const timer = window.setTimeout(
-      () => setTyped((n) => n + 1),
-      delays[typed],
-    );
-    return () => window.clearTimeout(timer);
-  }, [typed, delays]);
+  const { typed, delays } = useTyped(lines, SPEECH_LEAD_MS);
 
   const starts = lines.map((_, i) =>
     lines.slice(0, i).reduce((n, line) => n + line.text.length, 0),
@@ -366,10 +358,65 @@ function Speech({
   );
 }
 
-/** Everything Chessbot opens over the plain site between leaving his icon and breaking it */
+/** How many of these lines' letters are on the page so far, one more after each pause */
+function useTyped(lines: IntroLine[], lead: number) {
+  const delays = useMemo(() => introDelays(lines, lead), [lines, lead]);
+  const [typed, setTyped] = useState(0);
+  useEffect(() => {
+    if (typed >= delays.length) return;
+    const timer = window.setTimeout(
+      () => setTyped((n) => n + 1),
+      delays[typed],
+    );
+    return () => window.clearTimeout(timer);
+  }, [typed, delays]);
+  return { typed, delays };
+}
+
+/** Where his remark on your first move opens */
+const REMARK_SPOT: [number, number, number] = [0.3, 0.58, -2];
+
+/**
+ * His remark on your opening move: the first window he gets open, typed
+ * into and then glitched shut before he makes his reply
+ */
+function Remark({ opening, leaving }: { opening: string; leaving: boolean }) {
+  const lines = useMemo(() => introScript(opening).slice(0, 1), [opening]);
+  const { typed } = useTyped(lines, ASIDE_LEAD_MS);
+  const mood = introMood(lines[0], typed);
+  useEffect(() => {
+    useGameStore.setState({ introMood: mood });
+  }, [mood]);
+  return (
+    <div className="bot-windows" aria-live="polite">
+      <BotWindow
+        kind="terminal"
+        title="chessbot.exe"
+        at={REMARK_SPOT}
+        leaving={leaving}
+      >
+        <p className="boring-bot-says">
+          <span className="boring-prompt" aria-hidden>
+            {">"}
+          </span>
+          {lines[0].text.slice(0, typed)}
+          <span className="boring-caret" aria-hidden />
+        </p>
+      </BotWindow>
+    </div>
+  );
+}
+
+/** Everything Chessbot opens over the plain site between your first move and his breaking it */
 export function BotWindows() {
   const stage = useGameStore((s) => s.curseStage);
+  const aside = useGameStore((s) => s.aside);
   const opening = useGameStore((s) => s.moveHistory[0]?.san ?? "e4");
-  if (stage !== "hello" && stage !== "peek") return null;
-  return <Speech opening={opening} leaving={stage === "peek"} />;
+  if (stage === "hello" || stage === "peek") {
+    return <Speech opening={opening} leaving={stage === "peek"} />;
+  }
+  if (stage === null && (aside === "typing" || aside === "leaving")) {
+    return <Remark opening={opening} leaving={aside === "leaving"} />;
+  }
+  return null;
 }

@@ -449,35 +449,7 @@
   border-bottom: 1px solid #ececec;
 }
 
-/* Something Chessbot has typed between the moves: a terminal he has forced
-   open in the middle of the list, black glass and green phosphor, nothing
-   like the tidy site around it */
-.boring-bot-block {
-  position: relative;
-  margin: 8px 10px;
-  padding: 25px 12px 10px;
-  overflow: hidden;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.045) 0 1px,
-      transparent 1px 3px
-    ),
-    radial-gradient(120% 140% at 50% 0%, #10231a, #05090a 70%);
-  border: 1px solid #1f3a2c;
-  border-radius: 3px;
-  box-shadow:
-    0 0 0 1px #000,
-    0 3px 10px rgba(0, 0, 0, 0.35),
-    inset 0 0 18px rgba(60, 255, 150, 0.08);
-  animation: bot-breaks-in 0.4s steps(1) both;
-}
-
-/* Shut out again: it tears, flickers, collapses to a line, and is gone */
-.boring-bot-block.is-leaving {
-  animation: bot-shut-out 0.7s steps(1) both;
-}
-
+/* A window of his shut out again: it tears, flickers, collapses to a line, and is gone */
 @keyframes bot-shut-out {
   0% {
     translate: 0 0;
@@ -516,18 +488,6 @@
     opacity: 0;
     clip-path: inset(50% 50% 50% 50%);
   }
-}
-
-/* The name of whatever is running in there, in the corner */
-.boring-bot-tag {
-  position: absolute;
-  left: 12px;
-  top: 6px;
-  font-family: "Courier New", Courier, monospace;
-  font-size: 12px;
-  font-weight: bold;
-  letter-spacing: 0.08em;
-  color: #6fd39a;
 }
 
 .boring-bot-says {
