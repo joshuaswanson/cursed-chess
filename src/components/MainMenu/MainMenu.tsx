@@ -79,7 +79,7 @@ export function MainMenu() {
         </header>
         <div className="menu-modes">
           <ModeCard
-            title="Adventure"
+            title="Story Mode"
             tagline="One mode after another!"
             colors={["#6a1fd6", "#ff2e88"]}
             onPlay={startAdventure}
