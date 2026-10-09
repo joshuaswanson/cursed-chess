@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Color } from "../../engine";
 import type { FootballView, Kick, Spot } from "../../plugins/football";
 import { visualCol, visualRow } from "./boardGeometry";
@@ -442,24 +443,62 @@ function BallFlight({
 }
 
 /** GOAL! across the board, with confetti and a roaring crowd */
-function GoalCelebration({ kick }: { kick: Kick }) {
+function GoalCelebration({
+  kick,
+  layer,
+  squareSize,
+}: {
+  kick: Kick;
+  /** The layer over the board that it is laid out against */
+  layer: React.RefObject<HTMLDivElement | null>;
+  squareSize: number;
+}) {
   const delay = flightMs(kick);
   const ours = kick.color === Color.White;
-  return (
+  // Drawn on the page itself, over the board, so it comes out in front of
+  // everything standing around the pitch, the countdown board included
+  const [box, setBox] = useState<DOMRect | null>(null);
+  useLayoutEffect(() => {
+    const measure = () =>
+      setBox(layer.current?.getBoundingClientRect() ?? null);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [layer]);
+  const page = document.querySelector(".app");
+  if (!box || !page) return null;
+  return createPortal(
     <div
-      className={`goal-celebration${ours ? "" : " theirs"}`}
-      style={{ animationDelay: `${delay}ms` } as Style}
-      aria-live="assertive"
+      className="goal-over"
+      style={
+        {
+          left: box.left,
+          top: box.top,
+          width: box.width,
+          height: box.height,
+          "--sq": `${squareSize}px`,
+        } as Style
+      }
     >
-      <span className="goal-word" style={{ "--delay": `${delay}ms` } as Style}>
-        {"GOOOAAALLL!".split("").map((ch, i) => (
-          <span key={i} style={{ "--i": i } as Style}>
-            {ch}
-          </span>
-        ))}
-      </span>
-      {ours && <Confetti count={120} seed={kick.id + 11} delayMs={delay} />}
-    </div>
+      <div
+        className={`goal-celebration${ours ? "" : " theirs"}`}
+        style={{ animationDelay: `${delay}ms` } as Style}
+        aria-live="assertive"
+      >
+        <span
+          className="goal-word"
+          style={{ "--delay": `${delay}ms` } as Style}
+        >
+          {"GOOOAAALLL!".split("").map((ch, i) => (
+            <span key={i} style={{ "--i": i } as Style}>
+              {ch}
+            </span>
+          ))}
+        </span>
+        {ours && <Confetti count={120} seed={kick.id + 11} delayMs={delay} />}
+      </div>
+    </div>,
+    page,
   );
 }
 
@@ -585,6 +624,7 @@ export function FootballLayer({
     return () => timers.forEach(clearTimeout);
   }, [recent]);
 
+  const layerRef = useRef<HTMLDivElement>(null);
   const col = visualCol(view.ball, flipped);
   const row = visualRow(view.ball, flipped);
   const restStyle: Style = carried
@@ -594,6 +634,7 @@ export function FootballLayer({
 
   return (
     <div
+      ref={layerRef}
       className="football-layer"
       style={{ "--sq": `${squareSize}px` } as Style}
     >
@@ -625,7 +666,12 @@ export function FootballLayer({
         />
       )}
       {recent?.outcome === "goal" && (
-        <GoalCelebration key={`goal-${recent.id}`} kick={recent} />
+        <GoalCelebration
+          key={`goal-${recent.id}`}
+          kick={recent}
+          layer={layerRef}
+          squareSize={squareSize}
+        />
       )}
     </div>
   );

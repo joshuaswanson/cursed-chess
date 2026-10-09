@@ -481,6 +481,13 @@
 
 /* --- GOAL! --- */
 
+/* Laid over the board on the page itself, above the countdown board */
+.goal-over {
+  position: fixed;
+  z-index: 30;
+  pointer-events: none;
+}
+
 .goal-celebration {
   position: absolute;
   inset: -10%;
