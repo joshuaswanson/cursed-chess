@@ -182,7 +182,7 @@ function ComputerCard() {
 /**
  * Something Chessbot types into the move list, the way someone types it: a
  * letter at a time, with a caret blinking where the next one will land. It
- * sits in a block of its own, set apart from the moves around it.
+ * sits in a block of its own, a terminal he has forced open among the moves.
  */
 function BotTyping({
   lines,
@@ -224,10 +224,17 @@ function BotTyping({
 
   return (
     <li className="boring-bot-block">
+      {/* The process that has no business running in a move list */}
+      <span className="boring-bot-tag" aria-hidden>
+        chessbot.exe
+      </span>
       {lines.map(({ text }, i) => {
         if (i > current) return null;
         return (
           <p key={i} className="boring-bot-says">
+            <span className="boring-prompt" aria-hidden>
+              {">"}
+            </span>
             {text.slice(0, typed - starts[i])}
             {/* The caret goes once a passing remark is finished; through his speech it stays */}
             {i === current && (acted || typed < delays.length) && (

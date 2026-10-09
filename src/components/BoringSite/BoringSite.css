@@ -436,27 +436,93 @@
   border-bottom: 1px solid #ececec;
 }
 
-/* Something Chessbot has typed between the moves: a block of its own,
-   tinted and ruled down one side, with room above and below */
+/* Something Chessbot has typed between the moves: a terminal he has forced
+   open in the middle of the list, black glass and green phosphor, nothing
+   like the tidy site around it */
 .boring-bot-block {
+  position: relative;
   margin: 8px 10px;
-  padding: 8px 12px;
-  background: #fff1f8;
-  border-left: 3px solid #d6006f;
+  padding: 20px 12px 10px;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.045) 0 1px,
+      transparent 1px 3px
+    ),
+    radial-gradient(120% 140% at 50% 0%, #10231a, #05090a 70%);
+  border: 1px solid #1f3a2c;
   border-radius: 3px;
+  box-shadow:
+    0 0 0 1px #000,
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    inset 0 0 18px rgba(60, 255, 150, 0.08);
+  animation: bot-breaks-in 0.4s steps(1) both;
+}
+
+/* The name of whatever is running in there, in the corner */
+.boring-bot-tag {
+  position: absolute;
+  left: 12px;
+  top: 5px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #3f7d5c;
 }
 
 .boring-bot-says {
   margin: 0;
+  padding-left: 1.3em;
+  text-indent: -1.3em;
   font-family: "Courier New", Courier, monospace;
   font-size: 13.5px;
   font-weight: bold;
   line-height: 1.4;
-  color: #d6006f;
+  color: #7dffab;
+  text-shadow: 0 0 6px rgba(80, 255, 150, 0.55);
 }
 
 .boring-bot-says + .boring-bot-says {
   margin-top: 6px;
+}
+
+.boring-prompt {
+  display: inline-block;
+  width: 1.3em;
+  text-indent: 0;
+  color: #ff3d9a;
+  text-shadow: 0 0 6px rgba(255, 61, 154, 0.7);
+}
+
+/* It tears its way into the list: slices of it flickering in, out of place */
+@keyframes bot-breaks-in {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+    clip-path: inset(0 0 70% 0);
+    translate: -8px 0;
+  }
+  30% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+    clip-path: inset(40% 0 0 0);
+    translate: 6px 0;
+  }
+  65% {
+    clip-path: inset(0 0 30% 0);
+    translate: -3px 0;
+  }
+  85%,
+  100% {
+    opacity: 1;
+    clip-path: none;
+    translate: 0 0;
+  }
 }
 
 /* The caret, blinking where his next letter will land */
@@ -466,7 +532,8 @@
   height: 1.05em;
   margin-left: 1px;
   vertical-align: text-bottom;
-  background: #d6006f;
+  background: #7dffab;
+  box-shadow: 0 0 6px rgba(80, 255, 150, 0.7);
   animation: caret-blink 0.9s steps(1) infinite;
 }
 
