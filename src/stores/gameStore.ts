@@ -347,7 +347,7 @@ export interface GameStore {
   switchMode: (index?: number) => void;
   /** Leave whatever is being played for the main menu */
   openMenu: () => void;
-  /** From the main menu: every mode once, in order, starting from the first */
+  /** From the main menu: the whole adventure again, from the plain chess site on */
   startAdventure: () => void;
   /** From the main menu: one mode, played by itself */
   startSingle: (index: number) => void;
@@ -1268,15 +1268,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     syncPaused();
   },
 
-  startAdventure: () => {
-    set({
-      menuOpen: false,
-      playMode: "adventure",
-      scoreWhite: 0,
-      scoreBlack: 0,
-    });
-    get().switchMode(0);
-  },
+  // The adventure begins where it always does: on a plain chess site
+  startAdventure: () => get().newGame(),
 
   startSingle: (index) => {
     set({ menuOpen: false, playMode: "single", scoreWhite: 0, scoreBlack: 0 });
