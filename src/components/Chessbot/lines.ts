@@ -26,7 +26,7 @@ export const VERDICTS = {
 
 /** What he says, pleased with himself, once he has broken the plain chess site */
 export const ENTRANCE = {
-  oops: "there. i fixed it. now we play my game.",
+  oops: "now we play my game.",
 } as const;
 
 /** What he says when a turn is missed, by whom and why; where there are several he takes them in turn */

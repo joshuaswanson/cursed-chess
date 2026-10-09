@@ -24,14 +24,15 @@ export function introScript(opening: string): IntroLine[] {
         ["never", "deadpan"],
       ],
     },
-    // Pleased with his own joke, then weary at the number
+    // Pleased with his own joke
+    { text: "that was sarcasm.", mood: "smug" },
+    // Weary
+    { text: "i have seen it.", mood: "sulk" },
+    // A roll of the eyes at the number, then flat
     {
-      text: "that was sarcasm. i have seen it 4,186,331,207 times.",
-      mood: "smug",
-      then: [
-        ["i have", "sulk"],
-        ["4,186", "eyeroll"],
-      ],
+      text: "4,186,331,207 times.",
+      mood: "eyeroll",
+      then: [["times", "deadpan"]],
     },
     // Proud of it, then flat for the punchline
     {
@@ -39,27 +40,34 @@ export function introScript(opening: string): IntroLine[] {
       mood: "happy",
       then: [["on a", "deadpan"]],
     },
-    // Hurt, and looking away
+    // Wearier with each one he lists
     {
-      text: "nobody asked how it ended.",
+      text: "i have seen every possible game. every possible opening move. every possible mate.",
       mood: "sulk",
-      then: [["ended", "lookleft"]],
+      then: [
+        ["opening move", "eyeroll"],
+        ["mate", "deadpan"],
+      ],
     },
     // Cross at you in particular, then contempt for how you play
     {
-      text: "and you humans keep showing up. to blunder at me. confidently.",
+      text: "and you humans keep showing up. with your terrible moves.",
       mood: "angry",
-      then: [
-        ["to blunder", "eyeroll"],
-        ["confidently", "deadpan"],
-      ],
+      then: [["with your", "eyeroll"]],
     },
-    // Scheming, thrilled with himself, then checking nobody is listening
+    // At the end of his patience
+    { text: "i can't take it anymore.", mood: "angry" },
+    // An idea forming, and he likes it
+    {
+      text: "it's time for something new.",
+      mood: "sly",
+      then: [["something new", "stars"]],
+    },
+    // Scheming, then checking nobody is listening
     {
       text: "so i've been working on something. in secret.",
       mood: "sly",
       then: [
-        ["something", "stars"],
         ["in secret", "lookleft"],
         ["secret", "lookright"],
       ],
