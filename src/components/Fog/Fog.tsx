@@ -99,6 +99,33 @@ export function PageFog({ active }: { active: boolean }) {
   return <canvas ref={canvasRef} className="page-fog" aria-hidden />;
 }
 
+/** How far in from each side, and from the top and bottom, the bank fades to nothing */
+const FADE = { sides: 120, ends: 80 };
+
+/**
+ * Fades the fog already drawn to nothing at every edge of its canvas, so
+ * puffs drifting off it never end in a straight line. Done in the drawing
+ * itself, which every browser gets right.
+ */
+function fadeEdges(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  const through = (gradient: CanvasGradient, depth: number, length: number) => {
+    const edge = Math.min(0.5, (depth * RESOLUTION) / length);
+    gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+    gradient.addColorStop(edge, "#000");
+    gradient.addColorStop(1 - edge, "#000");
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, w, h);
+  };
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "destination-in";
+  through(ctx.createLinearGradient(0, 0, w, 0), FADE.sides, w);
+  through(ctx.createLinearGradient(0, 0, 0, h), FADE.ends, h);
+  ctx.restore();
+}
+
 /** Margin around the hidden half where the bank's edges can billow */
 const BANK_MARGIN = 170;
 
@@ -121,6 +148,7 @@ export function BoardFog({
         h: h - BANK_MARGIN * 2,
       };
       bank.current.step(ctx, dt, core, RESOLUTION, easeOut(amount));
+      fadeEdges(ctx, w * RESOLUTION, h * RESOLUTION);
     },
   );
   if (!visible) return null;
