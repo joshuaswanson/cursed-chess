@@ -927,7 +927,7 @@
 }
 
 .pv-undead {
-  animation: pv-rise 4.4s ease-out infinite;
+  animation: pv-rise 4.4s ease-in-out infinite;
 }
 
 .pv-shivers {
@@ -936,27 +936,27 @@
 
 @keyframes pv-rise {
   0%,
-  18% {
+  14%,
+  100% {
     top: 160%;
     rotate: 0deg;
   }
-  44% {
+  36% {
     top: 96%;
     rotate: -8deg;
   }
-  56% {
+  46% {
     top: 80%;
     rotate: 8deg;
   }
-  70%,
-  92% {
+  56%,
+  76% {
     top: 64%;
     rotate: 0deg;
-    opacity: 1;
   }
-  100% {
-    top: 64%;
-    opacity: 0;
+  90% {
+    top: 110%;
+    rotate: -6deg;
   }
 }
 
