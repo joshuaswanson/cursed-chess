@@ -401,7 +401,7 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // Two pieces go at each other with swords, on their own, health bars draining
   clash: (
     <>
-      <Piece is="wN" x={28} y={60} className="pv-lunge-right pv-faces-right">
+      <Piece is="wR" x={28} y={60} className="pv-lunge-right">
         <span className="pv-hp pv-hp-blue" />
         <Sword />
       </Piece>
