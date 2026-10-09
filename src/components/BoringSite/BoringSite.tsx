@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { THEMES } from "../../theme/themes";
 import type { SiteTab } from "../../stores/gameStore";
@@ -6,6 +6,8 @@ import { AuthDialog } from "./AuthDialog";
 import type { AuthMode } from "./AuthDialog";
 import "./BoringSite.css";
 import { Chessbot } from "../Chessbot/Chessbot";
+import type { ChessbotMood } from "../Chessbot/Chessbot";
+import { introDelays, introScript } from "../Chessbot/intro";
 
 const NAV_LINKS: SiteTab[] = ["Play", "Puzzles", "Learn", "Watch", "Community"];
 
@@ -80,22 +82,49 @@ function PlayerCard({ name, rating }: { name: string; rating: number }) {
   );
 }
 
+/** How he looks in his first moments out, before he starts typing: pleased to be here, then a look each way */
+const FIRST_LOOKS: [ChessbotMood, number][] = [
+  ["happy", 550],
+  ["lookleft", 600],
+  ["lookright", 600],
+];
+
+/** His face in the icon spot through his speech: a look around first, then whatever each line calls for */
+function useSpeechMood(speaking: boolean): ChessbotMood {
+  const line = useGameStore((s) => s.introLine);
+  const [look, setLook] = useState(0);
+  useEffect(() => {
+    if (!speaking || look >= FIRST_LOOKS.length) return;
+    const timer = window.setTimeout(
+      () => setLook((n) => n + 1),
+      FIRST_LOOKS[look][1],
+    );
+    return () => window.clearTimeout(timer);
+  }, [speaking, look]);
+  if (look < FIRST_LOOKS.length) return FIRST_LOOKS[look][0];
+  return SPEECH_MOODS[line] ?? "smug";
+}
+
+const SPEECH_MOODS = introScript("").map((line) => line.mood);
+
 /**
  * The computer opponent's card. Its plain grey icon is Chessbot keeping up
  * appearances, and with each move of the opening game he slips more:
- * tearing sideways and showing his real face for an instant. Then he steps
- * out of it to speak for himself, leaving the frame empty, and as he breaks
- * the site the name on the card gives way to his own.
+ * tearing sideways and showing his real face for an instant. After the
+ * third he pops out as himself right there in the icon's place, looks
+ * about, and has his say in the move list. Then he glitches out of the
+ * card altogether, and the name on it gives way to his own.
  */
 function ComputerCard() {
   const plies = useGameStore((s) => s.moveHistory.length);
   const stage = useGameStore((s) => s.curseStage);
-  const out = stage !== null;
-  const breaking = stage === "glitch" || stage === "boom";
-  const slipping = out ? 0 : Math.min(2, plies);
+  const revealed = stage === "hello";
+  const gone = stage === "glitch" || stage === "boom";
+  const slipping = stage === null ? Math.min(2, plies) : 0;
+  const mood = useSpeechMood(revealed);
   return (
     <div
-      className={`boring-player boring-bot slipping-${slipping}${out ? " vacated" : ""}${breaking ? " renamed" : ""}`}
+      className={`boring-player boring-bot slipping-${slipping}${revealed ? " revealed" : ""}${gone ? " vacated renamed" : ""}`}
     >
       <div className="boring-avatar boring-bot-avatar" aria-hidden>
         <svg className="boring-bot-icon" viewBox="0 0 32 32">
@@ -126,7 +155,11 @@ function ComputerCard() {
             strokeLinecap="round"
           />
         </svg>
-        <Chessbot className="boring-bot-true" mood="smug" grounded={false} />
+        <Chessbot
+          className="boring-bot-true"
+          mood={stage === null ? "smug" : mood}
+          grounded={false}
+        />
       </div>
       <span className="boring-player-name boring-bot-name">
         <span>Computer (Level 1)</span>
@@ -137,14 +170,60 @@ function ComputerCard() {
   );
 }
 
-/** What Chessbot types into the move list, one line after each of the opening game's first two moves */
-const BOT_ASIDES = [
-  "> i have played this game so many times.",
-  "> it's time for something new.",
-];
+/**
+ * Chessbot's speech appearing in the move list the way someone types it: a
+ * letter at a time, with a caret blinking where the next one will land
+ */
+function BotTyping({ opening }: { opening: string }) {
+  const lines = useMemo(() => introScript(opening), [opening]);
+  const delays = useMemo(() => introDelays(lines), [lines]);
+  const [typed, setTyped] = useState(0);
+  const caret = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    caret.current?.scrollIntoView({ block: "nearest" });
+    if (typed >= delays.length) return;
+    const timer = window.setTimeout(
+      () => setTyped((n) => n + 1),
+      delays[typed],
+    );
+    return () => window.clearTimeout(timer);
+  }, [typed, delays]);
+
+  const starts = lines.map((_, i) =>
+    lines.slice(0, i).reduce((n, line) => n + line.text.length, 0),
+  );
+  // The last line he has begun
+  const current = Math.max(
+    0,
+    starts.filter((start) => typed > start).length - 1,
+  );
+  useEffect(() => {
+    useGameStore.setState({ introLine: current });
+  }, [current]);
+
+  return (
+    <>
+      {lines.map(({ text }, i) => {
+        if (i > current) return null;
+        return (
+          <li key={i} className="boring-bot-says">
+            {"> "}
+            {text.slice(0, typed - starts[i])}
+            {i === current && (
+              <span ref={caret} className="boring-caret" aria-hidden />
+            )}
+          </li>
+        );
+      })}
+    </>
+  );
+}
 
 function MoveList() {
   const history = useGameStore((s) => s.moveHistory);
+  // Once he is out of his icon, he has things to say
+  const typing = useGameStore((s) => s.curseStage !== null);
   const listRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
@@ -164,14 +243,7 @@ function MoveList() {
           <span>{row.black ?? ""}</span>
         </li>
       ))}
-      {/* Chessbot, bored, starts typing into the move list between moves */}
-      {BOT_ASIDES.slice(0, history.length).map((line) => (
-        <li key={line} className="boring-bot-says">
-          <span style={{ "--chars": line.length } as React.CSSProperties}>
-            {line}
-          </span>
-        </li>
-      ))}
+      {typing && <BotTyping opening={history[0]?.san ?? "e4"} />}
     </ol>
   );
 }

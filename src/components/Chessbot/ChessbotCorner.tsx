@@ -97,9 +97,21 @@ export function ChessbotCorner() {
   const kind = useGameStore((s) => s.announcementType);
   const entrance = useGameStore((s) => s.curseStage);
   const skipLine = useSkipLine();
+  // While the site breaks he only peeks over the bottom of the screen,
+  // glancing nervously from side to side; then he comes up the rest of the way
+  const peeking = entrance === "glitch";
+  const [glance, setGlance] = useState(false);
+  // He first appeared peeking if he turned up while the plain site was breaking
+  const [peeked] = useState(() => useGameStore.getState().curseStage !== null);
+  useEffect(() => {
+    if (!peeking) return;
+    const timer = window.setInterval(() => setGlance((g) => !g), 520);
+    return () => window.clearInterval(timer);
+  }, [peeking]);
+
   const line =
-    entrance === "hello" || entrance === "glitch"
-      ? ENTRANCE[entrance]
+    entrance === "glitch"
+      ? ENTRANCE.glitch
       : announcement
         ? kind === "mode"
           ? PITCHES[theme.id]
@@ -108,27 +120,30 @@ export function ChessbotCorner() {
   // Over a card, or making his entrance, he wears the look that goes with
   // it, unless the game has just rattled him
   const staged: ChessbotMood | undefined =
-    entrance === "hello"
-      ? "smug"
-      : entrance === "glitch"
-        ? "laugh"
-        : !announcement
-          ? undefined
-          : kind === "mode"
-            ? "proud"
-            : kind === "win"
-              ? "sulk"
-              : kind === "lose"
-                ? "proud"
-                : "smug";
+    entrance === "glitch"
+      ? glance
+        ? "lookleft"
+        : "lookright"
+      : !announcement
+        ? undefined
+        : kind === "mode"
+          ? "proud"
+          : kind === "win"
+            ? "sulk"
+            : kind === "lose"
+              ? "proud"
+              : "smug";
   const mood = bot.idle ? (staged ?? fidget?.look ?? bot.mood) : bot.mood;
   const fidgeting = bot.idle && !staged ? fidget?.move : undefined;
   // A blink is only his eyes; anything else is worth a move of its own
-  const act = bot.idle ? (staged ?? "idle") : bot.mood;
+  const act = peeking ? "peek" : bot.idle ? (staged ?? "idle") : bot.mood;
   const stirred = `${act}:${bot.says ?? ""}`;
 
   return (
-    <aside className="chessbot-corner" aria-live="polite">
+    <aside
+      className={`chessbot-corner${peeking ? " is-peeking" : peeked ? " has-peeked" : " arrives"}`}
+      aria-live="polite"
+    >
       {line && (
         <p className="chessbot-speech" key={line}>
           {line}

@@ -24,10 +24,9 @@ export const VERDICTS = {
   draw: "a draw is a win for me. i checked.",
 } as const;
 
-/** What he says as he shows himself on the plain chess site, and then as he breaks it */
+/** What he says as he breaks the plain chess site */
 export const ENTRANCE = {
-  hello: "this game has been solved. by me. it's boring. let me fix it.",
-  glitch: "patching chess. do not turn off your device.",
+  glitch: "uh. that was supposed to be quieter.",
 } as const;
 
 /** What he says when a turn is missed: by whom, and why */

@@ -256,19 +256,62 @@
   }
 }
 
-/* He has stepped out to speak for himself, and the frame stands empty */
+/* Out as himself, right where the icon was */
+.boring-bot.revealed .boring-bot-icon {
+  visibility: hidden;
+}
+
+.boring-bot.revealed .boring-bot-avatar > .boring-bot-true {
+  opacity: 1;
+  animation:
+    bot-pops-out 0.5s cubic-bezier(0.3, 1.9, 0.5, 1),
+    bot-types 0.34s 0.5s ease-in-out infinite;
+}
+
+/* Bobbing and rocking as he hammers out his speech */
+@keyframes bot-types {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: -4deg;
+  }
+  50% {
+    translate: 0 -7%;
+    rotate: 4deg;
+  }
+}
+
+@keyframes bot-pops-out {
+  from {
+    scale: 0.2;
+    rotate: -30deg;
+  }
+}
+
+/* His say said, he glitches out of the card and leaves the frame empty */
 .boring-bot.vacated .boring-bot-icon {
-  animation: bot-leaves 0.35s steps(3) forwards;
+  visibility: hidden;
 }
 
-.boring-bot.vacated .boring-bot-true {
-  display: none;
+.boring-bot.vacated .boring-bot-avatar {
+  animation: bot-slip 0.18s steps(1) 4;
 }
 
-@keyframes bot-leaves {
-  to {
+.boring-bot.vacated .boring-bot-avatar > .boring-bot-true {
+  animation: bot-glitches-out 0.72s steps(1) forwards;
+}
+
+@keyframes bot-glitches-out {
+  0%,
+  30%,
+  60% {
+    opacity: 1;
+  }
+  20%,
+  50%,
+  80%,
+  100% {
     opacity: 0;
-    translate: 0 -40%;
   }
 }
 
@@ -317,8 +360,8 @@
     animation: none !important;
   }
 
-  .boring-bot.vacated .boring-bot-icon {
-    visibility: hidden;
+  .boring-bot.vacated .boring-bot-avatar > .boring-bot-true {
+    opacity: 0;
   }
 }
 
@@ -349,7 +392,7 @@
   min-height: 0;
   overflow-y: auto;
   list-style: none;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .boring-moves li {
@@ -362,28 +405,33 @@
   background: #f7f7f7;
 }
 
-/* Chessbot's asides, typed out a letter at a time where a move should be */
+/* Chessbot's asides, typed where a move should be */
 .boring-moves li.boring-bot-says {
   display: block;
+  padding-left: 2.6em;
+  text-indent: -1.2em;
+  line-height: 1.35;
   background: none;
   font-family: "Courier New", Courier, monospace;
-  font-size: 11px;
+  font-size: 13.5px;
   font-weight: bold;
   color: #d6006f;
 }
 
-.boring-bot-says > span {
+/* The caret, blinking where his next letter will land */
+.boring-caret {
   display: inline-block;
-  width: calc(var(--chars) * 1ch);
-  overflow: hidden;
-  white-space: nowrap;
-  vertical-align: bottom;
-  animation: bot-type calc(var(--chars) * 42ms) steps(var(--chars)) both;
+  width: 0.6em;
+  height: 1.05em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background: #d6006f;
+  animation: caret-blink 0.9s steps(1) infinite;
 }
 
-@keyframes bot-type {
-  from {
-    width: 0;
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
   }
 }
 

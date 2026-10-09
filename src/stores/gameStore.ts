@@ -39,6 +39,7 @@ import { chooseMove, PIECE_VALUE } from "../ai/chooseMove";
 import type { ThemeId } from "../theme/themes";
 import type { SquareBonus } from "../ai/chooseMove";
 import type { HexCoord, HexMove } from "../engine/hex";
+import { introDuration, introScript } from "../components/Chessbot/intro";
 
 export type { PortalMoveInfo };
 
@@ -52,10 +53,8 @@ const UNLIMITED_SECONDS = 999;
 const BATTLE_ROYALE_FINAL_SECONDS = 5;
 /** Plies of normal chess before Chessbot steps in (white, black, white) */
 const NORMAL_CHESS_PLIES = 3;
-/** How long Chessbot stands on the plain site saying his piece before he breaks it */
-const CURSE_HELLO_MS = 3600;
 /** How long the plain site glitches before the curse bursts through */
-const CURSE_GLITCH_MS = 2000;
+const CURSE_GLITCH_MS = 3400;
 /** How long the curse's title card owns the screen */
 const CURSE_REVEAL_MS = 3200;
 
@@ -241,6 +240,8 @@ export interface GameStore {
   cursed: boolean;
   /** The plain site's end: Chessbot shows himself, the site glitches, the curse bursts through */
   curseStage: "hello" | "glitch" | "boom" | null;
+  /** Which line of his opening speech Chessbot is typing */
+  introLine: number;
 
   deployPieceType: PieceType | null;
   /** Bumped every autonomous tick, since plugins change resources and the board in place */
@@ -424,14 +425,20 @@ function endGameSoon(
   schedule(() => useGameStore.getState().handleGameEnd(winner), wait);
 }
 
-/** Chessbot shows himself on the plain chess site, breaks it, and the curse bursts through */
+/**
+ * Chessbot shows himself in his icon on the plain chess site and types what
+ * he thinks of it into the move list; then he glitches out of the card,
+ * the site breaks around him, and the curse bursts through
+ */
 function startCursedIntro(): void {
-  const glitchAt = GAME_END_DELAY_MS + CURSE_HELLO_MS;
+  const opening = useGameStore.getState().moveHistory[0]?.san ?? "e4";
+  const helloAt = GAME_END_DELAY_MS;
+  const glitchAt = helloAt + introDuration(introScript(opening));
   const boomAt = glitchAt + CURSE_GLITCH_MS;
   holdPause(boomAt + CURSE_REVEAL_MS);
   schedule(
-    () => useGameStore.setState({ curseStage: "hello" }),
-    GAME_END_DELAY_MS,
+    () => useGameStore.setState({ curseStage: "hello", introLine: 0 }),
+    helloAt,
   );
   schedule(() => useGameStore.setState({ curseStage: "glitch" }), glitchAt);
   schedule(
@@ -588,6 +595,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   devMode: false,
   cursed: false,
   curseStage: null,
+  introLine: 0,
   autonomousTick: 0,
   introDone: true,
   gravityFalling: false,
@@ -884,6 +892,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       paused: false,
       cursed: false,
       curseStage: null,
+      introLine: 0,
     });
   },
 
@@ -1194,6 +1203,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentModeIndex: nextIndex,
       cursed: true,
       curseStage: null,
+      introLine: 0,
       modeTimeRemaining: mode.durationSeconds ?? MODE_SECONDS,
       status: GameStatus.Active,
       ...CLEARED_SELECTION,

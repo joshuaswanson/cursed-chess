@@ -79,7 +79,9 @@ function App() {
   return (
     <div className={appClass} style={themeVars(theme)} data-theme={theme.id}>
       {cursed && <Backdrop theme={theme.id} />}
-      {(cursed || curseStage) && <ChessbotCorner />}
+      {(cursed || curseStage === "glitch" || curseStage === "boom") && (
+        <ChessbotCorner />
+      )}
       {cursed ? (
         <header className="topbar">
           <Logo />
