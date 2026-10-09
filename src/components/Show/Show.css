@@ -287,6 +287,20 @@
   }
 }
 
+/* The bands that tear across the screen are the terminal's own green here */
+.curse-install .glitch-tear {
+  height: 2.2vh;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(61, 255, 143, 0.28),
+    rgba(214, 255, 232, 0.5),
+    rgba(61, 255, 143, 0.28),
+    transparent
+  );
+  mix-blend-mode: screen;
+}
+
 .install-panel {
   display: grid;
   gap: clamp(8px, 1.6vh, 16px);
@@ -306,7 +320,7 @@
   white-space: nowrap;
 }
 
-/* The headline, doubled in the glitch's two colours and stuttering */
+/* The headline, doubled in two greens of the same phosphor and stuttering */
 .install-done {
   position: relative;
   font-family: inherit;
@@ -331,12 +345,12 @@
 }
 
 .install-done::before {
-  color: #ff2e88;
+  color: #3dff8f;
   --split: -0.05em;
 }
 
 .install-done::after {
-  color: #21e6ff;
+  color: #b6ffd4;
   --split: 0.05em;
   animation-delay: 0.1s;
 }
