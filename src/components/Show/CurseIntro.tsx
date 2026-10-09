@@ -6,7 +6,7 @@ import "./Show.css";
 
 /** What his installer reports as it finishes, a line at a time */
 const INSTALL_LOG = [
-  "totally_normal_chess ..... deleted",
+  "chess .................... deleted",
   "rules .................... replaced",
   "fairness ................. not found",
   "administrator ............ chessbot",
