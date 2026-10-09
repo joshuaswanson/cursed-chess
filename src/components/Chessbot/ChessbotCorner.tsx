@@ -291,6 +291,11 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
   const act = peeking ? "peek" : bot.idle ? (staged ?? "idle") : bot.mood;
   const stirred = `${act}:${bot.says ?? ""}`;
 
+  // How many moves he has made, so each one can nudge him afresh
+  const moves = useGameStore(
+    (s) =>
+      s.moveHistory.filter((m) => m.move.piece.color === Color.Black).length,
+  );
   const bubble = useBubble(line);
 
   return (
@@ -316,14 +321,17 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
         </p>
       )}
       <div className="chessbot-float">
-        <div
-          className={`chessbot-fidget${fidgeting ? ` does-${fidgeting}` : ""}`}
-        >
+        {/* A little dip toward the board each time he makes a move */}
+        <div className={moves > 0 ? "chessbot-nudge" : undefined} key={moves}>
           <div
-            className={`chessbot-hop is-${act}${act === "angry" ? ` angry-${bot.variant ?? 0}` : ""}`}
-            key={stirred}
+            className={`chessbot-fidget${fidgeting ? ` does-${fidgeting}` : ""}`}
           >
-            <Chessbot mood={mood} says={bot.says} grounded={false} />
+            <div
+              className={`chessbot-hop is-${act}${act === "angry" ? ` angry-${bot.variant ?? 0}` : ""}`}
+              key={stirred}
+            >
+              <Chessbot mood={mood} says={bot.says} grounded={false} />
+            </div>
           </div>
         </div>
         {/* Steam comes off him when he fumes or boils over */}
