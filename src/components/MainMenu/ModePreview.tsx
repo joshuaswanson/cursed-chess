@@ -45,11 +45,11 @@ function Piece({
 }
 
 /** How long the minefield scene runs before it starts over, and when in it the pawn reaches the mine */
-const MINE_LOOP_MS = 4200;
-const MINE_STEP_MS = 1500;
+const MINE_LOOP_MS = 4000;
+const MINE_STEP_MS = 1900;
 
 /**
- * A pawn walks onto a mine and the game's own blast goes off under it:
+ * A pawn walks in from the side onto a mine and the game's own blast goes off under it:
  * fireball, sparks, flying dirt, shockwave, and smoke, with the pawn
  * thrown clear. Played again and again while the card is on screen.
  */
@@ -95,7 +95,7 @@ function MineScene() {
         <Piece
           key={run.n}
           is="wP"
-          x={43.75}
+          x={-6.25}
           y={60}
           size={20}
           className="pv-steps-on"

@@ -509,28 +509,58 @@
 }
 
 .pv-steps-on {
-  animation: pv-steps-on 1.5s ease-in-out both;
+  animation: pv-steps-on 1.9s linear both;
 }
 
-/* Two small steps along the rank */
+/* In from off the left edge, a square at a time, to the one square it should not step on */
 @keyframes pv-steps-on {
-  0%,
-  20% {
+  0.00% {
+    left: -6.25%;
+    translate: -50% -50%;
+  }
+  8.33% {
+    left: 0%;
+    translate: -50% -68%;
+  }
+  16.67% {
+    left: 6.25%;
+    translate: -50% -50%;
+  }
+  25.00% {
+    left: 12.5%;
+    translate: -50% -68%;
+  }
+  33.33% {
+    left: 18.75%;
+    translate: -50% -50%;
+  }
+  41.67% {
+    left: 25%;
+    translate: -50% -68%;
+  }
+  50.00% {
+    left: 31.25%;
+    translate: -50% -50%;
+  }
+  58.33% {
+    left: 37.5%;
+    translate: -50% -68%;
+  }
+  66.67% {
     left: 43.75%;
     translate: -50% -50%;
   }
-  40% {
+  75.00% {
     left: 50%;
-    translate: -50% -66%;
+    translate: -50% -68%;
   }
-  55%,
-  65% {
+  83.33% {
     left: 56.25%;
     translate: -50% -50%;
   }
-  85% {
+  91.67% {
     left: 62.5%;
-    translate: -50% -66%;
+    translate: -50% -68%;
   }
   100% {
     left: 68.75%;
