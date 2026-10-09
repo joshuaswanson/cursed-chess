@@ -450,7 +450,11 @@ export function Chessbot({
       {/* Rattled, he tears sideways the way the logo does */}
       {mood === "panic" && (
         <>
-          <g clipPath={`url(#tear-a-${id})`} transform="translate(-9 0)">
+          <g
+            className="chessbot-tear"
+            clipPath={`url(#tear-a-${id})`}
+            transform="translate(-9 0)"
+          >
             {head}
             <rect
               x="30"
@@ -461,7 +465,11 @@ export function Chessbot({
               opacity="0.45"
             />
           </g>
-          <g clipPath={`url(#tear-b-${id})`} transform="translate(8 0)">
+          <g
+            className="chessbot-tear chessbot-tear-b"
+            clipPath={`url(#tear-b-${id})`}
+            transform="translate(8 0)"
+          >
             {head}
             <rect
               x="44"

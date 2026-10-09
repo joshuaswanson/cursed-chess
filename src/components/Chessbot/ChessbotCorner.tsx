@@ -57,6 +57,23 @@ function useFidget(idle: boolean): Fidget | null {
   return idle ? fidget : null;
 }
 
+/** How long a speech bubble takes to pop away */
+const BUBBLE_OUT_MS = 260;
+/** Lines longer than this are set on two lines */
+const ONE_LINE_CHARS = 30;
+
+/** What is in his speech bubble: the line he is saying, or the one just said while its bubble pops away */
+function useBubble(line: string | undefined) {
+  const [shown, setShown] = useState(line);
+  useEffect(() => {
+    if (line) return;
+    const timer = window.setTimeout(() => setShown(undefined), BUBBLE_OUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [line]);
+  if (line && line !== shown) setShown(line);
+  return { text: line ?? shown, leaving: !line };
+}
+
 /** How long his pitch for a mode stays up once its title card has cleared */
 const PITCH_MS = 5000;
 
@@ -96,9 +113,9 @@ function useSkipLine(): string | undefined {
       const skipped = now.skippedTurn;
       if (!skipped || skipped.id === before.skippedTurn?.id) return;
       window.clearTimeout(timer);
-      setLine(
-        SKIPS[skipped.reason][skipped.color === Color.White ? "you" : "foe"],
-      );
+      const lines =
+        SKIPS[skipped.reason][skipped.color === Color.White ? "you" : "foe"];
+      setLine(lines[skipped.id % lines.length]);
       timer = window.setTimeout(() => setLine(undefined), SKIP_LINE_MS);
     });
     return () => {
@@ -165,14 +182,24 @@ export function ChessbotCorner() {
   const act = peeking ? "peek" : bot.idle ? (staged ?? "idle") : bot.mood;
   const stirred = `${act}:${bot.says ?? ""}`;
 
+  const bubble = useBubble(line);
+
   return (
     <aside
       className={`chessbot-corner${peeking ? " is-peeking" : peeked ? " has-peeked" : " arrives"}`}
       aria-live="polite"
     >
-      {line && (
-        <p className="chessbot-speech" key={line}>
-          {line}
+      {bubble.text && (
+        <p
+          className={`chessbot-speech${bubble.leaving ? " is-leaving" : ""}`}
+          key={bubble.text}
+          style={
+            bubble.text.length > ONE_LINE_CHARS
+              ? { maxWidth: `${Math.ceil(bubble.text.length / 2) + 4}ch` }
+              : undefined
+          }
+        >
+          {bubble.text}
         </p>
       )}
       <div className="chessbot-float">

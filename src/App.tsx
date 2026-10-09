@@ -34,6 +34,7 @@ function App() {
   const theme = useTheme();
   const cursed = useGameStore((s) => s.cursed);
   const curseStage = useGameStore((s) => s.curseStage);
+  const uneasy = useGameStore((s) => s.moveHistory.length);
   const isHexMode = useGameStore((s) => s.isHexMode);
   const hexTransition = useGameStore((s) => s.hexTransition);
   const introDone = useGameStore((s) => s.introDone);
@@ -74,7 +75,9 @@ function App() {
   const appClass =
     "app" +
     (cursed ? " is-cursed" : " is-boring") +
-    (curseStage ? ` curse-${curseStage}` : "");
+    (curseStage ? ` curse-${curseStage}` : "") +
+    // The plain site is a little off from your first move, and more after his reply
+    (!cursed && uneasy > 0 ? ` unease-${Math.min(2, uneasy)}` : "");
 
   return (
     <div className={appClass} style={themeVars(theme)} data-theme={theme.id}>

@@ -3,6 +3,37 @@
   overflow: visible;
 }
 
+/* Rattled, the torn strips of him jump about and flicker */
+.chessbot-tear {
+  animation: chessbot-tear 0.42s steps(1) infinite;
+}
+
+.chessbot-tear-b {
+  animation-duration: 0.31s;
+  animation-direction: reverse;
+}
+
+@keyframes chessbot-tear {
+  0% {
+    translate: 0 0;
+    opacity: 1;
+  }
+  20% {
+    translate: 9px 14px;
+  }
+  40% {
+    translate: -6px -22px;
+    opacity: 0;
+  }
+  60% {
+    translate: 12px 38px;
+    opacity: 1;
+  }
+  80% {
+    translate: -10px 6px;
+  }
+}
+
 /* A word on his visor, in the same block letters as the logo */
 .chessbot-says {
   font-family: var(--font-display);
@@ -422,7 +453,7 @@
   right: 82%;
   bottom: 74%;
   width: max-content;
-  max-width: min(34ch, 52vw);
+  max-width: 52vw;
   margin: 0;
   padding: 11px 16px;
   font-family: var(--font-ui);
@@ -433,31 +464,81 @@
   color: var(--plum-ink);
   background: var(--paper);
   border: 3px solid var(--plum-ink);
-  border-radius: 16px 16px 4px 16px;
+  border-radius: 16px;
   box-shadow: 4px 5px 0 var(--plum-ink);
   transform-origin: 100% 100%;
-  animation: chessbot-speak 0.4s 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  animation: chessbot-speak 0.5s 0.35s both;
 }
 
-/* The tail of his speech bubble, pointing down at him */
+.chessbot-speech.is-leaving {
+  animation: chessbot-hush 0.26s ease-in both;
+}
+
+/* The tail of his speech bubble: a point drawn down toward him, inked
+   underneath and paper on top so it joins the bubble without a seam */
+.chessbot-speech::before,
 .chessbot-speech::after {
   content: "";
   position: absolute;
-  right: 4px;
-  bottom: -13px;
-  width: 16px;
-  height: 16px;
-  background: var(--paper);
-  border-right: 3px solid var(--plum-ink);
-  border-bottom: 3px solid var(--plum-ink);
-  transform: skewX(38deg);
-  transform-origin: 100% 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
 
+.chessbot-speech::before {
+  right: 18px;
+  bottom: -24px;
+  width: 30px;
+  height: 24px;
+  background: var(--plum-ink);
+}
+
+.chessbot-speech::after {
+  right: 21px;
+  bottom: -16px;
+  width: 21px;
+  height: 17px;
+  background: var(--paper);
+}
+
+/* Blown up out of his corner like a bubble: a wobble past full size, then settling */
 @keyframes chessbot-speak {
-  from {
+  0% {
     opacity: 0;
-    scale: 0.6;
+    scale: 0.1;
+    rotate: 14deg;
+  }
+  45% {
+    opacity: 1;
+    scale: 1.12 1.06;
+    rotate: -4deg;
+  }
+  65% {
+    scale: 0.95 0.98;
+    rotate: 2deg;
+  }
+  82% {
+    scale: 1.03;
+    rotate: -1deg;
+  }
+  100% {
+    scale: 1;
+    rotate: 0deg;
+  }
+}
+
+/* A little swell, then sucked back down toward him */
+@keyframes chessbot-hush {
+  0% {
+    scale: 1;
+    opacity: 1;
+  }
+  30% {
+    scale: 1.07 1.1;
+    opacity: 1;
+  }
+  100% {
+    scale: 0.05;
+    rotate: 16deg;
+    opacity: 0;
   }
 }
 
@@ -466,6 +547,7 @@
   .chessbot-fidget,
   .chessbot-steam i,
   .chessbot-vein,
+  .chessbot-tear,
   .chessbot-hop,
   .chessbot-ground,
   .chessbot-speech {

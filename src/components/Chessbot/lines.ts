@@ -29,14 +29,14 @@ export const ENTRANCE = {
   glitch: "uh. that was supposed to be quieter.",
 } as const;
 
-/** What he says when a turn is missed: by whom, and why */
+/** What he says when a turn is missed, by whom and why; where there are several he takes them in turn */
 export const SKIPS = {
   time: {
-    you: "time's up. too slow. i'll take that turn.",
-    foe: "time's up for me? that clock is broken. go again.",
+    you: ["time's up.", "too slow.", "i'll take that turn."],
+    foe: ["time's up for me? that clock is broken. go again."],
   },
   stuck: {
-    you: "none of your pieces can move. skipping you.",
-    foe: "i have nothing to move. this is fine. go again.",
+    you: ["none of your pieces can move. skipping you."],
+    foe: ["i have nothing to move. this is fine. go again."],
   },
 } as const;

@@ -35,6 +35,76 @@
 
 /* ===== The curse, part one: the plain site glitches ===== */
 
+/* Before it breaks, the plain site is only a little off: now and then
+   everything twitches sideways for an instant, more often as he loses patience */
+.app.unease-1 {
+  --twitch: 4.2s;
+}
+
+.app.unease-2 {
+  --twitch: 1.9s;
+}
+
+.app[class*="unease-"] .boring-header,
+.app[class*="unease-"] .board-container,
+.app[class*="unease-"] .boring-sidebar {
+  animation: unease-twitch var(--twitch) steps(1) infinite;
+}
+
+.app[class*="unease-"] .boring-sidebar {
+  animation-delay: -0.06s;
+}
+
+.app[class*="unease-"] .boring-header {
+  animation-delay: -0.11s;
+}
+
+.app.unease-2 .board-container {
+  animation-name: unease-twitch, unease-tint;
+}
+
+@keyframes unease-twitch {
+  0%,
+  100% {
+    translate: 0 0;
+    text-shadow: none;
+  }
+  93% {
+    translate: -3px 0;
+    text-shadow:
+      2px 0 0 rgba(255, 0, 90, 0.7),
+      -2px 0 0 rgba(0, 220, 255, 0.7);
+  }
+  95% {
+    translate: 2px 1px;
+  }
+  97% {
+    translate: 0 0;
+    text-shadow: none;
+  }
+}
+
+@keyframes unease-tint {
+  0%,
+  100% {
+    filter: none;
+  }
+  93% {
+    filter: hue-rotate(40deg) saturate(1.6);
+  }
+  96% {
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app[class*="unease-"] .boring-header,
+  .app[class*="unease-"] .board-container,
+  .app[class*="unease-"] .boring-sidebar {
+    animation: none;
+  }
+}
+
 .app.curse-glitch .boring-header,
 .app.curse-glitch .board-container,
 .app.curse-glitch .boring-sidebar {
