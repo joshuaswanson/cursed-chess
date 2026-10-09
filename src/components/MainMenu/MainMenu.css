@@ -136,6 +136,17 @@
   background: color-mix(in srgb, var(--paper) 28%, transparent);
 }
 
+/* A line under a heading, saying what the section is */
+.menu-note {
+  margin: -22px 0 0;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--paper);
+  opacity: 0.75;
+}
+
 /* The modes, three across, to scroll through */
 .menu-modes {
   display: grid;

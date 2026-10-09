@@ -127,6 +127,8 @@ export interface GameMode {
   files?: number;
   /** Left out of the adventure: played only when picked from the main menu */
   singleOnly?: boolean;
+  /** Still being tried out: listed apart from the finished modes on the main menu */
+  beta?: boolean;
 }
 
 export const GAME_MODES: GameMode[] = [
@@ -203,6 +205,8 @@ export const GAME_MODES: GameMode[] = [
     files: HEIST_FILES,
     kingsSitOut: true,
     noReinforcements: true,
+    singleOnly: true,
+    beta: true,
   },
   {
     name: "ZOMBIES",

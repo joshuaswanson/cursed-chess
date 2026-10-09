@@ -67,6 +67,23 @@ export function MainMenu() {
   const open = useGameStore((s) => s.menuOpen);
   const { startAdventure, startSingle } = useGameStore.getState();
   if (!open) return null;
+  /** A card for every mode that is, or is not, still in beta */
+  const modeCards = (beta: boolean) =>
+    GAME_MODES.flatMap((mode, i) => {
+      if (!!mode.beta !== beta) return [];
+      const theme = THEMES[mode.theme];
+      return [
+        <ModeCard
+          key={mode.theme}
+          title={theme.title}
+          tagline={theme.catchphrase}
+          colors={[theme.sky[1], theme.accent]}
+          onPlay={() => startSingle(i)}
+        >
+          <ModePreview theme={theme.id} />
+        </ModeCard>,
+      ];
+    });
   return (
     <div className="main-menu" role="dialog" aria-label="Main menu">
       <div className="menu-sheet">
@@ -113,22 +130,14 @@ export function MainMenu() {
           <h2 className="menu-divider">
             <span>Single modes</span>
           </h2>
-          <div className="menu-modes">
-            {GAME_MODES.map((mode, i) => {
-              const theme = THEMES[mode.theme];
-              return (
-                <ModeCard
-                  key={mode.theme}
-                  title={theme.title}
-                  tagline={theme.catchphrase}
-                  colors={[theme.sky[1], theme.accent]}
-                  onPlay={() => startSingle(i)}
-                >
-                  <ModePreview theme={theme.id} />
-                </ModeCard>
-              );
-            })}
-          </div>
+          <div className="menu-modes">{modeCards(false)}</div>
+          <h2 className="menu-divider">
+            <span>Beta modes</span>
+          </h2>
+          <p className="menu-note">
+            Still being worked on. Expect rough edges.
+          </p>
+          <div className="menu-modes">{modeCards(true)}</div>
           <footer className="menu-foot">
             <a href={SITE_URL} target="_blank" rel="noreferrer">
               Made by Joshua Swanson
