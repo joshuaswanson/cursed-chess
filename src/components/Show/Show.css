@@ -38,11 +38,11 @@
 /* Before it breaks, the plain site is only a little off: now and then
    everything twitches sideways for an instant, more often as he loses patience */
 .app.unease-1 {
-  --twitch: 4.2s;
+  --twitch: 3s;
 }
 
 .app.unease-2 {
-  --twitch: 1.9s;
+  --twitch: 1.3s;
 }
 
 .app[class*="unease-"] .boring-header,
@@ -59,7 +59,7 @@
   animation-delay: -0.11s;
 }
 
-.app.unease-2 .board-container {
+.app[class*="unease-"] .board-container {
   animation-name: unease-twitch, unease-tint;
 }
 
@@ -68,15 +68,30 @@
   100% {
     translate: 0 0;
     text-shadow: none;
+    clip-path: none;
   }
-  93% {
-    translate: -3px 0;
+  /* A small hiccup partway through */
+  52% {
+    translate: 4px 0;
+  }
+  54% {
+    translate: 0 0;
+  }
+  /* The jolt: thrown sideways, a band of it torn out, colours split */
+  90% {
+    translate: -9px 0;
+    clip-path: inset(0 0 62% 0);
     text-shadow:
-      2px 0 0 rgba(255, 0, 90, 0.7),
-      -2px 0 0 rgba(0, 220, 255, 0.7);
+      3px 0 0 rgba(255, 0, 90, 0.8),
+      -3px 0 0 rgba(0, 220, 255, 0.8);
   }
-  95% {
-    translate: 2px 1px;
+  92% {
+    translate: 7px 2px;
+    clip-path: inset(38% 0 0 0);
+  }
+  94% {
+    translate: -4px -1px;
+    clip-path: none;
   }
   97% {
     translate: 0 0;
@@ -89,10 +104,13 @@
   100% {
     filter: none;
   }
-  93% {
-    filter: hue-rotate(40deg) saturate(1.6);
+  90% {
+    filter: hue-rotate(60deg) saturate(2) contrast(1.2);
   }
-  96% {
+  92% {
+    filter: invert(1) hue-rotate(180deg);
+  }
+  95% {
     filter: none;
   }
 }

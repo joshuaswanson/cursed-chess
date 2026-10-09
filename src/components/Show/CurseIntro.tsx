@@ -39,7 +39,7 @@ function CurseGlitch() {
   const notice = useCorruptingText(NOTICE, CORRUPTED, 1900);
   useEffect(() => {
     sfx.glitch();
-    const timers = [500, 1100, 1500, 1800].map((ms) =>
+    const timers = [500, 1100, 1500, 1800, 2500, 3100, 3800, 4400].map((ms) =>
       setTimeout(() => sfx.glitch(), ms),
     );
     return () => timers.forEach(clearTimeout);
@@ -104,7 +104,8 @@ function CurseBoom() {
 
 export function CurseIntro() {
   const stage = useGameStore((s) => s.curseStage);
-  if (stage === "glitch") return <CurseGlitch />;
+  // The site stays broken while he gloats, right up to the title
+  if (stage === "glitch" || stage === "oops") return <CurseGlitch />;
   if (stage === "boom") return <CurseBoom />;
   return null;
 }

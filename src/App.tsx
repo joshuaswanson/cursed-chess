@@ -76,6 +76,8 @@ function App() {
     "app" +
     (cursed ? " is-cursed" : " is-boring") +
     (curseStage ? ` curse-${curseStage}` : "") +
+    // Still glitching while he gloats
+    (curseStage === "oops" ? " curse-glitch" : "") +
     // The plain site is a little off from your first move, and more after
     // his reply; it holds still once he is out and has the floor
     (!cursed && !curseStage && uneasy > 0
