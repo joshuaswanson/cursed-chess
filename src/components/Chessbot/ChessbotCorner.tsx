@@ -3,7 +3,7 @@ import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { Chessbot } from "./Chessbot";
 import type { ChessbotMood } from "./Chessbot";
 import { Color } from "../../engine";
-import { ENTRANCE, PITCHES, SKIPS, VERDICTS } from "./lines";
+import { ENTRANCE, PITCHES, SKIPS, VERDICTS, spoken } from "./lines";
 import { useChessbot } from "./useChessbot";
 
 interface Fidget {
@@ -209,7 +209,7 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
               : undefined
           }
         >
-          {bubble.text}
+          {spoken(bubble.text)}
         </p>
       )}
       <div className="chessbot-float">

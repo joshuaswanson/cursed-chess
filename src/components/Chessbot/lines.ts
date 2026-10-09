@@ -39,3 +39,16 @@ export const SKIPS = {
     foe: ["i have nothing to move. this is fine. go again."],
   },
 } as const;
+
+/**
+ * A line as it reads in his speech bubble: each sentence starting with a
+ * capital, and himself as "I". In the terminal he types all in lower case.
+ */
+export function spoken(line: string): string {
+  return line
+    .replace(
+      /(^|[.?!]\s+)([a-z])/g,
+      (_, lead: string, letter: string) => lead + letter.toUpperCase(),
+    )
+    .replace(/\bi(?=\b|')/g, "I");
+}
