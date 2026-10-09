@@ -277,11 +277,17 @@ export class FogBank {
       // blurred falloff lands outside the hidden squares as a soft edge
       const grow = 20;
       const overhang = 26;
+      // Softened by drawing only the rectangle's blurred shadow: the
+      // rectangle itself is kept far off the canvas. Safari has no blur
+      // filter for a canvas, and would draw it hard edged.
+      const away = 20000;
       ctx.save();
-      ctx.filter = `blur(${38 * scale}px)`;
-      ctx.fillStyle = `rgba(212,222,219,${Math.min(0.96, cover * 1.4)})`;
+      ctx.shadowColor = `rgba(212,222,219,${Math.min(0.96, cover * 1.4)})`;
+      ctx.shadowBlur = 76 * scale;
+      ctx.shadowOffsetX = away;
+      ctx.fillStyle = "#000";
       ctx.fillRect(
-        (core.x - grow) * scale,
+        (core.x - grow) * scale - away,
         (core.y - grow) * scale,
         (core.w + grow * 2) * scale,
         (core.h * cover + grow + overhang * cover) * scale,
