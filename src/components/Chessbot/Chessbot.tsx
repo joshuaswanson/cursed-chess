@@ -32,7 +32,7 @@ const BLUE = "#3aa7ff";
 const DIM_BLUE = "#6f86a8";
 
 /** How many ways he has of showing that he is thinking */
-export const THOUGHTS = 5;
+export const THOUGHTS = 4;
 
 /** What his visor shows while he works out a move, drawn for a visor centred on (100, 92) */
 function Thinking({ way, glow }: { way: number; glow: string }) {
@@ -78,29 +78,8 @@ function Thinking({ way, glow }: { way: number; glow: string }) {
           />
         </g>
       );
-    // Eyes up, going from one side to the other, with a question hanging over him
-    case 3:
-      return (
-        <>
-          <g className="chessbot-ponder" fill={EYE} filter={glow}>
-            <rect x="63" y="78" width="20" height="24" rx="9" />
-            <rect x="117" y="78" width="20" height="24" rx="9" />
-          </g>
-          <text
-            className="chessbot-query"
-            x="174"
-            y="56"
-            textAnchor="middle"
-            fill="#ffd23f"
-            stroke={INK}
-            strokeWidth="2.5"
-          >
-            ?
-          </text>
-        </>
-      );
     // A light sweeping back and forth across the visor
-    case 4:
+    case 3:
       return (
         <g filter={glow}>
           <rect
