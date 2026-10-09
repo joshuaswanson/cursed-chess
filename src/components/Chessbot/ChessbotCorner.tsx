@@ -3,7 +3,7 @@ import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { Chessbot } from "./Chessbot";
 import type { ChessbotMood } from "./Chessbot";
 import { Color } from "../../engine";
-import { ENTRANCE, MENU, PITCHES, SKIPS, VERDICTS } from "./lines";
+import { ENTRANCE, PITCHES, SKIPS, VERDICTS } from "./lines";
 import { useChessbot } from "./useChessbot";
 
 interface Fidget {
@@ -57,8 +57,6 @@ function useFidget(idle: boolean): Fidget | null {
   return idle ? fidget : null;
 }
 
-/** How long his greeting stays up at the main menu */
-const MENU_LINE_MS = 4500;
 /** How long a speech bubble takes to pop away */
 const BUBBLE_OUT_MS = 260;
 /** Lines longer than this are set on two lines */
@@ -155,22 +153,8 @@ export function ChessbotCorner() {
     return () => window.clearInterval(timer);
   }, [peeking]);
 
-  const atMenu = useGameStore((s) => s.menuOpen);
-  // At the menu he says his piece and then gets out of the way of the list
-  const [greeted, setGreeted] = useState(false);
-  useEffect(() => {
-    if (!atMenu) return;
-    const timer = window.setTimeout(() => setGreeted(true), MENU_LINE_MS);
-    return () => {
-      window.clearTimeout(timer);
-      setGreeted(false);
-    };
-  }, [atMenu]);
-  const line = atMenu
-    ? greeted
-      ? undefined
-      : MENU
-    : entrance === "oops"
+  const line =
+    entrance === "oops"
       ? ENTRANCE.oops
       : announcement
         ? kind === "mode"

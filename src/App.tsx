@@ -35,6 +35,8 @@ function App() {
   const theme = useTheme();
   const cursed = useGameStore((s) => s.cursed);
   const curseStage = useGameStore((s) => s.curseStage);
+  const playMode = useGameStore((s) => s.playMode);
+  const menuOpen = useGameStore((s) => s.menuOpen);
   const uneasy = useGameStore((s) => s.moveHistory.length);
   const isHexMode = useGameStore((s) => s.isHexMode);
   const hexTransition = useGameStore((s) => s.hexTransition);
@@ -88,9 +90,10 @@ function App() {
   return (
     <div className={appClass} style={themeVars(theme)} data-theme={theme.id}>
       {cursed && <Backdrop theme={theme.id} />}
-      {(cursed || (curseStage !== null && curseStage !== "hello")) && (
-        <ChessbotCorner />
-      )}
+      {/* He runs the adventure; a mode picked from the menu is played without him */}
+      {(cursed || (curseStage !== null && curseStage !== "hello")) &&
+        playMode === "adventure" &&
+        !menuOpen && <ChessbotCorner />}
       {cursed ? (
         <header className="topbar">
           <Logo />
