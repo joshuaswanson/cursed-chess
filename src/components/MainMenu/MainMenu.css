@@ -40,12 +40,22 @@
   width: min(1040px, 100%);
 }
 
-/* CURSED over CHESS, each centred on the other */
+/* CURSED over CHESS, each centred on the other. Each word leans on its own:
+   leaning the pair as one would push the top word right of the bottom one */
 .menu-sheet .logo {
   flex-direction: column;
   align-items: center;
-  gap: 0.08em;
+  gap: 0;
   font-size: clamp(44px, 14vw, 104px);
+  transform: none;
+}
+
+.menu-sheet .logo > span {
+  transform: skewX(-9deg);
+}
+
+.menu-sheet .logo-chess {
+  margin-top: -0.12em;
 }
 
 .menu-head {
@@ -191,5 +201,100 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
     padding-bottom: 40px;
+  }
+}
+
+/* --- Scrolling: the cards are dealt onto the page as they come up from
+   below and shrink away into the distance as they leave at the top, while
+   the logo sinks back behind them. Every bit of it is tied to the scroll
+   position, so it runs backward when you scroll back --- */
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .main-menu {
+      scroll-snap-type: y proximity;
+    }
+
+    .menu-head {
+      scroll-snap-align: start;
+      scroll-margin-top: 72px;
+      animation: menu-head-sink linear both;
+      animation-timeline: scroll(nearest);
+      animation-range: 0 420px;
+      will-change: transform, opacity;
+    }
+
+    .menu-mode {
+      --deal-x: 0px;
+      --deal-tilt: 0deg;
+      scroll-snap-align: center;
+      animation: menu-deal linear both;
+      animation-timeline: view();
+      will-change: transform, opacity;
+    }
+
+    /* Dealt in from the side its column is on */
+    .menu-mode:nth-child(3n + 1) {
+      --deal-x: -70px;
+      --deal-tilt: -10deg;
+    }
+
+    .menu-mode:nth-child(3n) {
+      --deal-x: 70px;
+      --deal-tilt: 10deg;
+    }
+
+    @media (max-width: 860px) {
+      .menu-mode:nth-child(n) {
+        --deal-x: 50px;
+        --deal-tilt: 8deg;
+      }
+
+      .menu-mode:nth-child(odd) {
+        --deal-x: -50px;
+        --deal-tilt: -8deg;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .menu-mode:nth-child(n) {
+        --deal-x: 0px;
+        --deal-tilt: 5deg;
+      }
+
+      .menu-mode:nth-child(odd) {
+        --deal-tilt: -5deg;
+      }
+    }
+  }
+}
+
+@keyframes menu-head-sink {
+  to {
+    opacity: 0;
+    transform: translateY(150px) scale(0.72);
+  }
+}
+
+@keyframes menu-deal {
+  entry 0% {
+    opacity: 0.2;
+    transform: translate(var(--deal-x), 90px) rotate(var(--deal-tilt))
+      scale(0.8);
+  }
+
+  entry 100% {
+    opacity: 1;
+    transform: none;
+  }
+
+  exit 0% {
+    opacity: 1;
+    transform: none;
+  }
+
+  exit 100% {
+    opacity: 0;
+    transform: translateY(70px) scale(0.78);
   }
 }
