@@ -225,6 +225,7 @@ export const GAME_MODES: GameMode[] = [
     noReinforcements: true,
     untilWon: true,
     singleOnly: true,
+    beta: true,
   },
 ];
 
