@@ -78,13 +78,24 @@ function App() {
         ? " unease-typing"
         : " unease-burst");
 
+  // The menu covers everything, so nothing under it is kept on the page: a
+  // whole board and its backdrop would only be laid out and animated unseen
+  if (menuOpen) {
+    return (
+      <div className={appClass} style={themeVars(theme)} data-theme={theme.id}>
+        <MainMenu />
+      </div>
+    );
+  }
+
   return (
     <div className={appClass} style={themeVars(theme)} data-theme={theme.id}>
       {cursed && <Backdrop theme={theme.id} />}
-      {/* He runs the adventure; a mode picked from the menu is played without him */}
-      {(cursed || (curseStage !== null && curseStage !== "hello")) &&
-        playMode === "adventure" &&
-        !menuOpen && <ChessbotCorner />}
+      {/* While he breaks the plain site he peeks up from the corner of the
+          screen; once the game is his, he sits in the panel beside the board */}
+      {!cursed && curseStage !== null && curseStage !== "hello" && (
+        <ChessbotCorner />
+      )}
       {cursed ? (
         <header className="topbar">
           <Logo />
@@ -119,7 +130,6 @@ function App() {
       <PromotionDialog />
       <ShowCards />
       <CurseIntro />
-      <MainMenu />
       <HexWarp />
     </div>
   );
