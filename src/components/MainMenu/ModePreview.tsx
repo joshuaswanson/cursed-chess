@@ -181,21 +181,24 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <span className="pv-shout pv-goal-shout">GOAL!</span>
     </>
   ),
-  // Both teams heave on the rope, the flag sliding one way then the other
+  // The two teams heave out of time with each other, so the rope goes taut
+  // and thin whenever both happen to pull at once
   tug: (
     <>
       <span className="pv-mud" />
-      <span className="pv-tug">
+      <span className="pv-team">
         <Piece is="wP" x={12} y={50} size={22} />
-        <Piece is="wN" x={28} y={48} size={24} />
+        <Piece is="wN" x={28} y={48} size={24} className="pv-faces-right" />
+      </span>
+      <span className="pv-team pv-team-far">
         <Piece is="bN" x={72} y={48} size={24} />
         <Piece is="bP" x={88} y={50} size={22} />
-        <span
-          className="pv-rope"
-          style={{ "--rope": ROPE_TILE } as CSSProperties}
-        />
-        <span className="pv-flag" />
       </span>
+      <span
+        className="pv-rope"
+        style={{ "--rope": ROPE_TILE } as CSSProperties}
+      />
+      <span className="pv-flag" />
     </>
   ),
   // A pawn steps forward onto exactly the wrong square
@@ -234,15 +237,15 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // Two pieces go at each other with swords, on their own, health bars draining
   clash: (
     <>
-      <Piece is="wN" x={32} y={58} className="pv-lunge-right">
+      <Piece is="wN" x={28} y={60} className="pv-lunge-right pv-faces-right">
         <span className="pv-hp pv-hp-blue" />
         <Sword />
       </Piece>
-      <Piece is="bB" x={68} y={58} className="pv-lunge-left">
+      <Piece is="bB" x={72} y={60} className="pv-lunge-left">
         <span className="pv-hp pv-hp-red" />
         <Sword />
       </Piece>
-      <span className="pv-spark" style={{ left: "50%", top: "52%" }} />
+      <span className="pv-spark" style={{ left: "50%", top: "30%" }} />
     </>
   ),
   // A king hops onto the hill and the count climbs to three

@@ -190,6 +190,8 @@
       rgba(255, 255, 255, 0.5) 0 1px,
       transparent 0 6px
     );
+  /* The net hangs in front of a ball that has gone in */
+  z-index: 2;
 }
 
 /* He swings from the head, so it is his base that comes through the ball */
@@ -250,20 +252,20 @@
     animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
   }
   52% {
-    left: 86%;
+    left: 92%;
     top: 46%;
     rotate: 720deg;
   }
   60%,
   88% {
-    left: 84%;
-    top: 62%;
+    left: 91%;
+    top: 68%;
     rotate: 760deg;
     opacity: 1;
   }
   100% {
-    left: 84%;
-    top: 62%;
+    left: 91%;
+    top: 68%;
     opacity: 0;
   }
 }
@@ -302,21 +304,28 @@
   background: radial-gradient(closest-side, #5a3d22, #3b2714 80%, transparent);
 }
 
-.pv-tug {
+/* Each team sways to its own beat */
+.pv-team {
   inset: 0;
-  animation: pv-heave 2.8s ease-in-out infinite;
+  animation: pv-pull 1.4s ease-in-out infinite alternate;
 }
 
-/* The game's own rope, which is drawn running down the page, laid on its side */
+.pv-team-far {
+  animation-delay: -0.9s;
+}
+
+/* The game's own rope, which is drawn running down the page, laid on its side and running off both edges */
 .pv-rope {
   left: 50%;
   top: 62%;
-  width: 4.6%;
-  height: 186%;
+  width: 3.4%;
+  height: 280%;
   translate: -50% -50%;
   rotate: 90deg;
   background: var(--rope) 0 0 / 100% auto repeat-y;
   filter: drop-shadow(2px 0 0 rgba(0, 0, 0, 0.35));
+  /* Thinnest at the moment the two teams are furthest apart */
+  animation: pv-taut 1.4s -1.15s ease-in-out infinite alternate;
 }
 
 .pv-flag {
@@ -326,27 +335,34 @@
   height: 22%;
   background: #ff3b4e;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+  /* Carried wherever the two teams' pulling nets out */
+  animation: pv-flag 1.4s -0.45s ease-in-out infinite alternate;
 }
 
-@keyframes pv-heave {
-  0%,
-  100% {
-    translate: -9% 0;
+@keyframes pv-pull {
+  from {
+    translate: -6% 0;
   }
-  18% {
-    translate: -4% 0;
+  to {
+    translate: 6% 0;
   }
-  30% {
-    translate: -7% 0;
+}
+
+@keyframes pv-taut {
+  from {
+    scale: 1.15 1;
   }
-  50% {
-    translate: 9% 0;
+  to {
+    scale: 0.45 1;
   }
-  68% {
-    translate: 4% 0;
+}
+
+@keyframes pv-flag {
+  from {
+    translate: -55% 0;
   }
-  80% {
-    translate: 7% 0;
+  to {
+    translate: 55% 0;
   }
 }
 
@@ -504,8 +520,9 @@
   --dir: 1;
 }
 
+/* Both go in at once, so the swords meet in the middle */
 .pv-lunge-left {
-  animation: pv-lunge 1.5s -0.75s ease-in-out infinite;
+  animation: pv-lunge 1.5s ease-in-out infinite;
   --dir: -1;
 }
 
@@ -540,41 +557,46 @@
 /* A sword held out toward the other, swung down as its owner lunges */
 .pv-sword {
   position: absolute;
-  bottom: 22%;
+  bottom: 34%;
   width: 20%;
-  height: 80%;
+  height: 86%;
   overflow: visible;
-  transform-origin: 50% 80%;
+  transform-origin: 50% 84%;
   animation: pv-swing 1.5s ease-in-out infinite;
 }
 
+/* The knight is drawn facing left; this one faces his opponent */
+.pv-faces-right > img {
+  scale: -1 1;
+}
+
 .pv-lunge-right .pv-sword {
-  right: -8%;
+  right: -2%;
   --dir: 1;
 }
 
 .pv-lunge-left .pv-sword {
-  left: -8%;
+  left: -2%;
   --dir: -1;
-  animation-delay: -0.75s;
 }
 
+/* Drawn back, then brought over to cross the other blade above the middle */
 @keyframes pv-swing {
   0%,
   100% {
-    rotate: calc(var(--dir) * 20deg);
+    rotate: calc(var(--dir) * 8deg);
   }
-  40% {
-    rotate: calc(var(--dir) * -35deg);
+  38% {
+    rotate: calc(var(--dir) * -34deg);
   }
   50%,
-  58% {
-    rotate: calc(var(--dir) * 95deg);
+  60% {
+    rotate: calc(var(--dir) * 46deg);
   }
 }
 
 .pv-spark {
-  width: 18%;
+  width: 13%;
   aspect-ratio: 1;
   translate: -50% -50%;
   background: #fff6c2;
@@ -588,25 +610,20 @@
     0 50%,
     40% 38%
   );
-  animation: pv-spark 0.75s ease-out infinite;
+  animation: pv-spark 1.5s ease-out infinite;
 }
 
 @keyframes pv-lunge {
   0%,
   100% {
     translate: -50% -50%;
-    rotate: 0deg;
   }
-  40% {
-    translate: calc(-50% - var(--dir) * 12%) -50%;
-    rotate: calc(var(--dir) * -8deg);
+  38% {
+    translate: calc(-50% - var(--dir) * 10%) -50%;
   }
-  50% {
-    translate: calc(-50% + var(--dir) * 34%) -50%;
-    rotate: calc(var(--dir) * 10deg);
-  }
-  62% {
-    translate: -50% -50%;
+  50%,
+  60% {
+    translate: calc(-50% + var(--dir) * 16%) -50%;
   }
 }
 
@@ -619,21 +636,23 @@
   }
 }
 
+/* Struck at the instant the two blades come together */
 @keyframes pv-spark {
   0%,
-  55% {
+  48% {
     scale: 0;
     opacity: 0;
   }
-  66% {
-    scale: 1.2;
+  52% {
+    scale: 1.4;
     opacity: 1;
     rotate: 20deg;
   }
+  70%,
   100% {
     scale: 0.4;
     opacity: 0;
-    rotate: 50deg;
+    rotate: 60deg;
   }
 }
 
