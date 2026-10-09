@@ -4,6 +4,7 @@ import type { ThemeId } from "../../theme/themes";
 import { PieceType } from "../../engine";
 import { zombieImage } from "../../utils/pieceImages";
 import { SoccerBall } from "../Board/Football";
+import { LanternIcon } from "../Board/Lanterns";
 import { Chessbot } from "../Chessbot/Chessbot";
 import { MineBlast } from "../Board/MineBlast";
 import { Portal } from "../Board/Portal";
@@ -342,7 +343,9 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <Piece is="bN" x={70} y={46} className="pv-lurker" />
       <span className="pv-dark" />
       <span className="pv-lamplight">
-        <Piece is="wP" x={50} y={52} size={72} />
+        <Piece is="wP" x={50} y={52} size={72}>
+          <LanternIcon count={1} />
+        </Piece>
       </span>
     </>
   ),
