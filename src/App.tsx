@@ -53,18 +53,6 @@ function App() {
     music.set(cursed);
   }, [cursed]);
 
-  // Dev mode is available everywhere, including the plain site before the curse
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
-        e.preventDefault();
-        useGameStore.getState().toggleDevMode();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   const board = isHexMode ? (
     <div className={hexTransition === "morph-in" ? "hex-morph-in" : ""}>
       <HexBoard />

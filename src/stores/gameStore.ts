@@ -245,7 +245,6 @@ export interface GameStore {
   currentModeIndex: number;
   modeTimeRemaining: number;
 
-  devMode: boolean;
   /** False while the game still poses as a plain chess website */
   cursed: boolean;
   /** The plain site's end: Chessbot shows himself, the site glitches, the curse bursts through */
@@ -319,7 +318,6 @@ export interface GameStore {
   flipBoard: () => void;
   clearSelection: () => void;
   togglePause: () => void;
-  toggleDevMode: () => void;
   handleGameEnd: (winner: Color | null) => void;
   setDeployPieceType: (type: PieceType | null) => void;
   deployPiece: (square: SquareIndex) => boolean;
@@ -651,7 +649,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   currentModeIndex: -1,
   modeTimeRemaining: UNLIMITED_SECONDS,
 
-  devMode: false,
   cursed: false,
   curseStage: null,
   introMood: "happy",
@@ -972,8 +969,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     syncPaused();
   },
 
-  toggleDevMode: () => set((s) => ({ devMode: !s.devMode })),
-
   handleGameEnd: (winner) => {
     const { scoreWhite, scoreBlack } = get();
     set({
@@ -995,24 +990,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
 
     schedule(() => {
-      const { devMode, pluginManager, isHexMode, currentModeIndex } = get();
-      const game = new Game();
-      set({ game, ...FRESH_BOARD });
-      // Replaying a mode the kings sit out sends them back to the touchline
-      if (devMode && GAME_MODES[currentModeIndex]?.kingsSitOut) {
-        set({ sidelineKings: benchKings(game.board, 0) });
-      }
-
-      if (!devMode) {
-        get().switchMode();
-      } else if (isHexMode) {
-        set({ hexGame: new HexGame(), isHexMode: true, ...FRESH_CLOCKS });
-      } else {
-        pluginManager.setContext(game);
-        pluginManager.invokeOnGameStart();
-        pluginManager.invokeOnIntroEnd();
-        set(FRESH_CLOCKS);
-      }
+      set({ game: new Game(), ...FRESH_BOARD });
+      get().switchMode();
     }, RESULT_HOLD_MS);
   },
 
@@ -1083,7 +1062,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   tickTimer: () => {
-    const { turn, moveTimerActive, paused, devMode, pluginManager } = get();
+    const { turn, moveTimerActive, paused, pluginManager } = get();
     if (
       !moveTimerActive ||
       paused ||
@@ -1096,8 +1075,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // A mine going off holds the clock, so nobody moves until the blast has played out
     const minefield = pluginManager.find<MinefieldPlugin>("minefield");
     if (minefield && minefield.pendingExplosions.size > 0) return;
-    // Dev mode gives the human unlimited time
-    if (devMode && turn === Color.White) return;
     const key = turn === Color.White ? "timeWhite" : "timeBlack";
     const next = Math.max(0, get()[key] - 0.1);
     set({ [key]: next });
@@ -1227,8 +1204,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   tickModeTimer: () => {
-    const { paused, modeTimeRemaining, devMode } = get();
-    if (paused || devMode) return;
+    const { paused, modeTimeRemaining } = get();
+    if (paused) return;
     // Modes the kings sit out run until one side wins them, with no clock
     const mode = GAME_MODES[get().currentModeIndex];
     if (mode?.kingsSitOut || mode?.untilWon) return;
@@ -1287,7 +1264,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { currentModeIndex, game, isHexMode, hexGame } = get();
     // Moving on by itself, a single mode is over once it has been played,
     // and the adventure once its last mode has
-    if (index === undefined && !get().devMode && currentModeIndex >= 0) {
+    if (index === undefined && currentModeIndex >= 0) {
       const over =
         get().playMode === "single" ||
         currentModeIndex === GAME_MODES.length - 1;

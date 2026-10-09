@@ -39,13 +39,6 @@ export const PlayIcon = (p: IconProps) => (
   </Icon>
 );
 
-export const SkipIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M5 5l9 7-9 7z" fill="currentColor" />
-    <path d="M18 5v14" />
-  </Icon>
-);
-
 export const MenuIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M5 7h14M5 12h14M5 17h14" />
@@ -63,11 +56,5 @@ export const MuteIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M4 9.5h4l5-4v13l-5-4H4z" fill="currentColor" />
     <path d="M16.5 9.5l5 5M21.5 9.5l-5 5" />
-  </Icon>
-);
-
-export const WrenchIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M14.5 4.5a4.5 4.5 0 0 0-5.6 5.8L4 15.2 8.8 20l4.9-4.9a4.5 4.5 0 0 0 5.8-5.6l-2.8 2.8-3-.5-.5-3z" />
   </Icon>
 );

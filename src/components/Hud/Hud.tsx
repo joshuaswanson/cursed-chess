@@ -1,7 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { useGameStore, GAME_MODES, MODE_SECONDS } from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
-import { THEMES } from "../../theme/themes";
 import { useTheme } from "../../theme/useTheme";
 import { pieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
@@ -11,9 +10,7 @@ import {
   PauseIcon,
   PlayIcon,
   RestartIcon,
-  SkipIcon,
   SoundIcon,
-  WrenchIcon,
 } from "./icons";
 import "./Hud.css";
 
@@ -59,16 +56,14 @@ function NowPlaying() {
   const theme = useTheme();
   const modeIndex = useGameStore((s) => s.currentModeIndex);
   const remaining = useGameStore((s) => s.modeTimeRemaining);
-  const devMode = useGameStore((s) => s.devMode);
   const duration =
     modeIndex < 0
       ? MODE_SECONDS
       : (GAME_MODES[modeIndex].durationSeconds ?? MODE_SECONDS);
   // Modes the kings sit out, and some others, have no clock; they run until someone wins
   const untimed =
-    devMode ||
-    (modeIndex >= 0 &&
-      (GAME_MODES[modeIndex].kingsSitOut || GAME_MODES[modeIndex].untilWon));
+    modeIndex >= 0 &&
+    (GAME_MODES[modeIndex].kingsSitOut || GAME_MODES[modeIndex].untilWon);
   const fraction = untimed ? 1 : Math.max(0, Math.min(1, remaining / duration));
   const tagline = theme.tagline;
   const urgent = !untimed && remaining <= 5;
@@ -111,7 +106,6 @@ function NowPlaying() {
 function MoveClock() {
   const turn = useGameStore((s) => s.turn);
   const timeWhite = useGameStore((s) => s.timeWhite);
-  const devMode = useGameStore((s) => s.devMode);
   const autonomous = useGameStore((s) => s.pluginManager.isAutonomous());
 
   if (autonomous) {
@@ -136,8 +130,8 @@ function MoveClock() {
     );
   }
 
-  const fraction = devMode ? 1 : Math.max(0, timeWhite / MOVE_SECONDS);
-  const urgent = !devMode && timeWhite <= 3;
+  const fraction = Math.max(0, timeWhite / MOVE_SECONDS);
+  const urgent = timeWhite <= 3;
   return (
     <section
       className={`hud-card move-clock${urgent ? " urgent" : ""}`}
@@ -148,9 +142,7 @@ function MoveClock() {
       <div className="clock-bar">
         <div className="clock-fill" style={{ scale: `${fraction} 1` }} />
       </div>
-      <span className="clock-value">
-        {devMode ? "∞" : Math.ceil(timeWhite)}
-      </span>
+      <span className="clock-value">{Math.ceil(timeWhite)}</span>
     </section>
   );
 }
@@ -183,7 +175,7 @@ function ToolButton({
 }
 
 function useShortcuts() {
-  const { togglePause, switchMode } = useGameStore.getState();
+  const { togglePause } = useGameStore.getState();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -195,9 +187,6 @@ function useShortcuts() {
           e.preventDefault();
           togglePause();
           break;
-        case "n":
-          switchMode();
-          break;
         case "m":
           sfx.setEnabled(!sfx.isEnabled());
           break;
@@ -205,15 +194,13 @@ function useShortcuts() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePause, switchMode]);
+  }, [togglePause]);
 }
 
 function Toolbar() {
   const userPaused = useGameStore((s) => s.userPaused);
-  const devMode = useGameStore((s) => s.devMode);
   const soundOn = useSyncExternalStore(sfx.subscribe, sfx.isEnabled);
-  const { newGame, togglePause, switchMode, toggleDevMode, openMenu } =
-    useGameStore.getState();
+  const { newGame, togglePause, openMenu } = useGameStore.getState();
   useShortcuts();
 
   return (
@@ -233,72 +220,24 @@ function Toolbar() {
         {userPaused ? <PlayIcon /> : <PauseIcon />}
       </ToolButton>
       <ToolButton
-        label="Skip to the next mode"
-        shortcut="N"
-        onClick={() => switchMode()}
-      >
-        <SkipIcon />
-      </ToolButton>
-      <ToolButton
         label={soundOn ? "Mute sound" : "Turn sound on"}
         shortcut="M"
         onClick={() => sfx.setEnabled(!soundOn)}
       >
         {soundOn ? <SoundIcon /> : <MuteIcon />}
       </ToolButton>
-      <ToolButton
-        label="Dev mode"
-        shortcut="Ctrl+Shift+D"
-        onClick={toggleDevMode}
-        active={devMode}
-      >
-        <WrenchIcon />
-      </ToolButton>
     </nav>
-  );
-}
-
-function DevPanel() {
-  const modeIndex = useGameStore((s) => s.currentModeIndex);
-  const { switchMode } = useGameStore.getState();
-  return (
-    <section className="hud-card dev-panel" aria-label="Jump to a mode">
-      <span className="dev-title">Jump to a mode</span>
-      <div className="dev-grid">
-        {GAME_MODES.map((mode, i) => {
-          const theme = THEMES[mode.theme];
-          return (
-            <button
-              key={mode.theme}
-              type="button"
-              className={`dev-chip${i === modeIndex ? " active" : ""}`}
-              style={
-                {
-                  "--chip-a": theme.sky[1],
-                  "--chip-b": theme.accent,
-                } as React.CSSProperties
-              }
-              onClick={() => switchMode(i)}
-            >
-              {theme.title}
-            </button>
-          );
-        })}
-      </div>
-    </section>
   );
 }
 
 /** The broadcast panel beside the board */
 export function Hud() {
-  const devMode = useGameStore((s) => s.devMode);
   return (
     <aside className="hud">
       <Scoreboard />
       <NowPlaying />
       <MoveClock />
       <Toolbar />
-      {devMode && <DevPanel />}
     </aside>
   );
 }

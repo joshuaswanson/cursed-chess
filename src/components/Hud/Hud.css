@@ -288,20 +288,6 @@
   }
 }
 
-/* --- Mode chips --- */
-
-.dev-chip {
-  padding: 5px 10px;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--paper);
-  background: linear-gradient(135deg, var(--chip-a), var(--chip-b));
-  border: 2px solid var(--ink);
-  border-radius: 99px;
-  box-shadow: 2px 3px 0 var(--ink);
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
-}
-
 /* --- Toolbar --- */
 
 .toolbar {
@@ -376,37 +362,6 @@
 .tool-btn:focus-visible::after {
   opacity: 1;
   translate: -50% 0;
-}
-
-/* --- Dev panel --- */
-
-.dev-panel {
-  border-style: dashed;
-}
-
-.dev-title {
-  display: block;
-  margin-bottom: 10px;
-  font-weight: 800;
-  font-size: 14px;
-}
-
-.dev-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.dev-chip {
-  cursor: pointer;
-}
-
-.dev-chip:hover {
-  translate: 0 -2px;
-}
-
-.dev-chip.active {
-  outline: 3px solid var(--paper);
 }
 
 /* --- Tug of war: wooden boards held together with rope --- */

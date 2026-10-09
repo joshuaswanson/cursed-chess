@@ -630,11 +630,6 @@
   text-decoration: underline;
 }
 
-.boring-dev {
-  flex: none;
-  min-height: auto;
-}
-
 @media (max-width: 600px) {
   .boring-header {
     flex-wrap: wrap;
@@ -669,11 +664,4 @@
     flex-wrap: wrap;
     gap: 8px 16px;
   }
-}
-
-.boring-dev-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px 12px;
 }
