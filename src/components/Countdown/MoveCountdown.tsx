@@ -34,16 +34,21 @@ export function MoveCountdown() {
   const turn = useGameStore((s) => s.turn);
   const timeWhite = useGameStore((s) => s.timeWhite);
   const autonomous = useGameStore((s) => s.pluginManager.isAutonomous());
+  const introDone = useGameStore((s) => s.introDone);
 
   const seconds =
     cursed && !autonomous && turn === Color.White && timeWhite > 0
       ? Math.ceil(timeWhite)
       : null;
-  const showing = seconds !== null && seconds <= COUNTDOWN_FROM;
+  const counting = seconds !== null && seconds <= COUNTDOWN_FROM;
+  // FIFA's fourth official holds his board up the whole match: your seconds
+  // while you are on the ball, and blank while they are
+  const fixture = cursed && !autonomous && theme.id === "fifa" && introDone;
+  const showing = counting || fixture;
 
   useEffect(() => {
-    if (showing) sfx.tick(seconds, theme.id === "mines");
-  }, [showing, seconds, theme.id]);
+    if (counting) sfx.tick(seconds, theme.id === "mines");
+  }, [counting, seconds, theme.id]);
 
   // Drawn on the page itself, over the board, so nothing drifting across the
   // board, like the fog, can hide it
@@ -76,7 +81,12 @@ export function MoveCountdown() {
             className="move-countdown"
             data-countdown={theme.id}
             role="timer"
-            aria-label={`${seconds} seconds left to move`}
+            data-held={fixture && !counting ? "" : undefined}
+            aria-label={
+              seconds === null
+                ? "Waiting for the other side to move"
+                : `${seconds} seconds left to move`
+            }
             style={{
               left: box.left,
               top: box.top,
@@ -86,7 +96,7 @@ export function MoveCountdown() {
           >
             <div className="countdown-stage" key={seconds}>
               <span className="countdown-prop" aria-hidden />
-              <span className="countdown-digit">{seconds}</span>
+              <span className="countdown-digit">{seconds ?? "\u2013"}</span>
             </div>
           </div>,
           page,

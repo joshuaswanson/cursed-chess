@@ -172,6 +172,22 @@
   animation: count-board 0.35s ease-out;
 }
 
+/* The board never pops in or fades away: only its number changes */
+[data-countdown="fifa"] .countdown-stage {
+  animation: none;
+}
+
+/* Held up the whole match: steady until the last few seconds, when each
+   new number flares, and a touch dimmer while it is not counting down */
+.move-countdown[data-held] .countdown-stage,
+.move-countdown[data-held] .countdown-digit {
+  animation: none;
+}
+
+.move-countdown[data-held] .countdown-digit {
+  filter: brightness(0.82);
+}
+
 /* Breaks the digit into the dots of an LED panel */
 [data-countdown="fifa"] .countdown-digit::after {
   content: "";
