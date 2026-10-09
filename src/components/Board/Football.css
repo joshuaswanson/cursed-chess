@@ -140,6 +140,47 @@
   }
 }
 
+/* The open goal, marked like a pass target: a dashed outline round its
+   mouth and a turning ring in the middle of it */
+.shot-frame {
+  position: absolute;
+  inset: 8% 1.5% 4%;
+  border: 3px dashed var(--accent);
+  border-radius: 8px;
+  box-shadow:
+    0 0 10px var(--accent),
+    inset 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent);
+  pointer-events: none;
+  animation: shot-frame 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes shot-frame {
+  from {
+    opacity: 0.55;
+  }
+}
+
+.shot-ring {
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  height: 78%;
+  aspect-ratio: 1;
+  margin: 0;
+  translate: -50% -50%;
+  border: 3px dashed var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--accent);
+  pointer-events: none;
+  animation: shot-ring 5s linear infinite;
+}
+
+@keyframes shot-ring {
+  to {
+    rotate: 1turn;
+  }
+}
+
 .shoot-label {
   position: absolute;
   left: calc(100% + 12px);

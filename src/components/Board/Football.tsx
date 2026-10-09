@@ -302,9 +302,14 @@ export function Goal({
         </g>
       </svg>
       {shootable && (
-        <span className="shoot-label">
-          Shoot <b>{Math.round(shotChance * 100)}%</b>
-        </span>
+        <>
+          {/* Marked the way a pass is: a dashed outline round the mouth, and a turning ring to aim at */}
+          <span className="shot-frame" aria-hidden />
+          <span className="shot-ring" aria-hidden />
+          <span className="shoot-label">
+            Shoot <b>{Math.round(shotChance * 100)}%</b>
+          </span>
+        </>
       )}
       {!shootable && nudge > 0 && (
         <span key={nudge} className="shoot-label no-shot">
