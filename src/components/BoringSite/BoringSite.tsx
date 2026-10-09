@@ -5,6 +5,7 @@ import type { SiteTab } from "../../stores/gameStore";
 import { AuthDialog } from "./AuthDialog";
 import type { AuthMode } from "./AuthDialog";
 import "./BoringSite.css";
+import { Chessbot } from "../Chessbot/Chessbot";
 
 const NAV_LINKS: SiteTab[] = ["Play", "Puzzles", "Learn", "Watch", "Community"];
 
@@ -73,6 +74,58 @@ function PlayerCard({ name, rating }: { name: string; rating: number }) {
   );
 }
 
+/**
+ * The computer opponent's card. Its plain grey icon is Chessbot keeping up
+ * appearances: with every move of the opening game he slips a little more,
+ * tearing sideways and showing his real face for an instant, until the
+ * site breaks and he drops the act.
+ */
+function ComputerCard() {
+  const plies = useGameStore((s) => s.moveHistory.length);
+  const breaking = useGameStore((s) => s.curseStage !== null);
+  const slipping = breaking ? 4 : Math.min(3, plies);
+  return (
+    <div className={`boring-player boring-bot slipping-${slipping}`}>
+      <div className="boring-avatar boring-bot-avatar" aria-hidden>
+        <svg className="boring-bot-icon" viewBox="0 0 32 32">
+          <path d="M16 9.5 V5.5" stroke="#6f6f6f" strokeWidth="1.6" />
+          <circle cx="16" cy="4.8" r="1.7" fill="#6f6f6f" />
+          <rect x="4.5" y="14" width="3" height="7" rx="1.2" fill="#8a8a8a" />
+          <rect x="24.5" y="14" width="3" height="7" rx="1.2" fill="#8a8a8a" />
+          <rect
+            x="6.5"
+            y="9.5"
+            width="19"
+            height="16"
+            rx="4.5"
+            fill="#6f6f6f"
+          />
+          <rect
+            x="9.5"
+            y="14"
+            width="13"
+            height="7.5"
+            rx="2.6"
+            fill="#e4e4e4"
+          />
+          <path
+            d="M12 17.8 h2.6 M17.4 17.8 h2.6"
+            stroke="#6f6f6f"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+        <Chessbot className="boring-bot-true" mood="smug" grounded={false} />
+      </div>
+      <span className="boring-player-name boring-bot-name">
+        <span>Computer (Level 1)</span>
+        <span aria-hidden>Ch3ssb0t (Lev3l ???)</span>
+      </span>
+      <span className="boring-rating">(800)</span>
+    </div>
+  );
+}
+
 function MoveList() {
   const history = useGameStore((s) => s.moveHistory);
   const listRef = useRef<HTMLOListElement>(null);
@@ -127,7 +180,7 @@ export function BoringSidebar() {
   return (
     <aside className="boring-sidebar">
       {devMode && <BoringDevPanel />}
-      <PlayerCard name="Computer (Level 1)" rating={800} />
+      <ComputerCard />
       <section className="boring-panel">
         <h2>Moves</h2>
         <MoveList />
