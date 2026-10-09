@@ -203,13 +203,14 @@ export class HeistPlugin implements ModePlugin {
   }
 
   /**
-   * Nothing standing in a searchlight moves, and nothing goes through a
-   * wall. Whoever carries the jewel gives up their own way of moving for a
+   * Nothing standing in a searchlight moves, nothing steps into one, and
+   * nothing goes through a wall. Whoever carries the jewel gives up their own way of moving for a
    * creep: one square in any direction, taking whatever stands there.
    */
   modifyLegalMoves(ctx: PluginContext, moves: Move[], color: Color): Move[] {
     const free = moves.filter(
-      (move) => !this.isLit(move.from) && !this.hitsWall(move),
+      (move) =>
+        !this.isLit(move.from) && !this.isLit(move.to) && !this.hitsWall(move),
     );
     if (this.carrier !== color) return free;
     const piece = ctx.board.get(this.sq);
@@ -217,7 +218,9 @@ export class HeistPlugin implements ModePlugin {
     const others = free.filter((move) => move.from !== this.sq);
     if (this.isLit(this.sq)) return others;
     const creeps = STEPS.map((step) => this.sq + step)
-      .filter((to) => isValidSquare(to) && !this.walls.has(to))
+      .filter(
+        (to) => isValidSquare(to) && !this.walls.has(to) && !this.isLit(to),
+      )
       .flatMap((to): Move[] => {
         const there = ctx.board.get(to);
         if (there?.color === color) return [];
