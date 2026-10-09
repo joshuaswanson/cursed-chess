@@ -76,8 +76,11 @@ function App() {
     "app" +
     (cursed ? " is-cursed" : " is-boring") +
     (curseStage ? ` curse-${curseStage}` : "") +
-    // The plain site is a little off from your first move, and more after his reply
-    (!cursed && uneasy > 0 ? ` unease-${Math.min(2, uneasy)}` : "");
+    // The plain site is a little off from your first move, and more after
+    // his reply; it holds still once he is out and has the floor
+    (!cursed && !curseStage && uneasy > 0
+      ? ` unease-${Math.min(2, uneasy)}`
+      : "");
 
   return (
     <div className={appClass} style={themeVars(theme)} data-theme={theme.id}>
