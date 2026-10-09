@@ -23,7 +23,9 @@ export type ChessbotMood =
   // Working out his move
   | "thinking"
   // Spun about, as when gravity turns
-  | "dizzy";
+  | "dizzy"
+  // Caught out, and hoping nobody noticed
+  | "sheepish";
 
 const INK = "#1b1033";
 const EYE = "#ffffff";
@@ -369,6 +371,36 @@ function Face({
           <path d="M126 78 l4 9.5 l9.5 4 l-9.5 4 l-4 9.5 l-4 -9.5 l-9.5 -4 l9.5 -4 z" />
         </g>
       );
+    case "sheepish":
+      return (
+        <>
+          {/* Eyes off to one side, anywhere but at you */}
+          <g fill={EYE} filter={glow} transform="translate(-13 2)">
+            <rect x="65" y="84" width="17" height="19" rx="8" />
+            <rect x="119" y="84" width="17" height="19" rx="8" />
+          </g>
+          {/* Worried brows, tipped up in the middle */}
+          <path
+            d="M48 80 L72 73 M104 73 L128 80"
+            stroke={EYE}
+            strokeWidth="4"
+            strokeLinecap="round"
+            filter={glow}
+          />
+          {/* A blush under each eye */}
+          <g fill="#ff6fa5" opacity="0.85" filter={glow}>
+            <ellipse cx="66" cy="113" rx="11" ry="4.5" />
+            <ellipse cx="134" cy="113" rx="11" ry="4.5" />
+          </g>
+          <path
+            className="chessbot-sweat"
+            d="M166 40 q8 11 0 17 q-8 -6 0 -17 z"
+            fill="#8fe9ff"
+            stroke={INK}
+            strokeWidth="2.5"
+          />
+        </>
+      );
     case "dizzy":
       return (
         <g
@@ -453,6 +485,8 @@ const POSE: Record<ChessbotMood, Pose> = {
   love: UPRIGHT,
   stars: UPRIGHT,
   smug: LEANING,
+  // Shrinking into himself, antenna wilting
+  sheepish: { lean: -5, lift: 4, droop: 28, stretch: 0.92 },
   // His antenna flops over as he reels
   dizzy: { ...UPRIGHT, droop: 38 },
   // Head up, antenna reaching

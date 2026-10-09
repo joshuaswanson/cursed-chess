@@ -533,6 +533,56 @@
   }
 }
 
+/* Caught out: he shrinks down, shuffles from side to side, and comes back up slowly */
+.chessbot-hop.is-sheepish {
+  animation:
+    chessbot-shuffle 3.4s ease-in-out,
+    chessbot-bob 2.6s 3.4s ease-in-out infinite;
+}
+
+@keyframes chessbot-shuffle {
+  0% {
+    transform: none;
+  }
+  10% {
+    transform: translateY(7%) scale(0.9, 0.86);
+  }
+  25% {
+    transform: translate(-4%, 6%) rotate(-5deg) scale(0.9);
+  }
+  42% {
+    transform: translate(4%, 6%) rotate(5deg) scale(0.9);
+  }
+  58% {
+    transform: translate(-3%, 5%) rotate(-3deg) scale(0.92);
+  }
+  75% {
+    transform: translate(2%, 4%) rotate(2deg) scale(0.94);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+/* A bead of sweat running down beside his head */
+.chessbot-sweat {
+  animation: chessbot-sweat 1.1s ease-in infinite;
+}
+
+@keyframes chessbot-sweat {
+  from {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(22px);
+    opacity: 0;
+  }
+}
+
 /* Rattled: a jump, then trembling */
 .chessbot-hop.is-panic {
   animation:
@@ -1004,6 +1054,7 @@
   .chessbot-corner,
   .chessbot-nudge,
   .chessbot-dot,
+  .chessbot-sweat,
   .chessbot-swirl,
   .chessbot-spinner,
   .chessbot-bar,

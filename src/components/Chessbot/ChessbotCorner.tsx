@@ -318,11 +318,23 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
       s.turn === Color.Black &&
       !s.pluginManager.isAutonomous(),
   );
-  const pondering = thinking ? "thinking" : fidget?.look;
+  // Making excuses for walking onto his own mine, he cannot look at you
+  const sheepish =
+    quip !== undefined && (OWN_MINE as readonly string[]).includes(quip);
+  const pondering = sheepish
+    ? "sheepish"
+    : thinking
+      ? "thinking"
+      : fidget?.look;
   const mood = bot.idle ? (staged ?? pondering ?? bot.mood) : bot.mood;
-  const fidgeting = bot.idle && !staged && !thinking ? fidget?.move : undefined;
+  const fidgeting =
+    bot.idle && !staged && !thinking && !sheepish ? fidget?.move : undefined;
   // A blink is only his eyes; anything else is worth a move of its own
-  const act = peeking ? "peek" : bot.idle ? (staged ?? "idle") : bot.mood;
+  const act = peeking
+    ? "peek"
+    : bot.idle
+      ? (staged ?? (sheepish ? "sheepish" : "idle"))
+      : bot.mood;
   const stirred = `${act}:${bot.says ?? ""}`;
 
   // How many moves he has made, so each one can nudge him afresh
