@@ -384,9 +384,10 @@ export function Board() {
     game.turn === Color.White &&
     !isGameOver(status) &&
     !game.isInCheck();
-  const shotChance = canShoot
-    ? (footballRules.shotOption(game.board, footballRules.ball)?.chance ?? null)
+  const shot = canShoot
+    ? footballRules.shotOption(game.board, footballRules.ball)
     : null;
+  const shotChance = shot?.chance ?? null;
   const noShotReason = !ourBall
     ? "Win the ball first!"
     : game.turn !== Color.White
@@ -902,6 +903,7 @@ export function Board() {
             <FootballLayer
               view={football}
               carried={game.board.get(football.ball) !== null}
+              shotExitFile={shot?.exitFile ?? null}
               flipped={flipped}
               squareSize={squareSize}
             />

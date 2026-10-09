@@ -502,14 +502,54 @@ function playKick(kick: Kick): void {
  * The ball: at the carrier's feet or loose on the grass, flying when kicked.
  * Kicks made before this mounted are not replayed.
  */
+/** How far behind the goal line a shot's line is drawn to, in squares */
+const SHOT_LINE_REACH = 0.45;
+
+/** The line a shot would take: dashes running from the carrier into the goal, ending in an arrowhead */
+function ShotLine({ from, to }: { from: Point; to: Point }) {
+  const angle = (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI;
+  // It starts clear of the carrier, so it does not run across the piece
+  const length = Math.hypot(to.x - from.x, to.y - from.y);
+  const clear = Math.min(0.55, length / 2) / length;
+  from = {
+    x: from.x + (to.x - from.x) * clear,
+    y: from.y + (to.y - from.y) * clear,
+  };
+  return (
+    <svg
+      className="shot-line"
+      viewBox="0 0 8 8"
+      preserveAspectRatio="none"
+      aria-hidden
+    >
+      <path
+        d={`M${from.x} ${from.y} L${to.x} ${to.y}`}
+        className="shot-line-edge"
+      />
+      <path
+        d={`M${from.x} ${from.y} L${to.x} ${to.y}`}
+        className="shot-line-dash"
+      />
+      <path
+        d="M0 0 L-0.3 -0.17 L-0.3 0.17 Z"
+        className="shot-line-head"
+        transform={`translate(${to.x} ${to.y}) rotate(${angle})`}
+      />
+    </svg>
+  );
+}
+
 export function FootballLayer({
   view,
   carried,
+  shotExitFile,
   flipped,
   squareSize,
 }: {
   view: FootballView;
   carried: boolean;
+  /** Where along the goal line your shot would cross it, when you have one */
+  shotExitFile: number | null;
   flipped: boolean;
   squareSize: number;
 }) {
@@ -552,6 +592,15 @@ export function FootballLayer({
       className="football-layer"
       style={{ "--sq": `${squareSize}px` } as Style}
     >
+      {!ballAway && shotExitFile !== null && (
+        <ShotLine
+          from={{ x: col + 0.5, y: row + 0.5 }}
+          to={{
+            x: (flipped ? 7 - shotExitFile : shotExitFile) + 0.5,
+            y: flipped ? 8 + SHOT_LINE_REACH : -SHOT_LINE_REACH,
+          }}
+        />
+      )}
       {!ballAway && (
         <div
           className={`ball-rest${carried ? " carried" : " loose"}`}
