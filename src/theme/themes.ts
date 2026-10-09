@@ -248,7 +248,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     title: "Lanterns",
     tagline:
       "The board is dark. Each lantern lights the squares round its carrier. Take a piece carrying one to carry it yourself.",
-    catchphrase: "Who put the lights out?",
+    catchphrase: "Who turned out the lights?",
     // The night and the board's frame are the same black as the dark over
     // the squares, so the edges of the board cannot be seen
     sky: ["#04030a", "#04030a", "#04030a"],
