@@ -207,7 +207,7 @@ function ComputerCard() {
         />
       </div>
       <span className="boring-player-name boring-bot-name">
-        <span>Computer (Level 1)</span>
+        <span>Chess Bot (Level 1)</span>
         <span aria-hidden>Ch3ssb0t (L3vel ?)</span>
       </span>
       <span className="boring-rating">(800)</span>
