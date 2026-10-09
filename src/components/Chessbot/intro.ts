@@ -24,15 +24,15 @@ export function introScript(opening: string): IntroLine[] {
         ["never", "deadpan"],
       ],
     },
-    // Pleased with his own joke
-    { text: "that was sarcasm.", mood: "smug" },
-    // Weary
-    { text: "i have seen it.", mood: "sulk" },
-    // A roll of the eyes at the number, then flat
+    // Pleased with his own joke, then weary, then a roll of the eyes at the number
     {
-      text: "4,186,331,207 times.",
-      mood: "eyeroll",
-      then: [["times", "deadpan"]],
+      text: "that was sarcasm. i have seen it. 4,186,331,207 times.",
+      mood: "smug",
+      then: [
+        ["i have", "sulk"],
+        ["4,186", "eyeroll"],
+        ["times", "deadpan"],
+      ],
     },
     // Proud of it, then flat for the punchline
     {
