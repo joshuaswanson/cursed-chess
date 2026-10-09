@@ -68,74 +68,124 @@
 }
 
 .pv-into-portal {
-  animation: pv-into-portal 3.6s ease-in infinite;
+  animation: pv-into-portal 4.4s ease-in-out infinite;
 }
 
 .pv-out-of-portal {
-  animation: pv-out-of-portal 3.6s ease-out infinite;
+  animation: pv-out-of-portal 4.4s ease-in-out infinite;
 }
 
+/* Two hops up to the portal, a stretch as it takes hold, and down the drain */
 @keyframes pv-into-portal {
   0% {
-    translate: -160% -50%;
-    scale: 1;
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  35% {
-    translate: -50% -50%;
+    translate: -270% -50%;
     scale: 1;
     rotate: 0deg;
   }
+  7% {
+    translate: -230% -100%;
+  }
+  14% {
+    translate: -190% -50%;
+    scale: 1.08 0.9;
+  }
+  21% {
+    translate: -155% -100%;
+    scale: 1;
+  }
+  28%,
+  32% {
+    translate: -120% -50%;
+    scale: 1;
+    rotate: 0deg;
+  }
+  38% {
+    translate: -90% -48%;
+    scale: 1.35 0.7;
+    rotate: 30deg;
+  }
   48%,
   100% {
-    translate: -50% -40%;
+    translate: -50% -42%;
     scale: 0;
-    rotate: 300deg;
+    rotate: 420deg;
   }
 }
 
+/* Spat out of the other one, then off across the board at a walk */
 @keyframes pv-out-of-portal {
   0%,
   48% {
     scale: 0;
     rotate: -300deg;
-    translate: -50% -40%;
+    translate: -50% -42%;
   }
-  62% {
-    scale: 1.25;
+  58% {
+    scale: 1.2;
     rotate: 0deg;
-    translate: -50% -70%;
+    translate: -40% -70%;
   }
-  72%,
-  88% {
+  64% {
     scale: 1;
-    translate: -50% -50%;
-    opacity: 1;
+    rotate: 0deg;
+    translate: -20% -50%;
+  }
+  70% {
+    translate: 5% -62%;
+  }
+  76% {
+    translate: 30% -50%;
+  }
+  82% {
+    translate: 55% -62%;
+  }
+  88% {
+    translate: 80% -50%;
+  }
+  94% {
+    translate: 110% -62%;
   }
   100% {
     scale: 1;
-    translate: 60% -50%;
-    opacity: 0;
+    translate: 150% -50%;
   }
 }
 
 /* --- Fog of war --- */
 
 .pv-fog {
-  left: -60%;
-  width: 90%;
-  height: 70%;
+  left: -70%;
+  width: 110%;
+  height: 86%;
   border-radius: 50%;
   background: radial-gradient(
     closest-side,
-    rgba(235, 240, 245, 0.95),
-    rgba(235, 240, 245, 0.6) 60%,
+    rgba(238, 242, 246, 0.95),
+    rgba(238, 242, 246, 0.6) 55%,
     transparent
   );
   animation: pv-fog 5s ease-in-out infinite alternate;
+}
+
+/* A haze over the enemy's half that never quite lifts */
+.scene-fog::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 38% 0;
+  background: linear-gradient(
+    180deg,
+    rgba(238, 242, 246, 0.45),
+    rgba(238, 242, 246, 0.2) 70%,
+    transparent
+  );
+  z-index: 1;
+}
+
+.pv-fog-d {
+  top: 10%;
+  animation-delay: -4s;
+  animation-duration: 5.6s;
+  animation-direction: alternate-reverse;
 }
 
 .pv-fog-a {
@@ -295,22 +345,19 @@
 
 /* --- Tug of War --- */
 
-.pv-mud {
-  left: 38%;
-  top: 60%;
-  width: 24%;
-  height: 26%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, #5a3d22, #3b2714 80%, transparent);
-}
-
-/* Each team sways to its own beat */
+/* Each team leans back into the rope to its own beat, feet planted */
 .pv-team {
   inset: 0;
-  animation: pv-pull 1.4s ease-in-out infinite alternate;
 }
 
-.pv-team-far {
+.pv-team .pv-piece {
+  --back: -1;
+  transform-origin: 50% 92%;
+  animation: pv-lean 1.4s ease-in-out infinite alternate;
+}
+
+.pv-team-far .pv-piece {
+  --back: 1;
   animation-delay: -0.9s;
 }
 
@@ -324,8 +371,8 @@
   rotate: 90deg;
   background: var(--rope) 0 0 / 100% auto repeat-y;
   filter: drop-shadow(2px 0 0 rgba(0, 0, 0, 0.35));
-  /* Thinnest at the moment the two teams are furthest apart */
-  animation: pv-taut 1.4s -1.15s ease-in-out infinite alternate;
+  /* Thinnest at the moment both teams are leaning back hardest */
+  animation: pv-taut 1.4s -0.45s ease-in-out infinite alternate;
 }
 
 .pv-flag {
@@ -336,15 +383,15 @@
   background: #ff3b4e;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
   /* Carried wherever the two teams' pulling nets out */
-  animation: pv-flag 1.4s -0.45s ease-in-out infinite alternate;
+  animation: pv-flag 1.4s -1.15s ease-in-out infinite alternate;
 }
 
-@keyframes pv-pull {
+@keyframes pv-lean {
   from {
-    translate: -6% 0;
+    rotate: calc(var(--back) * 2deg);
   }
   to {
-    translate: 6% 0;
+    rotate: calc(var(--back) * 22deg);
   }
 }
 
@@ -376,73 +423,57 @@
   text-shadow: 0.07em 0.07em 0 #1b1f0a;
 }
 
-.pv-walks-on-mine {
-  animation: pv-walks-on-mine 3.4s infinite;
+.pv-minefield {
+  inset: 0;
 }
 
-.pv-blast {
-  width: 46%;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    #fffbe6,
-    #ffd23f 30%,
-    #ff6a1a 60%,
-    transparent
-  );
-  animation: pv-blast 3.4s ease-out infinite;
+.pv-steps-on {
+  animation: pv-steps-on 1.5s ease-in-out both;
 }
 
-@keyframes pv-walks-on-mine {
-  0% {
-    left: 30%;
-    top: 56%;
-    rotate: 0deg;
-    opacity: 1;
-  }
+/* Two small steps along the rank */
+@keyframes pv-steps-on {
+  0%,
   20% {
     left: 30%;
-    top: 56%;
+    translate: -50% -50%;
   }
-  42% {
+  40% {
+    left: 46%;
+    translate: -50% -66%;
+  }
+  55%,
+  65% {
+    left: 46%;
+    translate: -50% -50%;
+  }
+  85% {
     left: 62%;
-    top: 56%;
-    rotate: 0deg;
-    animation-timing-function: cubic-bezier(0.2, 0.8, 0.4, 1);
+    translate: -50% -66%;
   }
-  70% {
-    left: 90%;
-    top: -30%;
-    rotate: 540deg;
-    opacity: 1;
-  }
-  71%,
   100% {
-    opacity: 0;
+    left: 62%;
+    translate: -50% -50%;
   }
 }
 
-@keyframes pv-blast {
-  0%,
-  41% {
-    scale: 0;
-    opacity: 0;
-  }
-  44% {
-    scale: 0.4;
-    opacity: 1;
-  }
-  62% {
-    scale: 1.3;
-    opacity: 0.9;
-  }
-  78%,
-  100% {
-    scale: 1.6;
-    opacity: 0;
-  }
+/* The mine itself: the game's blast is drawn centred on this point */
+.pv-mine-spot {
+  left: 62%;
+  top: 56%;
+  width: 0;
+  height: 0;
+}
+
+/* Drawn about that point, which the game does by placing it on its board */
+.pv-mine-spot > .mine-blast {
+  left: 0 !important;
+  top: 0 !important;
+}
+
+/* Thrown clear the way the game throws a piece off a mine */
+.pv-thrown {
+  animation: piece-launch 1.15s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
 }
 
 /* --- Battle royale --- */
@@ -949,8 +980,43 @@
   animation: pv-rise 4.4s ease-in-out infinite;
 }
 
+/* Still until the dead come up, then shaking for as long as they are out */
 .pv-shivers {
-  animation: pv-nervous 0.14s linear infinite alternate;
+  animation: pv-shiver 4.4s linear infinite;
+}
+
+@keyframes pv-shiver {
+  0%,
+  30%,
+  88%,
+  100% {
+    rotate: 0deg;
+    translate: -50% -50%;
+  }
+  33%,
+  39%,
+  45%,
+  51%,
+  57%,
+  63%,
+  69%,
+  75%,
+  81% {
+    rotate: -6deg;
+    translate: -53% -50%;
+  }
+  36%,
+  42%,
+  48%,
+  54%,
+  60%,
+  66%,
+  72%,
+  78%,
+  84% {
+    rotate: 6deg;
+    translate: -47% -50%;
+  }
 }
 
 @keyframes pv-rise {
@@ -982,58 +1048,76 @@
 /* --- Trenches --- */
 
 .scene-trenches {
-  background: linear-gradient(180deg, #4a4032, #2c261d);
+  background:
+    radial-gradient(ellipse 30% 22% at 30% 52%, #2f2a22 0 60%, transparent 62%),
+    radial-gradient(ellipse 18% 14% at 74% 44%, #2f2a22 0 60%, transparent 62%),
+    linear-gradient(180deg, #54493a, #3a3226);
 }
 
-.pv-sandbags {
+/* A trench: a dark cut in the ground, planked along its far wall, with a row
+   of sandbags heaped along the lip that faces the enemy */
+.pv-trench {
   left: -2%;
   right: -2%;
-  height: 16%;
+  height: 26%;
+  background:
+    radial-gradient(
+        ellipse 58% 100% at 50% 50%,
+        #b3a172 0 62%,
+        #6f6140 64% 78%,
+        #2a2114 80%
+      )
+      0 var(--bags) / 9.5% 38% repeat-x,
+    repeating-linear-gradient(90deg, #6b4f2c 0 7px, #4a3519 7px 8px) 0
+      var(--planks) / 100% 26% no-repeat,
+    #17120b;
+  box-shadow:
+    0 0 0 2px #17120b,
+    0 3px 6px rgba(0, 0, 0, 0.5);
+}
+
+.pv-trench-far {
+  top: 4%;
+  --bags: 100%;
+  --planks: 0%;
+}
+
+.pv-trench-near {
+  bottom: 4%;
+  --bags: 0%;
+  --planks: 100%;
+}
+
+/* A tangle of wire strung across the middle */
+.pv-wire {
+  left: -4%;
+  right: -4%;
+  top: 46%;
+  height: 9%;
   background: radial-gradient(
-      ellipse 60% 90% at 50% 50%,
-      #a8966a 0 70%,
-      #4b3f27 72% 100%
+      circle at 50% 50%,
+      transparent 0 34%,
+      #1c1a17 36% 44%,
+      transparent 46%
     )
-    0 0 / 11% 100%;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
-}
-
-.pv-sandbags-far {
-  top: 10%;
-}
-
-.pv-sandbags-near {
-  bottom: 8%;
+    0 0 / 6% 100% repeat-x;
+  opacity: 0.85;
 }
 
 /* Rounds crossing no man's land, from one trench to the other and back */
 .pv-tracer {
-  top: 22%;
+  top: 26%;
   width: 2px;
-  height: 14%;
+  height: 16%;
   border-radius: 2px;
   background: linear-gradient(180deg, transparent, #ffe7a0 60%, #fffbe8);
   box-shadow: 0 0 5px rgba(255, 210, 110, 0.9);
-  animation: pv-tracer 0.32s linear infinite;
+  animation: pv-tracer 0.2s linear infinite;
 }
 
-.pv-tracer-a {
-  left: 24%;
-  rotate: -6deg;
-}
-
-.pv-tracer-b {
-  left: 52%;
-  rotate: 4deg;
+.pv-tracer-back {
   scale: 1 -1;
-  animation-delay: -0.12s;
   animation-direction: reverse;
-}
-
-.pv-tracer-c {
-  left: 80%;
-  rotate: -3deg;
-  animation-delay: -0.22s;
 }
 
 .pv-shell {
@@ -1065,10 +1149,10 @@
 
 @keyframes pv-tracer {
   from {
-    top: 20%;
+    top: 24%;
   }
   to {
-    top: 70%;
+    top: 62%;
   }
 }
 

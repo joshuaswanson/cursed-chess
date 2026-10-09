@@ -1,9 +1,11 @@
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { ThemeId } from "../../theme/themes";
 import { PieceType } from "../../engine";
 import { zombieImage } from "../../utils/pieceImages";
 import { ROPE_TILE } from "../Board/ropeTexture";
 import { SoccerBall } from "../Board/Football";
+import { MineBlast } from "../Board/MineBlast";
 import { Portal } from "../Board/Portal";
 import { Tombstone } from "../Board/Zombies";
 import "./ModePreview.css";
@@ -18,6 +20,7 @@ function Piece({
   size = 26,
   className = "",
   src,
+  style,
   children,
 }: {
   /** Colour and kind, as in the artwork's file names: wN, bQ */
@@ -28,17 +31,85 @@ function Piece({
   className?: string;
   /** Artwork of its own, in place of the plain piece */
   src?: string;
+  style?: CSSProperties;
   children?: ReactNode;
 }) {
   return (
     <span
       className={`pv-piece ${className}`}
-      style={
-        { left: `${x}%`, top: `${y}%`, width: `${size}%` } as CSSProperties
-      }
+      style={{ left: `${x}%`, top: `${y}%`, width: `${size}%`, ...style }}
     >
       <img src={src ?? `${PIECES}${is}.svg`} alt="" draggable={false} />
       {children}
+    </span>
+  );
+}
+
+/** How long the minefield scene runs before it starts over, and when in it the pawn reaches the mine */
+const MINE_LOOP_MS = 4200;
+const MINE_STEP_MS = 1500;
+
+/**
+ * A pawn walks onto a mine and the game's own blast goes off under it:
+ * fireball, sparks, flying dirt, shockwave, and smoke, with the pawn
+ * thrown clear. Played again and again while the card is on screen.
+ */
+function MineScene() {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [run, setRun] = useState({ n: 0, blown: false, square: 0 });
+
+  useEffect(() => {
+    let step: number;
+    const start = () => {
+      const scene = ref.current;
+      // Off screen there is nobody to blow up for
+      if (!scene?.closest(".in-view")) return;
+      const square = scene.clientWidth * 0.22;
+      setRun((r) => ({ n: r.n + 1, blown: false, square }));
+      step = window.setTimeout(
+        () => setRun((r) => ({ ...r, blown: true })),
+        MINE_STEP_MS,
+      );
+    };
+    const first = window.setTimeout(start, 300);
+    const loop = window.setInterval(start, MINE_LOOP_MS);
+    return () => {
+      window.clearTimeout(first);
+      window.clearTimeout(step);
+      window.clearInterval(loop);
+    };
+  }, []);
+
+  return (
+    <span ref={ref} className="pv-minefield">
+      <span className="pv-warning" style={{ left: "38%", top: "62%" }}>
+        2
+      </span>
+      <span className="pv-warning" style={{ left: "66%", top: "30%" }}>
+        1
+      </span>
+      {run.n > 0 && !run.blown && (
+        <Piece key={run.n} is="wP" x={30} y={56} className="pv-steps-on" />
+      )}
+      {run.blown && (
+        <span key={run.n} className="pv-minefield">
+          <span className="pv-mine-spot">
+            <MineBlast col={0} row={0} squareSize={run.square} />
+          </span>
+          <Piece
+            is="wP"
+            x={62}
+            y={56}
+            className="pv-thrown"
+            style={
+              {
+                "--fly-x": `${run.square * 1.6}px`,
+                "--fly-y": `${-run.square * 3}px`,
+              } as CSSProperties
+            }
+          />
+        </span>
+      )}
     </span>
   );
 }
@@ -145,7 +216,7 @@ function HexBoard() {
 
 /** Something that happens in each mode, played on a loop in a little window */
 const SCENES: Partial<Record<ThemeId, ReactNode>> = {
-  // A knight steps into the blue portal and bursts out of the orange one
+  // A knight hops up to the blue portal, is sucked in, and walks out of the orange one
   portals: (
     <>
       <span className="pv-portal" style={{ left: "24%", top: "56%" }}>
@@ -154,8 +225,13 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <span className="pv-portal" style={{ left: "76%", top: "56%" }}>
         <Portal color="orange" />
       </span>
-      <Piece is="wN" x={24} y={50} className="pv-into-portal" />
-      <Piece is="wN" x={76} y={50} className="pv-out-of-portal" />
+      <Piece is="wN" x={24} y={50} className="pv-into-portal pv-faces-right" />
+      <Piece
+        is="wN"
+        x={76}
+        y={50}
+        className="pv-out-of-portal pv-faces-right"
+      />
     </>
   ),
   // The enemy's pieces are swallowed by a bank of fog rolling over them
@@ -168,6 +244,7 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <span className="pv-fog pv-fog-a" />
       <span className="pv-fog pv-fog-b" />
       <span className="pv-fog pv-fog-c" />
+      <span className="pv-fog pv-fog-d" />
     </>
   ),
   // A rook runs up and belts the ball into the net
@@ -185,7 +262,6 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // and thin whenever both happen to pull at once
   tug: (
     <>
-      <span className="pv-mud" />
       <span className="pv-team">
         <Piece is="wP" x={12} y={50} size={22} />
         <Piece is="wN" x={28} y={48} size={24} className="pv-faces-right" />
@@ -202,18 +278,7 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
     </>
   ),
   // A pawn steps forward onto exactly the wrong square
-  mines: (
-    <>
-      <span className="pv-warning" style={{ left: "38%", top: "62%" }}>
-        2
-      </span>
-      <span className="pv-warning" style={{ left: "66%", top: "30%" }}>
-        1
-      </span>
-      <Piece is="wP" x={30} y={56} className="pv-walks-on-mine" />
-      <span className="pv-blast" style={{ left: "62%", top: "56%" }} />
-    </>
-  ),
+  mines: <MineScene />,
   // The edge of the board falls away tile by tile, closing in on the king
   royale: (
     <>
@@ -316,14 +381,26 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <Piece is="wP" x={80} y={64} size={22} className="pv-shivers" />
     </>
   ),
-  // Rifle fire crosses no man's land in the rain, and a shell lands short
+  // Rifle fire pours across no man's land in the rain, and a shell lands short
   trenches: (
     <>
-      <span className="pv-sandbags pv-sandbags-far" />
-      <span className="pv-sandbags pv-sandbags-near" />
-      <span className="pv-tracer pv-tracer-a" />
-      <span className="pv-tracer pv-tracer-b" />
-      <span className="pv-tracer pv-tracer-c" />
+      <span className="pv-trench pv-trench-far" />
+      <span className="pv-trench pv-trench-near" />
+      <span className="pv-wire" />
+      {Array.from({ length: 9 }, (_, i) => (
+        <span
+          key={i}
+          className={`pv-tracer${i % 2 ? " pv-tracer-back" : ""}`}
+          style={
+            {
+              left: `${8 + i * 10.5}%`,
+              rotate: `${((i * 37) % 13) - 6}deg`,
+              animationDelay: `${-((i * 0.073) % 0.2)}s`,
+              animationDuration: `${0.16 + ((i * 29) % 7) / 100}s`,
+            } as CSSProperties
+          }
+        />
+      ))}
       <span className="pv-shell" />
       <span className="pv-rain" />
     </>
