@@ -730,9 +730,15 @@ export function Board() {
           {minesArmed.has(sq) && <span className="mine-pop" aria-hidden />}
           {passChance !== undefined && <PassMarker chance={passChance} />}
           {lanternsHeld > 0 && <LanternIcon count={lanternsHeld} />}
-          {overlays.heist?.sq === sq && (
-            <HeistLoot held={overlays.heist.carrier !== null} />
-          )}
+          {overlays.heist?.jewels
+            .filter((jewel) => jewel.sq === sq)
+            .map((jewel) => (
+              <HeistLoot
+                key={jewel.owner}
+                held={jewel.carried}
+                yours={jewel.owner === Color.White}
+              />
+            ))}
           {fall && piece && (
             <span
               key={`dust-${gravityShift?.id}`}

@@ -36,18 +36,19 @@ export function Jewel({ className = "" }: { className?: string }) {
   );
 }
 
-/** The jewel where it stands on the board: on its plinth under glass, or held up by whoever has it */
-export function HeistLoot({ held }: { held: boolean }) {
+/** A jewel where it stands on the board: on the cushion in its vault, or held up by the thief who has it. Yours is blue, theirs red. */
+export function HeistLoot({ held, yours }: { held: boolean; yours: boolean }) {
+  const whose = yours ? "is-yours" : "is-theirs";
   if (held) {
     return (
-      <span className="heist-held" aria-hidden>
+      <span className={`heist-held ${whose}`} aria-hidden>
         <Jewel />
         <i className="heist-glint" />
       </span>
     );
   }
   return (
-    <span className="heist-plinth" aria-hidden>
+    <span className={`heist-plinth ${whose}`} aria-hidden>
       <span className="heist-cushion" />
       <Jewel />
       <i className="heist-glint" />
@@ -71,8 +72,8 @@ const LOCK_ON = 0.09;
 
 /**
  * The museum's lights: a dim hall with searchlights sweeping the floor.
- * When the jewel leaves its plinth the alarm goes up, the hall pulses red,
- * and one light swings round and stays on whoever has it.
+ * When a jewel leaves its vault the alarm goes up, the hall pulses red,
+ * and a light swings round and stays on whoever has it.
  */
 export function HeistLights({
   view,
@@ -109,7 +110,8 @@ export function HeistLights({
         canvas.height = size;
       }
       const sq = size / 8;
-      const alarm = view.carrier !== null;
+      const stolen = view.jewels.filter((jewel) => jewel.carried);
+      const alarm = stolen.length > 0;
       const t = now / 1000;
       const thief = (square: SquareIndex) => ({
         x: visualCol(square, flipped) + 0.5,
@@ -117,7 +119,7 @@ export function HeistLights({
       });
 
       LIGHTS.forEach((light, i) => {
-        // With the alarm up, the lights sweep faster and the first hunts the thief
+        // With the alarm up, the lights sweep faster
         const rate = alarm ? 1.9 : 1;
         const sweep = {
           x: 4 + light.swingX * Math.sin(t * light.speedX * rate + light.phase),
@@ -126,8 +128,10 @@ export function HeistLights({
             light.swingY *
               Math.sin(t * light.speedY * rate + light.phase * 1.7),
         };
-        const goal = alarm && i === 0 ? thief(view.sq) : sweep;
-        const ease = alarm && i === 0 ? LOCK_ON : 0.2;
+        // One light for each thief at large; the rest keep sweeping
+        const hunted = stolen[i];
+        const goal = hunted ? thief(hunted.sq) : sweep;
+        const ease = hunted ? LOCK_ON : 0.2;
         at[i].x += (goal.x - at[i].x) * ease;
         at[i].y += (goal.y - at[i].y) * ease;
       });
@@ -169,7 +173,7 @@ export function HeistLights({
           y * sq,
           reach,
         );
-        const hunting = alarm && i === 0;
+        const hunting = i < stolen.length;
         tint.addColorStop(
           0,
           hunting ? "rgba(255, 70, 70, 0.3)" : "rgba(210, 230, 255, 0.2)",

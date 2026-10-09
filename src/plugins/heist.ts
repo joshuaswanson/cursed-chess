@@ -10,29 +10,28 @@ import type {
 } from "./types";
 import { fileOf, isValidSquare, rankOf, toIndex } from "../utils/squareUtils";
 
-export interface HeistView {
-  /** Where the jewel is: on its plinth, or with whoever carries it */
+/** One side's jewel: in its vault, or in the hands of a thief from the other side */
+export interface HeistJewel {
+  owner: Color;
+  /** The square of its vault, in front of its owner's pawns */
+  vault: SquareIndex;
   sq: SquareIndex;
-  /** Whose piece carries it, or nobody while it still sits on its plinth */
-  carrier: Color | null;
-  /** The plinth it was lifted from */
-  plinth: SquareIndex;
-  /** How many times it has changed hands, counting the first lift */
-  grabs: number;
+  /** Lifted, and on its way out with one of the other side's pieces */
+  carried: boolean;
 }
 
-/** The four middle squares, one of which the jewel is shown on */
-const PLINTHS = [toIndex(3, 3), toIndex(4, 3), toIndex(3, 4), toIndex(4, 4)];
+export interface HeistView {
+  jewels: HeistJewel[];
+}
+
 const STEPS = [-17, -16, -15, -1, 1, 15, 16, 17];
-/**
- * How many rows at a side's own end count as home. Two, because the back
- * row alone starts full of that side's own pieces and stays that way.
- */
+/** The row each side's vault is on: the third from its own end, just ahead of its pawns */
+const VAULT_ROW = 2;
+/** How many rows at a side's own end a thief has to get the jewel back to */
 const HOME_ROWS = 2;
 /** How many rows a rank is from a side's own end of the board */
 const fromOwnEnd = (color: Color, rank: number) =>
   color === Color.White ? rank : 7 - rank;
-/** Whether a rank is one a side has to get the jewel back to */
 const isHome = (color: Color, rank: number) =>
   fromOwnEnd(color, rank) < HOME_ROWS;
 /** How far apart two squares are, counted in king's steps */
@@ -40,57 +39,59 @@ const steps = (a: SquareIndex, b: SquareIndex) =>
   Math.max(Math.abs(fileOf(a) - fileOf(b)), Math.abs(rankOf(a) - rankOf(b)));
 
 /**
- * A museum at night, and one jewel on a plinth in the middle of the floor.
- * Whoever moves onto it lifts it, and from then on can only creep a square
- * at a time, in any direction. Take the piece carrying it and the jewel is
- * yours. Carry it back to your own two home rows to win.
+ * A museum at night, with a jewel in each side's vault, just ahead of its
+ * pawns. Land a piece on the other side's vault to lift their jewel. From
+ * then on that piece can only creep a square at a time, in any direction.
+ * Get it back to your own first two rows to win. Take a thief and the
+ * jewel goes straight back to its vault.
  */
 export class HeistPlugin implements ModePlugin {
   id = "heist";
   name = "Heist";
   description =
-    "Grab the jewel and carry it home to your own first two rows. Whoever holds it can only creep one square at a time.";
+    "Break into their vault, lift their jewel, and carry it home to your first two rows. A thief can only creep one square at a time. Take a thief to send your jewel back.";
 
-  private plinth: SquareIndex = PLINTHS[0];
-  private sq: SquareIndex = PLINTHS[0];
-  private carrier: Color | null = null;
-  private grabs = 0;
+  private jewels: HeistJewel[] = [];
   private winner: Color | null = null;
 
-  onGameStart(ctx: PluginContext): void {
-    const open = PLINTHS.filter((sq) => !ctx.board.get(sq));
-    const choices = open.length > 0 ? open : PLINTHS;
-    this.plinth = choices[Math.floor(Math.random() * choices.length)];
-    this.sq = this.plinth;
-    this.grabs = 0;
+  onGameStart(): void {
     this.winner = null;
-    // A piece already standing there when the lights go down has it in hand
-    this.carrier = ctx.board.get(this.sq)?.color ?? null;
+    this.jewels = [Color.White, Color.Black].map((owner) => {
+      const rank = owner === Color.White ? VAULT_ROW : 7 - VAULT_ROW;
+      const vault = toIndex(Math.random() < 0.5 ? 3 : 4, rank);
+      return { owner, vault, sq: vault, carried: false };
+    });
   }
 
-  /** The alarm has gone off: somebody has the jewel off its plinth */
+  /** The alarm has gone off: somebody has a jewel out of its vault */
   get alarm(): boolean {
-    return this.carrier !== null;
+    return this.jewels.some((jewel) => jewel.carried);
+  }
+
+  /** The jewel a side is trying to steal */
+  private loot(thief: Color): HeistJewel | undefined {
+    return this.jewels.find((jewel) => jewel.owner !== thief);
   }
 
   /**
-   * Whoever carries the jewel gives up their own way of moving for a creep:
-   * one square in any direction, taking whatever stands there
+   * A thief gives up its own way of moving for a creep: one square in any
+   * direction, taking whatever stands there
    */
   modifyLegalMoves(ctx: PluginContext, moves: Move[], color: Color): Move[] {
-    if (this.carrier !== color) return moves;
-    const piece = ctx.board.get(this.sq);
+    const loot = this.loot(color);
+    if (!loot?.carried) return moves;
+    const piece = ctx.board.get(loot.sq);
     // A king creeps as it is
     if (!piece || piece.type === PieceType.King) return moves;
-    const others = moves.filter((move) => move.from !== this.sq);
-    const creeps = STEPS.map((step) => this.sq + step)
+    const others = moves.filter((move) => move.from !== loot.sq);
+    const creeps = STEPS.map((step) => loot.sq + step)
       .filter((to) => isValidSquare(to))
       .flatMap((to): Move[] => {
         const there = ctx.board.get(to);
         if (there?.color === color) return [];
         return [
           {
-            from: this.sq,
+            from: loot.sq,
             to,
             piece,
             captured: there ?? undefined,
@@ -110,26 +111,30 @@ export class HeistPlugin implements ModePlugin {
     return king === null || !isSquareAttacked(after, king, opponent(color));
   }
 
-  onAfterMove(_ctx: PluginContext, move: Move): void {
+  onAfterMove(ctx: PluginContext, move: Move): void {
+    const mover = move.piece.color;
     // A pawn taken in passing stood beside the square the taker lands on
     const taken =
       move.flags & MoveFlag.EnPassant
         ? toIndex(fileOf(move.to), rankOf(move.from))
         : move.to;
-    const mover = move.piece.color;
-    if (this.sq === move.from && this.carrier === mover) {
-      this.sq = move.to;
-    } else if (
-      (move.captured && this.sq === taken) ||
-      (this.carrier === null && this.sq === move.to)
-    ) {
-      // Lifted from its plinth, or taken along with whoever had it
-      this.sq = move.to;
-      this.carrier = mover;
-      this.grabs++;
-    }
-    if (this.carrier === mover && isHome(mover, rankOf(this.sq))) {
-      this.winner = mover;
+    for (const jewel of this.jewels) {
+      const thief = opponent(jewel.owner);
+      if (jewel.carried && mover === thief && jewel.sq === move.from) {
+        jewel.sq = move.to;
+      } else if (jewel.carried && move.captured && jewel.sq === taken) {
+        // The thief is caught, and the jewel is back where it belongs
+        jewel.carried = false;
+        jewel.sq = jewel.vault;
+      }
+      // Anyone from the other side standing on the vault has the jewel
+      if (!jewel.carried && ctx.board.get(jewel.vault)?.color === thief) {
+        jewel.carried = true;
+        jewel.sq = jewel.vault;
+      }
+      if (jewel.carried && isHome(thief, rankOf(jewel.sq))) {
+        this.winner = thief;
+      }
     }
   }
 
@@ -141,41 +146,57 @@ export class HeistPlugin implements ModePlugin {
     return this.winner;
   }
 
-  /** The carrier's own home rows are lit up as the way out */
+  /** A thief's home rows are lit up as the way out */
   getSquareModifiers(
     _ctx: PluginContext,
     square: SquareIndex,
   ): SquareModifier[] {
-    if (this.carrier === null) return [];
-    return isHome(this.carrier, rankOf(square))
-      ? [{ className: `heist-exit heist-exit-${this.carrier}` }]
-      : [];
+    return this.jewels.flatMap((jewel) => {
+      const thief = opponent(jewel.owner);
+      return jewel.carried && isHome(thief, rankOf(square))
+        ? [{ className: `heist-exit heist-exit-${thief}` }]
+        : [];
+    });
   }
 
   getBoardOverlays(): BoardOverlay[] {
     const view: HeistView = {
-      sq: this.sq,
-      carrier: this.carrier,
-      plinth: this.plinth,
-      grabs: this.grabs,
+      jewels: this.jewels.map((jewel) => ({ ...jewel })),
     };
-    return [{ type: "heist", squares: [this.sq], data: view }];
+    return [
+      {
+        type: "heist",
+        squares: this.jewels.map((jewel) => jewel.sq),
+        data: view,
+      },
+    ];
   }
 
-  /** How much the computer likes a move for the sake of the jewel */
+  /** How much the computer likes a move for the sake of the jewels */
   squareBonus(to: SquareIndex, piece: Piece, from: SquareIndex): number {
-    const closer = steps(from, this.sq) - steps(to, this.sq);
-    // Nobody has it: get there first
-    if (this.carrier === null) return to === this.sq ? 5 : closer * 0.6;
-    if (this.carrier === piece.color) {
-      // Carrying it: head for home, and do not wander off without it
-      if (from !== this.sq) return closer * 0.2;
-      const nearer =
-        fromOwnEnd(piece.color, rankOf(from)) -
-        fromOwnEnd(piece.color, rankOf(to));
-      return isHome(piece.color, rankOf(to)) ? 500 : nearer * 3;
+    const loot = this.loot(piece.color);
+    const mine = this.jewels.find((jewel) => jewel.owner === piece.color);
+    let bonus = 0;
+    if (loot?.carried) {
+      // Carrying theirs: head for home
+      if (from === loot.sq) {
+        const nearer =
+          fromOwnEnd(piece.color, rankOf(from)) -
+          fromOwnEnd(piece.color, rankOf(to));
+        bonus += isHome(piece.color, rankOf(to)) ? 500 : nearer * 3;
+      }
+    } else if (loot) {
+      // Theirs is still in its vault: work toward it, and lift it when it is safe to
+      bonus +=
+        to === loot.vault
+          ? 2.5
+          : (steps(from, loot.vault) - steps(to, loot.vault)) * 0.4;
     }
-    // The other side has it: close in, and take it if it can be taken
-    return to === this.sq ? 12 : closer * 0.8;
+    if (mine?.carried) {
+      // Mine is on its way out: catch the thief
+      bonus +=
+        to === mine.sq ? 15 : (steps(from, mine.sq) - steps(to, mine.sq)) * 0.8;
+    }
+    return bonus;
   }
 }
