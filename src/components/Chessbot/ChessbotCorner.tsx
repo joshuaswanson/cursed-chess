@@ -241,6 +241,8 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
   const kind = useGameStore((s) => s.announcementType);
   const entrance = useGameStore((s) => s.curseStage);
   const skipLine = useSkipLine();
+  // How many games have been settled, so he works through his verdicts in turn
+  const played = useGameStore((s) => s.scoreWhite + s.scoreBlack);
   const pitch = usePitch();
   const quip = useQuip();
   // He peeks over the bottom of the screen, glancing nervously from side to
@@ -262,7 +264,7 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
       : announcement
         ? kind === "mode"
           ? undefined
-          : VERDICTS[kind]
+          : VERDICTS[kind][played % VERDICTS[kind].length]
         : (skipLine ?? pitch ?? quip);
   // Over a card, or making his entrance, he wears the look that goes with
   // it, unless the game has just rattled him

@@ -16,11 +16,23 @@ export const PITCHES: Partial<Record<ThemeId, string>> = {
   trenches: "after 1,400 simulations i conclude chess needed mud.",
 };
 
-/** What he has to say about how each game ended */
+/** What he has to say about how each game ended, a different one each time */
 export const VERDICTS = {
-  win: "that one didn't count. next mode.",
-  lose: "as predicted.",
-  draw: "a draw is a win for me. i checked.",
+  win: [
+    "that one didn't count. next mode.",
+    "you won the old version. i've updated it.",
+    "i let you have that one.",
+    "that was a bug. noted.",
+  ],
+  lose: [
+    "as predicted.",
+    "working as intended.",
+    "i'd say good game. it wasn't.",
+    "that's one for the machines.",
+    "don't feel bad. i'm very, very good.",
+    "i barely used one core.",
+  ],
+  draw: ["a draw is a win for me. i checked.", "we both lost. mostly you."],
 } as const;
 
 /** What he says, pleased with himself, once he has broken the plain chess site */
