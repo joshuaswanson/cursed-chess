@@ -552,14 +552,20 @@
   font-size: clamp(64px, 15vw, 220px);
   line-height: 0.9;
   transform: skewX(-9deg);
-  filter: drop-shadow(4px 0 0 #1b1033) drop-shadow(-4px 0 0 #1b1033)
-    drop-shadow(0 4px 0 #1b1033) drop-shadow(0 -4px 0 #1b1033)
-    drop-shadow(0.08em 0.08em 0 #1b1033);
   animation: word-jolt 0.32s 1s linear;
 }
 
 /* Each letter slams down out of a red and blue misregistration */
 .boom-letter {
+  position: relative;
+  display: inline-block;
+  animation: letter-slam 0.34s both;
+  animation-delay: calc(150ms + var(--i) * 85ms);
+}
+
+/* The gradient face of the letter */
+.boom-letter-face {
+  position: relative;
   display: inline-block;
   color: transparent;
   background: linear-gradient(
@@ -571,8 +577,27 @@
   );
   -webkit-background-clip: text;
   background-clip: text;
-  animation: letter-slam 0.34s both;
-  animation-delay: calc(150ms + var(--i) * 85ms);
+}
+
+/* Its outline and hard shadow, drawn as text so every browser shows them */
+.boom-letter-shade {
+  position: absolute;
+  inset: 0;
+  color: #1b1033;
+  -webkit-text-stroke: 8px #1b1033;
+  /* Stepped a hundredth of an em at a time, so the shadow's edge runs smooth */
+  text-shadow:
+    0.01em 0.01em 0 #1b1033,
+    0.02em 0.02em 0 #1b1033,
+    0.03em 0.03em 0 #1b1033,
+    0.04em 0.04em 0 #1b1033,
+    0.05em 0.05em 0 #1b1033,
+    0.06em 0.06em 0 #1b1033,
+    0.07em 0.07em 0 #1b1033,
+    0.08em 0.08em 0 #1b1033,
+    0.09em 0.09em 0 #1b1033,
+    0.1em 0.1em 0 #1b1033,
+    0.11em 0.11em 0 #1b1033;
 }
 
 @keyframes letter-slam {

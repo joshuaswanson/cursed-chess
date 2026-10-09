@@ -96,7 +96,11 @@ function CurseBoom() {
               className="boom-letter"
               style={{ "--i": i } as React.CSSProperties}
             >
-              {ch}
+              {/* The outline and shadow are a dark copy of the letter behind it */}
+              <span className="boom-letter-shade" aria-hidden>
+                {ch}
+              </span>
+              <span className="boom-letter-face">{ch}</span>
             </span>
           ))}
         </div>
