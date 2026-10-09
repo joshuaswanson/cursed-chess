@@ -7,7 +7,7 @@ import type { AuthMode } from "./AuthDialog";
 import "./BoringSite.css";
 import { Chessbot } from "../Chessbot/Chessbot";
 import type { ChessbotMood } from "../Chessbot/Chessbot";
-import { introDelays, introScript } from "../Chessbot/intro";
+import { introDelays, introMood, introScript } from "../Chessbot/intro";
 
 const NAV_LINKS: SiteTab[] = ["Play", "Puzzles", "Learn", "Watch", "Community"];
 
@@ -91,7 +91,7 @@ const FIRST_LOOKS: [ChessbotMood, number][] = [
 
 /** His face in the icon spot through his speech: a look around first, then whatever each line calls for */
 function useSpeechMood(speaking: boolean): ChessbotMood {
-  const line = useGameStore((s) => s.introLine);
+  const spoken = useGameStore((s) => s.introMood);
   const [look, setLook] = useState(0);
   useEffect(() => {
     if (!speaking || look >= FIRST_LOOKS.length) return;
@@ -102,10 +102,8 @@ function useSpeechMood(speaking: boolean): ChessbotMood {
     return () => window.clearTimeout(timer);
   }, [speaking, look]);
   if (look < FIRST_LOOKS.length) return FIRST_LOOKS[look][0];
-  return SPEECH_MOODS[line] ?? "smug";
+  return spoken;
 }
-
-const SPEECH_MOODS = introScript("").map((line) => line.mood);
 
 /**
  * The computer opponent's card. Its plain grey icon is Chessbot keeping up
@@ -182,20 +180,6 @@ function BotTyping({ opening }: { opening: string }) {
 
   useEffect(() => {
     caret.current?.scrollIntoView({ block: "nearest" });
-    // Each letter is a peck at the keys, one side then the other
-    if (typed > 0) {
-      const side = typed % 2 ? 1 : -1;
-      document
-        .querySelector(".boring-bot-true")
-        ?.animate(
-          [
-            { transform: "none" },
-            { transform: `translate(${side * 4}%, 7%) rotate(${side * 6}deg)` },
-            { transform: "none" },
-          ],
-          { duration: 95, easing: "ease-out" },
-        );
-    }
     if (typed >= delays.length) return;
     const timer = window.setTimeout(
       () => setTyped((n) => n + 1),
@@ -212,9 +196,10 @@ function BotTyping({ opening }: { opening: string }) {
     0,
     starts.filter((start) => typed > start).length - 1,
   );
+  const mood = introMood(lines[current], typed - starts[current]);
   useEffect(() => {
-    useGameStore.setState({ introLine: current });
-  }, [current]);
+    useGameStore.setState({ introMood: mood });
+  }, [mood]);
 
   return (
     <>

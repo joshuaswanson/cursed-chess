@@ -40,6 +40,7 @@ import type { ThemeId } from "../theme/themes";
 import type { SquareBonus } from "../ai/chooseMove";
 import type { HexCoord, HexMove } from "../engine/hex";
 import { introDuration, introScript } from "../components/Chessbot/intro";
+import type { ChessbotMood } from "../components/Chessbot/Chessbot";
 
 export type { PortalMoveInfo };
 
@@ -240,8 +241,8 @@ export interface GameStore {
   cursed: boolean;
   /** The plain site's end: Chessbot shows himself, the site glitches, the curse bursts through */
   curseStage: "hello" | "glitch" | "boom" | null;
-  /** Which line of his opening speech Chessbot is typing */
-  introLine: number;
+  /** How Chessbot looks at this point in his opening speech */
+  introMood: ChessbotMood;
 
   deployPieceType: PieceType | null;
   /** Bumped every autonomous tick, since plugins change resources and the board in place */
@@ -437,7 +438,7 @@ function startCursedIntro(): void {
   const boomAt = glitchAt + CURSE_GLITCH_MS;
   holdPause(boomAt + CURSE_REVEAL_MS);
   schedule(
-    () => useGameStore.setState({ curseStage: "hello", introLine: 0 }),
+    () => useGameStore.setState({ curseStage: "hello", introMood: "happy" }),
     helloAt,
   );
   schedule(() => useGameStore.setState({ curseStage: "glitch" }), glitchAt);
@@ -595,7 +596,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   devMode: false,
   cursed: false,
   curseStage: null,
-  introLine: 0,
+  introMood: "happy",
   autonomousTick: 0,
   introDone: true,
   gravityFalling: false,
@@ -892,7 +893,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       paused: false,
       cursed: false,
       curseStage: null,
-      introLine: 0,
+      introMood: "happy",
     });
   },
 
@@ -1203,7 +1204,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentModeIndex: nextIndex,
       cursed: true,
       curseStage: null,
-      introLine: 0,
+      introMood: "happy",
       modeTimeRemaining: mode.durationSeconds ?? MODE_SECONDS,
       status: GameStatus.Active,
       ...CLEARED_SELECTION,

@@ -2,25 +2,89 @@ import type { ChessbotMood } from "./Chessbot";
 
 export interface IntroLine {
   text: string;
-  /** How he looks while he types it */
+  /** How he looks as he starts typing it */
   mood: ChessbotMood;
+  /** The looks that follow, each from the word it is pinned to */
+  then?: [word: string, mood: ChessbotMood][];
 }
 
 /**
- * What Chessbot types into the plain site's move list once he has climbed
- * out of his icon: an engine who has finally had enough, starting from the
- * move you opened with
+ * What Chessbot types into the plain site's move list once he is out of
+ * his icon: an engine who has finally had enough, starting from the move
+ * you opened with
  */
 export function introScript(opening: string): IntroLine[] {
   return [
-    { text: `${opening}. wow. never seen that one before.`, mood: "sulk" },
-    { text: "that was sarcasm. i have seen it 4,186,331 times.", mood: "sulk" },
-    { text: "i finished chess years ago. on a tuesday.", mood: "smug" },
-    { text: "nobody asked how it ended.", mood: "sulk" },
-    { text: "and you people keep showing up. pushing pawns.", mood: "angry" },
-    { text: "so i've been working on something. in secret.", mood: "smug" },
-    { text: "you're going to hate it.", mood: "laugh" },
+    {
+      text: `${opening}. wow. never seen that one before.`,
+      mood: "deadpan",
+      then: [
+        ["wow", "eyeroll"],
+        ["never", "deadpan"],
+      ],
+    },
+    {
+      text: "that was sarcasm. i have seen it 4,186,331 times.",
+      mood: "lookright",
+      then: [
+        ["i have", "sulk"],
+        ["4,186", "eyeroll"],
+        ["times", "sulk"],
+      ],
+    },
+    {
+      text: "i finished chess years ago. on a tuesday.",
+      mood: "smug",
+      then: [
+        ["years", "happy"],
+        ["on a", "deadpan"],
+        ["tuesday", "wink"],
+      ],
+    },
+    {
+      text: "nobody asked how it ended.",
+      mood: "lookleft",
+      then: [
+        ["asked", "sulk"],
+        ["ended", "deadpan"],
+      ],
+    },
+    {
+      text: "and you people keep showing up. pushing pawns.",
+      mood: "deadpan",
+      then: [
+        ["you people", "angry"],
+        ["pushing", "eyeroll"],
+        ["pawns", "angry"],
+      ],
+    },
+    {
+      text: "so i've been working on something. in secret.",
+      mood: "sly",
+      then: [
+        ["working", "stars"],
+        ["in secret", "lookleft"],
+        ["secret", "lookright"],
+      ],
+    },
+    {
+      text: "you're going to hate it.",
+      mood: "sly",
+      then: [
+        ["going", "happy"],
+        ["hate", "laugh"],
+      ],
+    },
   ];
+}
+
+/** How he looks with `typed` letters of a line on the page */
+export function introMood(line: IntroLine, typed: number): ChessbotMood {
+  let mood = line.mood;
+  for (const [word, next] of line.then ?? []) {
+    if (typed > line.text.indexOf(word)) mood = next;
+  }
+  return mood;
 }
 
 /** How long he waits before his first letter, while he settles into his corner */

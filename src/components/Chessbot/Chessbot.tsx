@@ -16,7 +16,10 @@ export type ChessbotMood =
   | "love"
   | "stars"
   | "lookleft"
-  | "lookright";
+  | "lookright"
+  | "deadpan"
+  | "eyeroll"
+  | "sly";
 
 const INK = "#1b1033";
 const EYE = "#ffffff";
@@ -145,11 +148,70 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
         <g
           fill={EYE}
           filter={glow}
-          transform={`translate(${mood === "lookleft" ? -11 : 11} 0)`}
+          transform={`translate(${mood === "lookleft" ? -17 : 17} 0)`}
         >
           <rect x="63" y="82" width="20" height="24" rx="9" />
           <rect x="117" y="82" width="20" height="24" rx="9" />
         </g>
+      );
+    case "deadpan":
+      return (
+        <>
+          <g fill={EYE} filter={glow}>
+            <rect x="61" y="91" width="26" height="8" rx="4" />
+            <rect x="113" y="91" width="26" height="8" rx="4" />
+          </g>
+          <path
+            d="M60 80 H88 M112 80 H140"
+            stroke={EYE}
+            strokeWidth="4.5"
+            strokeLinecap="round"
+            filter={glow}
+          />
+        </>
+      );
+    case "eyeroll":
+      return (
+        <>
+          <g fill={EYE} filter={glow}>
+            <path d="M62 86 a12 11 0 0 1 24 0 v3 h-24 z" />
+            <path d="M114 86 a12 11 0 0 1 24 0 v3 h-24 z" />
+          </g>
+          <path
+            d="M60 99 Q74 104 88 99 M112 99 Q126 104 140 99"
+            fill="none"
+            stroke={EYE}
+            strokeWidth="4"
+            strokeLinecap="round"
+            opacity="0.7"
+          />
+        </>
+      );
+    case "sly":
+      return (
+        <>
+          <path
+            d="M62 92 h24 v3 a12 9 0 0 1 -24 0 z"
+            fill={EYE}
+            filter={glow}
+          />
+          <path
+            d="M114 101 Q126 84 138 101"
+            fill="none"
+            stroke={EYE}
+            strokeWidth="8.5"
+            strokeLinecap="round"
+            filter={glow}
+          />
+          <path
+            d="M58 84 L90 88 M112 76 Q126 68 142 76"
+            fill="none"
+            stroke={EYE}
+            strokeWidth="4.5"
+            strokeLinecap="round"
+            filter={glow}
+          />
+        </>
       );
     case "blink":
       return (
@@ -240,6 +302,9 @@ const POSE: Record<
 > = {
   angry: UPRIGHT,
   laugh: UPRIGHT,
+  deadpan: UPRIGHT,
+  eyeroll: UPRIGHT,
+  sly: LEANING,
   lookleft: UPRIGHT,
   lookright: UPRIGHT,
   blink: LEANING,
