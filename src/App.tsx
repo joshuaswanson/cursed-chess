@@ -27,6 +27,7 @@ import { music } from "./audio/music";
 import { useTheme } from "./theme/useTheme";
 import { themeVars } from "./theme/themes";
 import "./styles/global.css";
+import { ChessbotCorner } from "./components/Chessbot/ChessbotCorner";
 
 function App() {
   useGameLoop();
@@ -78,6 +79,7 @@ function App() {
   return (
     <div className={appClass} style={themeVars(theme)} data-theme={theme.id}>
       {cursed && <Backdrop theme={theme.id} />}
+      {cursed && <ChessbotCorner />}
       {cursed ? (
         <header className="topbar">
           <Logo />

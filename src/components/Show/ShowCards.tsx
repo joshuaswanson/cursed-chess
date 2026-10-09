@@ -265,7 +265,7 @@ const RESULT_COPY: Record<
   { title: string; detail: string }
 > = {
   win: { title: "You win!", detail: "A point for you." },
-  lose: { title: "You lose!", detail: "A point for the foe." },
+  lose: { title: "You lose!", detail: "A point for Chessbot." },
   draw: { title: "Draw!", detail: "Nobody scores this round." },
 };
 

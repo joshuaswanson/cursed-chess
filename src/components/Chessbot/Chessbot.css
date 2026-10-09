@@ -1,0 +1,130 @@
+.chessbot {
+  display: block;
+  overflow: visible;
+}
+
+/* A word on his visor, in the same block letters as the logo */
+.chessbot-says {
+  font-family: var(--font-display);
+  font-size: 22px;
+}
+
+/* --- At home in the corner of the screen, over the title cards --- */
+
+.chessbot-corner {
+  position: fixed;
+  right: 16px;
+  bottom: 12px;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.chessbot-float {
+  position: relative;
+  width: clamp(124px, 12.5vw, 190px);
+}
+
+/* Bobbing on the spot. The wrappers move, so the page never repaints for it */
+.chessbot-hop {
+  animation:
+    chessbot-hop 0.5s cubic-bezier(0.3, 1.5, 0.5, 1),
+    chessbot-bob 2.6s 0.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes chessbot-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(-9%) rotate(1.5deg);
+  }
+}
+
+@keyframes chessbot-hop {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+  25% {
+    transform: translateY(4%) scale(1.1, 0.88);
+  }
+  60% {
+    transform: translateY(-20%) scale(0.95, 1.07);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+/* His shadow on the ground, shrinking as he rises */
+.chessbot-ground {
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: 2%;
+  height: 7%;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.32);
+  animation: chessbot-shadow 2.6s 0.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes chessbot-shadow {
+  50% {
+    transform: scale(0.78);
+    opacity: 0.7;
+  }
+}
+
+.chessbot-speech {
+  position: relative;
+  max-width: min(36ch, 46vw);
+  margin: 0;
+  padding: 11px 16px;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: clamp(14px, 1.35vw, 18px);
+  line-height: 1.25;
+  text-wrap: balance;
+  color: var(--plum-ink);
+  background: var(--paper);
+  border: 3px solid var(--plum-ink);
+  border-radius: 16px;
+  box-shadow: 4px 5px 0 var(--plum-ink);
+  animation: chessbot-speak 0.4s 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+/* The tail of his speech bubble, pointing back at him */
+.chessbot-speech::after {
+  content: "";
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  translate: 0 -50%;
+  rotate: 45deg;
+  background: var(--paper);
+  border-right: 3px solid var(--plum-ink);
+  border-top: 3px solid var(--plum-ink);
+}
+
+@keyframes chessbot-speak {
+  from {
+    opacity: 0;
+    scale: 0.7;
+    translate: 20px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chessbot-hop,
+  .chessbot-ground,
+  .chessbot-speech {
+    animation: none;
+  }
+}

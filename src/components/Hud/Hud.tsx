@@ -44,7 +44,7 @@ function Scoreboard() {
         <span className="score-value" key={scoreBlack}>
           {scoreBlack}
         </span>
-        <span className="score-name">Foe</span>
+        <span className="score-name">Chessbot</span>
         <img
           className="score-avatar"
           src={pieceImage({ type: PieceType.King, color: Color.Black })}
@@ -125,7 +125,7 @@ function MoveClock() {
     return (
       <section className="hud-card move-clock foe-turn">
         <span className="clock-label">
-          Foe is thinking
+          Chessbot is thinking
           <span className="thinking-dots" aria-hidden>
             <i />
             <i />
