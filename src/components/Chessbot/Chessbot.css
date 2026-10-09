@@ -170,11 +170,12 @@
 /* What he says goes beside him, in the rest of the panel's width */
 .chessbot-dock .chessbot-speech {
   left: 118px;
-  right: 0;
+  right: auto;
   top: 50%;
   bottom: auto;
-  width: auto;
-  max-width: none !important;
+  /* Only as wide as what he says, up to the rest of the panel */
+  width: max-content;
+  max-width: calc(100% - 118px) !important;
   translate: 0 -50%;
   font-size: 14px;
   transform-origin: 0 50%;
@@ -256,6 +257,157 @@
   animation:
     chessbot-fume 1.9s ease-in-out,
     chessbot-bob 2.6s 1.9s ease-in-out infinite;
+}
+
+/* He has other ways of being angry, and picks one each time */
+
+/* A tantrum: jumping up and down on the spot, harder each time */
+.chessbot-hop.is-angry.angry-1 {
+  animation:
+    chessbot-tantrum 1.8s ease-in-out,
+    chessbot-bob 2.6s 1.8s ease-in-out infinite;
+}
+
+/* No, no, no: a fast shake of the head that slowly dies away */
+.chessbot-hop.is-angry.angry-2 {
+  animation:
+    chessbot-refuse 1.7s ease-out,
+    chessbot-bob 2.6s 1.7s ease-in-out infinite;
+}
+
+/* Boiling over: he swells and swells, trembling, then lets it all out */
+.chessbot-hop.is-angry.angry-3 {
+  animation:
+    chessbot-boil 2s ease-in,
+    chessbot-bob 2.6s 2s ease-in-out infinite;
+}
+
+/* Squaring up: he rears back and lunges at the board, twice */
+.chessbot-hop.is-angry.angry-4 {
+  animation:
+    chessbot-lunge 1.7s ease-in-out,
+    chessbot-bob 2.6s 1.7s ease-in-out infinite;
+}
+
+@keyframes chessbot-tantrum {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  10% {
+    transform: translateY(4%) scale(1.12, 0.86);
+  }
+  20% {
+    transform: translateY(-18%) scale(0.94, 1.08) rotate(-6deg);
+  }
+  30% {
+    transform: translateY(5%) scale(1.16, 0.82);
+  }
+  42% {
+    transform: translateY(-26%) scale(0.92, 1.1) rotate(7deg);
+  }
+  54% {
+    transform: translateY(6%) scale(1.2, 0.78);
+  }
+  68% {
+    transform: translateY(-34%) scale(0.9, 1.12) rotate(-8deg);
+  }
+  82% {
+    transform: translateY(7%) scale(1.24, 0.74);
+  }
+  92% {
+    transform: translateY(-4%) scale(0.98, 1.03);
+  }
+}
+
+@keyframes chessbot-refuse {
+  0%,
+  100% {
+    transform: rotate(0) translateX(0);
+  }
+  6%,
+  18%,
+  30%,
+  42% {
+    transform: rotate(-16deg) translateX(-6%);
+  }
+  12%,
+  24%,
+  36%,
+  48% {
+    transform: rotate(16deg) translateX(6%);
+  }
+  58% {
+    transform: rotate(-10deg) translateX(-3%);
+  }
+  68% {
+    transform: rotate(8deg) translateX(3%);
+  }
+  80% {
+    transform: rotate(-4deg);
+  }
+  90% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes chessbot-boil {
+  0% {
+    transform: scale(1);
+  }
+  10%,
+  22%,
+  34%,
+  46%,
+  58% {
+    transform: scale(var(--swell, 1.1)) translateX(-2%);
+  }
+  16%,
+  28%,
+  40%,
+  52%,
+  64% {
+    transform: scale(1.22) translateX(2%);
+  }
+  70% {
+    transform: scale(1.38) translateY(-6%);
+    filter: saturate(1.8) brightness(1.15);
+  }
+  78% {
+    transform: scale(0.82, 0.9) translateY(4%);
+    filter: none;
+  }
+  88% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes chessbot-lunge {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  14% {
+    transform: translateX(10%) rotate(8deg) scale(0.96);
+  }
+  26% {
+    transform: translateX(-26%) rotate(-12deg) scale(1.12);
+  }
+  40% {
+    transform: translateX(0) rotate(0);
+  }
+  54% {
+    transform: translateX(12%) rotate(10deg) scale(0.95);
+  }
+  66% {
+    transform: translateX(-34%) rotate(-14deg) scale(1.18);
+  }
+  82% {
+    transform: translateX(3%) rotate(2deg);
+  }
 }
 
 .chessbot-vein {

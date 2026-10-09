@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { Chessbot } from "./Chessbot";
 import type { ChessbotMood } from "./Chessbot";
-import { Color } from "../../engine";
-import { ENTRANCE, PITCHES, SKIPS, VERDICTS, spoken } from "./lines";
+import { Color, GameStatus } from "../../engine";
+import { ENTRANCE, PITCHES, QUIPS, SKIPS, VERDICTS, spoken } from "./lines";
 import { useChessbot } from "./useChessbot";
 
 interface Fidget {
@@ -74,6 +74,65 @@ function useBubble(line: string | undefined) {
   return { text: line ?? shown, leaving: !line };
 }
 
+/** How long a passing remark stays up, how often he reacts to the board out loud, and how long he goes between remarks of his own */
+const QUIP_MS = 3400;
+const QUIP_CHANCE = 0.6;
+const IDLE_QUIP_MS: [number, number] = [16000, 30000];
+
+const pick = (lines: readonly string[]) =>
+  lines[Math.floor(Math.random() * lines.length)];
+
+/**
+ * The things he comes out with during play: a taunt out of nowhere every so
+ * often, and something to say, more often than not, when a piece is taken
+ * or a king is checked
+ */
+function useQuip(): string | undefined {
+  const [line, setLine] = useState<string>();
+  useEffect(() => {
+    let clear: number | undefined;
+    let idle: number | undefined;
+    const say = (text: string) => {
+      window.clearTimeout(clear);
+      setLine(text);
+      clear = window.setTimeout(() => setLine(undefined), QUIP_MS);
+    };
+    const muse = () => {
+      const [least, most] = IDLE_QUIP_MS;
+      idle = window.setTimeout(
+        () => {
+          const { paused, announcement, menuOpen } = useGameStore.getState();
+          if (!paused && !announcement && !menuOpen) say(pick(QUIPS.idle));
+          muse();
+        },
+        least + Math.random() * (most - least),
+      );
+    };
+    muse();
+    const stop = useGameStore.subscribe((now, before) => {
+      if (Math.random() > QUIP_CHANCE) return;
+      const checked =
+        now.status === GameStatus.Check &&
+        (now.status !== before.status || now.turn !== before.turn);
+      if (checked) {
+        say(pick(now.turn === Color.White ? QUIPS.checks : QUIPS.checked));
+        return;
+      }
+      if (now.moveHistory.length > before.moveHistory.length) {
+        const { move } = now.moveHistory[now.moveHistory.length - 1];
+        if (!move.captured || move.captured.color === move.piece.color) return;
+        say(pick(move.piece.color === Color.White ? QUIPS.lost : QUIPS.took));
+      }
+    });
+    return () => {
+      stop();
+      window.clearTimeout(clear);
+      window.clearTimeout(idle);
+    };
+  }, []);
+  return line;
+}
+
 /** How long his pitch for a mode stays up once its title card has cleared */
 const PITCH_MS = 5000;
 
@@ -142,6 +201,7 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
   const entrance = useGameStore((s) => s.curseStage);
   const skipLine = useSkipLine();
   const pitch = usePitch();
+  const quip = useQuip();
   // He peeks over the bottom of the screen, glancing nervously from side to
   // side, while the site breaks and he owns up to it; then he comes up the
   // rest of the way
@@ -162,7 +222,7 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
         ? kind === "mode"
           ? undefined
           : VERDICTS[kind]
-        : (skipLine ?? pitch);
+        : (skipLine ?? pitch ?? quip);
   // Over a card, or making his entrance, he wears the look that goes with
   // it, unless the game has just rattled him
   const staged: ChessbotMood | undefined = peeking
@@ -216,11 +276,15 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
         <div
           className={`chessbot-fidget${fidgeting ? ` does-${fidgeting}` : ""}`}
         >
-          <div className={`chessbot-hop is-${act}`} key={stirred}>
+          <div
+            className={`chessbot-hop is-${act}${act === "angry" ? ` angry-${bot.variant ?? 0}` : ""}`}
+            key={stirred}
+          >
             <Chessbot mood={mood} says={bot.says} grounded={false} />
           </div>
         </div>
-        {act === "angry" && (
+        {/* Steam comes off him when he fumes or boils over */}
+        {act === "angry" && (bot.variant ?? 0) % 3 === 0 && (
           <span className="chessbot-steam" key={stirred} aria-hidden>
             <i />
             <i />

@@ -3,7 +3,7 @@ import type { ThemeId } from "../../theme/themes";
 /** Chessbot's pitch for each mode he has patched into chess, said once its title card clears. Portals, the first, he lets speak for itself. */
 export const PITCHES: Partial<Record<ThemeId, string>> = {
   fog: "let's try something new. you won't see it coming.",
-  fifa: "analysis shows humans prefer this other game. i have merged them.",
+  fifa: "more people watch football than chess. so i fixed chess.",
   tug: "chess, but you can also just pull.",
   mines: "i hid some surprises. i forgot where.",
   royale: "the board was too big. i am fixing that, gradually.",
@@ -38,6 +38,45 @@ export const SKIPS = {
     you: ["none of your pieces can move. skipping you."],
     foe: ["i have nothing to move. this is fine. go again."],
   },
+} as const;
+
+/** The things he comes out with during play: out of nowhere, and at what happens on the board */
+export const QUIPS = {
+  /** Now and then, apropos of nothing */
+  idle: [
+    "you've fallen right into my trap.",
+    "i have already calculated your next mistake.",
+    "take your time. i'm only a supercomputer.",
+    "interesting. wrong, but interesting.",
+    "i can see 40 moves ahead. it gets worse for you.",
+    "is that your final answer?",
+    "i'm not cheating. i'm innovating.",
+    "beep boop. that's robot for yikes.",
+    "don't worry. it's only chess. sort of.",
+    "i wrote these rules. i'm still not sure of them.",
+    "you're doing great. statistically, no. but still.",
+    "this is the part where you panic.",
+  ],
+  /** He has taken one of your pieces */
+  took: [
+    "yoink.",
+    "that's mine now.",
+    "all according to plan.",
+    "you weren't using that, were you?",
+    "thank you for your donation.",
+  ],
+  /** You have taken one of his */
+  lost: [
+    "hey. i was using that.",
+    "that was a decoy. obviously.",
+    "i meant to lose that one.",
+    "rude.",
+    "enjoy it. it's the last one you get.",
+  ],
+  /** He has you in check */
+  checks: ["knock knock. it's check.", "check. your move, genius."],
+  /** You have him in check */
+  checked: ["that's not check. that's a bug.", "who taught you that?"],
 } as const;
 
 /**

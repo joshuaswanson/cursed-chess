@@ -8,7 +8,12 @@ interface Reaction {
   says?: string;
   /** Nothing has stirred him lately */
   idle?: boolean;
+  /** Which of his ways of showing it this is, for moods he has several of */
+  variant?: number;
 }
+
+/** How many different ways he has of being angry */
+const ANGRY_WAYS = 5;
 
 /** The pieces he cannot stand to lose */
 const PRIZED: PieceType[] = [PieceType.Queen, PieceType.Rook];
@@ -30,7 +35,11 @@ export function useChessbot(): Reaction {
     let timer: number | undefined;
     const react = (mood: ChessbotMood, ms: number, says?: string) => {
       window.clearTimeout(timer);
-      setReaction({ mood, says });
+      setReaction({
+        mood,
+        says,
+        variant: Math.floor(Math.random() * ANGRY_WAYS),
+      });
       timer = window.setTimeout(() => setReaction(null), ms);
     };
     const stop = useGameStore.subscribe((now, before) => {
