@@ -62,7 +62,7 @@ const NORMAL_CHESS_PLIES = 3;
 /** How long the plain site glitches before the curse bursts through */
 const CURSE_GLITCH_MS = 2200;
 /** How long he peeks over the bottom of the screen before anything breaks */
-const CURSE_PEEK_MS = 1500;
+export const CURSE_PEEK_MS = 1500;
 /** How long he has to gloat about it before the curse bursts through */
 const CURSE_OOPS_MS = 2800;
 /** How long the curse's title card owns the screen */
@@ -269,6 +269,8 @@ export interface GameStore {
   aside: "glitch" | "typing" | "leaving" | "said" | null;
   /** How Chessbot looks at this point in his opening speech */
   introMood: ChessbotMood;
+  /** How far his speech has corrupted the plain site: one step for each line he has begun */
+  corruption: number;
 
   deployPieceType: PieceType | null;
   /** Bumped every autonomous tick, since plugins change resources and the board in place */
@@ -503,7 +505,12 @@ function startCursedIntro(): void {
   const boomAt = oopsAt + CURSE_OOPS_MS;
   holdPause(boomAt + CURSE_REVEAL_MS);
   schedule(
-    () => useGameStore.setState({ curseStage: "hello", introMood: "happy" }),
+    () =>
+      useGameStore.setState({
+        curseStage: "hello",
+        introMood: "happy",
+        corruption: 0,
+      }),
     helloAt,
   );
   schedule(() => useGameStore.setState({ curseStage: "peek" }), peekAt);
@@ -663,6 +670,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   cursed: false,
   curseStage: null,
   introMood: "happy",
+  corruption: 0,
   aside: null,
   menuOpen: false,
   playMode: "adventure",
@@ -965,6 +973,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       cursed: false,
       curseStage: null,
       introMood: "happy",
+      corruption: 0,
       menuOpen: false,
       playMode: "adventure",
       aside: null,
@@ -1296,6 +1305,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       cursed: true,
       curseStage: null,
       introMood: "happy",
+      corruption: 0,
       modeTimeRemaining: mode.durationSeconds ?? MODE_SECONDS,
       status: GameStatus.Active,
       ...CLEARED_SELECTION,

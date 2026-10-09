@@ -9,12 +9,46 @@ import { Chessbot } from "../Chessbot/Chessbot";
 import type { ChessbotMood } from "../Chessbot/Chessbot";
 import {
   ASIDE_LEAD_MS,
-  SPEECH_LEAD_MS,
   introDelays,
   introMood,
   introScript,
 } from "../Chessbot/intro";
 import type { IntroLine } from "../Chessbot/intro";
+
+const LEET: Record<string, string> = {
+  a: "4",
+  e: "3",
+  l: "1",
+  o: "0",
+  s: "5",
+  t: "7",
+};
+const NOISE = "\u2588\u2593\u2592#%@$?";
+/** How many steps of corruption his speech runs through */
+const CORRUPTION_STEPS = 9;
+
+/**
+ * The site's own wording going bad as he talks: more of its letters turn to
+ * digits and noise with every step, always the same ones for the same text
+ */
+function useCorrupt(): (text: string) => string {
+  const level = useGameStore((s) =>
+    s.cursed || !s.curseStage ? 0 : s.corruption,
+  );
+  return useCallback(
+    (text: string) =>
+      [...text]
+        .map((letter, i) => {
+          if (letter === " ") return letter;
+          const roll = (i * 31 + text.length * 17 + letter.charCodeAt(0)) % 100;
+          if (roll >= ((level - 1) / CORRUPTION_STEPS) * 70) return letter;
+          const swap = LEET[letter.toLowerCase()];
+          return swap && roll % 2 ? swap : NOISE[roll % NOISE.length];
+        })
+        .join(""),
+    [level],
+  );
+}
 
 const NAV_LINKS: SiteTab[] = ["Play", "Puzzles", "Learn", "Watch", "Community"];
 
@@ -33,11 +67,12 @@ export function BoringHeader() {
   const setTab = useGameStore((s) => s.setSiteTab);
   const [auth, setAuth] = useState<AuthMode | null>(null);
   const closeAuth = useCallback(() => setAuth(null), []);
+  const corrupt = useCorrupt();
   return (
     <header className="boring-header">
       <div className="boring-brand">
         <PawnMark />
-        <span>Totally Normal Chess</span>
+        <span>{corrupt("Totally Normal Chess")}</span>
       </div>
       <nav className="boring-nav" aria-label="Site">
         {NAV_LINKS.map((link) => (
@@ -48,7 +83,7 @@ export function BoringHeader() {
             aria-current={link === tab ? "page" : undefined}
             onClick={() => setTab(link)}
           >
-            {link}
+            {corrupt(link)}
           </button>
         ))}
       </nav>
@@ -58,14 +93,14 @@ export function BoringHeader() {
           className="boring-btn boring-btn-plain"
           onClick={() => setAuth("login")}
         >
-          Log in
+          {corrupt("Log in")}
         </button>
         <button
           type="button"
           className="boring-btn"
           onClick={() => setAuth("signup")}
         >
-          Sign up
+          {corrupt("Sign up")}
         </button>
       </div>
       {auth && <AuthDialog key={auth} mode={auth} onClose={closeAuth} />}
@@ -117,8 +152,9 @@ function useSpeechMood(speaking: boolean): ChessbotMood {
  * appearances. Your first move lets him slip through for a moment, tearing
  * sideways and showing his real face, before he is shut out again. After the
  * third he pops out as himself right there in the icon's place, looks
- * about, and has his say in the move list. Then he glitches out of the
- * card altogether, and the name on it gives way to his own.
+ * about, and has his say in windows he throws open over the page. Then he
+ * glitches out of the card altogether, and the name on it gives way to
+ * his own.
  */
 function ComputerCard() {
   const stage = useGameStore((s) => s.curseStage);
@@ -273,8 +309,6 @@ function MoveList() {
   const history = useGameStore((s) => s.moveHistory);
   // He remarks on your first move before he answers it
   const aside = useGameStore((s) => s.aside);
-  // Once he is out of his icon, he has more to say
-  const speaking = useGameStore((s) => s.curseStage !== null);
   const listRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
@@ -283,7 +317,6 @@ function MoveList() {
   const opening = history[0]?.san ?? "e4";
   const script = useMemo(() => introScript(opening), [opening]);
   const remark = useMemo(() => script.slice(0, 1), [script]);
-  const speech = useMemo(() => script.slice(1), [script]);
   // His remark opens under your first move and is gone again before the reply comes
   const remarked = aside === "typing" || aside === "leaving";
   const rows: ReactNode[] = [];
@@ -311,9 +344,6 @@ function MoveList() {
     <ol className="boring-moves" ref={listRef}>
       {history.length === 0 && <li className="boring-empty">White to move</li>}
       {rows}
-      {speaking && (
-        <BotTyping key="speech" lines={speech} lead={SPEECH_LEAD_MS} acted />
-      )}
     </ol>
   );
 }
@@ -321,22 +351,23 @@ function MoveList() {
 /** Opponent, move list, and a couple of sensible buttons */
 export function BoringSidebar() {
   const { newGame, flipBoard } = useGameStore.getState();
+  const corrupt = useCorrupt();
   return (
     <aside className="boring-sidebar">
       <ComputerCard />
       <section className="boring-panel">
-        <h2>Moves</h2>
+        <h2>{corrupt("Moves")}</h2>
         <MoveList />
         <div className="boring-actions">
           <button type="button" className="boring-btn" onClick={newGame}>
-            New game
+            {corrupt("New game")}
           </button>
           <button
             type="button"
             className="boring-btn boring-btn-plain"
             onClick={flipBoard}
           >
-            Flip board
+            {corrupt("Flip board")}
           </button>
         </div>
       </section>
@@ -349,12 +380,13 @@ const FOOTER_LINKS: SiteTab[] = ["Terms", "Privacy", "Help"];
 
 export function BoringFooter() {
   const setTab = useGameStore((s) => s.setSiteTab);
+  const corrupt = useCorrupt();
   return (
     <footer className="boring-footer">
-      <span>&copy; 2026 Totally Normal Chess</span>
+      <span>&copy; {corrupt("2026 Totally Normal Chess")}</span>
       {FOOTER_LINKS.map((link) => (
         <button type="button" key={link} onClick={() => setTab(link)}>
-          {link}
+          {corrupt(link)}
         </button>
       ))}
       <button type="button" onClick={() => useGameStore.getState().openMenu()}>

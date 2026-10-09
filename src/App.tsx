@@ -29,6 +29,7 @@ import { themeVars } from "./theme/themes";
 import "./styles/global.css";
 import { ChessbotCorner } from "./components/Chessbot/ChessbotCorner";
 import { MainMenu } from "./components/MainMenu/MainMenu";
+import { BotWindows } from "./components/BoringSite/BotWindows";
 
 function App() {
   useGameLoop();
@@ -38,6 +39,7 @@ function App() {
   const playMode = useGameStore((s) => s.playMode);
   const menuOpen = useGameStore((s) => s.menuOpen);
   const aside = useGameStore((s) => s.aside);
+  const corruption = useGameStore((s) => s.corruption);
   const isHexMode = useGameStore((s) => s.isHexMode);
   const hexTransition = useGameStore((s) => s.hexTransition);
   const introDone = useGameStore((s) => s.introDone);
@@ -69,6 +71,13 @@ function App() {
     (curseStage ? ` curse-${curseStage}` : "") +
     // Still glitching while he gloats
     (curseStage === "oops" ? " curse-glitch" : "") +
+    // Each line of his speech leaves the plain site a step worse, and none
+    // of it mends
+    (cursed || !curseStage
+      ? ""
+      : Array.from({ length: corruption }, (_, i) => ` corrupt-${i + 1}`).join(
+          "",
+        )) +
     // Your first move lets him through: the plain site glitches hard as he
     // breaks in and again as he is shut out, twitches while he types, and
     // then holds still while you think over your next move
@@ -124,6 +133,7 @@ function App() {
         </main>
       )}
       {!cursed && <BoringFooter />}
+      {!cursed && <BotWindows />}
       <PageFog active={theme.id === "fog" && introDone} />
       {cursed && theme.id === "portals" && <SpaceTraffic />}
       {cursed && theme.id === "trenches" && <TrenchWeather />}

@@ -1,0 +1,608 @@
+/* --- The windows Chessbot throws open over the plain site as he talks --- */
+
+.bot-windows {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.bot-window {
+  --w: min(400px, 92vw);
+  --h: 150px;
+  position: absolute;
+  left: calc(var(--x) * (100vw - var(--w)));
+  top: calc(var(--y) * (100vh - var(--h)));
+  width: var(--w);
+  rotate: var(--tilt);
+  overflow: hidden;
+  font-family: "Courier New", Courier, monospace;
+  color: #7dffab;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.045) 0 1px,
+      transparent 1px 3px
+    ),
+    radial-gradient(120% 140% at 50% 0%, #10231a, #05090a 70%);
+  border: 1px solid #2c5a41;
+  border-radius: 5px;
+  box-shadow:
+    0 0 0 1px #000,
+    0 14px 34px rgba(0, 0, 0, 0.5),
+    inset 0 0 18px rgba(60, 255, 150, 0.08);
+  animation: bot-breaks-in 0.4s steps(1) both;
+}
+
+.bot-window.is-leaving {
+  animation: bot-shut-out 0.7s steps(1) both;
+}
+
+.bot-window-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  color: #6fd39a;
+  background: #0b1711;
+  border-bottom: 1px solid #1f3a2c;
+}
+
+.bot-window-bar span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bot-window-bar i {
+  width: 8px;
+  height: 8px;
+  border: 1px solid #3f7d5c;
+  border-radius: 2px;
+}
+
+.bot-window-body {
+  padding: 12px 14px 13px;
+}
+
+.bot-window .boring-bot-says {
+  font-size: 16px;
+}
+
+.bot-window pre {
+  margin: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: bold;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  text-shadow: 0 0 6px rgba(80, 255, 150, 0.55);
+}
+
+/* His last word on the matter, front and centre */
+.bot-window.is-last {
+  --w: min(460px, 92vw);
+}
+
+.bot-window.is-last .boring-bot-says {
+  font-size: 20px;
+}
+
+/* --- Recordings of his games --- */
+
+.bot-window.is-recording {
+  --w: 124px;
+  --h: 150px;
+  animation-duration: 0.18s;
+}
+
+.bot-window.is-recording .bot-window-bar {
+  padding: 3px 5px;
+  font-size: 9px;
+  letter-spacing: 0;
+}
+
+.bot-window.is-recording .bot-window-bar i {
+  display: none;
+}
+
+.bot-window.is-recording .bot-window-body {
+  position: relative;
+  padding: 5px;
+}
+
+.replay-board {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: repeating-conic-gradient(#17402b 0 25%, #0a1a12 0 50%) 0 0 / 25%
+    25%;
+}
+
+.replay-man {
+  position: absolute;
+  width: 12.5%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  color: #d9ffe8;
+  animation: replay-0 0.7s steps(1) infinite;
+}
+
+.replay-man.is-black {
+  color: #3fbf7c;
+}
+
+.replay-1 {
+  animation-name: replay-1;
+}
+
+.replay-2 {
+  animation-name: replay-2;
+}
+
+.replay-3 {
+  animation-name: replay-3;
+}
+
+/* Each hops about by whole squares, as a game played back at speed would */
+@keyframes replay-0 {
+  25% {
+    translate: 100% -200%;
+  }
+  50% {
+    translate: 200% 0;
+  }
+  75% {
+    translate: -100% 100%;
+  }
+}
+
+@keyframes replay-1 {
+  20% {
+    translate: 0 -200%;
+  }
+  40% {
+    translate: -200% -200%;
+  }
+  60% {
+    translate: -200% 100%;
+  }
+  80% {
+    translate: 100% 100%;
+  }
+}
+
+@keyframes replay-2 {
+  33% {
+    translate: 200% 200%;
+  }
+  66% {
+    translate: -100% 200%;
+  }
+}
+
+@keyframes replay-3 {
+  25% {
+    translate: -200% 100%;
+  }
+  50% {
+    translate: -100% -100%;
+  }
+  75% {
+    translate: 200% -200%;
+  }
+}
+
+.replay-result {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 1px 4px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #05090a;
+  background: #7dffab;
+}
+
+/* --- How many of them there have been --- */
+
+.bot-window.is-count {
+  --w: min(330px, 88vw);
+  text-align: center;
+}
+
+.bot-count {
+  display: block;
+  font-size: 32px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 10px rgba(80, 255, 150, 0.7);
+}
+
+.bot-count-label {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: #6fd39a;
+}
+
+/* --- His code, and his new game starting up --- */
+
+.bot-window.is-source {
+  --w: min(360px, 92vw);
+  --h: 250px;
+}
+
+.bot-window.is-source pre {
+  height: calc(1.45em * 11);
+  white-space: pre;
+}
+
+.bot-source-line b {
+  font-weight: normal;
+  color: #3f7d5c;
+}
+
+.bot-window.is-boot {
+  --w: min(330px, 92vw);
+  --h: 240px;
+  left: calc(50vw - var(--w) / 2);
+  box-shadow:
+    0 0 0 1px #000,
+    0 14px 34px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(60, 255, 150, 0.35);
+}
+
+.bot-window.is-wins {
+  --w: min(330px, 92vw);
+}
+
+.bot-window.is-humans {
+  --w: min(390px, 92vw);
+  --h: 200px;
+}
+
+.bot-window.is-wins pre,
+.bot-window.is-humans pre {
+  white-space: pre;
+}
+
+/* --- The lines he is cross about: red, and shaking with it --- */
+
+.bot-window.is-angry,
+.bot-window.is-furious {
+  color: #ff6b6b;
+  border-color: #7a2323;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.045) 0 1px,
+      transparent 1px 3px
+    ),
+    radial-gradient(120% 140% at 50% 0%, #2b0d0d, #0a0505 70%);
+  animation:
+    bot-breaks-in 0.4s steps(1) both,
+    bot-seethe 0.16s 0.4s linear infinite;
+}
+
+.bot-window.is-angry.is-leaving,
+.bot-window.is-furious.is-leaving {
+  animation: bot-shut-out 0.7s steps(1) both;
+}
+
+.bot-window.is-angry .bot-window-bar,
+.bot-window.is-furious .bot-window-bar {
+  color: #ff8f8f;
+  background: #1c0909;
+  border-color: #4a1717;
+}
+
+.bot-window.is-angry .bot-window-bar i,
+.bot-window.is-furious .bot-window-bar i {
+  border-color: #a33;
+}
+
+.bot-window.is-angry .boring-bot-says,
+.bot-window.is-angry .boring-prompt,
+.bot-window.is-furious .boring-bot-says,
+.bot-window.is-furious .boring-prompt {
+  color: #ff6b6b;
+  text-shadow: 0 0 8px rgba(255, 60, 60, 0.7);
+}
+
+.bot-window.is-angry .boring-caret,
+.bot-window.is-furious .boring-caret {
+  background: #ff6b6b;
+  box-shadow: 0 0 6px rgba(255, 60, 60, 0.7);
+}
+
+/* The one where he snaps: bigger than anything else on the page */
+.bot-window.is-furious {
+  --w: min(520px, 94vw);
+  box-shadow:
+    0 0 0 1px #000,
+    0 14px 34px rgba(0, 0, 0, 0.5),
+    0 0 60px rgba(255, 40, 40, 0.5);
+}
+
+.bot-window.is-furious .boring-bot-says {
+  font-size: 30px;
+  text-transform: uppercase;
+}
+
+@keyframes bot-seethe {
+  25% {
+    translate: -2px 1px;
+  }
+  50% {
+    translate: 2px -1px;
+  }
+  75% {
+    translate: -1px -2px;
+  }
+}
+
+/* --- The page under them, sinking a step with every line: darker,
+   greener, and ruled with scan lines, then red while he is angry --- */
+
+.bot-corruption {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.3) 0 1px,
+      transparent 1px 3px
+    ),
+    radial-gradient(90% 80% at 50% 45%, rgba(0, 40, 20, 0.25), #020805);
+  opacity: calc(var(--level) * 0.055);
+  transition: opacity 0.6s;
+}
+
+.bot-corruption.is-angry {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.3) 0 1px,
+      transparent 1px 3px
+    ),
+    radial-gradient(90% 80% at 50% 45%, rgba(120, 0, 0, 0.3), #1a0202);
+  animation: bot-rage 0.5s steps(2) infinite;
+}
+
+@keyframes bot-rage {
+  50% {
+    opacity: calc(var(--level) * 0.055 + 0.2);
+  }
+}
+
+/* --- The plain site itself coming apart, a step further with each line --- */
+
+.app[class*="corrupt-"] {
+  --twitch: 2.4s;
+}
+
+.app.corrupt-3 {
+  --twitch: 1.4s;
+}
+
+.app[class*="corrupt-"] .boring-header,
+.app[class*="corrupt-"] .board-container,
+.app[class*="corrupt-"] .boring-sidebar,
+.app[class*="corrupt-"] .boring-footer {
+  animation: unease-twitch var(--twitch) steps(1) infinite;
+  transition:
+    rotate 0.5s,
+    transform 0.5s,
+    background-color 0.5s,
+    color 0.5s;
+}
+
+.app[class*="corrupt-"] .boring-sidebar {
+  animation-delay: -0.3s;
+}
+
+.app[class*="corrupt-"] .boring-header {
+  animation-delay: -0.7s;
+}
+
+.app[class*="corrupt-"] .board {
+  transition: filter 0.5s;
+}
+
+/* One: the name over the door doubles */
+.app.corrupt-1 .boring-brand {
+  text-shadow:
+    2px 0 0 rgba(255, 0, 90, 0.8),
+    -2px 0 0 rgba(0, 220, 255, 0.8);
+}
+
+/* Two: the side panel slips, and the buttons stop pretending */
+.app.corrupt-2 .boring-sidebar {
+  rotate: -1.2deg;
+}
+
+.app.corrupt-2 .boring-btn {
+  font-family: "Courier New", Courier, monospace;
+  color: #7dffab;
+  background: #10231a;
+}
+
+/* Three: the header goes dark and the board changes colour */
+.app.corrupt-3 .boring-header {
+  color: #7dffab;
+  background: #10231a;
+  border-color: #1f3a2c;
+}
+
+.app.corrupt-3 .boring-header button {
+  color: inherit;
+}
+
+.app.corrupt-3 .board {
+  filter: hue-rotate(60deg) saturate(1.4);
+}
+
+.app.corrupt-3 .boring-footer {
+  rotate: 1deg;
+}
+
+/* Four: the panels turn to terminals and nothing sits straight */
+.app.corrupt-4 .boring-sidebar {
+  rotate: 2.4deg;
+  transform: translate(10px, 8px);
+}
+
+.app.corrupt-4 .boring-panel {
+  color: #7dffab;
+  background: #0b0f0c;
+  border-color: #1f3a2c;
+}
+
+.app.corrupt-4 .boring-header {
+  transform: skewX(-5deg);
+}
+
+/* Five: he is angry, and it all runs red and starts to shake */
+.app.corrupt-5 {
+  --twitch: 0.6s;
+}
+
+.app.is-boring.corrupt-5 {
+  color: #ff8f8f;
+  background: #1c0d0d;
+  transition: background-color 0.4s;
+}
+
+.app.corrupt-5 .boring-header,
+.app.corrupt-5 .boring-panel {
+  color: #ff8f8f;
+  background: #1c0909;
+  border-color: #4a1717;
+}
+
+.app.corrupt-5 .boring-btn {
+  color: #ff8f8f;
+  background: #2b0d0d;
+}
+
+.app.corrupt-5 .board {
+  filter: hue-rotate(260deg) saturate(2.2);
+}
+
+.app.corrupt-5 .board-container {
+  rotate: -1.6deg;
+}
+
+.app.corrupt-5 .boring-footer {
+  rotate: -2deg;
+  transform: translateX(-14px);
+}
+
+/* Six: he snaps, and so does everything else */
+.app.corrupt-6 {
+  --twitch: 0.3s;
+}
+
+.app.is-boring.corrupt-6 {
+  background: #100303;
+}
+
+.app.corrupt-6 .board {
+  filter: invert(1) hue-rotate(150deg) saturate(3) contrast(1.2);
+}
+
+.app.corrupt-6 .board-container {
+  rotate: 3deg;
+  transform: scale(0.96);
+}
+
+.app.corrupt-6 .boring-sidebar {
+  rotate: -5deg;
+  transform: translate(-8px, 18px);
+}
+
+.app.corrupt-6 .boring-header {
+  transform: skewX(10deg) translateX(12px);
+}
+
+/* Seven: an idea, and the red drains into his own colours */
+.app.corrupt-7 {
+  --twitch: 1.5s;
+}
+
+.app.is-boring.corrupt-7 {
+  color: #7dffab;
+  background: #140a24;
+}
+
+.app.corrupt-7 .boring-header,
+.app.corrupt-7 .boring-panel {
+  color: #7dffab;
+  background: #1b1033;
+  border-color: #3b2470;
+}
+
+.app.corrupt-7 .boring-btn {
+  color: #7dffab;
+  background: #2a1757;
+}
+
+.app.corrupt-7 .board {
+  filter: hue-rotate(170deg) saturate(1.8);
+}
+
+/* Eight: the side panel comes off its hinges */
+.app.corrupt-8 .boring-sidebar {
+  rotate: 8deg;
+  transform: translate(22px, 40px);
+}
+
+.app.corrupt-8 .boring-header {
+  transform: translateY(10px) rotate(-1.5deg);
+}
+
+.app.corrupt-8 .board {
+  filter: hue-rotate(200deg) saturate(2.4) contrast(1.1);
+}
+
+/* Nine: all of it, his */
+.app.corrupt-9 {
+  --twitch: 0.8s;
+}
+
+.app.corrupt-9 .board-container {
+  rotate: -2.5deg;
+  transform: scale(0.97);
+}
+
+.app.corrupt-9 .boring-footer {
+  rotate: 4deg;
+  transform: translate(20px, -10px);
+}
+
+.app.corrupt-9 .board {
+  filter: invert(1) hue-rotate(40deg) saturate(2.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bot-window,
+  .bot-window.is-angry,
+  .bot-window.is-furious,
+  .bot-corruption.is-angry,
+  .replay-man,
+  .app[class*="corrupt-"] .boring-header,
+  .app[class*="corrupt-"] .board-container,
+  .app[class*="corrupt-"] .boring-sidebar,
+  .app[class*="corrupt-"] .boring-footer {
+    animation: none;
+  }
+}
