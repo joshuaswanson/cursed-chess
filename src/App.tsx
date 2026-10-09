@@ -112,7 +112,8 @@ function App() {
             <div className="board-stack">
               {board}
               <MoveCountdown />
-              {!cursed && <SkipBanner />}
+              {/* Where Chessbot is not there to say so, a banner does */}
+              {(!cursed || playMode === "single") && <SkipBanner />}
             </div>
             {cursed && <YourRallyBar />}
             {cursed && theme.id === "trenches" && <TrenchOrders />}
