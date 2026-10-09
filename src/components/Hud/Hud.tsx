@@ -17,7 +17,6 @@ import {
 import "./Hud.css";
 
 const MOVE_SECONDS = 10;
-const LINEUP_LENGTH = 3;
 const RING_RADIUS = 26;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
@@ -151,38 +150,6 @@ function MoveClock() {
       <span className="clock-value">
         {devMode ? "∞" : Math.ceil(timeWhite)}
       </span>
-    </section>
-  );
-}
-
-function Lineup() {
-  const modeIndex = useGameStore((s) => s.currentModeIndex);
-  const upcoming = Array.from(
-    { length: LINEUP_LENGTH },
-    (_, i) => GAME_MODES[(modeIndex + 1 + i) % GAME_MODES.length],
-  );
-  return (
-    <section className="lineup" aria-label="Up next">
-      <span className="lineup-label">Up next</span>
-      <ol className="lineup-list">
-        {upcoming.map((mode, i) => {
-          const theme = THEMES[mode.theme];
-          return (
-            <li
-              key={`${mode.theme}-${i}`}
-              className="lineup-chip"
-              style={
-                {
-                  "--chip-a": theme.sky[1],
-                  "--chip-b": theme.accent,
-                } as React.CSSProperties
-              }
-            >
-              {theme.title}
-            </li>
-          );
-        })}
-      </ol>
     </section>
   );
 }
@@ -326,7 +293,6 @@ export function Hud() {
       <Scoreboard />
       <NowPlaying />
       <MoveClock />
-      <Lineup />
       <Toolbar />
       {devMode && <DevPanel />}
     </aside>

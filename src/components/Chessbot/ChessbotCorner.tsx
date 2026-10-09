@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { useGameStore } from "../../stores/gameStore";
-import { useTheme } from "../../theme/useTheme";
+import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { Chessbot } from "./Chessbot";
 import type { ChessbotMood } from "./Chessbot";
 import { Color } from "../../engine";
@@ -58,6 +57,33 @@ function useFidget(idle: boolean): Fidget | null {
   return idle ? fidget : null;
 }
 
+/** How long his pitch for a mode stays up once its title card has cleared */
+const PITCH_MS = 5000;
+
+/** His pitch for the mode that has just begun, held back until its title card is out of the way */
+function usePitch(): string | undefined {
+  const [line, setLine] = useState<string>();
+  useEffect(() => {
+    let timer: number | undefined;
+    const stop = useGameStore.subscribe((now, before) => {
+      const cleared =
+        before.announcement !== null &&
+        now.announcement === null &&
+        before.announcementType === "mode";
+      if (!cleared) return;
+      const mode = GAME_MODES[now.currentModeIndex];
+      window.clearTimeout(timer);
+      setLine(mode && PITCHES[mode.theme]);
+      timer = window.setTimeout(() => setLine(undefined), PITCH_MS);
+    });
+    return () => {
+      stop();
+      window.clearTimeout(timer);
+    };
+  }, []);
+  return line;
+}
+
 /** How long he talks about a missed turn */
 const SKIP_LINE_MS = 3200;
 
@@ -92,11 +118,11 @@ function useSkipLine(): string | undefined {
 export function ChessbotCorner() {
   const bot = useChessbot();
   const fidget = useFidget(!!bot.idle);
-  const theme = useTheme();
   const announcement = useGameStore((s) => s.announcement);
   const kind = useGameStore((s) => s.announcementType);
   const entrance = useGameStore((s) => s.curseStage);
   const skipLine = useSkipLine();
+  const pitch = usePitch();
   // While the site breaks he only peeks over the bottom of the screen,
   // glancing nervously from side to side; then he comes up the rest of the way
   const peeking = entrance === "glitch";
@@ -114,9 +140,9 @@ export function ChessbotCorner() {
       ? ENTRANCE.glitch
       : announcement
         ? kind === "mode"
-          ? PITCHES[theme.id]
+          ? undefined
           : VERDICTS[kind]
-        : skipLine;
+        : (skipLine ?? pitch);
   // Over a card, or making his entrance, he wears the look that goes with
   // it, unless the game has just rattled him
   const staged: ChessbotMood | undefined =
@@ -157,6 +183,14 @@ export function ChessbotCorner() {
             <Chessbot mood={mood} says={bot.says} grounded={false} />
           </div>
         </div>
+        {act === "angry" && (
+          <span className="chessbot-steam" key={stirred} aria-hidden>
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+        )}
         <span className="chessbot-ground" aria-hidden />
       </div>
     </aside>

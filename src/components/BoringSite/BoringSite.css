@@ -263,28 +263,32 @@
 
 .boring-bot.revealed .boring-bot-avatar > .boring-bot-true {
   opacity: 1;
-  animation:
-    bot-pops-out 0.5s cubic-bezier(0.3, 1.9, 0.5, 1),
-    bot-types 0.34s 0.5s ease-in-out infinite;
+  animation: bot-pops-out 0.34s cubic-bezier(0.2, 1.2, 0.3, 1);
 }
 
-/* Bobbing and rocking as he hammers out his speech */
-@keyframes bot-types {
-  0%,
-  100% {
-    translate: 0 0;
-    rotate: -4deg;
-  }
-  50% {
-    translate: 0 -7%;
-    rotate: 4deg;
-  }
-}
-
+/* He bursts out of the icon: a white-hot flash split in cyan and pink, a
+   spin, an overshoot, and a snap into place */
 @keyframes bot-pops-out {
-  from {
-    scale: 0.2;
-    rotate: -30deg;
+  0% {
+    scale: 0;
+    rotate: -200deg;
+    filter: brightness(4) drop-shadow(6px 0 0 #21e6ff)
+      drop-shadow(-6px 0 0 #ff2e88);
+  }
+  45% {
+    scale: 1.7;
+    rotate: 14deg;
+    filter: brightness(1.8) drop-shadow(3px 0 0 #21e6ff)
+      drop-shadow(-3px 0 0 #ff2e88);
+  }
+  70% {
+    scale: 0.88 1.1;
+    rotate: -6deg;
+    filter: none;
+  }
+  100% {
+    scale: 1;
+    rotate: 0deg;
   }
 }
 

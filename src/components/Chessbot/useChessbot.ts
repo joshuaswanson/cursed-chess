@@ -55,7 +55,7 @@ export function useChessbot(): Reaction {
         if (move.piece.color === Color.White) {
           return PRIZED.includes(lost.type)
             ? react("panic", 2200, "UH OH")
-            : react("angry", 1700);
+            : react("angry", 2100);
         }
         // He took one of yours, and finds it very funny
         react("laugh", 1900, PRIZED.includes(lost.type) ? "HA HA" : undefined);

@@ -182,6 +182,20 @@ function BotTyping({ opening }: { opening: string }) {
 
   useEffect(() => {
     caret.current?.scrollIntoView({ block: "nearest" });
+    // Each letter is a peck at the keys, one side then the other
+    if (typed > 0) {
+      const side = typed % 2 ? 1 : -1;
+      document
+        .querySelector(".boring-bot-true")
+        ?.animate(
+          [
+            { transform: "none" },
+            { transform: `translate(${side * 4}%, 7%) rotate(${side * 6}deg)` },
+            { transform: "none" },
+          ],
+          { duration: 95, easing: "ease-out" },
+        );
+    }
     if (typed >= delays.length) return;
     const timer = window.setTimeout(
       () => setTyped((n) => n + 1),

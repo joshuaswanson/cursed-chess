@@ -104,8 +104,15 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
             strokeLinecap="round"
             filter={glow}
           />
-          <g stroke="#ff5a5a" strokeWidth="4" strokeLinecap="round">
-            <path d="M160 44 l8 -8 M168 48 l10 -3 M156 36 l3 -10" />
+          {/* The anger mark: a vein standing out on his head */}
+          <g
+            className="chessbot-vein"
+            fill="none"
+            stroke="#ff3b3b"
+            strokeWidth="4.5"
+            strokeLinecap="round"
+          >
+            <path d="M152 38 q7 2 5 -6 M166 31 q-2 7 6 5 M172 45 q-7 -2 -5 6 M158 51 q2 -7 -6 -5" />
           </g>
         </>
       );
