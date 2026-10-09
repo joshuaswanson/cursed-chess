@@ -14,7 +14,9 @@ export type ChessbotMood =
   | "wink"
   | "happy"
   | "love"
-  | "stars";
+  | "stars"
+  | "lookleft"
+  | "lookright";
 
 const INK = "#1b1033";
 const EYE = "#ffffff";
@@ -130,6 +132,18 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
           />
         </>
       );
+    case "lookleft":
+    case "lookright":
+      return (
+        <g
+          fill={EYE}
+          filter={glow}
+          transform={`translate(${mood === "lookleft" ? -11 : 11} 0)`}
+        >
+          <rect x="63" y="82" width="20" height="24" rx="9" />
+          <rect x="117" y="82" width="20" height="24" rx="9" />
+        </g>
+      );
     case "blink":
       return (
         <path
@@ -219,6 +233,8 @@ const POSE: Record<
 > = {
   angry: UPRIGHT,
   laugh: UPRIGHT,
+  lookleft: UPRIGHT,
+  lookright: UPRIGHT,
   blink: LEANING,
   wink: LEANING,
   happy: UPRIGHT,

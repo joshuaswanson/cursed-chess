@@ -155,13 +155,114 @@
   }
 }
 
+/* Drifting in a slow loop, squashing a little as he comes down */
 @keyframes chessbot-bob {
   0%,
   100% {
-    transform: translateY(0) rotate(-1.5deg);
+    transform: translate(0, 0) rotate(-2deg) scale(1.02, 0.98);
+  }
+  25% {
+    transform: translate(2%, -6%) rotate(0deg) scale(1, 1);
   }
   50% {
-    transform: translateY(-9%) rotate(1.5deg);
+    transform: translate(0, -11%) rotate(2deg) scale(0.99, 1.02);
+  }
+  75% {
+    transform: translate(-2%, -5%) rotate(0deg) scale(1, 1);
+  }
+}
+
+/* --- Fidgets: the little moves he makes while he waits --- */
+
+.chessbot-fidget {
+  will-change: transform;
+}
+
+.does-tilt {
+  animation: chessbot-tilt 1.2s ease-in-out;
+}
+
+.does-hops {
+  animation: chessbot-hops 1.1s ease-in-out;
+}
+
+.does-sway {
+  animation: chessbot-sway 1.7s ease-in-out;
+}
+
+.does-spin {
+  animation: chessbot-spin 1.1s cubic-bezier(0.5, 0, 0.3, 1.3);
+}
+
+.does-peek-left {
+  animation: chessbot-peek 1.4s ease-in-out;
+  --peek: -1;
+}
+
+.does-peek-right {
+  animation: chessbot-peek 1.4s ease-in-out;
+  --peek: 1;
+}
+
+.does-shimmy {
+  animation: chessbot-shimmy 0.8s ease-in-out;
+}
+
+@keyframes chessbot-tilt {
+  30%,
+  70% {
+    transform: rotate(16deg) translateY(-3%);
+  }
+}
+
+@keyframes chessbot-hops {
+  20% {
+    transform: translateY(-14%) scale(0.97, 1.04);
+  }
+  40% {
+    transform: translateY(0) scale(1.05, 0.94);
+  }
+  62% {
+    transform: translateY(-11%) scale(0.98, 1.03);
+  }
+  82% {
+    transform: translateY(0) scale(1.04, 0.96);
+  }
+}
+
+@keyframes chessbot-sway {
+  25% {
+    transform: rotate(-9deg) translateX(-4%);
+  }
+  75% {
+    transform: rotate(9deg) translateX(4%);
+  }
+}
+
+@keyframes chessbot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes chessbot-peek {
+  25%,
+  75% {
+    transform: translateX(calc(var(--peek) * 12%))
+      rotate(calc(var(--peek) * 9deg));
+  }
+}
+
+@keyframes chessbot-shimmy {
+  15%,
+  45%,
+  75% {
+    transform: translateX(-4%) rotate(-5deg);
+  }
+  30%,
+  60%,
+  90% {
+    transform: translateX(4%) rotate(5deg);
   }
 }
 
@@ -243,6 +344,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .chessbot-corner,
+  .chessbot-fidget,
   .chessbot-hop,
   .chessbot-ground,
   .chessbot-speech {

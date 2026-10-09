@@ -7,43 +7,55 @@ import { Color } from "../../engine";
 import { ENTRANCE, PITCHES, SKIPS, VERDICTS } from "./lines";
 import { useChessbot } from "./useChessbot";
 
-/** The looks that cross his visor while he waits, a blink far the most often, and how long each holds */
-const EMOTES: [ChessbotMood, number][] = [
-  ["blink", 140],
-  ["blink", 140],
-  ["blink", 140],
-  ["wink", 900],
-  ["happy", 1300],
-  ["love", 1300],
-  ["stars", 1300],
+interface Fidget {
+  /** The look on his visor, if it changes */
+  look?: ChessbotMood;
+  /** The little move that goes with it, if any */
+  move?: string;
+  ms: number;
+}
+
+/** What he gets up to while he waits, a blink far the most often */
+const FIDGETS: Fidget[] = [
+  { look: "blink", ms: 140 },
+  { look: "blink", ms: 140 },
+  { look: "blink", ms: 140 },
+  { look: "blink", ms: 140 },
+  { look: "wink", move: "tilt", ms: 1200 },
+  { look: "happy", move: "hops", ms: 1100 },
+  { look: "love", move: "sway", ms: 1700 },
+  { look: "stars", move: "spin", ms: 1100 },
+  { look: "lookleft", move: "peek-left", ms: 1400 },
+  { look: "lookright", move: "peek-right", ms: 1400 },
+  { move: "shimmy", ms: 800 },
 ];
 
-/** A passing look on his visor every few seconds while nothing is happening */
-function useIdleEmote(idle: boolean): ChessbotMood | null {
-  const [emote, setEmote] = useState<ChessbotMood | null>(null);
+/** Something to do every few seconds while nothing is happening */
+function useFidget(idle: boolean): Fidget | null {
+  const [fidget, setFidget] = useState<Fidget | null>(null);
   useEffect(() => {
     if (!idle) return;
     let timer: number;
     const wait = () => {
       timer = window.setTimeout(
         () => {
-          const [look, ms] = EMOTES[Math.floor(Math.random() * EMOTES.length)];
-          setEmote(look);
+          const next = FIDGETS[Math.floor(Math.random() * FIDGETS.length)];
+          setFidget(next);
           timer = window.setTimeout(() => {
-            setEmote(null);
+            setFidget(null);
             wait();
-          }, ms);
+          }, next.ms);
         },
-        1800 + Math.random() * 3200,
+        1400 + Math.random() * 2600,
       );
     };
     wait();
     return () => {
       window.clearTimeout(timer);
-      setEmote(null);
+      setFidget(null);
     };
   }, [idle]);
-  return idle ? emote : null;
+  return idle ? fidget : null;
 }
 
 /** How long he talks about a missed turn */
@@ -72,13 +84,14 @@ function useSkipLine(): string | undefined {
 }
 
 /**
- * Chessbot at home in the corner of the screen: bobbing on the spot,
- * blinking and pulling faces while he waits, hopping at whatever the game
- * does to him, and saying his piece over each title and result card
+ * Chessbot at home in the corner of the screen: drifting on the spot,
+ * blinking, pulling faces, and fidgeting while he waits, acting out
+ * whatever the game does to him, and saying his piece over each title and
+ * result card
  */
 export function ChessbotCorner() {
   const bot = useChessbot();
-  const emote = useIdleEmote(!!bot.idle);
+  const fidget = useFidget(!!bot.idle);
   const theme = useTheme();
   const announcement = useGameStore((s) => s.announcement);
   const kind = useGameStore((s) => s.announcementType);
@@ -108,7 +121,8 @@ export function ChessbotCorner() {
               : kind === "lose"
                 ? "proud"
                 : "smug";
-  const mood = bot.idle ? (staged ?? emote ?? bot.mood) : bot.mood;
+  const mood = bot.idle ? (staged ?? fidget?.look ?? bot.mood) : bot.mood;
+  const fidgeting = bot.idle && !staged ? fidget?.move : undefined;
   // A blink is only his eyes; anything else is worth a move of its own
   const act = bot.idle ? (staged ?? "idle") : bot.mood;
   const stirred = `${act}:${bot.says ?? ""}`;
@@ -121,8 +135,12 @@ export function ChessbotCorner() {
         </p>
       )}
       <div className="chessbot-float">
-        <div className={`chessbot-hop is-${act}`} key={stirred}>
-          <Chessbot mood={mood} says={bot.says} grounded={false} />
+        <div
+          className={`chessbot-fidget${fidgeting ? ` does-${fidgeting}` : ""}`}
+        >
+          <div className={`chessbot-hop is-${act}`} key={stirred}>
+            <Chessbot mood={mood} says={bot.says} grounded={false} />
+          </div>
         </div>
         <span className="chessbot-ground" aria-hidden />
       </div>
