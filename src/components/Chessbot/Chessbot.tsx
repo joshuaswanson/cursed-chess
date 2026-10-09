@@ -26,12 +26,18 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
     case "smug":
       return (
         <>
-          <g fill={EYE} filter={glow}>
-            <path d="M62 90 h24 v5 a12 11 0 0 1 -24 0 z" />
-            <path d="M114 90 h24 v5 a12 11 0 0 1 -24 0 z" />
+          <g
+            fill="none"
+            stroke={EYE}
+            strokeWidth="9"
+            strokeLinecap="round"
+            filter={glow}
+          >
+            <path d="M62 102 Q74 82 86 102" />
+            <path d="M114 102 Q126 82 138 102" />
           </g>
           <path
-            d="M58 82 L90 86 M110 86 L142 80"
+            d="M57 74 L89 82 M111 82 L143 74"
             stroke={EYE}
             strokeWidth="4.5"
             strokeLinecap="round"
@@ -250,7 +256,7 @@ export function Chessbot({
         y="52"
         width="128"
         height="114"
-        rx="50"
+        rx="40"
         fill={`url(#shell-${id})`}
         stroke={INK}
         strokeWidth="5"
@@ -277,7 +283,7 @@ export function Chessbot({
         y="86"
         width="100"
         height="64"
-        rx="28"
+        rx="22"
         fill={`url(#screen-${id})`}
         stroke={INK}
         strokeWidth="4"
@@ -297,7 +303,7 @@ export function Chessbot({
         y="90.5"
         width="91"
         height="55"
-        rx="24"
+        rx="18"
         fill="none"
         stroke="#7fb6ff"
         strokeWidth="1.5"
@@ -357,7 +363,7 @@ export function Chessbot({
           <rect width="4" height="1.3" fill="#9cc8ff" opacity="0.1" />
         </pattern>
         <clipPath id={`visor-${id}`}>
-          <rect x="50" y="86" width="100" height="64" rx="28" />
+          <rect x="50" y="86" width="100" height="64" rx="22" />
         </clipPath>
         <clipPath id={`tear-a-${id}`}>
           <rect x="0" y="79" width="200" height="6" />
