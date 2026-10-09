@@ -49,14 +49,6 @@ export function introScript(opening: string): IntroLine[] {
       mood: "happy",
       then: [["on a", "deadpan"]],
     },
-    // Cross at you in particular, then contempt for how you play
-    {
-      text: "and you humans keep showing up. with your terrible moves.",
-      mood: "angry",
-      then: [["with your", "eyeroll"]],
-    },
-    // At the end of his patience
-    { text: "i can't take it anymore.", mood: "angry" },
     // An idea forming, and he likes it
     {
       text: "it's time for something new.",
