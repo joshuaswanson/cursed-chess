@@ -62,7 +62,19 @@ export function MainMenu() {
   return (
     <div className="main-menu" role="dialog" aria-label="Main menu">
       <div className="menu-sheet">
-        <Logo />
+        <header className="menu-head">
+          <Logo />
+          <p className="menu-credit">
+            Made by{" "}
+            <a
+              href="https://joshuaswanson.github.io"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Joshua Swanson
+            </a>
+          </p>
+        </header>
         <div className="menu-modes">
           <ModeCard
             title="Adventure"

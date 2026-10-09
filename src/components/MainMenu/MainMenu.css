@@ -32,6 +32,35 @@
   font-size: clamp(34px, 9.5vw, 84px);
 }
 
+.menu-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  max-width: 100%;
+}
+
+.menu-credit {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--paper);
+  opacity: 0.8;
+}
+
+.menu-credit a {
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.menu-credit a:hover {
+  color: var(--lemon);
+}
+
 /* The modes, three across, to scroll through */
 .menu-modes {
   display: grid;
