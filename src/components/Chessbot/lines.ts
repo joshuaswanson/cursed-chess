@@ -8,7 +8,7 @@ export const PITCHES: Partial<Record<ThemeId, string>> = {
   mines: "i hid some surprises. i forgot where.",
   royale: "the board was too big. i am fixing that, gradually.",
   clash: "the pieces move themselves now. you were slowing them down.",
-  hill: "it's lonely at the top. come up. i'll show you the way down.",
+  hill: "i'm king of the hill. you can be king of the bottom.",
   gravity: "i found a setting called gravity. it was off.",
   hex: "squares are a beginner shape.",
   stratego: "you don't need to know what my pieces are.",
