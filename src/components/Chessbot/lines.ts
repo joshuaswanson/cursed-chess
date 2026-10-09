@@ -79,6 +79,9 @@ export const QUIPS = {
   checked: ["that's not check. that's a bug.", "who taught you that?"],
 } as const;
 
+/** What he says the first time one of your pieces steps on a mine */
+export const FIRST_MINE = "you found one. only nine to go.";
+
 /** What he says the first time you take a piece by going through a portal */
 export const PORTAL_CAPTURE = "now you're thinking in portals.";
 

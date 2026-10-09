@@ -3,8 +3,10 @@ import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { Chessbot } from "./Chessbot";
 import type { ChessbotMood } from "./Chessbot";
 import { Color, GameStatus, MoveFlag } from "../../engine";
+import type { MinefieldPlugin } from "../../plugins/minefield";
 import {
   ENTRANCE,
+  FIRST_MINE,
   PITCHES,
   PORTAL_CAPTURE,
   QUIPS,
@@ -101,6 +103,8 @@ function useQuip(): string | undefined {
     let clear: number | undefined;
     let idle: number | undefined;
     let saidPortals = false;
+    let saidMines = false;
+    let late: number | undefined;
     const say = (text: string) => {
       window.clearTimeout(clear);
       setLine(text);
@@ -122,6 +126,19 @@ function useQuip(): string | undefined {
       // The first piece you take through a portal gets a nod, once an adventure
       if (now.moveHistory.length > before.moveHistory.length) {
         const { move } = now.moveHistory[now.moveHistory.length - 1];
+        // The first of your pieces to find a mine gets his sympathy, a beat
+        // after it goes up
+        const mines = now.pluginManager.find<MinefieldPlugin>("minefield");
+        if (
+          !saidMines &&
+          move.piece.color === Color.White &&
+          mines?.pendingExplosions.has(move.to)
+        ) {
+          saidMines = true;
+          window.clearTimeout(late);
+          late = window.setTimeout(() => say(FIRST_MINE), 1100);
+          return;
+        }
         if (
           !saidPortals &&
           move.piece.color === Color.White &&
@@ -151,6 +168,7 @@ function useQuip(): string | undefined {
       stop();
       window.clearTimeout(clear);
       window.clearTimeout(idle);
+      window.clearTimeout(late);
     };
   }, []);
   return line;
