@@ -285,8 +285,18 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
               : kind === "lose"
                 ? "proud"
                 : "smug";
-  const mood = bot.idle ? (staged ?? fidget?.look ?? bot.mood) : bot.mood;
-  const fidgeting = bot.idle && !staged ? fidget?.move : undefined;
+  // His turn in a game played move by move: he is working one out
+  const thinking = useGameStore(
+    (s) =>
+      s.cursed &&
+      s.introDone &&
+      !s.announcement &&
+      s.turn === Color.Black &&
+      !s.pluginManager.isAutonomous(),
+  );
+  const pondering = thinking ? "thinking" : fidget?.look;
+  const mood = bot.idle ? (staged ?? pondering ?? bot.mood) : bot.mood;
+  const fidgeting = bot.idle && !staged && !thinking ? fidget?.move : undefined;
   // A blink is only his eyes; anything else is worth a move of its own
   const act = peeking ? "peek" : bot.idle ? (staged ?? "idle") : bot.mood;
   const stirred = `${act}:${bot.says ?? ""}`;

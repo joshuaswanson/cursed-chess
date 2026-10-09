@@ -19,7 +19,9 @@ export type ChessbotMood =
   | "lookright"
   | "deadpan"
   | "eyeroll"
-  | "sly";
+  | "sly"
+  // Working out his move
+  | "thinking";
 
 const INK = "#1b1033";
 const EYE = "#ffffff";
@@ -274,6 +276,14 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
           <path d="M126 78 l4 9.5 l9.5 4 l-9.5 4 l-4 9.5 l-4 -9.5 l-9.5 -4 l9.5 -4 z" />
         </g>
       );
+    case "thinking":
+      return (
+        <g fill={EYE} filter={glow}>
+          <circle className="chessbot-dot" cx="72" cy="93" r="8.5" />
+          <circle className="chessbot-dot" cx="100" cy="93" r="8.5" />
+          <circle className="chessbot-dot" cx="128" cy="93" r="8.5" />
+        </g>
+      );
     case "sulk":
       return (
         <>
@@ -337,6 +347,8 @@ const POSE: Record<ChessbotMood, Pose> = {
   love: UPRIGHT,
   stars: UPRIGHT,
   smug: LEANING,
+  // Head up, antenna reaching
+  thinking: { ...UPRIGHT, lift: -3, stretch: 1.12 },
   proud: { ...UPRIGHT, lift: -8 },
   // Standing on end
   panic: { ...UPRIGHT, stretch: 1.3 },
