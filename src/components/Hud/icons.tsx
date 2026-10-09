@@ -46,6 +46,12 @@ export const SkipIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const MenuIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M5 7h14M5 12h14M5 17h14" />
+  </Icon>
+);
+
 export const SoundIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M4 9.5h4l5-4v13l-5-4H4z" fill="currentColor" />

@@ -3,7 +3,7 @@ import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { Chessbot } from "./Chessbot";
 import type { ChessbotMood } from "./Chessbot";
 import { Color } from "../../engine";
-import { ENTRANCE, PITCHES, SKIPS, VERDICTS } from "./lines";
+import { ENTRANCE, MENU, PITCHES, SKIPS, VERDICTS } from "./lines";
 import { useChessbot } from "./useChessbot";
 
 interface Fidget {
@@ -153,8 +153,10 @@ export function ChessbotCorner() {
     return () => window.clearInterval(timer);
   }, [peeking]);
 
-  const line =
-    entrance === "oops"
+  const atMenu = useGameStore((s) => s.menuOpen);
+  const line = atMenu
+    ? MENU
+    : entrance === "oops"
       ? ENTRANCE.oops
       : announcement
         ? kind === "mode"

@@ -1,0 +1,133 @@
+/* --- The main menu, over the whole game, under Chessbot in his corner --- */
+
+.main-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow-y: auto;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #4a1a9c, transparent 70%),
+    linear-gradient(180deg, #2a0f5c, #12082b);
+  animation: menu-in 0.35s ease-out both;
+}
+
+.menu-sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  width: min(760px, 100%);
+}
+
+.menu-sheet .logo {
+  font-size: clamp(40px, 7vw, 84px);
+}
+
+/* The way most people will go: big, and in the logo's own colours */
+.menu-adventure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: min(460px, 100%);
+  padding: 18px 28px 20px;
+  color: var(--paper);
+  background: linear-gradient(180deg, #ff2e88, #b52bff 70%, #6a1fd6);
+  border: 4px solid var(--plum-ink);
+  border-radius: 20px;
+  box-shadow: 7px 8px 0 var(--plum-ink);
+  cursor: pointer;
+  transition:
+    translate 0.12s ease-out,
+    box-shadow 0.12s ease-out;
+}
+
+.menu-adventure-title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1;
+  text-shadow: 3px 3px 0 var(--plum-ink);
+}
+
+.menu-adventure-sub {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.menu-heading {
+  margin: 6px 0 -6px;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--paper);
+  opacity: 0.85;
+}
+
+.menu-modes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 12px;
+}
+
+.menu-mode {
+  padding: 10px 18px;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--paper);
+  background: linear-gradient(135deg, var(--chip-a), var(--chip-b));
+  border: 3px solid var(--plum-ink);
+  border-radius: 99px;
+  box-shadow: 3px 4px 0 var(--plum-ink);
+  text-shadow: 1px 2px 0 rgba(0, 0, 0, 0.5);
+  rotate: var(--tilt);
+  cursor: pointer;
+  transition:
+    translate 0.12s ease-out,
+    rotate 0.12s ease-out,
+    box-shadow 0.12s ease-out;
+}
+
+.menu-adventure:hover,
+.menu-mode:hover {
+  translate: -1px -3px;
+  box-shadow: 8px 11px 0 var(--plum-ink);
+}
+
+.menu-mode:hover {
+  rotate: 0deg;
+  box-shadow: 4px 7px 0 var(--plum-ink);
+}
+
+.menu-adventure:active,
+.menu-mode:active {
+  translate: 2px 3px;
+  box-shadow: 2px 2px 0 var(--plum-ink);
+}
+
+.menu-adventure:focus-visible,
+.menu-mode:focus-visible {
+  outline: 3px solid #ffd23f;
+  outline-offset: 3px;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-menu {
+    animation: none;
+  }
+
+  .menu-adventure,
+  .menu-mode {
+    transition: none;
+  }
+}

@@ -245,6 +245,10 @@ export interface GameStore {
   cursed: boolean;
   /** The plain site's end: Chessbot shows himself, the site glitches, the curse bursts through */
   curseStage: "hello" | "peek" | "glitch" | "oops" | "boom" | null;
+  /** The main menu is up, between games */
+  menuOpen: boolean;
+  /** Adventure runs every mode once in order; a single mode is played alone. Either ends at the main menu. */
+  playMode: "adventure" | "single";
   /** How Chessbot looks at this point in his opening speech */
   introMood: ChessbotMood;
 
@@ -331,6 +335,12 @@ export interface GameStore {
   /** Moves the portals if a reshuffle is due, once the board has finished animating */
   settlePortals: () => void;
   switchMode: (index?: number) => void;
+  /** Leave whatever is being played for the main menu */
+  openMenu: () => void;
+  /** From the main menu: every mode once, in order, starting from the first */
+  startAdventure: () => void;
+  /** From the main menu: one mode, played by itself */
+  startSingle: (index: number) => void;
 }
 
 const CLEARED_SELECTION = {
@@ -390,7 +400,9 @@ function schedule(fn: () => void, ms: number): void {
 }
 
 function syncPaused(): void {
-  useGameStore.setState((s) => ({ paused: s.userPaused || pauseHolds > 0 }));
+  useGameStore.setState((s) => ({
+    paused: s.userPaused || pauseHolds > 0 || s.menuOpen,
+  }));
 }
 
 function cancelScheduled(): void {
@@ -606,6 +618,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   cursed: false,
   curseStage: null,
   introMood: "happy",
+  menuOpen: false,
+  playMode: "adventure",
   autonomousTick: 0,
   introDone: true,
   gravityFalling: false,
@@ -903,6 +917,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       cursed: false,
       curseStage: null,
       introMood: "happy",
+      menuOpen: false,
+      playMode: "adventure",
     });
   },
 
@@ -1197,8 +1213,55 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ turn: game.turn });
   },
 
+  openMenu: () => {
+    cancelScheduled();
+    const game = new Game();
+    set((s) => ({
+      game,
+      pluginManager: freshPluginManager(game),
+      ...FRESH_BOARD,
+      ...FRESH_CLOCKS,
+      ...CLEARED_HEX,
+      status: GameStatus.Active,
+      announcement: null,
+      userPaused: false,
+      cursed: true,
+      curseStage: null,
+      menuOpen: true,
+      // The menu wears the first mode's colours if no mode has been played yet
+      currentModeIndex: Math.max(0, s.currentModeIndex),
+    }));
+    syncPaused();
+  },
+
+  startAdventure: () => {
+    set({
+      menuOpen: false,
+      playMode: "adventure",
+      scoreWhite: 0,
+      scoreBlack: 0,
+    });
+    get().switchMode(0);
+  },
+
+  startSingle: (index) => {
+    set({ menuOpen: false, playMode: "single", scoreWhite: 0, scoreBlack: 0 });
+    get().switchMode(index);
+  },
+
   switchMode: (index) => {
     const { currentModeIndex, game, isHexMode, hexGame } = get();
+    // Moving on by itself, a single mode is over once it has been played,
+    // and the adventure once its last mode has
+    if (index === undefined && !get().devMode && currentModeIndex >= 0) {
+      const over =
+        get().playMode === "single" ||
+        currentModeIndex === GAME_MODES.length - 1;
+      if (over) {
+        get().openMenu();
+        return;
+      }
+    }
     const nextIndex =
       index ??
       (currentModeIndex < 0 ? 0 : (currentModeIndex + 1) % GAME_MODES.length);

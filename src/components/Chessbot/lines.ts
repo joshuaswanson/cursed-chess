@@ -40,3 +40,6 @@ export const SKIPS = {
     foe: ["i have nothing to move. this is fine. go again."],
   },
 } as const;
+
+/** What he says at the main menu */
+export const MENU = "pick one. they're all my favourite.";

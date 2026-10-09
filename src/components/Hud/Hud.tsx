@@ -6,6 +6,7 @@ import { useTheme } from "../../theme/useTheme";
 import { pieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
 import {
+  MenuIcon,
   MuteIcon,
   PauseIcon,
   PlayIcon,
@@ -211,12 +212,15 @@ function Toolbar() {
   const userPaused = useGameStore((s) => s.userPaused);
   const devMode = useGameStore((s) => s.devMode);
   const soundOn = useSyncExternalStore(sfx.subscribe, sfx.isEnabled);
-  const { newGame, togglePause, switchMode, toggleDevMode } =
+  const { newGame, togglePause, switchMode, toggleDevMode, openMenu } =
     useGameStore.getState();
   useShortcuts();
 
   return (
     <nav className="toolbar" aria-label="Game controls">
+      <ToolButton label="Main menu" onClick={openMenu}>
+        <MenuIcon />
+      </ToolButton>
       <ToolButton label="Restart from the top" onClick={newGame}>
         <RestartIcon />
       </ToolButton>

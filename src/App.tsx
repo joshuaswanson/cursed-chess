@@ -28,6 +28,7 @@ import { useTheme } from "./theme/useTheme";
 import { themeVars } from "./theme/themes";
 import "./styles/global.css";
 import { ChessbotCorner } from "./components/Chessbot/ChessbotCorner";
+import { MainMenu } from "./components/MainMenu/MainMenu";
 
 function App() {
   useGameLoop();
@@ -123,6 +124,7 @@ function App() {
       <PromotionDialog />
       <ShowCards />
       <CurseIntro />
+      <MainMenu />
       <HexWarp />
     </div>
   );
