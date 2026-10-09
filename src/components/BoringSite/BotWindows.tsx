@@ -273,13 +273,10 @@ function Boot({ ms }: { ms: number }) {
 function Speech({
   opening,
   leaving,
-  over,
 }: {
   opening: string;
   /** He is done talking, and his windows glitch shut */
   leaving: boolean;
-  /** The site has broken, and only his new game is left starting up */
-  over: boolean;
 }) {
   const lines = useMemo(() => introScript(opening).slice(1), [opening]);
   const delays = useMemo(() => introDelays(lines, SPEECH_LEAD_MS), [lines]);
@@ -318,7 +315,7 @@ function Speech({
   const shown = (exhibit: IntroExhibit) => typed > opensAt(exhibit);
   /** Whether this exhibit is open: from its word until he is a line past it */
   const showing = (exhibit: IntroExhibit, lingers = 1) =>
-    !over && !leaving && shown(exhibit) && current <= lineOf(exhibit) + lingers;
+    !leaving && shown(exhibit) && current <= lineOf(exhibit) + lingers;
   const winsLine = lines[lineOf("wins")];
   const typedOfWins = typed - starts[lineOf("wins")];
   const named = BEATEN.filter(
@@ -331,19 +328,16 @@ function Speech({
 
   return (
     <div className="bot-windows" aria-live="polite">
-      {!over && (
-        <div
-          className={`bot-corruption${lines[current].tone ? " is-angry" : ""}`}
-          style={{ "--level": corruption } as CSSProperties}
-          aria-hidden
-        />
-      )}
+      <div
+        className={`bot-corruption${lines[current].tone ? " is-angry" : ""}`}
+        style={{ "--level": corruption } as CSSProperties}
+        aria-hidden
+      />
       {showing("games") && <Recordings />}
       {showing("wins") && <Wins named={named} />}
       {showing("humans") && <Humans opening={opening} />}
-      {!over && shown("code") && <Source leaving={leaving} />}
-      {!over &&
-        typed > 0 &&
+      {shown("code") && <Source leaving={leaving} />}
+      {typed > 0 &&
         lines.slice(0, current + 1).map(({ text, tone }, i) => {
           // Each one glitches shut as he starts on the next
           const stale = i < current;
@@ -376,12 +370,6 @@ function Speech({
 export function BotWindows() {
   const stage = useGameStore((s) => s.curseStage);
   const opening = useGameStore((s) => s.moveHistory[0]?.san ?? "e4");
-  if (stage !== "hello" && stage !== "peek" && stage !== "glitch") return null;
-  return (
-    <Speech
-      opening={opening}
-      leaving={stage !== "hello"}
-      over={stage === "glitch"}
-    />
-  );
+  if (stage !== "hello" && stage !== "peek") return null;
+  return <Speech opening={opening} leaving={stage === "peek"} />;
 }
