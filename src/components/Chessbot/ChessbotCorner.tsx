@@ -100,6 +100,7 @@ function useQuip(): string | undefined {
   useEffect(() => {
     let clear: number | undefined;
     let idle: number | undefined;
+    let saidPortals = false;
     const say = (text: string) => {
       window.clearTimeout(clear);
       setLine(text);
@@ -118,14 +119,16 @@ function useQuip(): string | undefined {
     };
     muse();
     const stop = useGameStore.subscribe((now, before) => {
-      // Taking a piece through a portal always gets the same nod
+      // The first piece you take through a portal gets a nod, once an adventure
       if (now.moveHistory.length > before.moveHistory.length) {
         const { move } = now.moveHistory[now.moveHistory.length - 1];
         if (
+          !saidPortals &&
           move.piece.color === Color.White &&
           move.captured &&
           move.flags & MoveFlag.Portal
         ) {
+          saidPortals = true;
           say(PORTAL_CAPTURE);
           return;
         }
