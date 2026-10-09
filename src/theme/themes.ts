@@ -58,7 +58,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "portals",
     title: "Portals",
     tagline: "Step into one, burst out of the other.",
-    catchphrase: "Let's get this party started!",
+    catchphrase: "In one side, out the other!",
     sky: ["#05031c", "#1b0b4f", "#4a1170"],
     accent: "#ff8a1a",
     accent2: "#2f9bff",
