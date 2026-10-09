@@ -106,6 +106,16 @@ export const FIRST_MINE = [
   "i told you i forgot where they were.",
 ] as const;
 
+/** What he says each time one of his own pieces steps on a mine, taken in turn */
+export const OWN_MINE = [
+  "see? i really did forget where they were.",
+  "that one was meant for you.",
+  "i was checking it still worked.",
+  "a sacrifice. a very loud one.",
+  "that square is safe now. you're welcome.",
+  "my mines are not supposed to do that to me.",
+] as const;
+
 /** What he says the first time you take a piece by going through a portal */
 export const PORTAL_CAPTURE = "now you're thinking in portals.";
 

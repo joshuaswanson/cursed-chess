@@ -7,6 +7,7 @@ import type { MinefieldPlugin } from "../../plugins/minefield";
 import {
   ENTRANCE,
   FIRST_MINE,
+  OWN_MINE,
   PITCHES,
   PORTAL_CAPTURE,
   QUIPS,
@@ -104,6 +105,7 @@ function useQuip(): string | undefined {
     let idle: number | undefined;
     let saidPortals = false;
     let saidMines = false;
+    let ownMines = 0;
     let late: number | undefined;
     let calm: number | undefined;
     const say = (text: string) => {
@@ -142,6 +144,16 @@ function useQuip(): string | undefined {
           saidMines = true;
           window.clearTimeout(late);
           late = window.setTimeout(() => say(pick(FIRST_MINE)), 1100);
+          return;
+        }
+        // Every one of his own that finds one gets an excuse
+        if (
+          move.piece.color === Color.Black &&
+          mines?.pendingExplosions.has(move.to)
+        ) {
+          const excuse = OWN_MINE[ownMines++ % OWN_MINE.length];
+          window.clearTimeout(late);
+          late = window.setTimeout(() => say(excuse), 1100);
           return;
         }
         if (
