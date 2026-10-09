@@ -847,11 +847,13 @@
   width: 58%;
 }
 
-/* The machine guns, laid over the board on the right side of their gunners */
+/* The machine guns, laid over the board. Each rests on the sandbags in
+   front of its gunner, so it is drawn over them, like a rifle levelled
+   over the parapet. */
 .trench-guns {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 4;
   pointer-events: none;
 }
 
