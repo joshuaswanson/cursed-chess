@@ -61,6 +61,15 @@ export function MainMenu() {
           <span className="menu-adventure-sub">
             Every mode, one after another
           </span>
+          {/* The road ahead: a stop for each mode, in its own colour */}
+          <span className="menu-trail" aria-hidden>
+            {GAME_MODES.map((mode) => (
+              <i
+                key={mode.theme}
+                style={{ background: THEMES[mode.theme].accent }}
+              />
+            ))}
+          </span>
         </button>
         <h2 className="menu-heading">Or play just one</h2>
         <div className="menu-modes">

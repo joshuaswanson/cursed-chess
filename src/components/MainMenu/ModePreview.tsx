@@ -81,14 +81,25 @@ function MineScene() {
 
   return (
     <span ref={ref} className="pv-minefield">
-      <span className="pv-warning" style={{ left: "38%", top: "62%" }}>
-        2
-      </span>
-      <span className="pv-warning" style={{ left: "66%", top: "30%" }}>
+      {/* Each warning sits in a square of its own beside the mine */}
+      <span className="pv-warning" style={{ left: "56.25%", top: "37.5%" }}>
         1
       </span>
+      <span className="pv-warning" style={{ left: "81.25%", top: "37.5%" }}>
+        1
+      </span>
+      <span className="pv-warning" style={{ left: "81.25%", top: "87.5%" }}>
+        2
+      </span>
       {run.n > 0 && !run.blown && (
-        <Piece key={run.n} is="wP" x={30} y={56} className="pv-steps-on" />
+        <Piece
+          key={run.n}
+          is="wP"
+          x={43.75}
+          y={60}
+          size={20}
+          className="pv-steps-on"
+        />
       )}
       {run.blown && (
         <span key={run.n} className="pv-minefield">
@@ -97,8 +108,9 @@ function MineScene() {
           </span>
           <Piece
             is="wP"
-            x={62}
-            y={56}
+            x={68.75}
+            y={60}
+            size={20}
             className="pv-thrown"
             style={
               {
@@ -124,6 +136,40 @@ function Undead() {
       size={100}
       className="pv-undead"
     />
+  );
+}
+
+/** A shell landing in no man's land: a flash, a fireball, earth thrown up, and smoke climbing away */
+function Shell({
+  x,
+  y,
+  late = false,
+}: {
+  x: number;
+  y: number;
+  late?: boolean;
+}) {
+  return (
+    <span
+      className={`pv-shell${late ? " pv-shell-late" : ""}`}
+      style={{ left: `${x}%`, top: `${y}%` }}
+    >
+      <span className="pv-shell-smoke" />
+      <span className="pv-shell-fire" />
+      <span className="pv-shell-flash" />
+      {Array.from({ length: 7 }, (_, i) => (
+        <i
+          key={i}
+          style={
+            {
+              "--dx": `${(scatter(i * 5 + x) * 2 - 1) * 14}cqw`,
+              "--up": `${6 + scatter(i * 5 + y) * 10}cqw`,
+              "--spin": `${(scatter(i * 3 + x) * 2 - 1) * 500}deg`,
+            } as CSSProperties
+          }
+        />
+      ))}
+    </span>
   );
 }
 
@@ -201,14 +247,15 @@ function HexBoard() {
         const a = (Math.PI / 3) * i;
         return `${(x + HEX_R * Math.cos(a)).toFixed(1)},${(y + HEX_R * Math.sin(a)).toFixed(1)}`;
       }).join(" ");
-      const onPath = row === 1 && BISHOP_COLUMNS.includes(q);
+      const step = row === 1 ? BISHOP_COLUMNS.indexOf(q) : -1;
+      const onPath = step >= 0;
       // The bishop's cells are drawn last, so their outline lies over their neighbours
       (onPath ? path : cells).push(
         <polygon
           key={`${q}:${row}`}
           points={corners}
           fill={`url(#pv-hex-${tone})`}
-          className={onPath ? "pv-hex-path" : undefined}
+          className={onPath ? `pv-hex-path pv-hex-step-${step}` : undefined}
         />,
       );
     }
@@ -384,26 +431,40 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       />
     </>
   ),
-  // A bishop makes its hexagonal move: along a line of cells of its own colour
+  // A bishop bounds along a line of its own colour, each cell lighting as it
+  // lands, and knocks a pawn clean off the last one
   hex: (
     <>
       <HexBoard />
+      <Piece
+        is="bP"
+        x={BISHOP_STOPS[2]}
+        y={47}
+        size={20}
+        className="pv-bopped"
+      />
       <Piece is="wB" x={BISHOP_STOPS[0]} y={47} size={22} className="pv-hops" />
+      <span
+        className="pv-spark pv-bop"
+        style={{ left: `${BISHOP_STOPS[2]}%`, top: "44%" }}
+      />
     </>
   ),
-  // A pawn attacks a hidden piece, which turns out to be a queen
+  // A shell game: three masked pieces swap places, a pawn takes its pick,
+  // and the mask comes off the queen
   stratego: (
     <>
-      <Piece is="bP" x={24} y={34} className="pv-hidden">
+      <Piece is="bP" x={24} y={34} className="pv-hidden pv-shell-1">
         <span className="pv-mask">?</span>
       </Piece>
-      <Piece is="bQ" x={52} y={34} className="pv-hidden pv-revealed">
+      <Piece is="bP" x={52} y={34} className="pv-hidden pv-shell-2">
         <span className="pv-mask">?</span>
       </Piece>
-      <Piece is="bP" x={80} y={34} className="pv-hidden">
-        <span className="pv-mask">?</span>
+      <Piece is="bQ" x={80} y={34} className="pv-hidden pv-shell-3">
+        <span className="pv-mask pv-unmasks">?</span>
       </Piece>
-      <Piece is="wP" x={52} y={78} size={22} className="pv-attacks-up" />
+      <Piece is="wP" x={52} y={80} size={22} className="pv-picks" />
+      <span className="pv-shout pv-uh-oh">!</span>
     </>
   ),
   // A captured pawn claws its way back out of its grave
@@ -432,14 +493,15 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
           style={
             {
               left: `${t.x}%`,
-              rotate: `${t.lean}deg`,
+              rotate: `${t.back ? 180 + t.lean : t.lean}deg`,
               animationDelay: `${-t.delay}s`,
               animationDuration: `${t.every}s`,
             } as CSSProperties
           }
         />
       ))}
-      <span className="pv-shell" />
+      <Shell x={58} y={50} />
+      <Shell x={24} y={44} late />
       <span className="pv-rain" />
     </>
   ),

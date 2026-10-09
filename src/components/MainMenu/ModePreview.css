@@ -362,8 +362,8 @@
 
 /* A plain twisted rope running off both edges, which goes thin under strain */
 .pv-rope {
-  left: -6%;
-  right: -6%;
+  left: -14%;
+  right: -14%;
   top: 59.5%;
   height: 5%;
   border-radius: 99px;
@@ -431,24 +431,33 @@
 }
 
 /* Slack when nobody is pulling, thinnest when both are */
+/* The rope slides with the flag tied to it, by exactly as much */
 @keyframes pv-taut {
   0%,
   100% {
     scale: 1 1.1;
+    translate: 0 0;
   }
-  15%,
+  15% {
+    scale: 1 0.95;
+    translate: -4.2cqw 0;
+  }
   30% {
     scale: 1 0.95;
+    translate: 3.6cqw 0;
   }
   45%,
   58% {
     scale: 1 0.72;
+    translate: 0 0;
   }
   72% {
     scale: 1 0.95;
+    translate: 6.6cqw 0;
   }
   86% {
     scale: 1 1;
+    translate: 1.2cqw 0;
   }
 }
 
@@ -459,20 +468,20 @@
     translate: 0 0;
   }
   15% {
-    translate: -70% 0;
+    translate: -4.2cqw 0;
   }
   30% {
-    translate: 60% 0;
+    translate: 3.6cqw 0;
   }
   45%,
   58% {
     translate: 0 0;
   }
   72% {
-    translate: 110% 0;
+    translate: 6.6cqw 0;
   }
   86% {
-    translate: 20% 0;
+    translate: 1.2cqw 0;
   }
 }
 
@@ -498,32 +507,32 @@
 @keyframes pv-steps-on {
   0%,
   20% {
-    left: 30%;
+    left: 43.75%;
     translate: -50% -50%;
   }
   40% {
-    left: 46%;
+    left: 50%;
     translate: -50% -66%;
   }
   55%,
   65% {
-    left: 46%;
+    left: 56.25%;
     translate: -50% -50%;
   }
   85% {
-    left: 62%;
+    left: 62.5%;
     translate: -50% -66%;
   }
   100% {
-    left: 62%;
+    left: 68.75%;
     translate: -50% -50%;
   }
 }
 
 /* The mine itself: the game's blast is drawn centred on this point */
 .pv-mine-spot {
-  left: 62%;
-  top: 56%;
+  left: 68.75%;
+  top: 62.5%;
   width: 0;
   height: 0;
 }
@@ -614,9 +623,10 @@
   --dir: 1;
 }
 
-/* Both go in at once, so the swords meet in the middle */
+/* Both go in at once, so the swords meet in the middle, but each fights his
+   own way: the knight swings wide, the bishop keeps his guard close */
 .pv-lunge-left {
-  animation: pv-lunge 4.5s ease-in-out infinite;
+  animation: pv-lunge-guarded 4.5s ease-in-out infinite;
   --dir: -1;
 }
 
@@ -636,7 +646,7 @@
   position: absolute;
   inset: 0;
   transform-origin: 0 50%;
-  animation: pv-drain 6s steps(8) infinite;
+  animation: pv-drain 4.5s ease-out infinite;
 }
 
 .pv-hp-blue::after {
@@ -645,7 +655,7 @@
 
 .pv-hp-red::after {
   background: #ff3b4e;
-  animation-delay: -0.75s;
+  animation-name: pv-drain-foe;
 }
 
 /* A sword held out toward the other, swung down as its owner lunges */
@@ -672,6 +682,7 @@
 .pv-lunge-left .pv-sword {
   left: -2%;
   --dir: -1;
+  animation-name: pv-swing-guarded;
 }
 
 /* Three exchanges, one after another: blades crossed high, a chop that
@@ -724,6 +735,67 @@
   animation: pv-spark 4.5s ease-out infinite;
 }
 
+/* The bishop: a tight parry, a low thrust under the chop, then a big overhead cut */
+@keyframes pv-swing-guarded {
+  0%,
+  33.3%,
+  66.7%,
+  100% {
+    rotate: -24deg;
+  }
+  14% {
+    rotate: -30deg;
+  }
+  16.7%,
+  22% {
+    rotate: -58deg;
+  }
+  44% {
+    rotate: -120deg;
+  }
+  50%,
+  55% {
+    rotate: -96deg;
+  }
+  76% {
+    rotate: 70deg;
+  }
+  83.3%,
+  88% {
+    rotate: -70deg;
+  }
+}
+
+@keyframes pv-lunge-guarded {
+  0%,
+  33.3%,
+  66.7%,
+  100% {
+    translate: -50% -50%;
+  }
+  /* Holds his ground and is driven back a step */
+  16.7%,
+  22% {
+    translate: -44% -50%;
+  }
+  /* Ducks in low */
+  46% {
+    translate: -42% -44%;
+  }
+  50%,
+  55% {
+    translate: -62% -46%;
+  }
+  /* Rears up and comes down hard */
+  76% {
+    translate: -40% -64%;
+  }
+  83.3%,
+  88% {
+    translate: -58% -48%;
+  }
+}
+
 @keyframes pv-lunge {
   0%,
   33.3%,
@@ -756,12 +828,49 @@
   }
 }
 
+/* Health only drops at the instant the blades meet, a chunk each time,
+   and is topped back up as the round starts over */
 @keyframes pv-drain {
-  from {
+  0%,
+  16.6% {
     scale: 1 1;
   }
-  to {
-    scale: 0.1 1;
+  18.5%,
+  49.9% {
+    scale: 0.78 1;
+  }
+  51.8%,
+  83.2% {
+    scale: 0.45 1;
+  }
+  85.1%,
+  95% {
+    scale: 0.28 1;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+@keyframes pv-drain-foe {
+  0%,
+  16.6% {
+    scale: 1 1;
+  }
+  18.5%,
+  49.9% {
+    scale: 0.6 1;
+  }
+  51.8%,
+  83.2% {
+    scale: 0.42 1;
+  }
+  85.1%,
+  95% {
+    scale: 0.08 1;
+  }
+  100% {
+    scale: 1 1;
   }
 }
 
@@ -977,6 +1086,78 @@
   filter: brightness(1.12);
 }
 
+/* Each cell lights as he lands on it */
+.pv-hexes .pv-hex-path {
+  animation: pv-hex-lit 4.8s ease-out infinite;
+}
+
+.pv-hexes .pv-hex-step-1 {
+  animation-delay: 1.44s;
+}
+
+.pv-hexes .pv-hex-step-2 {
+  animation-delay: 3.07s;
+}
+
+@keyframes pv-hex-lit {
+  0% {
+    filter: brightness(2.4);
+  }
+  14%,
+  100% {
+    filter: brightness(1.12);
+  }
+}
+
+/* The pawn on the last cell, knocked off the board when he arrives */
+.pv-bopped {
+  animation: pv-bopped 4.8s infinite;
+}
+
+.pv-bop {
+  animation: pv-bop 4.8s infinite;
+}
+
+@keyframes pv-bopped {
+  0% {
+    translate: -50% -50%;
+    rotate: 0deg;
+    scale: 0;
+  }
+  8%,
+  63% {
+    translate: -50% -50%;
+    rotate: 0deg;
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
+  }
+  82%,
+  100% {
+    translate: 190% -330%;
+    rotate: 600deg;
+    scale: 0.6;
+  }
+}
+
+@keyframes pv-bop {
+  0%,
+  62% {
+    scale: 0;
+    opacity: 0;
+  }
+  65% {
+    scale: 1.8;
+    opacity: 1;
+    rotate: 30deg;
+  }
+  72%,
+  100% {
+    scale: 0.4;
+    opacity: 0;
+    rotate: 80deg;
+  }
+}
+
 /* One cell at a time, with a little hop over each corner */
 .pv-hops {
   animation: pv-hops 4.8s ease-in-out infinite;
@@ -987,26 +1168,55 @@
   12% {
     left: 19.25%;
     translate: -50% -50%;
+    rotate: 0deg;
+    scale: 1;
   }
   21% {
-    translate: -50% -80%;
+    translate: -50% -95%;
+    rotate: 180deg;
   }
   30%,
   46% {
     left: 47.75%;
     translate: -50% -50%;
+    rotate: 360deg;
+    scale: 1;
   }
   55% {
-    translate: -50% -80%;
+    translate: -50% -110%;
+    rotate: 540deg;
+    scale: 1.15;
   }
-  64%,
-  90% {
+  64% {
     left: 76.25%;
     translate: -50% -50%;
+    rotate: 720deg;
+    scale: 1.2 0.8;
+  }
+  /* A little dance on the cell he has won */
+  70% {
+    translate: -50% -64%;
+    rotate: 708deg;
+    scale: 1;
+  }
+  76% {
+    translate: -50% -50%;
+    rotate: 732deg;
+  }
+  82% {
+    translate: -50% -64%;
+    rotate: 708deg;
+  }
+  88%,
+  94% {
+    left: 76.25%;
+    translate: -50% -50%;
+    rotate: 720deg;
     opacity: 1;
   }
   100% {
     left: 76.25%;
+    rotate: 720deg;
     opacity: 0;
   }
 }
@@ -1024,55 +1234,180 @@
   box-shadow: 0 0 0 3px var(--plum-ink);
 }
 
-.pv-revealed .pv-mask {
-  animation: pv-unmask 4s infinite;
+/* The three swap places like cups in a shell game: the first with the
+   second, then with the third, one passing above and one below. All three
+   look alike, so the round can start again from where they ended up. */
+.pv-shell-1 {
+  animation: pv-shell-1 8s ease-in-out infinite;
 }
 
-.pv-attacks-up {
-  animation: pv-attacks-up 4s infinite;
+.pv-shell-2 {
+  animation: pv-shell-2 8s ease-in-out infinite;
+}
+
+.pv-shell-3 {
+  animation: pv-shell-3 8s ease-in-out infinite;
+}
+
+.pv-unmasks {
+  animation: pv-unmask 8s infinite;
+}
+
+.pv-picks {
+  animation: pv-picks 8s infinite;
+}
+
+.pv-uh-oh {
+  left: 52%;
+  top: 70%;
+  font-size: 16cqw;
+  color: #ffd23f;
+  animation: pv-uh-oh 8s infinite;
+}
+
+@keyframes pv-shell-1 {
+  0%,
+  8% {
+    left: 24%;
+    top: 34%;
+  }
+  14% {
+    top: 18%;
+  }
+  20% {
+    left: 52%;
+    top: 34%;
+  }
+  26% {
+    top: 18%;
+  }
+  32%,
+  100% {
+    left: 80%;
+    top: 34%;
+  }
+}
+
+@keyframes pv-shell-2 {
+  0%,
+  8% {
+    left: 52%;
+    top: 34%;
+  }
+  14% {
+    top: 50%;
+  }
+  20%,
+  100% {
+    left: 24%;
+    top: 34%;
+  }
+}
+
+/* The queen, who ends up in the middle and jumps when she is found out */
+@keyframes pv-shell-3 {
+  0%,
+  20% {
+    left: 80%;
+    top: 34%;
+    scale: 1;
+  }
+  26% {
+    top: 50%;
+  }
+  32%,
+  43% {
+    left: 52%;
+    top: 34%;
+    scale: 1;
+  }
+  47% {
+    left: 52%;
+    top: 30%;
+    scale: 1.3;
+  }
+  52%,
+  100% {
+    left: 52%;
+    top: 34%;
+    scale: 1;
+  }
 }
 
 @keyframes pv-unmask {
   0%,
-  44% {
+  42% {
     scale: 1 1;
     opacity: 1;
   }
-  52%,
-  90% {
+  45%,
+  64% {
     scale: 0 1;
     opacity: 0;
   }
+  68%,
   100% {
     scale: 1 1;
     opacity: 1;
   }
 }
 
-@keyframes pv-attacks-up {
-  0%,
-  22% {
-    top: 78%;
+/* The pawn dithers between them, picks the middle one, and regrets it */
+@keyframes pv-picks {
+  0% {
+    left: 52%;
+    top: 80%;
     rotate: 0deg;
+    opacity: 0;
+  }
+  4%,
+  30% {
+    left: 52%;
+    top: 80%;
+    opacity: 1;
+  }
+  33% {
+    left: 44%;
+    top: 80%;
+  }
+  36% {
+    left: 60%;
+    top: 80%;
+  }
+  38% {
+    left: 52%;
+    top: 80%;
+  }
+  42%,
+  46% {
+    left: 52%;
+    top: 58%;
+    rotate: 0deg;
+    animation-timing-function: ease-in;
+  }
+  58%,
+  100% {
+    left: 96%;
+    top: 130%;
+    rotate: 320deg;
+    opacity: 1;
+  }
+}
+
+@keyframes pv-uh-oh {
+  0%,
+  44% {
+    scale: 0;
+    opacity: 0;
+  }
+  47%,
+  52% {
     scale: 1;
     opacity: 1;
   }
-  42% {
-    top: 48%;
-    rotate: 0deg;
-    scale: 1;
-  }
-  56% {
-    top: 60%;
-    rotate: 0deg;
-    scale: 1;
-    animation-timing-function: ease-in;
-  }
-  78%,
+  56%,
   100% {
-    top: 130%;
-    rotate: 200deg;
-    scale: 0.6;
+    scale: 1.3;
     opacity: 0;
   }
 }
@@ -1230,37 +1565,174 @@
   opacity: 0.85;
 }
 
-/* Rounds crossing no man's land, from one trench to the other and back */
+/* Rounds crossing no man's land. Each is turned to its own slant about its
+   tail and flies straight along it, from one trench toward the other. */
 .pv-tracer {
-  top: 26%;
+  top: 24%;
   width: 2px;
   height: 16%;
   border-radius: 2px;
   background: linear-gradient(180deg, transparent, #ffe7a0 60%, #fffbe8);
   box-shadow: 0 0 5px rgba(255, 210, 110, 0.9);
+  transform-origin: 50% 0;
   animation: pv-tracer 0.2s linear infinite;
 }
 
+/* Fired from the near trench: turned right round, so it flies up the card */
 .pv-tracer-back {
-  scale: 1 -1;
-  animation-direction: reverse;
+  top: 76%;
 }
 
+/* A shell: everything about it is placed from the point it lands on */
 .pv-shell {
-  left: 58%;
-  top: 50%;
-  width: 34%;
-  aspect-ratio: 1;
+  width: 0;
+  height: 0;
+  --wait: 0s;
+}
+
+.pv-shell-late {
+  --wait: 1.7s;
+}
+
+.pv-shell > span,
+.pv-shell > i {
+  left: 0;
+  top: 0;
   translate: -50% -50%;
+  animation-duration: 3.6s;
+  animation-delay: var(--wait);
+  animation-iteration-count: infinite;
+}
+
+.pv-shell-flash {
+  width: 44cqw;
+  aspect-ratio: 1;
   border-radius: 50%;
   background: radial-gradient(
     closest-side,
-    #fffbe6,
-    #ffb24a 35%,
-    #7a3a14 62%,
+    #fffdf0,
+    rgba(255, 230, 160, 0.8) 25%,
+    rgba(255, 170, 70, 0.3) 55%,
     transparent
   );
-  animation: pv-shell 3.2s ease-out infinite;
+  animation-name: pv-shell-flash;
+}
+
+.pv-shell-fire {
+  width: 20cqw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    #ffe9a8,
+    #ff9a3a 40%,
+    #b93a14 68%,
+    transparent
+  );
+  animation-name: pv-shell-fire;
+}
+
+.pv-shell-smoke {
+  width: 22cqw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(34, 30, 26, 0.9),
+    rgba(34, 30, 26, 0.5) 55%,
+    transparent
+  );
+  animation-name: pv-shell-smoke;
+}
+
+/* Clods of earth thrown up and falling back */
+.pv-shell > i {
+  width: 2.2cqw;
+  aspect-ratio: 1.2;
+  border-radius: 30%;
+  background: #2a1d12;
+  animation-name: pv-shell-clod;
+}
+
+@keyframes pv-shell-flash {
+  0%,
+  60% {
+    scale: 0;
+    opacity: 0;
+  }
+  62% {
+    scale: 0.3;
+    opacity: 1;
+  }
+  68%,
+  100% {
+    scale: 1.1;
+    opacity: 0;
+  }
+}
+
+@keyframes pv-shell-fire {
+  0%,
+  61% {
+    scale: 0;
+    opacity: 0;
+  }
+  64% {
+    scale: 0.6;
+    opacity: 1;
+  }
+  76% {
+    scale: 1.2;
+    opacity: 0.85;
+    filter: brightness(0.7);
+  }
+  84%,
+  100% {
+    scale: 1.4;
+    opacity: 0;
+  }
+}
+
+@keyframes pv-shell-smoke {
+  0%,
+  64% {
+    scale: 0.3;
+    opacity: 0;
+    translate: -50% -50%;
+  }
+  72% {
+    scale: 0.9;
+    opacity: 0.85;
+    translate: -50% -70%;
+  }
+  100% {
+    scale: 1.9;
+    opacity: 0;
+    translate: -30% -170%;
+  }
+}
+
+@keyframes pv-shell-clod {
+  0%,
+  61% {
+    transform: none;
+    opacity: 0;
+  }
+  62% {
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.15, 0.7, 0.4, 1);
+  }
+  74% {
+    transform: translate(calc(var(--dx) * 0.6), calc(var(--up) * -1))
+      rotate(calc(var(--spin) * 0.5));
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.6);
+  }
+  88%,
+  100% {
+    transform: translate(var(--dx), 3cqw) rotate(var(--spin));
+    opacity: 0;
+  }
 }
 
 .pv-rain {
@@ -1273,39 +1745,20 @@
   animation: pv-rain 0.35s linear infinite;
 }
 
-/* A round is in the air for a fraction of the wait between shots */
+/* A round is in the air for a fraction of the wait between shots. It moves
+   down its own length, whichever way that has been turned. */
 @keyframes pv-tracer {
   0% {
-    top: 24%;
+    transform: translateY(0);
     opacity: 1;
   }
   16% {
-    top: 62%;
+    transform: translateY(19cqw);
     opacity: 1;
   }
   17%,
   100% {
-    top: 62%;
-    opacity: 0;
-  }
-}
-
-@keyframes pv-shell {
-  0%,
-  55% {
-    scale: 0;
-    opacity: 0;
-  }
-  60% {
-    scale: 0.5;
-    opacity: 1;
-  }
-  78% {
-    scale: 1.2;
-    opacity: 0.8;
-  }
-  100% {
-    scale: 1.5;
+    transform: translateY(19cqw);
     opacity: 0;
   }
 }
