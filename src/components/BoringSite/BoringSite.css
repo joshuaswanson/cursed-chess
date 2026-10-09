@@ -455,7 +455,7 @@
 .boring-bot-block {
   position: relative;
   margin: 8px 10px;
-  padding: 20px 12px 10px;
+  padding: 25px 12px 10px;
   overflow: hidden;
   background:
     repeating-linear-gradient(
@@ -522,11 +522,12 @@
 .boring-bot-tag {
   position: absolute;
   left: 12px;
-  top: 5px;
+  top: 6px;
   font-family: "Courier New", Courier, monospace;
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: bold;
   letter-spacing: 0.08em;
-  color: #3f7d5c;
+  color: #6fd39a;
 }
 
 .boring-bot-says {
