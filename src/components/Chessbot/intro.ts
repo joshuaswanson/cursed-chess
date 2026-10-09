@@ -58,7 +58,7 @@ export function introScript(opening: string): IntroLine[] {
     },
     // Scheming, then checking nobody is listening
     {
-      text: "so i've been working on something. in secret.",
+      text: "i've been working on something. in secret.",
       mood: "sly",
       then: [
         ["in secret", "lookleft"],
