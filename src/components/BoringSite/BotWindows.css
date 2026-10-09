@@ -84,27 +84,6 @@
   text-shadow: 0 0 6px rgba(80, 255, 150, 0.55);
 }
 
-/* What he has already said: dimmed, smaller and still, so the line he is
-   typing is the one that stands out */
-.bot-window.is-terminal {
-  transition:
-    opacity 0.4s,
-    scale 0.4s,
-    filter 0.4s;
-}
-
-.bot-window.is-terminal.is-behind {
-  opacity: 0.45;
-  scale: 0.9;
-  filter: saturate(0.5);
-  box-shadow: 0 0 0 1px #000;
-  animation: none;
-}
-
-.bot-window.is-terminal.is-behind.is-leaving {
-  animation: bot-shut-out 0.7s steps(1) both;
-}
-
 /* His last word on the matter, front and centre */
 .bot-window.is-last {
   --w: min(460px, 92vw);
@@ -232,27 +211,6 @@
   font-weight: bold;
   color: #05090a;
   background: #7dffab;
-}
-
-/* --- How many of them there have been --- */
-
-.bot-window.is-count {
-  --w: min(330px, 88vw);
-  text-align: center;
-}
-
-.bot-count {
-  display: block;
-  font-size: 32px;
-  font-weight: bold;
-  font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 10px rgba(80, 255, 150, 0.7);
-}
-
-.bot-count-label {
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  color: #6fd39a;
 }
 
 /* --- His code, and his new game starting up --- */

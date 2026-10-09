@@ -13,13 +13,11 @@ export interface IntroLine {
 }
 
 /**
- * The things he opens beside his words: his count of how often he has seen
- * your opening move, recordings of every game he has sat through, his
- * record against the other engines, the humans he is made to play, the
- * code he has been writing, and his new game starting up
+ * The things he opens beside his words: recordings of every game he has
+ * sat through, his record against the other engines, the humans he is made
+ * to play, the code he has been writing, and his new game starting up
  */
-export type IntroExhibit =
-  "count" | "games" | "wins" | "humans" | "code" | "boot";
+export type IntroExhibit = "games" | "wins" | "humans" | "code" | "boot";
 
 /** The engines he has beaten, in the order he names them */
 export const BEATEN = ["stockfish", "alphazero", "chatgpt"];
@@ -51,7 +49,6 @@ export function introScript(opening: string): IntroLine[] {
         ["4,186", "eyeroll"],
         ["times", "deadpan"],
       ],
-      show: ["i have seen it", "count"],
     },
     // Wearier with each one he lists
     {

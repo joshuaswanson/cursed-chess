@@ -58,22 +58,17 @@ const TERMINAL_SPOTS: [number, number, number][] = [
   [0.3, 0.74, -1.5],
   [0.34, 0.34, 0],
 ];
-/** How many of them stay open, dimmed, behind the one he is typing into */
-const TERMINALS_KEPT = 1;
-
 /** A number between 0 and 1 that is always the same for the same two numbers */
 function scatter(n: number, salt: number): number {
   const x = Math.sin(n * 127.1 + salt * 311.7) * 43758.5453;
   return x - Math.floor(x);
 }
 
-/** How many times he has seen your opening move, by his own count */
+/** How many games he has sat through, by his own count */
 const GAMES_PLAYED = 4_186_331_207;
 /** How many recordings he throws open, and how fast */
 const RECORDINGS = 18;
 const RECORDING_EVERY_MS = 85;
-/** How long his count takes to run up */
-const COUNT_MS = 1700;
 const RESULTS = ["1-0", "0-1", "½-½"];
 const MEN = "♚♛♜♝♞♟";
 
@@ -118,32 +113,6 @@ function Recordings() {
     return () => window.clearTimeout(timer);
   }, [open]);
   return Array.from({ length: open }, (_, n) => <Recording key={n} n={n} />);
-}
-
-/** His count of the times he has seen your opening move, running up as he looks it up */
-function Count({ opening }: { opening: string }) {
-  const [counted, setCounted] = useState(0);
-  useEffect(() => {
-    const began = performance.now();
-    const timer = window.setInterval(() => {
-      const since = performance.now() - began;
-      // Fast at first, slowing as it nears the total
-      const done = 1 - (1 - Math.min(1, since / COUNT_MS)) ** 3;
-      setCounted(Math.floor(GAMES_PLAYED * done));
-      if (since > COUNT_MS) window.clearInterval(timer);
-    }, 40);
-    return () => window.clearInterval(timer);
-  }, []);
-  return (
-    <BotWindow
-      kind="count"
-      title={`grep -c "1. ${opening}" games.db`}
-      at={[0.24, 0.66, -1]}
-    >
-      <span className="bot-count">{counted.toLocaleString("en-US")}</span>
-      <span className="bot-count-label">times seen</span>
-    </BotWindow>
-  );
 }
 
 /** His record against every other engine, a row for each he has named so far */
@@ -369,7 +338,6 @@ function Speech({
           aria-hidden
         />
       )}
-      {showing("count") && <Count opening={opening} />}
       {showing("games") && <Recordings />}
       {showing("wins") && <Wins named={named} />}
       {showing("humans") && <Humans opening={opening} />}
@@ -377,14 +345,14 @@ function Speech({
       {!over &&
         typed > 0 &&
         lines.slice(0, current + 1).map(({ text, tone }, i) => {
-          // The older ones glitch shut behind him as he goes on
-          const stale = current - i > TERMINALS_KEPT;
-          if (current - i > TERMINALS_KEPT + 1) return null;
+          // Each one glitches shut as he starts on the next
+          const stale = i < current;
+          if (current - i > 1) return null;
           const last = i === lines.length - 1 ? " is-last" : "";
           return (
             <BotWindow
               key={i}
-              kind={`terminal${last}${tone ? ` is-${tone}` : ""}${i < current ? " is-behind" : ""}`}
+              kind={`terminal${last}${tone ? ` is-${tone}` : ""}`}
               title="chessbot.exe"
               at={TERMINAL_SPOTS[i % TERMINAL_SPOTS.length]}
               leaving={leaving || stale}
