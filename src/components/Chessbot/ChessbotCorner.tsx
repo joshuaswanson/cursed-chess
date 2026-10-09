@@ -136,7 +136,7 @@ function useQuip(): string | undefined {
         ) {
           saidMines = true;
           window.clearTimeout(late);
-          late = window.setTimeout(() => say(FIRST_MINE), 1100);
+          late = window.setTimeout(() => say(pick(FIRST_MINE)), 1100);
           return;
         }
         if (
