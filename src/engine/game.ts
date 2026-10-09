@@ -11,6 +11,7 @@ import type {
 import { Board, STARTING_FEN } from "./board";
 import { generatePseudoLegalMoves, isSquareAttacked, opponent } from "./moves";
 import {
+  boardFiles,
   boardRanks,
   fileOf,
   lastRank,
@@ -20,7 +21,8 @@ import {
 import { moveToSan } from "./notation";
 
 /** A board of the depth in play with nothing on it */
-const emptyFen = () => `${Array(boardRanks()).fill("8").join("/")} w - - 0 1`;
+const emptyFen = () =>
+  `${Array(boardRanks()).fill(String(boardFiles())).join("/")} w - - 0 1`;
 
 function cloneCastling(c: CastlingRights): CastlingRights {
   return {

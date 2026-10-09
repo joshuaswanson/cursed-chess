@@ -178,13 +178,13 @@
   }
 }
 
-/* --- The long hall: twelve rows deep, so the squares are smaller to fit --- */
+/* --- The long hall: nine squares by thirteen, so the squares are smaller to fit --- */
 
 .app[data-theme="heist"] {
-  --square-size: clamp(24px, min(calc((100vh - 150px) / 12.8), 7.6vw), 62px);
+  --square-size: clamp(22px, min(calc((100vh - 150px) / 13.8), 6.6vw), 58px);
 }
 
-/* The vault: a carpet over the four by four squares in the middle of the floor */
+/* The vault's floor: a carpet inside the walls */
 .square.heist-vault::before {
   content: "";
   position: absolute;
@@ -214,5 +214,39 @@
 @media (prefers-reduced-motion: reduce) {
   .square.heist-frozen .piece-img {
     animation: none;
+  }
+}
+
+/* The vault's walls: blocks of dark dressed stone with a brass cap, standing
+   clear of the gloom so the room can always be made out */
+[data-theme="heist"] .square.heist-wall {
+  z-index: 7;
+  background:
+    linear-gradient(180deg, #c9a44a 0 10%, #5a4416 10% 15%, transparent 15%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 44%,
+      rgba(0, 0, 0, 0.45) 44% 50%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 44%,
+      rgba(0, 0, 0, 0.3) 44% 50%
+    ),
+    linear-gradient(160deg, #4b556e, #232a40);
+  box-shadow:
+    inset 0 0 0 2px #0c1020,
+    0 4px 0 rgba(0, 0, 0, 0.55);
+}
+
+/* A piece that has just jumped out of a light's way lands with a little hop */
+.square.heist-dodged .piece-img {
+  animation: heist-dodge 0.32s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes heist-dodge {
+  from {
+    scale: 0.6;
+    translate: 0 -30%;
   }
 }

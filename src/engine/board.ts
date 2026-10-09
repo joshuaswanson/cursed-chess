@@ -2,9 +2,11 @@ import { Color, PieceType } from "./types";
 import type { Piece, SquareIndex, CastlingRights, GameState } from "./types";
 import {
   MAX_RANKS,
+  boardFiles,
   boardRanks,
   indexToAlgebraic,
   isValidSquare,
+  lastFile,
   lastRank,
   toIndex,
 } from "../utils/squareUtils";
@@ -57,7 +59,7 @@ export class Board {
 
   findKing(color: Color): SquareIndex | null {
     for (let rank = 0; rank < boardRanks(); rank++) {
-      for (let file = 0; file < 8; file++) {
+      for (let file = 0; file < boardFiles(); file++) {
         const sq = toIndex(file, rank);
         const piece = this.squares[sq];
         if (piece && piece.type === PieceType.King && piece.color === color) {
@@ -74,7 +76,7 @@ export class Board {
   ): { sq: SquareIndex; piece: Piece }[] {
     const result: { sq: SquareIndex; piece: Piece }[] = [];
     for (let rank = 0; rank < boardRanks(); rank++) {
-      for (let file = 0; file < 8; file++) {
+      for (let file = 0; file < boardFiles(); file++) {
         const sq = toIndex(file, rank);
         const piece = this.squares[sq];
         if (piece && piece.color === color && (!type || piece.type === type)) {
@@ -116,7 +118,7 @@ export class Board {
       if (ch === "/") {
         rank--;
         file = 0;
-      } else if (ch >= "1" && ch <= "8") {
+      } else if (ch >= "1" && ch <= "9") {
         file += parseInt(ch);
       } else {
         const pieceInfo = PIECE_CHARS[ch];
@@ -166,7 +168,7 @@ export class Board {
     // Piece placement
     for (let rank = lastRank(); rank >= 0; rank--) {
       let empty = 0;
-      for (let file = 0; file < 8; file++) {
+      for (let file = 0; file < boardFiles(); file++) {
         const piece = this.squares[toIndex(file, rank)];
         if (piece) {
           if (empty > 0) {
@@ -221,17 +223,17 @@ export class Board {
     const rankFromHome = (n: number) =>
       color === Color.White ? n : lastRank() - n;
     const usual = new Map<PieceType, SquareIndex[]>(
-      Object.entries(USUAL_FILES).map(([type, files]) => [
+      Object.entries(usualFiles()).map(([type, files]) => [
         type as PieceType,
         files.map((file) => toIndex(file, rankFromHome(0))),
       ]),
     );
     usual.set(
       PieceType.Pawn,
-      CENTER_OUT_FILES.map((file) => toIndex(file, rankFromHome(1))),
+      pawnFiles().map((file) => toIndex(file, rankFromHome(1))),
     );
     const spare = [0, 1, 2, 3].flatMap((n) =>
-      CENTER_OUT_FILES.map((file) => toIndex(file, rankFromHome(n))),
+      centerOutFiles().map((file) => toIndex(file, rankFromHome(n))),
     );
     const ordered = [...pieces].sort(
       (a, b) => PLACEMENT_ORDER[a.type] - PLACEMENT_ORDER[b.type],
@@ -246,7 +248,7 @@ export class Board {
     const reserved = new Set(
       pieces.some((p) => p.type === PieceType.King)
         ? []
-        : [toIndex(USUAL_FILES[PieceType.King][0], rankFromHome(0))],
+        : [toIndex(usualFiles()[PieceType.King][0], rankFromHome(0))],
     );
     for (const piece of unplaced) {
       const sq = spare.find((to) => !this.squares[to] && !reserved.has(to));
@@ -256,16 +258,33 @@ export class Board {
   }
 }
 
-const CENTER_OUT_FILES = [4, 3, 5, 2, 6, 1, 7, 0];
+/** Every file, from the king's outward */
+const centerOutFiles = () =>
+  Array.from({ length: boardFiles() }, (_, file) => file).sort(
+    (a, b) => Math.abs(a - 4) - Math.abs(b - 4) || b - a,
+  );
 
-/** The files each piece starts a game of chess on */
-const USUAL_FILES: Record<Exclude<PieceType, "p">, number[]> = {
+/**
+ * The files a side's pawns start on. A board an odd number of files wide
+ * has one file too many for them, and it is the middle one they leave open.
+ */
+const pawnFiles = () => {
+  const middle = boardFiles() % 2 === 1 ? lastFile() / 2 : -1;
+  const files = centerOutFiles();
+  return [
+    ...files.filter((f) => f !== middle),
+    ...files.filter((f) => f === middle),
+  ];
+};
+
+/** The files each piece starts a game of chess on: counted in from the nearer edge, so both wings look the same on a wider board */
+const usualFiles = (): Record<Exclude<PieceType, "p">, number[]> => ({
   [PieceType.King]: [4],
   [PieceType.Queen]: [3],
-  [PieceType.Rook]: [0, 7],
-  [PieceType.Bishop]: [2, 5],
-  [PieceType.Knight]: [1, 6],
-};
+  [PieceType.Rook]: [0, lastFile()],
+  [PieceType.Bishop]: [2, lastFile() - 2],
+  [PieceType.Knight]: [1, lastFile() - 1],
+});
 
 const PLACEMENT_ORDER: Record<PieceType, number> = {
   [PieceType.King]: 0,

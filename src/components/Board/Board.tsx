@@ -1,6 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
-import { boardRanks, rankOf, toIndex } from "../../utils/squareUtils";
+import {
+  boardFiles,
+  boardRanks,
+  rankOf,
+  toIndex,
+} from "../../utils/squareUtils";
 import {
   Color,
   GameStatus,
@@ -79,7 +84,7 @@ import type { GravityFall } from "./useBoardEffects";
 import "./Board.css";
 import "./BoardSkins.css";
 
-const FILES = "abcdefgh";
+const FILES = "abcdefghijklmnop";
 /** A beat after a move lands before the portals move */
 const PORTAL_SETTLE_MS = 150;
 
@@ -217,7 +222,7 @@ export function Board() {
     const board = boardRef.current;
     if (!board) return;
     const observer = new ResizeObserver(() =>
-      setSquareSize(board.offsetWidth / 8),
+      setSquareSize(board.offsetWidth / boardFiles()),
     );
     observer.observe(board);
     return () => observer.disconnect();
@@ -464,11 +469,12 @@ export function Board() {
 
   const rows = [];
   const ranks = boardRanks();
+  const files = boardFiles();
   for (let visualRow = 0; visualRow < ranks; visualRow++) {
     const rank = flipped ? visualRow : ranks - 1 - visualRow;
     const cols = [];
-    for (let visualCol = 0; visualCol < 8; visualCol++) {
-      const file = flipped ? 7 - visualCol : visualCol;
+    for (let visualCol = 0; visualCol < files; visualCol++) {
+      const file = flipped ? files - 1 - visualCol : visualCol;
       const sq = toIndex(file, rank);
       const piece = game.board.get(sq);
       const squareMods = pluginManager.getSquareModifiers(sq);
@@ -516,6 +522,7 @@ export function Board() {
       if (isLastMove && !isDead) className += " last-move";
       if (isCheck) className += " in-check";
       if (unseen) className += " heist-unseen";
+      if (overlays.heist?.dodged.includes(sq)) className += " heist-dodged";
       if (menace?.king === sq) className += " zombie-target";
       if (drag?.isDragging && isLegalTarget) className += " drag-target";
       if (isDeployTarget) className += " deploy-target";

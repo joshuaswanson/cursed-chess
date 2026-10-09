@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { SquareIndex } from "../../engine";
 import type { HeistView } from "../../plugins/heist";
-import { boardRanks } from "../../utils/squareUtils";
+import { boardFiles, boardRanks, toIndex } from "../../utils/squareUtils";
 import { visualCol, visualRow } from "./boardGeometry";
 import "./Heist.css";
 
@@ -153,13 +153,14 @@ export function HeistLights({
       const { view, targets, flipped, squareSize } = scene.current;
       const scale = Math.min(2, window.devicePixelRatio || 1);
       const ranks = boardRanks();
-      const width = Math.round(squareSize * 8 * scale);
+      const files = boardFiles();
+      const width = Math.round(squareSize * files * scale);
       const height = Math.round(squareSize * ranks * scale);
       if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
         canvas.height = height;
       }
-      const sq = width / 8;
+      const sq = width / files;
       const alarm = view.carrier !== null;
       const centre = (square: SquareIndex) => ({
         x: visualCol(square, flipped) + 0.5,
@@ -167,7 +168,7 @@ export function HeistLights({
       });
       /** The middle of a two by two block, on screen, from its corner nearest a1 */
       const block = (file: number, rank: number) => ({
-        x: flipped ? 7 - file - 1 : file + 1,
+        x: flipped ? files - file - 1 : file + 1,
         y: flipped ? rank + 1 : ranks - rank - 1,
       });
       const wear = (
@@ -214,8 +215,14 @@ export function HeistLights({
 
       ctx.globalCompositeOperation = "destination-out";
       // The vault is never quite dark, so there is always somewhere to make for
-      const vault = block(view.vault.file + 1, view.vault.rank + 1);
-      wear(vault.x, vault.y, 0.6, 3.1, 0.28);
+      const vault = centre(toIndex(view.vault.file + 1, view.vault.rank + 1));
+      wear(vault.x, vault.y, 0.9, 3.6, 0.34);
+      // The walls stand out of the dark, so the room can always be made out
+      ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+      for (const wall of view.walls) {
+        const { x, y } = centre(wall);
+        ctx.fillRect((x - 0.5) * sq, (y - 0.5) * sq, sq, sq);
+      }
       for (const { x, y } of lights) wear(x, y, LIGHT_LIT, LIGHT_REACH, 1);
       for (const target of targets) {
         const { x, y } = centre(target);

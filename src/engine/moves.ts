@@ -2,6 +2,7 @@ import { Color, PieceType, MoveFlag } from "./types";
 import type { Piece, SquareIndex, Move, PawnRule, PawnRules } from "./types";
 import type { Board } from "./board";
 import {
+  boardFiles,
   boardRanks,
   isValidSquare,
   lastRank,
@@ -274,7 +275,7 @@ export function generatePseudoLegalMoves(
   const moves: Move[] = [];
 
   for (let rank = 0; rank < boardRanks(); rank++) {
-    for (let file = 0; file < 8; file++) {
+    for (let file = 0; file < boardFiles(); file++) {
       const sq = toIndex(file, rank);
       const piece = board.get(sq);
       if (!piece || piece.color !== color) continue;

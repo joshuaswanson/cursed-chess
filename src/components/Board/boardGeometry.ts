@@ -1,9 +1,9 @@
-import { fileOf, lastRank, rankOf } from "../../utils/squareUtils";
+import { fileOf, lastFile, lastRank, rankOf } from "../../utils/squareUtils";
 import type { SquareIndex } from "../../engine";
 
 /** Column on screen, 0 at the left edge */
 export function visualCol(sq: SquareIndex, flipped: boolean): number {
-  return flipped ? 7 - fileOf(sq) : fileOf(sq);
+  return flipped ? lastFile() - fileOf(sq) : fileOf(sq);
 }
 
 /** Row on screen, 0 at the top edge */

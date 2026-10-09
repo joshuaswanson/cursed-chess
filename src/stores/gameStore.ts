@@ -13,9 +13,10 @@ import { PluginManager } from "../plugins/manager";
 import type { ModePlugin } from "../plugins/types";
 import {
   ALL_SQUARES,
+  boardFiles,
   boardRanks,
   rankOf,
-  setBoardRanks,
+  setBoardSize,
 } from "../utils/squareUtils";
 import { PortalChessPlugin } from "../plugins/portalChess";
 import type { PortalMoveInfo } from "../plugins/portalChess";
@@ -26,7 +27,7 @@ import { MinefieldPlugin } from "../plugins/minefield";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { LanternsPlugin } from "../plugins/lanterns";
-import { HEIST_RANKS, HeistPlugin } from "../plugins/heist";
+import { HEIST_FILES, HEIST_RANKS, HeistPlugin } from "../plugins/heist";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
 import { TugOfWarPlugin } from "../plugins/tugOfWar";
@@ -122,6 +123,8 @@ export interface GameMode {
   untilWon?: boolean;
   /** How many ranks deep its board is, where that is not the usual eight */
   ranks?: number;
+  /** How many files wide its board is, where that is not the usual eight */
+  files?: number;
   /** Left out of the adventure: played only when picked from the main menu */
   singleOnly?: boolean;
 }
@@ -197,6 +200,7 @@ export const GAME_MODES: GameMode[] = [
     theme: "heist",
     create: () => [new HeistPlugin()],
     ranks: HEIST_RANKS,
+    files: HEIST_FILES,
     kingsSitOut: true,
     noReinforcements: true,
   },
@@ -1020,7 +1024,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   newGame: () => {
     cancelScheduled();
-    setBoardRanks();
+    setBoardSize();
     const game = new Game();
     set({
       game,
@@ -1075,7 +1079,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
 
     schedule(() => {
-      setBoardRanks();
+      setBoardSize();
       set({ game: new Game(), ...FRESH_BOARD });
       get().switchMode();
     }, RESULT_HOLD_MS);
@@ -1352,7 +1356,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   openMenu: () => {
     cancelScheduled();
-    setBoardRanks();
+    setBoardSize();
     const game = new Game();
     set((s) => ({
       game,
@@ -1466,8 +1470,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     // A board of a different depth is laid out afresh, each side at its own end
     const depth = mode.ranks ?? 8;
-    const resized = depth !== boardRanks();
-    setBoardRanks(depth);
+    const width = mode.files ?? 8;
+    const resized = depth !== boardRanks() || width !== boardFiles();
+    setBoardSize(depth, width);
     const nextGame =
       isHexMode || resized
         ? Game.fromArmies(armies[Color.White], armies[Color.Black])
