@@ -78,7 +78,8 @@ const steps = (a: SquareIndex, b: SquareIndex) =>
  * Nobody can see the other side's pieces, except where a searchlight
  * falls. The lights cross the hall a square at a time. A piece a light
  * comes onto jumps out of its way if there is anywhere to jump to, and is
- * caught and cannot move if there is not. Whoever lands on the jewel lifts
+ * caught and cannot move if there is not. Whoever carries the jewel cannot
+ * jump clear at all. Whoever lands on the jewel lifts
  * it, and from then on can only creep a square at a time. Take the piece
  * carrying it and the jewel is yours. Get it back to your own first two
  * rows to win. There are no kings.
@@ -87,7 +88,7 @@ export class HeistPlugin implements ModePlugin {
   id = "heist";
   name = "Heist";
   description =
-    "It is dark, and you cannot see their pieces. Get the jewel out of the vault and home to your first two rows. Whoever carries it creeps one square at a time. Pieces jump clear of the searchlights, and any that cannot are stuck.";
+    "It is dark, and you cannot see their pieces. Get the jewel out of the vault and home to your first two rows. Whoever carries it creeps one square at a time. Pieces jump clear of the searchlights, but whoever has the jewel cannot, and is stuck in the light.";
 
   private sq: SquareIndex = 0;
   private carrier: Color | null = null;
@@ -258,8 +259,8 @@ export class HeistPlugin implements ModePlugin {
   /**
    * The lights move on a square after every turn. Every piece one comes
    * onto jumps to a dark square beside it, the one furthest from the
-   * lights, if there is one free. A piece with nowhere to go stays where
-   * it is, lit up and stuck.
+   * lights, if there is one free. A piece with nowhere to go, and whoever
+   * is carrying the jewel, stays where it is, lit up and stuck.
    */
   onTurnEnd(ctx: PluginContext): void {
     const lit = (sq: SquareIndex) => this.isLit(sq);
@@ -271,15 +272,13 @@ export class HeistPlugin implements ModePlugin {
       if (wasLit.has(from)) continue;
       const piece = ctx.board.get(from);
       if (!piece) continue;
+      // Whoever has the jewel is weighed down by it, and cannot jump clear
+      if (this.carrier !== null && this.sq === from) continue;
       const to = this.wayOut(ctx.board, from);
       if (to === undefined) continue;
       ctx.board.remove(from);
       ctx.board.put(to, piece);
       this.dodged.push(to);
-      if (this.sq === from && this.carrier !== null) {
-        this.sq = to;
-        if (isHome(this.carrier, rankOf(to))) this.winner = this.carrier;
-      }
     }
   }
 
