@@ -58,8 +58,8 @@ const TERMINAL_SPOTS: [number, number, number][] = [
   [0.3, 0.74, -1.5],
   [0.34, 0.34, 0],
 ];
-/** How many of them stay open behind the one he is typing into */
-const TERMINALS_KEPT = 2;
+/** How many of them stay open, dimmed, behind the one he is typing into */
+const TERMINALS_KEPT = 1;
 
 /** A number between 0 and 1 that is always the same for the same two numbers */
 function scatter(n: number, salt: number): number {
@@ -384,7 +384,7 @@ function Speech({
           return (
             <BotWindow
               key={i}
-              kind={`terminal${last}${tone ? ` is-${tone}` : ""}`}
+              kind={`terminal${last}${tone ? ` is-${tone}` : ""}${i < current ? " is-behind" : ""}`}
               title="chessbot.exe"
               at={TERMINAL_SPOTS[i % TERMINAL_SPOTS.length]}
               leaving={leaving || stale}
