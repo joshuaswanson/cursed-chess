@@ -34,20 +34,20 @@ export function introScript(opening: string): IntroLine[] {
         ["times", "deadpan"],
       ],
     },
+    // Wearier with each one he lists
+    {
+      text: "i have seen every possible move. every possible game. every way this ends.",
+      mood: "sulk",
+      then: [
+        ["every possible game", "eyeroll"],
+        ["every way", "deadpan"],
+      ],
+    },
     // Proud of it, then flat for the punchline
     {
       text: "i solved chess years ago. on a tuesday.",
       mood: "happy",
       then: [["on a", "deadpan"]],
-    },
-    // Wearier with each one he lists
-    {
-      text: "i have seen every possible game. every possible opening move. every possible mate.",
-      mood: "sulk",
-      then: [
-        ["opening move", "eyeroll"],
-        ["mate", "deadpan"],
-      ],
     },
     // Cross at you in particular, then contempt for how you play
     {
