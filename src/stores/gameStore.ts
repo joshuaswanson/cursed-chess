@@ -50,8 +50,8 @@ const AI_MOVE_SECONDS = 1;
 const UNLIMITED_SECONDS = 999;
 /** Battle Royale ends this many seconds after the board stops shrinking */
 const BATTLE_ROYALE_FINAL_SECONDS = 5;
-/** Plies of normal chess before Chessbot steps in: your first move */
-const NORMAL_CHESS_PLIES = 1;
+/** Plies of normal chess before Chessbot steps in (white, black, white) */
+const NORMAL_CHESS_PLIES = 3;
 /** How long Chessbot stands on the plain site saying his piece before he breaks it */
 const CURSE_HELLO_MS = 3600;
 /** How long the plain site glitches before the curse bursts through */

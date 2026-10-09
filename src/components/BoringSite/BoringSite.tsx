@@ -5,6 +5,7 @@ import type { SiteTab } from "../../stores/gameStore";
 import { AuthDialog } from "./AuthDialog";
 import type { AuthMode } from "./AuthDialog";
 import "./BoringSite.css";
+import { Chessbot } from "../Chessbot/Chessbot";
 
 const NAV_LINKS: SiteTab[] = ["Play", "Puzzles", "Learn", "Watch", "Community"];
 
@@ -81,19 +82,22 @@ function PlayerCard({ name, rating }: { name: string; rating: number }) {
 
 /**
  * The computer opponent's card. Its plain grey icon is Chessbot keeping up
- * appearances. After your first move he steps out of it to speak for
- * himself, leaving the frame empty, and as he breaks the site the name on
- * the card gives way to his own.
+ * appearances, and with each move of the opening game he slips more:
+ * tearing sideways and showing his real face for an instant. Then he steps
+ * out of it to speak for himself, leaving the frame empty, and as he breaks
+ * the site the name on the card gives way to his own.
  */
 function ComputerCard() {
+  const plies = useGameStore((s) => s.moveHistory.length);
   const stage = useGameStore((s) => s.curseStage);
   const out = stage !== null;
   const breaking = stage === "glitch" || stage === "boom";
+  const slipping = out ? 0 : Math.min(2, plies);
   return (
     <div
-      className={`boring-player boring-bot${out ? " vacated" : ""}${breaking ? " renamed" : ""}`}
+      className={`boring-player boring-bot slipping-${slipping}${out ? " vacated" : ""}${breaking ? " renamed" : ""}`}
     >
-      <div className="boring-avatar" aria-hidden>
+      <div className="boring-avatar boring-bot-avatar" aria-hidden>
         <svg className="boring-bot-icon" viewBox="0 0 32 32">
           <path d="M16 9.5 V5.5" stroke="#6f6f6f" strokeWidth="1.6" />
           <circle cx="16" cy="4.8" r="1.7" fill="#6f6f6f" />
@@ -122,6 +126,7 @@ function ComputerCard() {
             strokeLinecap="round"
           />
         </svg>
+        <Chessbot className="boring-bot-true" mood="smug" grounded={false} />
       </div>
       <span className="boring-player-name boring-bot-name">
         <span>Computer (Level 1)</span>
@@ -131,6 +136,12 @@ function ComputerCard() {
     </div>
   );
 }
+
+/** What Chessbot types into the move list, one line after each of the opening game's first two moves */
+const BOT_ASIDES = [
+  "> i have played this game so many times.",
+  "> it's time for something new.",
+];
 
 function MoveList() {
   const history = useGameStore((s) => s.moveHistory);
@@ -151,6 +162,14 @@ function MoveList() {
           <span className="boring-move-no">{i + 1}.</span>
           <span>{row.white}</span>
           <span>{row.black ?? ""}</span>
+        </li>
+      ))}
+      {/* Chessbot, bored, starts typing into the move list between moves */}
+      {BOT_ASIDES.slice(0, history.length).map((line) => (
+        <li key={line} className="boring-bot-says">
+          <span style={{ "--chars": line.length } as React.CSSProperties}>
+            {line}
+          </span>
         </li>
       ))}
     </ol>

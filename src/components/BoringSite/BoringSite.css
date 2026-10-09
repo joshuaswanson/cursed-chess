@@ -133,9 +133,136 @@
 
 /* --- The computer's icon: Chessbot keeping up appearances --- */
 
+.boring-bot-avatar {
+  position: relative;
+  overflow: visible;
+}
+
+.boring-bot-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* His real face, hidden behind the icon until a slip shows it */
+.boring-bot-avatar > .boring-bot-true {
+  position: absolute;
+  left: -22%;
+  top: -34%;
+  width: 144%;
+  height: 144%;
+  opacity: 0;
+}
+
+/* With each move he slips more: tears and flashes of his real face after your first, barely holding together after his reply */
+.slipping-1 {
+  --slip: 2.2s;
+}
+
+.slipping-2 {
+  --slip: 0.8s;
+}
+
+.slipping-1 .boring-bot-avatar,
+.slipping-2 .boring-bot-avatar {
+  animation: bot-slip var(--slip) steps(1) infinite;
+}
+
+.slipping-1 .boring-bot-true,
+.slipping-2 .boring-bot-true {
+  animation: bot-true-flash var(--slip) steps(1) infinite;
+}
+
+.slipping-2 .boring-bot-name > span {
+  animation: bot-name-slip var(--slip) steps(1) infinite;
+}
+
+.slipping-2 .boring-bot-name > span + span {
+  animation-name: bot-name-true;
+}
+
+@keyframes bot-slip {
+  0%,
+  100% {
+    translate: 0 0;
+    clip-path: none;
+    filter: none;
+  }
+  87% {
+    translate: -3px 0;
+    clip-path: inset(18% 0 46% 0);
+    filter: drop-shadow(3px 0 0 #21e6ff);
+  }
+  90% {
+    translate: 1px 0;
+    clip-path: none;
+    filter: none;
+  }
+  94% {
+    translate: 4px 0;
+    clip-path: inset(52% 0 12% 0);
+    filter: drop-shadow(-3px 0 0 #ff2e88);
+  }
+  97% {
+    translate: -1px 1px;
+    clip-path: none;
+    filter: none;
+  }
+}
+
+/* His real face, whole, in the instant between two tears */
+@keyframes bot-true-flash {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  90% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 0;
+  }
+}
+
+@keyframes bot-name-slip {
+  0%,
+  100% {
+    visibility: visible;
+    translate: 0 0;
+  }
+  89% {
+    translate: 2px 0;
+  }
+  91% {
+    visibility: hidden;
+  }
+  95% {
+    visibility: visible;
+    translate: -1px 0;
+  }
+}
+
+@keyframes bot-name-true {
+  0%,
+  100% {
+    visibility: hidden;
+  }
+  91% {
+    visibility: visible;
+    translate: -2px 0;
+  }
+  95% {
+    visibility: hidden;
+  }
+}
+
 /* He has stepped out to speak for himself, and the frame stands empty */
 .boring-bot.vacated .boring-bot-icon {
   animation: bot-leaves 0.35s steps(3) forwards;
+}
+
+.boring-bot.vacated .boring-bot-true {
+  display: none;
 }
 
 @keyframes bot-leaves {
@@ -183,9 +310,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .boring-bot-avatar,
+  .boring-bot-true,
   .boring-bot-icon,
   .boring-bot-name > span {
-    animation-duration: 0.01s !important;
+    animation: none !important;
+  }
+
+  .boring-bot.vacated .boring-bot-icon {
+    visibility: hidden;
   }
 }
 
@@ -227,6 +360,31 @@
 
 .boring-moves li:nth-child(even) {
   background: #f7f7f7;
+}
+
+/* Chessbot's asides, typed out a letter at a time where a move should be */
+.boring-moves li.boring-bot-says {
+  display: block;
+  background: none;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  font-weight: bold;
+  color: #d6006f;
+}
+
+.boring-bot-says > span {
+  display: inline-block;
+  width: calc(var(--chars) * 1ch);
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: bottom;
+  animation: bot-type calc(var(--chars) * 42ms) steps(var(--chars)) both;
+}
+
+@keyframes bot-type {
+  from {
+    width: 0;
+  }
 }
 
 .boring-move-no {
