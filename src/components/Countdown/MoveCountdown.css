@@ -145,16 +145,6 @@
 
 /* --- FIFA: the fourth official's LED board --- */
 
-/* The board held up by its handle: a white plastic frame around red LED digits */
-[data-countdown="fifa"] .countdown-prop {
-  top: 62%;
-  width: calc(var(--square-size) * 0.22);
-  height: calc(var(--square-size) * 0.75);
-  border-radius: calc(var(--square-size) * 0.08);
-  background: linear-gradient(90deg, #6b7280, #eef1f4 45%, #9ca3af);
-  box-shadow: 0.06em 0.08em 0 var(--ink);
-}
-
 /* Always two digits, so the board keeps its size from 10 down to 1 */
 [data-countdown="fifa"] .countdown-digit {
   display: flex;
@@ -213,6 +203,96 @@
   fill: #ff3b30;
   filter: drop-shadow(0 0 3px #ff3b30)
     drop-shadow(0 0 9px rgba(255, 59, 48, 0.7));
+}
+
+/* --- Time up: the board gives a short jolt, flashes all zeroes a few
+   times, and throws out one ring and a few sparks --- */
+
+.move-countdown[data-time-up] .countdown-stage {
+  animation: led-rattle 0.9s ease-out both;
+}
+
+@keyframes led-rattle {
+  0% {
+    scale: 1;
+  }
+  10% {
+    scale: 1.22;
+    rotate: -5deg;
+  }
+  25% {
+    rotate: 4deg;
+    translate: 3% 0;
+  }
+  40% {
+    rotate: -3deg;
+    translate: -2% 0;
+  }
+  60% {
+    scale: 1.12;
+    rotate: 1.5deg;
+    translate: 0 0;
+  }
+  100% {
+    scale: 1;
+    rotate: 0deg;
+  }
+}
+
+.move-countdown[data-time-up] .countdown-digit {
+  animation: led-strobe 0.22s steps(1) 4;
+}
+
+@keyframes led-strobe {
+  0% {
+    filter: brightness(1.8);
+  }
+  50% {
+    filter: brightness(0.5);
+  }
+}
+
+.led-shock {
+  position: absolute;
+  width: calc(var(--square-size) * 1.5);
+  aspect-ratio: 1;
+  border: calc(var(--square-size) * 0.04) solid #ff3b30;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ff3b30;
+  animation: led-shock 0.6s ease-out both;
+}
+
+@keyframes led-shock {
+  from {
+    scale: 0.3;
+    opacity: 1;
+  }
+  to {
+    scale: 1.9;
+    opacity: 0;
+  }
+}
+
+.led-spark {
+  position: absolute;
+  width: calc(var(--square-size) * 0.07);
+  height: calc(var(--square-size) * 0.24);
+  border-radius: 999px;
+  background: linear-gradient(#fff, #ffd23f 40%, #ff3b30);
+  box-shadow: 0 0 8px #ff7a30;
+  animation: led-spark 0.8s cubic-bezier(0.1, 0.7, 0.3, 1) both;
+}
+
+@keyframes led-spark {
+  from {
+    transform: rotate(var(--angle)) translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--angle))
+      translateY(calc(var(--square-size) * var(--reach) * -1)) scaleY(0.3);
+    opacity: 0;
+  }
 }
 
 /* Breaks the digit into the dots of an LED panel */

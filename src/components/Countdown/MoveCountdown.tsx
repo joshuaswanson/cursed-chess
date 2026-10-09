@@ -7,10 +7,13 @@ import { sfx } from "../../audio/sfx";
 import "./MoveCountdown.css";
 
 const COUNTDOWN_FROM = 5;
-/** FIFA's board is held up on the touchline, this many squares wide, half of it over the board's frame and half off it */
+/** FIFA's board hangs over the touchline, this many squares wide, half of it over the pitch and half off it */
 const TOUCHLINE_BOARD_SQUARES = 1.5;
-const FRAME_SQUARES = 0.35;
 const EDGE_PX = 4;
+/** How long FIFA's board makes a scene when your time runs out */
+const TIME_UP_MS = 1100;
+/** The sparks it throws when it does */
+const SPARKS = 6;
 
 /** The seven bars of a scoreboard digit, each drawn in a cell 60 wide and 100 tall */
 const SEGMENTS = {
@@ -45,8 +48,19 @@ const LIT: Record<string, Segment[]> = {
  * A two-digit scoreboard readout: every bar is there, dark, and the ones
  * that make up the number are lit. With no number, it shows two dashes.
  */
-function Scoreboard({ seconds }: { seconds: number | null }) {
-  const shown = seconds === null ? "--" : String(seconds).padStart(2, " ");
+function Scoreboard({
+  seconds,
+  timeUp,
+}: {
+  seconds: number | null;
+  /** Your time has just run out: it reads all zeroes */
+  timeUp: boolean;
+}) {
+  const shown = timeUp
+    ? "00"
+    : seconds === null
+      ? "--"
+      : String(seconds).padStart(2, " ");
   return (
     <span className="countdown-digit led-readout">
       {[...shown].map((character, place) => (
@@ -68,8 +82,8 @@ function Scoreboard({ seconds }: { seconds: number | null }) {
 
 /**
  * Where the countdown stands: over the board, or for FIFA held up by the
- * fourth official on the left touchline at halfway, centred on the outer
- * edge of the board's frame
+ * fourth official on the left touchline at halfway, centred on the edge
+ * of the pitch
  */
 function placeCountdown(anchor: DOMRect, themeId: string): DOMRect {
   if (themeId !== "fifa") return anchor;
@@ -77,10 +91,7 @@ function placeCountdown(anchor: DOMRect, themeId: string): DOMRect {
   if (!squares) return anchor;
   const square = squares.width / 8;
   const width = square * TOUCHLINE_BOARD_SQUARES;
-  const left = Math.max(
-    EDGE_PX,
-    squares.left - square * FRAME_SQUARES - width / 2,
-  );
+  const left = Math.max(EDGE_PX, squares.left - width / 2);
   return new DOMRect(left, squares.top, width, squares.height);
 }
 
@@ -102,6 +113,27 @@ export function MoveCountdown() {
   // while you are on the ball, and blank while they are
   const fixture = cursed && !autonomous && theme.id === "fifa" && introDone;
   const showing = counting || fixture;
+
+  // The moment your time runs out in FIFA, the board makes a scene of it
+  const [timeUp, setTimeUp] = useState(false);
+  useEffect(() => {
+    if (!fixture) return;
+    let done: number | undefined;
+    const stop = useGameStore.subscribe((now, before) => {
+      const skipped = now.skippedTurn;
+      if (!skipped || skipped.id === before.skippedTurn?.id) return;
+      if (skipped.reason !== "time" || skipped.color !== Color.White) return;
+      setTimeUp(true);
+      sfx.whistle(false);
+      window.clearTimeout(done);
+      done = window.setTimeout(() => setTimeUp(false), TIME_UP_MS);
+    });
+    return () => {
+      stop();
+      window.clearTimeout(done);
+      setTimeUp(false);
+    };
+  }, [fixture]);
 
   useEffect(() => {
     if (counting) sfx.tick(seconds, theme.id === "mines");
@@ -138,7 +170,8 @@ export function MoveCountdown() {
             className="move-countdown"
             data-countdown={theme.id}
             role="timer"
-            data-held={fixture && !counting ? "" : undefined}
+            data-held={fixture && !counting && !timeUp ? "" : undefined}
+            data-time-up={timeUp ? "" : undefined}
             aria-label={
               seconds === null
                 ? "Waiting for the other side to move"
@@ -151,10 +184,28 @@ export function MoveCountdown() {
               height: box.height,
             }}
           >
-            <div className="countdown-stage" key={seconds}>
+            <div className="countdown-stage" key={timeUp ? "up" : seconds}>
               <span className="countdown-prop" aria-hidden />
+              {timeUp && (
+                <>
+                  <span className="led-shock" aria-hidden />
+                  {Array.from({ length: SPARKS }, (_, i) => (
+                    <span
+                      key={i}
+                      className="led-spark"
+                      style={
+                        {
+                          "--angle": `${(i * 360) / SPARKS + (i % 2) * 11}deg`,
+                          "--reach": 0.9 + (i % 3) * 0.25,
+                        } as React.CSSProperties
+                      }
+                      aria-hidden
+                    />
+                  ))}
+                </>
+              )}
               {theme.id === "fifa" ? (
-                <Scoreboard seconds={seconds} />
+                <Scoreboard seconds={seconds} timeUp={timeUp} />
               ) : (
                 <span className="countdown-digit">{seconds}</span>
               )}
