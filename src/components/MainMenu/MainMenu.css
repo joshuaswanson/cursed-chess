@@ -76,7 +76,7 @@
 
 .menu-credit b {
   font-weight: inherit;
-  color: #c81e78;
+  color: var(--grape);
 }
 
 .menu-credit:hover {
