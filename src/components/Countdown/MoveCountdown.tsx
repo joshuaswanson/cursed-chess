@@ -7,15 +7,69 @@ import { sfx } from "../../audio/sfx";
 import "./MoveCountdown.css";
 
 const COUNTDOWN_FROM = 5;
-/** FIFA's board is held up on the touchline, this many squares wide, clear of the board's frame */
-const TOUCHLINE_BOARD_SQUARES = 1.8;
+/** FIFA's board is held up on the touchline, this many squares wide, half of it over the board's frame and half off it */
+const TOUCHLINE_BOARD_SQUARES = 1.5;
 const FRAME_SQUARES = 0.35;
 const EDGE_PX = 4;
 
+/** The seven bars of a scoreboard digit, each drawn in a cell 60 wide and 100 tall */
+const SEGMENTS = {
+  top: "10,5 50,5 44,13 16,13",
+  upperRight: "55,9 55,45 52,48 47,43 47,17",
+  lowerRight: "55,91 47,83 47,57 52,52 55,55",
+  bottom: "10,95 50,95 44,87 16,87",
+  lowerLeft: "5,91 5,55 8,52 13,57 13,83",
+  upperLeft: "5,9 13,17 13,43 8,48 5,45",
+  middle: "12,50 17,45 43,45 48,50 43,55 17,55",
+};
+type Segment = keyof typeof SEGMENTS;
+const ALL_SEGMENTS = Object.keys(SEGMENTS) as Segment[];
+
+/** Which bars light up for each character the board can show */
+const LIT: Record<string, Segment[]> = {
+  "0": ["top", "upperRight", "lowerRight", "bottom", "lowerLeft", "upperLeft"],
+  "1": ["upperRight", "lowerRight"],
+  "2": ["top", "upperRight", "middle", "lowerLeft", "bottom"],
+  "3": ["top", "upperRight", "middle", "lowerRight", "bottom"],
+  "4": ["upperLeft", "middle", "upperRight", "lowerRight"],
+  "5": ["top", "upperLeft", "middle", "lowerRight", "bottom"],
+  "6": ["top", "upperLeft", "middle", "lowerLeft", "lowerRight", "bottom"],
+  "7": ["top", "upperRight", "lowerRight"],
+  "8": ALL_SEGMENTS,
+  "9": ["top", "upperLeft", "upperRight", "middle", "lowerRight", "bottom"],
+  "-": ["middle"],
+  " ": [],
+};
+
+/**
+ * A two-digit scoreboard readout: every bar is there, dark, and the ones
+ * that make up the number are lit. With no number, it shows two dashes.
+ */
+function Scoreboard({ seconds }: { seconds: number | null }) {
+  const shown = seconds === null ? "--" : String(seconds).padStart(2, " ");
+  return (
+    <span className="countdown-digit led-readout">
+      {[...shown].map((character, place) => (
+        <svg key={place} viewBox="0 0 60 100" aria-hidden>
+          {ALL_SEGMENTS.map((segment) => (
+            <polygon
+              key={segment}
+              points={SEGMENTS[segment]}
+              className={
+                LIT[character].includes(segment) ? "led-bar lit" : "led-bar"
+              }
+            />
+          ))}
+        </svg>
+      ))}
+    </span>
+  );
+}
+
 /**
  * Where the countdown stands: over the board, or for FIFA held up by the
- * fourth official on the left touchline at halfway, overlapping the pitch's
- * edge only when there is no room beside it
+ * fourth official on the left touchline at halfway, centred on the outer
+ * edge of the board's frame
  */
 function placeCountdown(anchor: DOMRect, themeId: string): DOMRect {
   if (themeId !== "fifa") return anchor;
@@ -23,7 +77,10 @@ function placeCountdown(anchor: DOMRect, themeId: string): DOMRect {
   if (!squares) return anchor;
   const square = squares.width / 8;
   const width = square * TOUCHLINE_BOARD_SQUARES;
-  const left = Math.max(EDGE_PX, squares.left - square * FRAME_SQUARES - width);
+  const left = Math.max(
+    EDGE_PX,
+    squares.left - square * FRAME_SQUARES - width / 2,
+  );
   return new DOMRect(left, squares.top, width, squares.height);
 }
 
@@ -96,7 +153,11 @@ export function MoveCountdown() {
           >
             <div className="countdown-stage" key={seconds}>
               <span className="countdown-prop" aria-hidden />
-              <span className="countdown-digit">{seconds ?? "\u2013"}</span>
+              {theme.id === "fifa" ? (
+                <Scoreboard seconds={seconds} />
+              ) : (
+                <span className="countdown-digit">{seconds}</span>
+              )}
             </div>
           </div>,
           page,
