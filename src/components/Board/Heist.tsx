@@ -37,7 +37,57 @@ export function Jewel({ className = "" }: { className?: string }) {
   );
 }
 
-/** The jewel where it stands on the board: on its cushion in the vault, or held up by whoever has it */
+/** The velvet cushion the jewel rests on: plump, piped in gold, dimpled where the stone sits, with a tassel at each corner */
+function Cushion() {
+  return (
+    <svg className="heist-cushion" viewBox="0 0 60 30" aria-hidden>
+      <defs>
+        <radialGradient id="heist-velvet" cx="0.5" cy="0.3" r="0.75">
+          <stop offset="0" stopColor="#d43758" />
+          <stop offset="0.55" stopColor="#9c1832" />
+          <stop offset="1" stopColor="#4c0917" />
+        </radialGradient>
+      </defs>
+      <ellipse cx="30" cy="26" rx="25" ry="3.2" fill="#000" opacity="0.35" />
+      {/* Tassels hanging off the two near corners */}
+      <g stroke="#7a5510" strokeWidth="0.9" strokeLinejoin="round">
+        <path d="M5.5 16 l-2.6 7 h4.6 z" fill="#f0c04a" />
+        <path d="M54.5 16 l2.6 7 h-4.6 z" fill="#f0c04a" />
+        <circle cx="5.5" cy="15.5" r="1.9" fill="#ffd972" />
+        <circle cx="54.5" cy="15.5" r="1.9" fill="#ffd972" />
+      </g>
+      {/* The pillow: pinched at its corners, bulging along its sides */}
+      <path
+        d="M5 15 Q7 6 17 6.5 Q30 3.5 43 6.5 Q53 6 55 15 Q54 23.5 43 23 Q30 26.5 17 23 Q6 23.5 5 15 Z"
+        fill="url(#heist-velvet)"
+        stroke="#2a0710"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      {/* Gold piping round the seam */}
+      <path
+        d="M8.5 15 Q10 9 18 9.3 Q30 6.8 42 9.3 Q50 9 51.5 15 Q50.5 20.6 42 20.4 Q30 23.2 18 20.4 Q9.5 20.6 8.5 15 Z"
+        fill="none"
+        stroke="#f0c04a"
+        strokeWidth="1"
+        strokeDasharray="2.2 1.3"
+        opacity="0.9"
+      />
+      {/* The dimple the stone sits in, and the sheen on the velvet */}
+      <ellipse cx="30" cy="14.5" rx="9" ry="3.4" fill="#3d0612" opacity="0.6" />
+      <path
+        d="M14 11.5 Q22 8.8 30 8.8"
+        fill="none"
+        stroke="#ff9db2"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        opacity="0.6"
+      />
+    </svg>
+  );
+}
+
+/** The jewel where it stands on the board: on its cushion in the vault, or held at the side of whoever has it */
 export function HeistLoot({ held }: { held: boolean }) {
   if (held) {
     return (
@@ -49,7 +99,7 @@ export function HeistLoot({ held }: { held: boolean }) {
   }
   return (
     <span className="heist-plinth" aria-hidden>
-      <span className="heist-cushion" />
+      <Cushion />
       <Jewel />
       <i className="heist-glint" />
     </span>

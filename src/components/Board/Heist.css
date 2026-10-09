@@ -59,14 +59,11 @@
 
 .heist-cushion {
   position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: 4%;
-  height: 42%;
-  background: radial-gradient(ellipse at 50% 30%, #b3203c, #5c0d1c 75%);
-  border: 2px solid #2a0710;
-  border-radius: 50% / 60%;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+  left: 0;
+  right: 0;
+  bottom: 2%;
+  width: 100%;
+  overflow: visible;
 }
 
 .heist-jewel {
@@ -78,22 +75,24 @@
 }
 
 .heist-plinth .heist-jewel {
-  translate: 0 -12%;
+  width: 54%;
+  translate: 0 -20%;
   animation: heist-hover 2.2s ease-in-out infinite alternate;
 }
 
 @keyframes heist-hover {
   to {
-    translate: 0 -22%;
+    translate: 0 -30%;
   }
 }
 
-/* Carried: held up over the thief's head, bobbing with every step */
+/* Carried: held at the thief's side, swinging a little with every step */
 .heist-held {
-  left: 50%;
-  top: -18%;
-  width: 46%;
-  translate: -50% 0;
+  left: auto;
+  right: -4%;
+  top: 34%;
+  width: 40%;
+  transform-origin: 50% 0;
   animation: heist-carry 0.7s ease-in-out infinite alternate;
 }
 
@@ -102,8 +101,12 @@
 }
 
 @keyframes heist-carry {
+  from {
+    rotate: -8deg;
+  }
   to {
-    translate: -50% -14%;
+    rotate: 8deg;
+    translate: 0 -6%;
   }
 }
 
