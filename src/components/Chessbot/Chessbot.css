@@ -736,6 +736,73 @@
   }
 }
 
+/* A ring going round */
+.chessbot-spinner {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chessbot-swirl 0.7s linear infinite;
+}
+
+/* A bar filling from the left, again and again */
+.chessbot-bar {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: chessbot-bar 0.9s ease-in-out infinite;
+}
+
+@keyframes chessbot-bar {
+  0% {
+    transform: scaleX(0);
+  }
+  80%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+/* His eyes going from one side to the other as he weighs it up */
+.chessbot-ponder {
+  animation: chessbot-ponder 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes chessbot-ponder {
+  from {
+    transform: translateX(-13px);
+  }
+  to {
+    transform: translateX(13px);
+  }
+}
+
+.chessbot-query {
+  font-family: var(--font-display);
+  font-size: 46px;
+  paint-order: stroke fill;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: chessbot-query 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes chessbot-query {
+  from {
+    transform: rotate(-12deg);
+  }
+  to {
+    transform: translateY(-5px) rotate(12deg);
+  }
+}
+
+/* A light going back and forth across the visor */
+.chessbot-sweep {
+  animation: chessbot-sweep 0.45s ease-in-out infinite alternate;
+}
+
+@keyframes chessbot-sweep {
+  to {
+    transform: translateX(58px);
+  }
+}
+
 /* --- Fidgets: the little moves he makes while he waits --- */
 
 .chessbot-fidget {
@@ -970,6 +1037,11 @@
   .chessbot-nudge,
   .chessbot-dot,
   .chessbot-swirl,
+  .chessbot-spinner,
+  .chessbot-bar,
+  .chessbot-ponder,
+  .chessbot-query,
+  .chessbot-sweep,
   .chessbot-fidget,
   .chessbot-steam i,
   .chessbot-vein,

@@ -31,8 +31,120 @@ const VISOR = "#14121c";
 const BLUE = "#3aa7ff";
 const DIM_BLUE = "#6f86a8";
 
+/** How many ways he has of showing that he is thinking */
+export const THOUGHTS = 5;
+
+/** What his visor shows while he works out a move, drawn for a visor centred on (100, 92) */
+function Thinking({ way, glow }: { way: number; glow: string }) {
+  switch (way % THOUGHTS) {
+    // A ring going round
+    case 1:
+      return (
+        <circle
+          className="chessbot-spinner"
+          cx="100"
+          cy="93"
+          r="13"
+          fill="none"
+          stroke={EYE}
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeDasharray="52 30"
+          filter={glow}
+        />
+      );
+    // A bar filling up
+    case 2:
+      return (
+        <g filter={glow}>
+          <rect
+            x="61"
+            y="85"
+            width="78"
+            height="16"
+            rx="8"
+            fill="none"
+            stroke={EYE}
+            strokeWidth="3.5"
+          />
+          <rect
+            className="chessbot-bar"
+            x="66"
+            y="90"
+            width="68"
+            height="6"
+            rx="3"
+            fill={EYE}
+          />
+        </g>
+      );
+    // Eyes up, going from one side to the other, with a question hanging over him
+    case 3:
+      return (
+        <>
+          <g className="chessbot-ponder" fill={EYE} filter={glow}>
+            <rect x="63" y="78" width="20" height="24" rx="9" />
+            <rect x="117" y="78" width="20" height="24" rx="9" />
+          </g>
+          <text
+            className="chessbot-query"
+            x="174"
+            y="56"
+            textAnchor="middle"
+            fill="#ffd23f"
+            stroke={INK}
+            strokeWidth="2.5"
+          >
+            ?
+          </text>
+        </>
+      );
+    // A light sweeping back and forth across the visor
+    case 4:
+      return (
+        <g filter={glow}>
+          <rect
+            x="60"
+            y="89"
+            width="80"
+            height="8"
+            rx="4"
+            fill={EYE}
+            opacity="0.18"
+          />
+          <rect
+            className="chessbot-sweep"
+            x="60"
+            y="87"
+            width="22"
+            height="12"
+            rx="6"
+            fill={EYE}
+          />
+        </g>
+      );
+    // Three dots, each lighting and hopping in turn
+    default:
+      return (
+        <g fill={EYE} filter={glow}>
+          <circle className="chessbot-dot" cx="72" cy="93" r="8.5" />
+          <circle className="chessbot-dot" cx="100" cy="93" r="8.5" />
+          <circle className="chessbot-dot" cx="128" cy="93" r="8.5" />
+        </g>
+      );
+  }
+}
+
 /** His eyes and whatever hangs in the air around him, drawn for a visor centred on (100, 92) */
-function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
+function Face({
+  mood,
+  glow,
+  thought,
+}: {
+  mood: ChessbotMood;
+  glow: string;
+  thought: number;
+}) {
   switch (mood) {
     case "smug":
       return (
@@ -298,13 +410,7 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
         </g>
       );
     case "thinking":
-      return (
-        <g fill={EYE} filter={glow}>
-          <circle className="chessbot-dot" cx="72" cy="93" r="8.5" />
-          <circle className="chessbot-dot" cx="100" cy="93" r="8.5" />
-          <circle className="chessbot-dot" cx="128" cy="93" r="8.5" />
-        </g>
-      );
+      return <Thinking way={thought} glow={glow} />;
     case "sulk":
       return (
         <>
@@ -387,12 +493,15 @@ const POSE: Record<ChessbotMood, Pose> = {
 export function Chessbot({
   mood = "smug",
   says,
+  thought = 0,
   grounded = true,
   className = "",
 }: {
   mood?: ChessbotMood;
   /** A word or two flashed across his visor in place of his eyes */
   says?: string;
+  /** Which of his ways of thinking he shows while he is thinking */
+  thought?: number;
   /** Whether his shadow is drawn under him; off where he floats over a shadow of his own */
   grounded?: boolean;
   className?: string;
@@ -523,7 +632,7 @@ export function Chessbot({
         </text>
       ) : (
         <g transform="translate(100 118) scale(0.84) translate(-100 -92)">
-          <Face mood={mood} glow={glow} />
+          <Face mood={mood} glow={glow} thought={thought} />
         </g>
       )}
     </g>

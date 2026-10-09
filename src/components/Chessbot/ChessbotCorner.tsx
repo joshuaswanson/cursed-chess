@@ -369,7 +369,12 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
               className={`chessbot-hop is-${act}${act === "angry" ? ` angry-${bot.variant ?? 0}` : ""}`}
               key={stirred}
             >
-              <Chessbot mood={mood} says={bot.says} grounded={false} />
+              <Chessbot
+                mood={mood}
+                says={bot.says}
+                thought={moves}
+                grounded={false}
+              />
             </div>
           </div>
         </div>
