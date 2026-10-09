@@ -86,7 +86,16 @@ export const QUIPS = {
     "enjoy it. it's the last one you get.",
   ],
   /** He has you in check */
-  checks: ["knock knock. it's check.", "check. your move, genius."],
+  checks: [
+    "knock knock. it's check.",
+    "check. your move, genius.",
+    "your king looks nervous.",
+    "check. i'd run if i were him.",
+    "say hello to your king for me.",
+    "check. that's one square closer to goodbye.",
+    "does your king have a plan? i'm asking for me.",
+    "i believe that's check. i'm always right.",
+  ],
   /** You have him in check */
   checked: ["that's not check. that's a bug.", "who taught you that?"],
 } as const;
