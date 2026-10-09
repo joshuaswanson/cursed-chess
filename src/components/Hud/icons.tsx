@@ -20,13 +20,6 @@ function Icon({
   );
 }
 
-export const RestartIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M4 12a8 8 0 1 0 2.4-5.7" />
-    <path d="M4 4v4.5h4.5" />
-  </Icon>
-);
-
 export const PauseIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M8 5v14M16 5v14" />

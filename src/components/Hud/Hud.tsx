@@ -4,14 +4,7 @@ import { Color, PieceType } from "../../engine";
 import { useTheme } from "../../theme/useTheme";
 import { pieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
-import {
-  MenuIcon,
-  MuteIcon,
-  PauseIcon,
-  PlayIcon,
-  RestartIcon,
-  SoundIcon,
-} from "./icons";
+import { MenuIcon, MuteIcon, PauseIcon, PlayIcon, SoundIcon } from "./icons";
 import "./Hud.css";
 import { ChessbotCorner } from "../Chessbot/ChessbotCorner";
 
@@ -201,16 +194,13 @@ function useShortcuts() {
 function Toolbar() {
   const userPaused = useGameStore((s) => s.userPaused);
   const soundOn = useSyncExternalStore(sfx.subscribe, sfx.isEnabled);
-  const { newGame, togglePause, openMenu } = useGameStore.getState();
+  const { togglePause, openMenu } = useGameStore.getState();
   useShortcuts();
 
   return (
     <nav className="toolbar" aria-label="Game controls">
       <ToolButton label="Main menu" onClick={openMenu}>
         <MenuIcon />
-      </ToolButton>
-      <ToolButton label="Restart from the top" onClick={newGame}>
-        <RestartIcon />
       </ToolButton>
       <ToolButton
         label={userPaused ? "Resume" : "Pause"}
