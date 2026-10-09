@@ -631,11 +631,26 @@
 
 /* Making a move: a small dip and lean toward the board, and back */
 .chessbot-nudge {
-  animation: chessbot-nudge 0.38s ease-out;
+  animation: 0.38s ease-out;
   will-change: transform;
 }
 
-@keyframes chessbot-nudge {
+/* Two names for one motion: swapping between them replays it on every move */
+.chessbot-nudge.nudge-0 {
+  animation-name: chessbot-nudge-0;
+}
+
+.chessbot-nudge.nudge-1 {
+  animation-name: chessbot-nudge-1;
+}
+
+@keyframes chessbot-nudge-0 {
+  35% {
+    transform: translate(-5%, 3%) rotate(-7deg);
+  }
+}
+
+@keyframes chessbot-nudge-1 {
   35% {
     transform: translate(-5%, 3%) rotate(-7deg);
   }

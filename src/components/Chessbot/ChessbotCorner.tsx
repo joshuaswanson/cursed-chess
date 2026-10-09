@@ -322,7 +322,11 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
       )}
       <div className="chessbot-float">
         {/* A little dip toward the board each time he makes a move */}
-        <div className={moves > 0 ? "chessbot-nudge" : undefined} key={moves}>
+        <div
+          className={
+            moves > 0 ? `chessbot-nudge nudge-${moves % 2}` : undefined
+          }
+        >
           <div
             className={`chessbot-fidget${fidgeting ? ` does-${fidgeting}` : ""}`}
           >
