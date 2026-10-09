@@ -223,7 +223,15 @@ function Coil({ end, hauled }: { end: "top" | "bottom"; hauled: number }) {
     let shownThin = NaN;
     let feeding = haulRef.current;
     let last = performance.now();
+    // The slack rope follows the rope in play thirty times a second: each
+    // look measures the page and each redraw repaints the whole lead
+    let skip = false;
     const draw = (now: number) => {
+      skip = !skip;
+      if (skip) {
+        frame = requestAnimationFrame(draw);
+        return;
+      }
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const svg = svgRef.current;
@@ -265,10 +273,12 @@ function Coil({ end, hauled }: { end: "top" | "bottom"; hauled: number }) {
             : (box.bottom - ends.top) / unit) - 12,
       };
       if (
-        Math.abs(held - shown) > 0.003 ||
-        Math.abs(entry.x - shownEntry.x) > 0.2 ||
-        Math.abs(entry.y - shownEntry.y) > 0.2 ||
-        Math.abs(thin - shownThin) > 0.01
+        // Redrawn only once the rope has moved enough to see: the constant
+        // small shake of the struggle would otherwise repaint it every time
+        Math.abs(held - shown) > 0.012 ||
+        Math.abs(entry.x - shownEntry.x) > 0.5 ||
+        Math.abs(entry.y - shownEntry.y) > 0.5 ||
+        Math.abs(thin - shownThin) > 0.03
       ) {
         shown = held;
         shownEntry = entry;
