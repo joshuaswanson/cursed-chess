@@ -127,12 +127,14 @@ function useSkipLine(): string | undefined {
 }
 
 /**
- * Chessbot at home in the corner of the screen: drifting on the spot,
+ * Chessbot where he lives: docked at the top of the panel beside the board
+ * during play, and in the corner of the screen while he is breaking the
+ * plain site. Drifting on the spot,
  * blinking, pulling faces, and fidgeting while he waits, acting out
  * whatever the game does to him, and saying his piece over each title and
  * result card
  */
-export function ChessbotCorner() {
+export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
   const bot = useChessbot();
   const fidget = useFidget(!!bot.idle);
   const announcement = useGameStore((s) => s.announcement);
@@ -190,7 +192,11 @@ export function ChessbotCorner() {
 
   return (
     <aside
-      className={`chessbot-corner${peeking ? " is-peeking" : peeked ? " has-peeked" : " arrives"}`}
+      className={
+        docked
+          ? "chessbot-dock"
+          : `chessbot-corner${peeking ? " is-peeking" : peeked ? " has-peeked" : " arrives"}`
+      }
       aria-live="polite"
     >
       {bubble.text && (

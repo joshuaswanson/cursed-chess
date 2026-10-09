@@ -151,6 +151,57 @@
   pointer-events: none;
 }
 
+/* --- Docked at the top of the panel beside the board, by its top right
+   corner, with everything else in the panel pushed down under him --- */
+
+.chessbot-dock {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 104px;
+  pointer-events: none;
+}
+
+.chessbot-dock .chessbot-float {
+  flex: none;
+  width: 104px;
+}
+
+/* What he says goes beside him, in the rest of the panel's width */
+.chessbot-dock .chessbot-speech {
+  left: 118px;
+  right: 0;
+  top: 50%;
+  bottom: auto;
+  width: auto;
+  max-width: none !important;
+  translate: 0 -50%;
+  font-size: 14px;
+  transform-origin: 0 50%;
+}
+
+.chessbot-dock .chessbot-speech::before {
+  left: -16px;
+  right: auto;
+  top: 50%;
+  bottom: auto;
+  width: 16px;
+  height: 20px;
+  translate: 0 -50%;
+  clip-path: polygon(100% 0, 100% 100%, 0 50%);
+}
+
+.chessbot-dock .chessbot-speech::after {
+  left: -9px;
+  right: auto;
+  top: 50%;
+  bottom: auto;
+  width: 11px;
+  height: 13px;
+  translate: 0 -50%;
+  clip-path: polygon(100% 0, 100% 100%, 0 50%);
+}
+
 .chessbot-float {
   position: relative;
   width: clamp(124px, 12.5vw, 190px);

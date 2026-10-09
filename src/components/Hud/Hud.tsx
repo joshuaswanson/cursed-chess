@@ -13,6 +13,7 @@ import {
   SoundIcon,
 } from "./icons";
 import "./Hud.css";
+import { ChessbotCorner } from "../Chessbot/ChessbotCorner";
 
 const MOVE_SECONDS = 10;
 const RING_RADIUS = 26;
@@ -232,8 +233,11 @@ function Toolbar() {
 
 /** The broadcast panel beside the board */
 export function Hud() {
+  const adventure = useGameStore((s) => s.playMode === "adventure");
   return (
     <aside className="hud">
+      {/* He runs the adventure; a mode picked from the menu is played without him */}
+      {adventure && <ChessbotCorner docked />}
       <Scoreboard />
       <NowPlaying />
       <MoveClock />
