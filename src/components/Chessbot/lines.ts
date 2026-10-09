@@ -4,7 +4,7 @@ import type { ThemeId } from "../../theme/themes";
 export const PITCHES: Partial<Record<ThemeId, string>> = {
   fog: "let's try something new. you won't see it coming.",
   fifa: "more people watch football than chess. so i fixed chess.",
-  tug: "chess, but you can also just pull.",
+  tug: "i got bored of outthinking you. now i'll outpull you.",
   mines: "i hid some surprises. i forgot where.",
   royale: "the board was too big. i am fixing that, gradually.",
   clash: "the pieces move themselves now. you were slowing them down.",
