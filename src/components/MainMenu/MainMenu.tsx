@@ -77,45 +77,53 @@ export function MainMenu() {
             Made by <b>Joshua Swanson</b>
           </a>
         </header>
-        <div className="menu-modes">
-          <ModeCard
-            title="Story Mode"
-            tagline="One mode after another!"
-            colors={["#6a1fd6", "#ff2e88"]}
-            onPlay={startAdventure}
-          >
-            <AdventurePreview />
-          </ModeCard>
-          {GAME_MODES.map((mode, i) => {
-            const theme = THEMES[mode.theme];
-            return (
-              <ModeCard
-                key={mode.theme}
-                title={theme.title}
-                tagline={theme.catchphrase}
-                colors={[theme.sky[1], theme.accent]}
-                onPlay={() => startSingle(i)}
-              >
-                <ModePreview theme={theme.id} />
-              </ModeCard>
-            );
-          })}
-          {/* Not a button: there is nothing to play yet */}
-          <div
-            className="menu-mode is-soon"
-            style={
-              {
-                "--chip-a": "#6b2fd6",
-                "--chip-b": "#3ee6b0",
-              } as React.CSSProperties
-            }
-          >
-            <MultiplayerPreview />
-            <span className="menu-mode-text">
-              <span className="menu-mode-title">Multiplayer</span>
-              <span className="menu-mode-tagline">Curse your friends!</span>
-            </span>
-            <span className="menu-soon">Coming soon</span>
+        <div className="menu-list">
+          {/* The two ways to play everything, on a row of their own */}
+          <div className="menu-featured">
+            <ModeCard
+              title="Story Mode"
+              tagline="One mode after another!"
+              colors={["#6a1fd6", "#ff2e88"]}
+              onPlay={startAdventure}
+            >
+              <AdventurePreview />
+            </ModeCard>
+            {/* Not a button: there is nothing to play yet */}
+            <div
+              className="menu-mode is-soon"
+              style={
+                {
+                  "--chip-a": "#6b2fd6",
+                  "--chip-b": "#3ee6b0",
+                } as React.CSSProperties
+              }
+            >
+              <MultiplayerPreview />
+              <span className="menu-mode-text">
+                <span className="menu-mode-title">Multiplayer</span>
+                <span className="menu-mode-tagline">Curse your friends!</span>
+              </span>
+              <span className="menu-soon">Coming soon</span>
+            </div>
+          </div>
+          <h2 className="menu-divider">
+            <span>Single modes</span>
+          </h2>
+          <div className="menu-modes">
+            {GAME_MODES.map((mode, i) => {
+              const theme = THEMES[mode.theme];
+              return (
+                <ModeCard
+                  key={mode.theme}
+                  title={theme.title}
+                  tagline={theme.catchphrase}
+                  colors={[theme.sky[1], theme.accent]}
+                  onPlay={() => startSingle(i)}
+                >
+                  <ModePreview theme={theme.id} />
+                </ModeCard>
+              );
+            })}
           </div>
         </div>
       </div>

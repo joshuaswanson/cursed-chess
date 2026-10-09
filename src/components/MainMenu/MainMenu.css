@@ -97,6 +97,45 @@
   box-shadow: 5px 7px 0 var(--plum-ink);
 }
 
+/* Everything there is to play: the two featured cards, then the single modes */
+.menu-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 34px;
+  width: 100%;
+}
+
+/* Story Mode and Multiplayer, side by side on a row of their own */
+.menu-featured {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+/* The heading over the single modes, with a rule running out either side */
+.menu-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(15px, 1.8vw, 20px);
+  font-weight: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--paper);
+  text-shadow: 2px 3px 0 var(--plum-ink);
+}
+
+.menu-divider::before,
+.menu-divider::after {
+  content: "";
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--paper) 28%, transparent);
+}
+
 /* The modes, three across, to scroll through */
 .menu-modes {
   display: grid;
@@ -225,6 +264,15 @@
 }
 
 @media (max-width: 540px) {
+  .menu-featured {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .menu-list {
+    gap: 24px;
+  }
+
   .main-menu {
     padding: 40px 14px 14px;
   }
@@ -276,6 +324,11 @@
     }
 
     .menu-mode:nth-child(3n) {
+      --deal-x: 70px;
+      --deal-tilt: 10deg;
+    }
+
+    .menu-featured .menu-mode:nth-child(2) {
       --deal-x: 70px;
       --deal-tilt: 10deg;
     }
