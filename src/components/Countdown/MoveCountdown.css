@@ -151,9 +151,13 @@
   box-shadow: 0.06em 0.08em 0 var(--ink);
 }
 
+/* Always two digits wide, so the board keeps its size from 10 down to 1 */
 [data-countdown="fifa"] .countdown-digit {
-  font-size: calc(var(--square-size) * 1.15);
-  padding: 0.04em 0.3em;
+  box-sizing: content-box;
+  width: 2ch;
+  text-align: center;
+  font-size: calc(var(--square-size) * 0.95);
+  padding: 0.04em 0.25em;
   border: 0.07em solid #eef1f4;
   border-radius: 0.14em;
   color: #ff3b30;
