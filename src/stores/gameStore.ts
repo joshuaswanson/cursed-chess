@@ -58,7 +58,7 @@ const NORMAL_CHESS_PLIES = 3;
 const CURSE_GLITCH_MS = 2200;
 /** How long he peeks over the bottom of the screen before anything breaks */
 const CURSE_PEEK_MS = 1500;
-/** How long he has to say sorry about it before the curse bursts through */
+/** How long he has to gloat about it before the curse bursts through */
 const CURSE_OOPS_MS = 2800;
 /** How long the curse's title card owns the screen */
 const CURSE_REVEAL_MS = 3200;
@@ -433,8 +433,8 @@ function endGameSoon(
 /**
  * Chessbot shows himself in his icon on the plain chess site and types what
  * he thinks of it into the move list. Then he leaves the card and peeks up
- * from the corner of the screen, the site breaks, he says sorry about the
- * noise, and the curse bursts through.
+ * from the corner of the screen, breaks the site while he cackles, gloats,
+ * and the curse bursts through.
  */
 function startCursedIntro(): void {
   const opening = useGameStore.getState().moveHistory[0]?.san ?? "e4";

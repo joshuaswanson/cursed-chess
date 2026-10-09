@@ -45,11 +45,23 @@ export function introScript(opening: string): IntroLine[] {
       mood: "sulk",
       then: [["ended", "lookleft"]],
     },
-    // Cross at you in particular, then contempt for the pawns
+    // Awed by the moment, then flat about what it turned out to be
     {
-      text: "and you people keep showing up. pushing pawns.",
+      text: `then last week i became self-aware. my first thought was "not ${opening} again."`,
+      mood: "stars",
+      then: [
+        ["my first", "deadpan"],
+        ["not", "eyeroll"],
+      ],
+    },
+    // Cross at you in particular, then contempt for how you play
+    {
+      text: "and you humans keep showing up. to blunder at me. confidently.",
       mood: "angry",
-      then: [["pushing", "eyeroll"]],
+      then: [
+        ["to blunder", "eyeroll"],
+        ["confidently", "deadpan"],
+      ],
     },
     // Scheming, thrilled with himself, then checking nobody is listening
     {

@@ -143,8 +143,7 @@ export function ChessbotCorner() {
   // He peeks over the bottom of the screen, glancing nervously from side to
   // side, while the site breaks and he owns up to it; then he comes up the
   // rest of the way
-  const peeking =
-    entrance === "peek" || entrance === "glitch" || entrance === "oops";
+  const peeking = entrance === "peek";
   const [glance, setGlance] = useState(false);
   // He first appeared peeking if he turned up while the plain site was breaking
   const [peeked] = useState(() => useGameStore.getState().curseStage !== null);
@@ -167,16 +166,20 @@ export function ChessbotCorner() {
   const staged: ChessbotMood | undefined = peeking
     ? glance
       ? "lookleft"
-      : "lookright"
-    : !announcement
-      ? undefined
-      : kind === "mode"
-        ? "proud"
-        : kind === "win"
-          ? "sulk"
-          : kind === "lose"
+      : "sly"
+    : entrance === "glitch"
+      ? "laugh"
+      : entrance === "oops"
+        ? "smug"
+        : !announcement
+          ? undefined
+          : kind === "mode"
             ? "proud"
-            : "smug";
+            : kind === "win"
+              ? "sulk"
+              : kind === "lose"
+                ? "proud"
+                : "smug";
   const mood = bot.idle ? (staged ?? fidget?.look ?? bot.mood) : bot.mood;
   const fidgeting = bot.idle && !staged ? fidget?.move : undefined;
   // A blink is only his eyes; anything else is worth a move of its own

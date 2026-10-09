@@ -24,9 +24,9 @@ export const VERDICTS = {
   draw: "a draw is a win for me. i checked.",
 } as const;
 
-/** What he says, peeking over the bottom of the screen, once the plain chess site has broken */
+/** What he says, pleased with himself, once he has broken the plain chess site */
 export const ENTRANCE = {
-  oops: "oops. that was supposed to be quieter.",
+  oops: "there. i fixed it. now we play my game.",
 } as const;
 
 /** What he says when a turn is missed, by whom and why; where there are several he takes them in turn */

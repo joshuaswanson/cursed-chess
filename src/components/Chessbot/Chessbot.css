@@ -68,7 +68,7 @@
   animation: chessbot-arrive 0.7s cubic-bezier(0.3, 1.5, 0.5, 1) both;
 }
 
-/* Peeking over the bottom of the screen while the site breaks, trembling a little */
+/* Peeking over the bottom of the screen before he breaks the site */
 .chessbot-corner.is-peeking {
   animation: chessbot-peek-up 0.8s 0.5s cubic-bezier(0.3, 1.3, 0.5, 1) both;
 }
@@ -82,7 +82,7 @@
 }
 
 .chessbot-hop.is-peek {
-  animation: chessbot-tremble 0.14s linear infinite;
+  animation: none;
 }
 
 @keyframes chessbot-peek-up {
