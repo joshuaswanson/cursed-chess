@@ -1,0 +1,209 @@
+/* --- Heist's backdrop: a gallery after closing --- */
+
+.museum {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* A panelled wall, darker toward the ceiling */
+.museum-wall {
+  position: absolute;
+  inset: 0 0 22% 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0 2px,
+      transparent 2px 11vw
+    ),
+    linear-gradient(180deg, #05070f, #111a33 70%, #1a2440);
+}
+
+/* Pictures in gilt frames, too dim to make out */
+.museum-picture {
+  position: absolute;
+  border: 0.55vw solid #9a7a2c;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 0 0 2px #5a4310,
+    0 0.5vw 0 rgba(0, 0, 0, 0.45),
+    0 0 1.6vw rgba(245, 197, 66, 0.12);
+}
+
+.museum-picture.is-portrait {
+  background:
+    radial-gradient(ellipse 34% 26% at 50% 36%, #5b4a3c 60%, transparent 62%),
+    radial-gradient(ellipse 60% 40% at 50% 92%, #2c2638 60%, transparent 62%),
+    linear-gradient(180deg, #1b2236, #0e1322);
+}
+
+.museum-picture.is-landscape {
+  background:
+    radial-gradient(ellipse 16% 22% at 72% 30%, #d8c98a 60%, transparent 64%),
+    linear-gradient(180deg, #223052 0 55%, #1c2a1e 55%);
+}
+
+/* A fluted column either side of the hall */
+.museum-column {
+  position: absolute;
+  top: 0;
+  bottom: 18%;
+  width: 4.5vw;
+  background: repeating-linear-gradient(
+    90deg,
+    #1d2742 0 14%,
+    #34436a 14% 28%,
+    #1d2742 28% 33.3%
+  );
+  box-shadow:
+    0 0 0 0.25vw #0a0f1e,
+    0 -1px 0 1.2vw #0a0f1e inset;
+}
+
+.museum-column-left {
+  left: 25%;
+}
+
+.museum-column-right {
+  right: 25%;
+}
+
+/* Searchlight beams swinging down from the ceiling */
+.museum-beam {
+  position: absolute;
+  top: -6%;
+  width: 26vw;
+  height: 120%;
+  transform-origin: 50% 0;
+  background: linear-gradient(
+    180deg,
+    rgba(210, 230, 255, 0.34),
+    rgba(210, 230, 255, 0.05) 70%,
+    transparent
+  );
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+  mix-blend-mode: screen;
+  animation: museum-sweep 9s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.museum-beam-a {
+  left: -2%;
+  --from: -8deg;
+  --to: 30deg;
+}
+
+.museum-beam-b {
+  left: 37%;
+  --from: -26deg;
+  --to: 26deg;
+  animation-duration: 12s;
+  animation-delay: -4s;
+}
+
+.museum-beam-c {
+  right: -2%;
+  --from: -30deg;
+  --to: 8deg;
+  animation-duration: 10s;
+  animation-delay: -7s;
+}
+
+@keyframes museum-sweep {
+  from {
+    rotate: var(--from);
+  }
+  to {
+    rotate: var(--to);
+  }
+}
+
+/* Polished stone, catching a little of the light */
+.museum-floor {
+  position: absolute;
+  inset: 78% 0 0 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0 1px,
+      transparent 1px 9vw
+    ),
+    linear-gradient(180deg, #2a3350, #0b1020);
+  box-shadow: 0 -0.4vw 0 #0a0f1e;
+}
+
+/* Velvet rope slung between brass posts along the front */
+.museum-rope {
+  position: absolute;
+  inset: 80% 0 auto 0;
+  height: 7%;
+  background:
+    radial-gradient(
+        ellipse 50% 100% at 50% 0,
+        transparent 62%,
+        #8a1730 64% 74%,
+        transparent 76%
+      )
+      0 0 / 14vw 100% repeat-x,
+    linear-gradient(90deg, #c9a44a 0 0.6vw, transparent 0.6vw) 0 0 / 14vw 100%
+      repeat-x;
+  opacity: 0.85;
+}
+
+/* The alarm lamps, dark until somebody lifts the jewel */
+.museum-lamp {
+  position: absolute;
+  top: 5%;
+  width: 3.2vw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #3a0d12;
+  border: 0.3vw solid #0a0f1e;
+}
+
+.museum-lamp-left {
+  left: 31%;
+}
+
+.museum-lamp-right {
+  right: 31%;
+}
+
+.museum.is-alarmed .museum-lamp {
+  animation: museum-alarm 0.7s steps(1) infinite;
+}
+
+.museum.is-alarmed .museum-lamp-right {
+  animation-delay: -0.35s;
+}
+
+@keyframes museum-alarm {
+  0% {
+    background: #ff2a3a;
+    box-shadow:
+      0 0 3vw 1.2vw rgba(255, 40, 55, 0.8),
+      0 0 12vw 5vw rgba(255, 40, 55, 0.3);
+  }
+  50% {
+    background: #3a0d12;
+    box-shadow: none;
+  }
+}
+
+/* The beams go red and swing faster with the alarm up */
+.museum.is-alarmed .museum-beam {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 90, 90, 0.4),
+    rgba(255, 60, 60, 0.07) 70%,
+    transparent
+  );
+  animation-duration: 3.6s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .museum-beam,
+  .museum.is-alarmed .museum-lamp {
+    animation: none;
+  }
+}

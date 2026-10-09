@@ -8,6 +8,7 @@ import { Stands } from "./Stands";
 import { TugField } from "./TugField";
 import { Graveyard } from "./Graveyard";
 import { MudField } from "./MudField";
+import { Museum } from "./Museum";
 import "./Backdrop.css";
 
 /** How long the spirals take to slow, stop, and wind up the other way */
@@ -160,6 +161,8 @@ function Scene({ theme }: { theme: ThemeId }) {
       return <MudField />;
     case "tug":
       return <TugField />;
+    case "heist":
+      return <Museum />;
     case "stratego":
       return <BattleLand />;
     default:

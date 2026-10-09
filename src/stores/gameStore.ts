@@ -21,6 +21,7 @@ import { MinefieldPlugin } from "../plugins/minefield";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { LanternsPlugin } from "../plugins/lanterns";
+import { HeistPlugin } from "../plugins/heist";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
 import { TugOfWarPlugin } from "../plugins/tugOfWar";
@@ -183,6 +184,12 @@ export const GAME_MODES: GameMode[] = [
     name: "LANTERNS",
     theme: "lanterns",
     create: () => [new LanternsPlugin()],
+  },
+  {
+    name: "HEIST",
+    theme: "heist",
+    create: () => [new HeistPlugin()],
+    untilWon: true,
   },
   {
     name: "ZOMBIES",
@@ -664,6 +671,7 @@ function modeSquareBonus(
   const football = pluginManager.find<FootballPlugin>("football");
   const tug = pluginManager.find<TugOfWarPlugin>("tug-of-war");
   const zombies = pluginManager.find<ZombiesPlugin>("zombies");
+  const heist = pluginManager.find<HeistPlugin>("heist");
   return (square, piece, from) => {
     const classes = pluginManager
       .getSquareModifiers(square)
@@ -679,6 +687,7 @@ function modeSquareBonus(
     if (football) bonus += football.squareBonus(board, square, piece, from);
     if (tug) bonus += tug.squareBonus(square, piece);
     if (zombies) bonus += zombies.squareBonus(square, piece);
+    if (heist) bonus += heist.squareBonus(square, piece, from);
     return bonus;
   };
 }

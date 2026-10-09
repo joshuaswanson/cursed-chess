@@ -13,7 +13,8 @@ export type ThemeId =
   | "tug"
   | "zombies"
   | "trenches"
-  | "lanterns";
+  | "lanterns"
+  | "heist";
 
 /** Which animated scene sits behind the board */
 export type BackdropKind = ThemeId;
@@ -259,6 +260,21 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#c9b892",
     dark: "#7a6648",
     text: "#f3e6c8",
+  },
+  heist: {
+    id: "heist",
+    title: "Heist",
+    tagline:
+      "Grab the jewel and carry it home to your own first two rows. Whoever holds it can only creep one square at a time.",
+    catchphrase: "Steal the jewel!",
+    sky: ["#05070f", "#0c1428", "#1b2440"],
+    accent: "#f5c542",
+    accent2: "#e2304a",
+    ink: "#05070f",
+    frame: "#4a3516",
+    light: "#e8e2d2",
+    dark: "#7f8b9b",
+    text: "#f1ead6",
   },
 };
 

@@ -64,6 +64,11 @@ export const PIECE_PALETTES: Partial<
     light: ["#fff6dc", "#f0d79a", "#b98f4a"],
     dark: ["#8f86c9", "#3b3378", "#141033"],
   },
+  // The museum's guards in ivory and brass against burglars dressed for the dark
+  heist: {
+    light: ["#fbf3dc", "#e6cf98", "#a8843e"],
+    dark: ["#7f8ea6", "#333f55", "#0d131d"],
+  },
   stratego: {
     light: ["#e9f0ff", "#86a6e2", "#2b569c"],
     dark: ["#ffb4ab", "#d1352e", "#560e0a"],

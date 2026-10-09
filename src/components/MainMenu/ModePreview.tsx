@@ -9,6 +9,7 @@ import {
 } from "../../utils/pieceImages";
 import { SoccerBall } from "../Board/Football";
 import { LanternIcon } from "../Board/Lanterns";
+import { Jewel } from "../Board/Heist";
 import { Chessbot } from "../Chessbot/Chessbot";
 import { MineBlast } from "../Board/MineBlast";
 import { Portal } from "../Board/Portal";
@@ -353,6 +354,19 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
         <Piece is="wP" x={27} y={65} size={72}>
           <LanternIcon count={1} />
         </Piece>
+      </span>
+    </>
+  ),
+  // Searchlights cross a dark hall while a pawn creeps up on the jewel
+  heist: (
+    <>
+      <Piece is="bP" x={20} y={62} size={24} className="pv-thief" />
+      <span className="pv-gloom" />
+      <span className="pv-searchlight pv-searchlight-a" />
+      <span className="pv-searchlight pv-searchlight-b" />
+      {/* The jewel shines through the dark by itself */}
+      <span className="pv-loot">
+        <Jewel />
       </span>
     </>
   ),

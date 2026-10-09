@@ -12,6 +12,7 @@ import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
 import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
 import { LanternDark, LanternIcon } from "./Lanterns";
+import { HeistLights, HeistLoot } from "./Heist";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
@@ -702,6 +703,9 @@ export function Board() {
           {minesArmed.has(sq) && <span className="mine-pop" aria-hidden />}
           {passChance !== undefined && <PassMarker chance={passChance} />}
           {lanternsHeld > 0 && <LanternIcon count={lanternsHeld} />}
+          {overlays.heist?.sq === sq && (
+            <HeistLoot held={overlays.heist.carrier !== null} />
+          )}
           {fall && piece && (
             <span
               key={`dust-${gravityShift?.id}`}
@@ -878,6 +882,13 @@ export function Board() {
             />
           )}
           {football && <Pitch />}
+          {overlays.heist && (
+            <HeistLights
+              view={overlays.heist}
+              flipped={flipped}
+              squareSize={squareSize}
+            />
+          )}
           {overlays.lanterns && (
             <LanternDark
               lanterns={overlays.lanterns}

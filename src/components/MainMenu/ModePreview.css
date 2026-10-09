@@ -2002,3 +2002,89 @@
     left: 57%;
   }
 }
+
+/* --- Heist --- */
+
+/* The jewel in the middle of the hall */
+.scene-heist .pv-loot {
+  left: 50%;
+  top: 50%;
+  width: 20%;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+}
+
+.scene-heist .pv-loot .heist-jewel {
+  width: 100%;
+}
+
+/* A burglar creeps up on it, stops dead when the light comes near, and goes on */
+.scene-heist .pv-thief {
+  animation: pv-thief 6s ease-in-out infinite;
+}
+
+@keyframes pv-thief {
+  0% {
+    left: 12%;
+  }
+  22%,
+  40% {
+    left: 22%;
+  }
+  62%,
+  78% {
+    left: 32%;
+  }
+  92%,
+  100% {
+    left: 40%;
+  }
+}
+
+/* The dark of the hall, and the lights crossing it */
+.scene-heist .pv-gloom {
+  inset: 0;
+  background: rgba(5, 8, 20, 0.55);
+}
+
+.scene-heist .pv-searchlight {
+  width: 34%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    rgba(225, 240, 255, 0.6),
+    rgba(225, 240, 255, 0.22) 45%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+  animation: pv-searchlight-a 5s ease-in-out infinite alternate;
+}
+
+.scene-heist .pv-searchlight-b {
+  animation-name: pv-searchlight-b;
+  animation-duration: 6.5s;
+}
+
+@keyframes pv-searchlight-a {
+  from {
+    left: 10%;
+    top: 26%;
+  }
+  to {
+    left: 88%;
+    top: 70%;
+  }
+}
+
+@keyframes pv-searchlight-b {
+  from {
+    left: 86%;
+    top: 22%;
+  }
+  to {
+    left: 16%;
+    top: 78%;
+  }
+}
