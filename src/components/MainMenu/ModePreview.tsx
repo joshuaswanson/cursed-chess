@@ -3,7 +3,6 @@ import type { CSSProperties, ReactNode } from "react";
 import type { ThemeId } from "../../theme/themes";
 import { PieceType } from "../../engine";
 import { zombieImage } from "../../utils/pieceImages";
-import { ROPE_TILE } from "../Board/ropeTexture";
 import { SoccerBall } from "../Board/Football";
 import { MineBlast } from "../Board/MineBlast";
 import { Portal } from "../Board/Portal";
@@ -312,10 +311,7 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
         <Piece is="bN" x={72} y={48} size={24} />
         <Piece is="bP" x={88} y={50} size={22} />
       </span>
-      <span
-        className="pv-rope"
-        style={{ "--rope": ROPE_TILE } as CSSProperties}
-      />
+      <span className="pv-rope" />
       <span className="pv-flag" />
     </>
   ),

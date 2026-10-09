@@ -360,17 +360,15 @@
   animation-name: pv-lean-far;
 }
 
-/* The game's own rope, which is drawn running down the page, laid on its side and running off both edges */
+/* A plain twisted rope running off both edges, which goes thin under strain */
 .pv-rope {
-  left: 50%;
-  top: 62%;
-  width: 3.4%;
-  height: 280%;
-  translate: -50% -50%;
-  rotate: 90deg;
-  background: var(--rope) 0 0 / 100% auto repeat-y;
-  filter: drop-shadow(2px 0 0 rgba(0, 0, 0, 0.35));
-  /* Thinnest at the moment both teams are leaning back hardest */
+  left: -6%;
+  right: -6%;
+  top: 59.5%;
+  height: 5%;
+  border-radius: 99px;
+  background: repeating-linear-gradient(115deg, #d9b77a 0 5px, #a67c43 0 10px);
+  box-shadow: 0 0 0 2px var(--plum-ink);
   animation: pv-taut 4s ease-in-out infinite;
 }
 
@@ -436,18 +434,18 @@
 @keyframes pv-taut {
   0%,
   100% {
-    scale: 1.2 1;
+    scale: 1 1.1;
   }
   15%,
   30% {
-    scale: 0.85 1;
+    scale: 1 0.95;
   }
   45%,
   58% {
-    scale: 0.4 1;
+    scale: 1 0.72;
   }
   72% {
-    scale: 0.9 1;
+    scale: 1 0.95;
   }
   86% {
     scale: 1 1;
