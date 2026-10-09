@@ -10,13 +10,13 @@ import "./RallyPanel.css";
 const MAX_ELIXIR = 10;
 const FOE_HAND_SIZE = 4;
 
-const DEPLOYABLE: { type: PieceType; label: string }[] = [
-  { type: PieceType.Pawn, label: "Pawn" },
-  { type: PieceType.Knight, label: "Knight" },
-  { type: PieceType.Bishop, label: "Bishop" },
-  { type: PieceType.Rook, label: "Rook" },
-  { type: PieceType.Queen, label: "Queen" },
-];
+const CARD_LABEL: Partial<Record<PieceType, string>> = {
+  [PieceType.Pawn]: "Pawn",
+  [PieceType.Knight]: "Knight",
+  [PieceType.Bishop]: "Bishop",
+  [PieceType.Rook]: "Rook",
+  [PieceType.Queen]: "Queen",
+};
 
 /** Pointer travel that turns a press on a card into a drag */
 const DRAG_THRESHOLD_PX = 6;
@@ -104,6 +104,7 @@ export function FoeRallyBar() {
 export function YourRallyBar() {
   const rally = useRallyPlugin();
   const selected = useGameStore((s) => s.deployPieceType);
+  const hand = useGameStore((s) => s.clashHand);
   const { deployPiece, setDeployPieceType } = useGameStore.getState();
   const [drag, setDrag] = useState<DeployDrag | null>(null);
 
@@ -174,16 +175,31 @@ export function YourRallyBar() {
       aria-label="Your reinforcements"
     >
       <ElixirMeter amount={elixir} side="you" />
+      {/* The card that comes into your hand when you play one */}
+      <div className="deploy-next" aria-label="Next card">
+        <span className="deploy-next-label">Next</span>
+        <div className="deploy-card deploy-next-card" key={hand.next}>
+          <img
+            src={pieceImage({ type: hand.next, color: Color.White })}
+            alt={CARD_LABEL[hand.next]}
+            draggable={false}
+          />
+          <span className="deploy-cost">{PIECE_COST[hand.next]}</span>
+        </div>
+      </div>
       <div className={`deploy-hand${elixir >= MAX_ELIXIR ? " eager" : ""}`}>
-        {DEPLOYABLE.map(({ type, label }) => {
+        {hand.slots.map((type, slot) => {
+          const label = CARD_LABEL[type] ?? "";
           const img = pieceImage({ type, color: Color.White });
           const cost = PIECE_COST[type];
           const canAfford = elixir >= cost;
           return (
             <div
-              key={type}
+              // A newly dealt card is a new element, so it comes in afresh
+              key={`${slot}-${hand.dealt[slot]}`}
               title={`Click or drag onto your half to deploy a ${label.toLowerCase()} for ${cost} elixir`}
-              className={`deploy-card${canAfford ? "" : " disabled"}${selected === type ? " selected" : ""}${drag?.moved && drag.type === type ? " lifted" : ""}`}
+              className={`deploy-card${hand.dealt[slot] > 0 ? " dealt" : ""}${canAfford ? "" : " disabled"}${selected === type ? " selected" : ""}${drag?.moved && drag.type === type ? " lifted" : ""}`}
+              style={{ "--slot": slot } as React.CSSProperties}
               aria-pressed={selected === type}
               onPointerDown={(e) => {
                 if (!canAfford) return;

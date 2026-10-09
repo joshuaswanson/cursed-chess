@@ -273,6 +273,8 @@ export interface GameStore {
   corruption: number;
 
   deployPieceType: PieceType | null;
+  /** Your cards in Clash Royale */
+  clashHand: ClashHand;
   /** Bumped every autonomous tick, since plugins change resources and the board in place */
   autonomousTick: number;
   /** The current mode's title cards have cleared */
@@ -362,6 +364,40 @@ export interface GameStore {
   startSingle: (index: number) => void;
 }
 
+/**
+ * Your cards in Clash Royale: the four in your hand, and the one waiting to
+ * take the place of whichever you play, which then goes to the back to wait
+ * in its turn
+ */
+export interface ClashHand {
+  slots: PieceType[];
+  next: PieceType;
+  /** How many cards have been dealt into each slot, so a new one can be seen arriving */
+  dealt: number[];
+}
+
+const CLASH_DECK = [
+  PieceType.Pawn,
+  PieceType.Knight,
+  PieceType.Bishop,
+  PieceType.Rook,
+  PieceType.Queen,
+];
+const CLASH_HAND_SIZE = 4;
+
+function dealClashHand(): ClashHand {
+  const deck = [...CLASH_DECK];
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return {
+    slots: deck.slice(0, CLASH_HAND_SIZE),
+    next: deck[CLASH_HAND_SIZE],
+    dealt: Array(CLASH_HAND_SIZE).fill(0),
+  };
+}
+
 /** How many moves had been played when the current mode began */
 let modeStartPly = 0;
 
@@ -399,6 +435,7 @@ const FRESH_BOARD = {
   lastPortalMove: null,
   promotionPending: null,
   deployPieceType: null,
+  clashHand: dealClashHand(),
 } satisfies Partial<GameStore>;
 
 const FRESH_CLOCKS = {
@@ -1071,7 +1108,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!rally.deploy(game.board, square, deployPieceType, Color.White)) {
       return false;
     }
-    set({ deployPieceType: null });
+    // The card played goes to the back, and the one waiting takes its place
+    const { slots, next, dealt } = get().clashHand;
+    const played = slots.indexOf(deployPieceType);
+    set({
+      deployPieceType: null,
+      clashHand:
+        played < 0
+          ? get().clashHand
+          : {
+              slots: slots.map((card, i) => (i === played ? next : card)),
+              next: deployPieceType,
+              dealt: dealt.map((n, i) => (i === played ? n + 1 : n)),
+            },
+    });
     return true;
   },
 
@@ -1336,6 +1386,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       lastPortalMove: null,
       promotionPending: null,
       deployPieceType: null,
+      clashHand: dealClashHand(),
       reinforcements: [],
       ...FRESH_CLOCKS,
     });
