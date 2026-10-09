@@ -79,6 +79,9 @@ export const QUIPS = {
   checked: ["that's not check. that's a bug.", "who taught you that?"],
 } as const;
 
+/** What he says whenever you take a piece by going through a portal */
+export const PORTAL_CAPTURE = "now you're thinking in portals.";
+
 /**
  * A line as it reads in his speech bubble: each sentence starting with a
  * capital, and himself as "I". In the terminal he types all in lower case.

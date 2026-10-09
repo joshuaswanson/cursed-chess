@@ -2,8 +2,16 @@ import { useEffect, useState } from "react";
 import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { Chessbot } from "./Chessbot";
 import type { ChessbotMood } from "./Chessbot";
-import { Color, GameStatus } from "../../engine";
-import { ENTRANCE, PITCHES, QUIPS, SKIPS, VERDICTS, spoken } from "./lines";
+import { Color, GameStatus, MoveFlag } from "../../engine";
+import {
+  ENTRANCE,
+  PITCHES,
+  PORTAL_CAPTURE,
+  QUIPS,
+  SKIPS,
+  VERDICTS,
+  spoken,
+} from "./lines";
 import { useChessbot } from "./useChessbot";
 
 interface Fidget {
@@ -110,6 +118,18 @@ function useQuip(): string | undefined {
     };
     muse();
     const stop = useGameStore.subscribe((now, before) => {
+      // Taking a piece through a portal always gets the same nod
+      if (now.moveHistory.length > before.moveHistory.length) {
+        const { move } = now.moveHistory[now.moveHistory.length - 1];
+        if (
+          move.piece.color === Color.White &&
+          move.captured &&
+          move.flags & MoveFlag.Portal
+        ) {
+          say(PORTAL_CAPTURE);
+          return;
+        }
+      }
       if (Math.random() > QUIP_CHANCE) return;
       const checked =
         now.status === GameStatus.Check &&
