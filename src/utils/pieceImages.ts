@@ -2,21 +2,27 @@ import { Color } from "../engine";
 import type { Piece } from "../engine";
 import { useGameStore, GAME_MODES } from "../stores/gameStore";
 import { PIECE_PALETTES } from "../theme/piecePalettes";
+import type { ThemeId } from "../theme/themes";
 
 const PARTY = `${import.meta.env.BASE_URL}pieces/party/`;
 const KINDS = ["P", "N", "B", "R", "Q", "K"];
 
 /** The party pieces' artwork, loaded once so each mode can recolor it on the spot */
 const artwork = new Map<string, string>();
+const loading: Promise<unknown>[] = [];
 for (const color of ["w", "b"]) {
   for (const kind of KINDS) {
     const name = `${color}${kind}`;
-    fetch(`${PARTY}${name}.svg`)
-      .then((r) => r.text())
-      .then((svg) => artwork.set(name, svg))
-      .catch(() => {});
+    loading.push(
+      fetch(`${PARTY}${name}.svg`)
+        .then((r) => r.text())
+        .then((svg) => artwork.set(name, svg))
+        .catch(() => {}),
+    );
   }
 }
+/** Settles once the artwork is in, after which a piece can be had in any mode's colors */
+export const artworkLoaded = Promise.all(loading);
 
 const recolored = new Map<string, string>();
 
@@ -87,6 +93,12 @@ export function pieceImage(piece: Piece): string {
   const palette = theme ? PIECE_PALETTES[theme] : undefined;
   const body = palette?.[piece.color === Color.White ? "light" : "dark"];
   return (body && themed(name, theme!, body)) || `${PARTY}${name}.svg`;
+}
+
+/** A party piece in the colors a mode gives it, named as in the artwork's files: wN, bQ */
+export function themedPieceImage(name: string, theme: ThemeId): string {
+  const body = PIECE_PALETTES[theme]?.[name.startsWith("w") ? "light" : "dark"];
+  return (body && themed(name, theme, body)) || `${PARTY}${name}.svg`;
 }
 
 /** The sickly green the undead turn, whatever army they came from, palest where the light falls */

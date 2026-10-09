@@ -1,8 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { ThemeId } from "../../theme/themes";
 import { PieceType } from "../../engine";
-import { zombieImage } from "../../utils/pieceImages";
+import {
+  artworkLoaded,
+  themedPieceImage,
+  zombieImage,
+} from "../../utils/pieceImages";
 import { SoccerBall } from "../Board/Football";
 import { LanternIcon } from "../Board/Lanterns";
 import { Chessbot } from "../Chessbot/Chessbot";
@@ -11,7 +15,8 @@ import { Portal } from "../Board/Portal";
 import { Tombstone } from "../Board/Zombies";
 import "./ModePreview.css";
 
-const PIECES = `${import.meta.env.BASE_URL}pieces/party/`;
+/** The mode a scene belongs to, so its pieces come in that mode's colours */
+const SceneTheme = createContext<ThemeId | null>(null);
 
 /** A piece standing in a scene, placed by its middle in percent of the scene */
 function Piece({
@@ -35,12 +40,13 @@ function Piece({
   style?: CSSProperties;
   children?: ReactNode;
 }) {
+  const theme = useContext(SceneTheme) ?? "opening";
   return (
     <span
       className={`pv-piece ${className}`}
       style={{ left: `${x}%`, top: `${y}%`, width: `${size}%`, ...style }}
     >
-      <img src={src ?? `${PIECES}${is}.svg`} alt="" draggable={false} />
+      <img src={src ?? themedPieceImage(is, theme)} alt="" draggable={false} />
       {children}
     </span>
   );
@@ -343,7 +349,8 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <Piece is="bN" x={70} y={46} className="pv-lurker" />
       <span className="pv-dark" />
       <span className="pv-lamplight">
-        <Piece is="wP" x={50} y={52} size={72}>
+        {/* Set down and to the left, so the lantern it carries is at the middle of the light */}
+        <Piece is="wP" x={27} y={65} size={72}>
           <LanternIcon count={1} />
         </Piece>
       </span>
@@ -523,9 +530,18 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
 
 /** A mode's little scene, in its own colours */
 export function ModePreview({ theme }: { theme: ThemeId }) {
+  // The pieces are recoloured from artwork that may still be on its way
+  const [, setLoaded] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    void artworkLoaded.then(() => mounted && setLoaded(true));
+    return () => {
+      mounted = false;
+    };
+  }, []);
   return (
     <span className={`mode-preview scene-${theme}`} aria-hidden>
-      {SCENES[theme]}
+      <SceneTheme.Provider value={theme}>{SCENES[theme]}</SceneTheme.Provider>
     </span>
   );
 }
