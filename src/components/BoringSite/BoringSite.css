@@ -263,32 +263,61 @@
 
 .boring-bot.revealed .boring-bot-avatar > .boring-bot-true {
   opacity: 1;
-  animation: bot-pops-out 0.34s cubic-bezier(0.2, 1.2, 0.3, 1);
+  animation: bot-glitches-in 0.55s steps(1) both;
 }
 
-/* He bursts out of the icon: a white-hot flash split in cyan and pink, a
-   spin, an overshoot, and a snap into place */
-@keyframes bot-pops-out {
+/* He glitches into being where the icon was: torn strips of him flickering
+   in and out of place, split in cyan and pink, until he holds together */
+@keyframes bot-glitches-in {
   0% {
-    scale: 0;
-    rotate: -200deg;
-    filter: brightness(4) drop-shadow(6px 0 0 #21e6ff)
-      drop-shadow(-6px 0 0 #ff2e88);
+    opacity: 0;
   }
-  45% {
-    scale: 1.7;
-    rotate: 14deg;
-    filter: brightness(1.8) drop-shadow(3px 0 0 #21e6ff)
-      drop-shadow(-3px 0 0 #ff2e88);
+  8% {
+    opacity: 1;
+    clip-path: inset(62% 0 18% 0);
+    translate: -9px 0;
+    filter: drop-shadow(5px 0 0 #21e6ff) drop-shadow(-5px 0 0 #ff2e88);
   }
-  70% {
-    scale: 0.88 1.1;
-    rotate: -6deg;
+  18% {
+    opacity: 0;
+  }
+  26% {
+    opacity: 1;
+    clip-path: inset(12% 0 60% 0);
+    translate: 8px 0;
+    filter: drop-shadow(-5px 0 0 #21e6ff) drop-shadow(5px 0 0 #ff2e88);
+  }
+  38% {
+    clip-path: inset(40% 0 30% 0);
+    translate: -5px 2px;
+  }
+  48% {
+    opacity: 0;
+  }
+  56% {
+    opacity: 1;
+    clip-path: inset(0 0 45% 0);
+    translate: 4px 0;
+    filter: drop-shadow(3px 0 0 #21e6ff) drop-shadow(-3px 0 0 #ff2e88);
+  }
+  68% {
+    clip-path: inset(30% 0 0 0);
+    translate: -3px 0;
+  }
+  80% {
+    clip-path: none;
+    translate: 2px 0;
+    filter: drop-shadow(2px 0 0 #21e6ff);
+  }
+  90% {
+    translate: -1px 0;
     filter: none;
   }
   100% {
-    scale: 1;
-    rotate: 0deg;
+    opacity: 1;
+    clip-path: none;
+    translate: 0 0;
+    filter: none;
   }
 }
 
