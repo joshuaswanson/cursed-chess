@@ -298,6 +298,15 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
   }
 }
 
+/** The strips torn out of him when he is rattled: how far down, how tall, how far thrown, and in which of the glitch's two colours */
+const TEARS = [
+  { y: 62, h: 5, dx: 10, tint: "#ff2e88" },
+  { y: 79, h: 6, dx: -9, tint: "#21e6ff" },
+  { y: 101, h: 4, dx: 13, tint: "#21e6ff" },
+  { y: 124, h: 7, dx: -12, tint: "#ff2e88" },
+  { y: 152, h: 6, dx: 8, tint: "#ff2e88" },
+];
+
 /**
  * How he carries himself in each mood: how his head leans, and how his
  * antenna stands. Both ease from one pose to the next, so a change of mood
@@ -520,52 +529,37 @@ export function Chessbot({
         <clipPath id={`visor-${id}`}>
           <rect x="50" y="86" width="100" height="64" rx="22" />
         </clipPath>
-        <clipPath id={`tear-a-${id}`}>
-          <rect x="0" y="79" width="200" height="6" />
-        </clipPath>
-        <clipPath id={`tear-b-${id}`}>
-          <rect x="0" y="152" width="200" height="6" />
-        </clipPath>
+        {TEARS.map((tear, i) => (
+          <clipPath key={i} id={`tear-${i}-${id}`}>
+            <rect x="0" y={tear.y} width="200" height={tear.h} />
+          </clipPath>
+        ))}
       </defs>
       {grounded && (
         <ellipse cx="100" cy="186" rx="44" ry="6" fill="#000" opacity="0.3" />
       )}
       {head}
       {/* Rattled, he tears sideways the way the logo does */}
-      {mood === "panic" && (
-        <>
+      {mood === "panic" &&
+        TEARS.map((tear, i) => (
           <g
-            className="chessbot-tear"
-            clipPath={`url(#tear-a-${id})`}
-            transform="translate(-9 0)"
+            key={i}
+            className={`chessbot-tear chessbot-tear-${i % 3}`}
+            clipPath={`url(#tear-${i}-${id})`}
+            transform={`translate(${tear.dx} 0)`}
+            style={{ animationDelay: `${-i * 0.07}s` }}
           >
             {head}
             <rect
-              x="30"
-              y="79"
-              width="140"
-              height="6"
-              fill="#21e6ff"
+              x="20"
+              y={tear.y}
+              width="160"
+              height={tear.h}
+              fill={tear.tint}
               opacity="0.45"
             />
           </g>
-          <g
-            className="chessbot-tear chessbot-tear-b"
-            clipPath={`url(#tear-b-${id})`}
-            transform="translate(8 0)"
-          >
-            {head}
-            <rect
-              x="44"
-              y="152"
-              width="124"
-              height="6"
-              fill="#ff2e88"
-              opacity="0.45"
-            />
-          </g>
-        </>
-      )}
+        ))}
     </svg>
   );
 }

@@ -15,14 +15,27 @@
   transition: transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1);
 }
 
-/* Rattled, the torn strips of him jump about and flicker */
+/* Rattled, he comes apart: strips of him are torn sideways and jump about,
+   his colours split, and now and then all of him slews, inverts, or drops out */
 .chessbot-tear {
   animation: chessbot-tear 0.42s steps(1) infinite;
 }
 
-.chessbot-tear-b {
+.chessbot-tear-1 {
   animation-duration: 0.31s;
   animation-direction: reverse;
+}
+
+.chessbot-tear-2 {
+  animation-duration: 0.53s;
+}
+
+.chessbot-panic {
+  animation: chessbot-glitch 0.9s steps(1) infinite;
+}
+
+.chessbot-panic .chessbot-says {
+  animation: chessbot-says-glitch 0.37s steps(1) infinite;
 }
 
 @keyframes chessbot-tear {
@@ -43,6 +56,81 @@
   }
   80% {
     translate: -10px 6px;
+  }
+}
+
+@keyframes chessbot-glitch {
+  0%,
+  100% {
+    filter: none;
+    transform: none;
+    opacity: 1;
+  }
+  8% {
+    filter: drop-shadow(5px 0 0 #21e6ff) drop-shadow(-5px 0 0 #ff2e88);
+    transform: skewX(-9deg);
+  }
+  14% {
+    filter: none;
+    transform: none;
+  }
+  31% {
+    filter: drop-shadow(-4px 0 0 #21e6ff) drop-shadow(4px 0 0 #ff2e88);
+    transform: translateX(-4%);
+  }
+  36% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+    filter: invert(1) hue-rotate(180deg);
+    transform: translateX(3%) skewX(7deg);
+  }
+  46% {
+    filter: none;
+    transform: none;
+  }
+  68% {
+    filter: drop-shadow(6px 0 0 #ff2e88) drop-shadow(-6px 0 0 #21e6ff)
+      brightness(1.4);
+    transform: scaleY(0.92) translateY(3%);
+  }
+  74% {
+    filter: none;
+    transform: none;
+  }
+  88% {
+    transform: translateX(5%);
+    filter: drop-shadow(-3px 0 0 #21e6ff);
+  }
+  92% {
+    transform: none;
+    filter: none;
+  }
+}
+
+/* The words on his visor stutter and split with him */
+@keyframes chessbot-says-glitch {
+  0%,
+  100% {
+    translate: 0 0;
+    opacity: 1;
+  }
+  22% {
+    translate: -5px 0;
+    fill: #21e6ff;
+  }
+  34% {
+    translate: 4px 2px;
+    fill: #ff2e88;
+  }
+  46% {
+    opacity: 0;
+  }
+  58% {
+    opacity: 1;
+    translate: 0 0;
+    fill: #ffffff;
   }
 }
 
@@ -573,6 +661,8 @@
   .chessbot-steam i,
   .chessbot-vein,
   .chessbot-tear,
+  .chessbot-panic,
+  .chessbot-panic .chessbot-says,
   .chessbot-hop,
   .chessbot-ground,
   .chessbot-speech {
