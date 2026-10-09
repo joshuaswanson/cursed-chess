@@ -35,16 +35,8 @@
 
 /* ===== The curse, part one: the plain site glitches ===== */
 
-/* Before it breaks, the plain site is only a little off: now and then
-   everything twitches sideways for an instant, more often as he loses patience */
-.app.unease-1 {
-  --twitch: 3s;
-}
-
-.app.unease-2 {
-  --twitch: 1.3s;
-}
-
+/* Before it breaks, the plain site only glitches once: a burst of jolts
+   right after your first move */
 /* The moment after your first move: everything jolts hard, over and over */
 .app.unease-burst {
   --twitch: 0.34s;
