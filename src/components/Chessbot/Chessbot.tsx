@@ -257,8 +257,14 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
     case "love":
       return (
         <g fill="#ff5fa8" filter={glow}>
-          <path d="M74 104 C56 92 62 78 74 87 C86 78 92 92 74 104 Z" />
-          <path d="M126 104 C108 92 114 78 126 87 C138 78 144 92 126 104 Z" />
+          <path
+            d="M74 104 C56 92 62 78 74 87 C86 78 92 92 74 104 Z"
+            transform="translate(72 92) scale(1.45) translate(-74 -92)"
+          />
+          <path
+            d="M126 104 C108 92 114 78 126 87 C138 78 144 92 126 104 Z"
+            transform="translate(128 92) scale(1.45) translate(-126 -92)"
+          />
         </g>
       );
     case "stars":
@@ -292,8 +298,8 @@ function Face({ mood, glow }: { mood: ChessbotMood; glow: string }) {
   }
 }
 
-/** How he carries himself in each mood: his lean, and where his antenna ends up */
-const UPRIGHT = { lean: "", tip: { x: 124, y: 28 }, bend: "112 40" };
+/** How he carries himself in each mood: his lean, and where his antenna ends up. It stands straight unless a mood bends it. */
+const UPRIGHT = { lean: "", tip: { x: 100, y: 27 }, bend: "100 40" };
 /** His usual smug tilt, kept through a blink or a wink so his head never jumps */
 const LEANING = { ...UPRIGHT, lean: "rotate(6 100 170)" };
 const POSE: Record<

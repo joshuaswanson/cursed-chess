@@ -117,7 +117,7 @@ function ComputerCard() {
   const plies = useGameStore((s) => s.moveHistory.length);
   const stage = useGameStore((s) => s.curseStage);
   const revealed = stage === "hello";
-  const gone = stage === "glitch" || stage === "boom";
+  const gone = stage !== null && stage !== "hello";
   const slipping = stage === null ? Math.min(2, plies) : 0;
   const mood = useSpeechMood(revealed);
   return (

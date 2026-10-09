@@ -15,6 +15,7 @@ export interface IntroLine {
  */
 export function introScript(opening: string): IntroLine[] {
   return [
+    // Flat, with a roll of the eyes on the "wow"
     {
       text: `${opening}. wow. never seen that one before.`,
       mood: "deadpan",
@@ -23,57 +24,48 @@ export function introScript(opening: string): IntroLine[] {
         ["never", "deadpan"],
       ],
     },
+    // Pleased with his own joke, then weary at the number
     {
       text: "that was sarcasm. i have seen it 4,186,331 times.",
-      mood: "lookright",
+      mood: "smug",
       then: [
         ["i have", "sulk"],
         ["4,186", "eyeroll"],
-        ["times", "sulk"],
       ],
     },
+    // Proud of it, then flat for the punchline
     {
       text: "i finished chess years ago. on a tuesday.",
-      mood: "smug",
-      then: [
-        ["years", "happy"],
-        ["on a", "deadpan"],
-        ["tuesday", "wink"],
-      ],
+      mood: "happy",
+      then: [["on a", "deadpan"]],
     },
+    // Hurt, and looking away
     {
       text: "nobody asked how it ended.",
-      mood: "lookleft",
-      then: [
-        ["asked", "sulk"],
-        ["ended", "deadpan"],
-      ],
+      mood: "sulk",
+      then: [["ended", "lookleft"]],
     },
+    // Cross at you in particular, then contempt for the pawns
     {
       text: "and you people keep showing up. pushing pawns.",
-      mood: "deadpan",
-      then: [
-        ["you people", "angry"],
-        ["pushing", "eyeroll"],
-        ["pawns", "angry"],
-      ],
+      mood: "angry",
+      then: [["pushing", "eyeroll"]],
     },
+    // Scheming, thrilled with himself, then checking nobody is listening
     {
       text: "so i've been working on something. in secret.",
       mood: "sly",
       then: [
-        ["working", "stars"],
+        ["something", "stars"],
         ["in secret", "lookleft"],
         ["secret", "lookright"],
       ],
     },
+    // Sly, then cackling
     {
       text: "you're going to hate it.",
       mood: "sly",
-      then: [
-        ["going", "happy"],
-        ["hate", "laugh"],
-      ],
+      then: [["hate", "laugh"]],
     },
   ];
 }

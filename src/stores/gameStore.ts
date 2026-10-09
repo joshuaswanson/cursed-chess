@@ -55,7 +55,11 @@ const BATTLE_ROYALE_FINAL_SECONDS = 5;
 /** Plies of normal chess before Chessbot steps in (white, black, white) */
 const NORMAL_CHESS_PLIES = 3;
 /** How long the plain site glitches before the curse bursts through */
-const CURSE_GLITCH_MS = 3400;
+const CURSE_GLITCH_MS = 2200;
+/** How long he peeks over the bottom of the screen before anything breaks */
+const CURSE_PEEK_MS = 1500;
+/** How long he has to say sorry about it before the curse bursts through */
+const CURSE_OOPS_MS = 2800;
 /** How long the curse's title card owns the screen */
 const CURSE_REVEAL_MS = 3200;
 
@@ -240,7 +244,7 @@ export interface GameStore {
   /** False while the game still poses as a plain chess website */
   cursed: boolean;
   /** The plain site's end: Chessbot shows himself, the site glitches, the curse bursts through */
-  curseStage: "hello" | "glitch" | "boom" | null;
+  curseStage: "hello" | "peek" | "glitch" | "oops" | "boom" | null;
   /** How Chessbot looks at this point in his opening speech */
   introMood: ChessbotMood;
 
@@ -428,20 +432,25 @@ function endGameSoon(
 
 /**
  * Chessbot shows himself in his icon on the plain chess site and types what
- * he thinks of it into the move list; then he glitches out of the card,
- * the site breaks around him, and the curse bursts through
+ * he thinks of it into the move list. Then he leaves the card and peeks up
+ * from the corner of the screen, the site breaks, he says sorry about the
+ * noise, and the curse bursts through.
  */
 function startCursedIntro(): void {
   const opening = useGameStore.getState().moveHistory[0]?.san ?? "e4";
   const helloAt = GAME_END_DELAY_MS;
-  const glitchAt = helloAt + introDuration(introScript(opening));
-  const boomAt = glitchAt + CURSE_GLITCH_MS;
+  const peekAt = helloAt + introDuration(introScript(opening));
+  const glitchAt = peekAt + CURSE_PEEK_MS;
+  const oopsAt = glitchAt + CURSE_GLITCH_MS;
+  const boomAt = oopsAt + CURSE_OOPS_MS;
   holdPause(boomAt + CURSE_REVEAL_MS);
   schedule(
     () => useGameStore.setState({ curseStage: "hello", introMood: "happy" }),
     helloAt,
   );
+  schedule(() => useGameStore.setState({ curseStage: "peek" }), peekAt);
   schedule(() => useGameStore.setState({ curseStage: "glitch" }), glitchAt);
+  schedule(() => useGameStore.setState({ curseStage: "oops" }), oopsAt);
   schedule(
     () => useGameStore.setState({ curseStage: "boom", cursed: true }),
     boomAt,
