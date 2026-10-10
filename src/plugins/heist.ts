@@ -63,6 +63,8 @@ interface Light {
 const STEPS = [-17, -16, -15, -1, 1, 15, 16, 17];
 /** How many squares across the vault is inside its walls */
 const VAULT_SIZE = 3;
+/** How many squares of wall stand either side of each door */
+const WALL_ARM = 3;
 const LIGHT_SIZE = 2;
 const LIGHTS = 3;
 /** How many rows at each end the lights never reach, and a thief has to get the jewel back to */
@@ -78,7 +80,8 @@ const steps = (a: SquareIndex, b: SquareIndex) =>
 
 /**
  * A museum at night: a long dark hall with one jewel on the square at its
- * very middle, inside a vault whose walls leave one door in each side.
+ * very middle, in a vault walled off from each army by a wall with one
+ * door in it, and open at its two ends.
  * Nobody can see the other side's pieces, except where a searchlight
  * falls. The lights cross the hall a square at a time. A piece a light
  * comes onto jumps out of its way if there is anywhere to jump to, and is
@@ -122,22 +125,17 @@ export class HeistPlugin implements ModePlugin {
   }
 
   /**
-   * The ring of squares round the vault's floor, walled at each corner and
-   * for a square either side of it, which leaves a single door in the
-   * middle of each of its four sides
+   * Two walls across the hall, one on each army's side of the vault's
+   * floor: each three squares long either side of a door in its middle.
+   * The vault stands open to the left and right.
    */
   private buildWalls(): Set<SquareIndex> {
     const { file, rank, size } = this.vault;
     const walls = new Set<SquareIndex>();
-    const near = -1;
-    const far = size;
-    const door = (size - 1) / 2;
-    for (let f = near; f <= far; f++) {
-      for (let r = near; r <= far; r++) {
-        const onRing = f === near || f === far || r === near || r === far;
-        if (onRing && f !== door && r !== door) {
-          walls.add(toIndex(file + f, rank + r));
-        }
+    const door = file + (size - 1) / 2;
+    for (const wallRank of [rank - 1, rank + size]) {
+      for (let f = door - WALL_ARM; f <= door + WALL_ARM; f++) {
+        if (f !== door) walls.add(toIndex(f, wallRank));
       }
     }
     return walls;
