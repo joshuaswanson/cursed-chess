@@ -311,6 +311,9 @@ const TRACERS = Array.from({ length: 16 }, (_, i) => ({
   delay: scatter(i * 7 + 5) * 2,
 }));
 
+/** Where along a trench its men stand, in percent across the scene */
+const TRENCH_LINE = [10, 28, 46, 64, 82];
+
 /** Something that happens in each mode, played on a loop in a little window */
 const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // A knight hops up to the blue portal, is sucked in, and walks out of the orange one
@@ -516,10 +519,39 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
     </>
   ),
   // Rifle fire pours across no man's land in the rain, and a shell lands short
+  // Two lines of men firing across the wire, a machine gun hammering away,
+  // shells coming down, and an assault team going over the top
   trenches: (
     <>
+      <span className="pv-crater" style={{ left: "30%", top: "50%" }} />
+      <span
+        className="pv-crater pv-crater-small"
+        style={{ left: "74%", top: "42%" }}
+      />
       <span className="pv-trench pv-trench-far" />
       <span className="pv-trench pv-trench-near" />
+      {TRENCH_LINE.map((x, i) => (
+        <Piece
+          key={`far-${i}`}
+          is={i === 3 ? "bR" : "bP"}
+          x={x}
+          y={15}
+          size={11}
+          className="pv-trooper"
+          style={{ animationDelay: `${-i * 0.7}s` }}
+        />
+      ))}
+      {TRENCH_LINE.map((x, i) => (
+        <Piece
+          key={`near-${i}`}
+          is={i === 1 ? "wR" : "wP"}
+          x={x + 4}
+          y={85}
+          size={11}
+          className="pv-trooper"
+          style={{ animationDelay: `${-i * 0.9 - 0.4}s` }}
+        />
+      ))}
       <span className="pv-wire" />
       {TRACERS.map((t, i) => (
         <span
@@ -535,8 +567,24 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
           }
         />
       ))}
+      {/* The machine guns, one in each line, never letting up */}
+      <span className="pv-muzzle" style={{ left: "64%", top: "27%" }} />
+      <span
+        className="pv-muzzle pv-muzzle-near"
+        style={{ left: "26%", top: "73%" }}
+      />
+      {/* The assault team goes over the top and across */}
+      <Piece is="wN" x={46} y={78} size={12} className="pv-assault" />
+      <Piece
+        is="wN"
+        x={58}
+        y={78}
+        size={12}
+        className="pv-assault pv-assault-b"
+      />
       <Shell x={58} y={50} />
       <Shell x={24} y={44} late />
+      <span className="pv-flare" />
       <span className="pv-rain" />
     </>
   ),

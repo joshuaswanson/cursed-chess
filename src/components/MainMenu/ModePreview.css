@@ -1598,6 +1598,138 @@
   --planks: 100%;
 }
 
+/* The men in each line, bobbing up to fire and ducking back down */
+.scene-trenches .pv-trooper {
+  animation: pv-trooper 3.4s ease-in-out infinite;
+}
+
+.scene-trenches .pv-trooper > img {
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5));
+}
+
+@keyframes pv-trooper {
+  0%,
+  55%,
+  100% {
+    scale: 0.82;
+    filter: brightness(0.6);
+  }
+  65%,
+  85% {
+    scale: 1;
+    filter: brightness(1);
+  }
+}
+
+/* Shell holes in no man's land, with a little water standing in them */
+.pv-crater {
+  width: 22%;
+  aspect-ratio: 1.5;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 46% 44%,
+    #5c6d74 0 26%,
+    #2a2620 30% 58%,
+    #6a5a41 62% 74%,
+    transparent 78%
+  );
+}
+
+.pv-crater-small {
+  width: 14%;
+}
+
+/* A machine gun's muzzle, flickering without a pause */
+.pv-muzzle {
+  width: 6%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(#fff 0 22%, #ffd45a 30% 52%, transparent 64%);
+  box-shadow: 0 0 10px 3px rgba(255, 190, 80, 0.8);
+  animation: pv-muzzle 0.11s steps(1) infinite;
+}
+
+.pv-muzzle-near {
+  animation-delay: -0.05s;
+}
+
+@keyframes pv-muzzle {
+  50% {
+    opacity: 0.15;
+    scale: 0.6;
+  }
+}
+
+/* Two of the assault team climb out, sprint for the far line, and are swallowed by the smoke */
+.scene-trenches .pv-assault {
+  animation: pv-assault 5.2s ease-in infinite;
+}
+
+.scene-trenches .pv-assault-b {
+  animation-delay: -0.35s;
+}
+
+@keyframes pv-assault {
+  0%,
+  18% {
+    top: 82%;
+    opacity: 0;
+    scale: 0.8;
+  }
+  26% {
+    top: 72%;
+    opacity: 1;
+    scale: 1;
+  }
+  44% {
+    top: 54%;
+    translate: -70% -50%;
+  }
+  58% {
+    top: 42%;
+    translate: -30% -50%;
+  }
+  74% {
+    top: 28%;
+    translate: -50% -50%;
+    opacity: 1;
+  }
+  82%,
+  100% {
+    top: 24%;
+    opacity: 0;
+  }
+}
+
+/* A flare goes up now and then, and for a moment everything is lit */
+.pv-flare {
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 80% at 62% 30%,
+    rgba(255, 244, 214, 0.5),
+    rgba(255, 220, 160, 0.12) 55%,
+    transparent 75%
+  );
+  mix-blend-mode: screen;
+  animation: pv-flare 7s ease-out infinite;
+}
+
+@keyframes pv-flare {
+  0%,
+  52%,
+  100% {
+    opacity: 0;
+  }
+  56% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.55;
+  }
+}
+
 /* A tangle of wire strung across the middle */
 .pv-wire {
   left: -4%;
