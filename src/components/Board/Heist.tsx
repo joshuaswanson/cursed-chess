@@ -112,13 +112,16 @@ const GLOOM = "rgba(3, 4, 12, 0.89)";
 const LIGHT_LIT = 1.0;
 const LIGHT_REACH = 1.55;
 const FRAME_MS = 40;
+/** What the light that follows the thief goes by among the gliding lights */
+const FOLLOW_SPOT = -1;
 /** How quickly a light glides to its new squares, as the share of the gap closed each frame */
 const GLIDE = 0.16;
 
 /**
  * The dark of the hall and what shows through it: the searchlights, the
  * squares the piece you have picked up could go to, the vault, and the
- * jewel. With the jewel out of the vault the whole hall pulses red.
+ * jewel. With the jewel out of the vault the whole hall pulses red, and a
+ * red light stays on whoever has it.
  */
 export function HeistLights({
   view,
@@ -197,6 +200,7 @@ export function HeistLights({
         );
       };
 
+      let spot: { x: number; y: number } | null = null;
       const lights = view.lights.map((light) => {
         const goal = block(light.file, light.rank);
         const here = at.get(light.id) ?? goal;
@@ -230,6 +234,20 @@ export function HeistLights({
       }
       const jewel = centre(view.sq);
       wear(jewel.x, jewel.y, 0.25, 0.8, 0.85);
+      // The light that follows the thief, gliding after them like the rest
+      const followed = view.spot === null ? null : centre(view.spot);
+      if (followed) {
+        const here = at.get(FOLLOW_SPOT) ?? followed;
+        spot = {
+          x: here.x + (followed.x - here.x) * GLIDE,
+          y: here.y + (followed.y - here.y) * GLIDE,
+        };
+        at.set(FOLLOW_SPOT, spot);
+        wear(spot.x, spot.y, 0.95, 1.5, 1);
+      } else {
+        spot = null;
+        at.delete(FOLLOW_SPOT);
+      }
 
       ctx.globalCompositeOperation = "source-over";
       for (const { x, y } of lights) {
@@ -250,6 +268,26 @@ export function HeistLights({
         tint.addColorStop(1, "rgba(255, 255, 255, 0)");
         ctx.fillStyle = tint;
         ctx.fillRect(x * sq - reach, y * sq - reach, reach * 2, reach * 2);
+      }
+      if (spot) {
+        const reach = 1.5 * sq;
+        const tint = ctx.createRadialGradient(
+          spot.x * sq,
+          spot.y * sq,
+          0,
+          spot.x * sq,
+          spot.y * sq,
+          reach,
+        );
+        tint.addColorStop(0, "rgba(255, 70, 70, 0.34)");
+        tint.addColorStop(1, "rgba(255, 70, 70, 0)");
+        ctx.fillStyle = tint;
+        ctx.fillRect(
+          spot.x * sq - reach,
+          spot.y * sq - reach,
+          reach * 2,
+          reach * 2,
+        );
       }
       if (alarm) {
         ctx.fillStyle = `rgba(255, 30, 40, ${0.06 + 0.06 * Math.sin(now / 140)})`;

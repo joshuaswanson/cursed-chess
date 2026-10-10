@@ -388,7 +388,7 @@ export function Board() {
     hillWhite > hillBlack ? "white" : hillBlack > hillWhite ? "black" : null;
   const arrivals = new Map(reinforcements.map((r) => [r.sq, r]));
   const football = overlays.football;
-  const heistLit = new Set(overlays.heist?.lit ?? []);
+  const heistLit = new Set(overlays.heist?.shown ?? []);
   // In the dark, a check on you shows your king and whatever is giving it
   const kingInCheck =
     overlays.lanterns &&

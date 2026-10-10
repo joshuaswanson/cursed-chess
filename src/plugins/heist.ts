@@ -38,8 +38,12 @@ export interface HeistView {
   /** Whose piece carries it, or nobody while it still sits in the vault */
   carrier: Color | null;
   lights: HeistLight[];
-  /** Every square a light is on. Whatever stands on one can be seen, and cannot move. */
+  /** Every square a sweeping light is on. Whatever stands on one can be seen, and cannot move. */
   lit: SquareIndex[];
+  /** Where the light that follows the jewel is: on whoever carries it, once somebody does */
+  spot: SquareIndex | null;
+  /** Every square that can be seen into: those the sweeping lights are on, and those round the thief */
+  shown: SquareIndex[];
   /** The vault's floor: the squares inside its walls, by the corner nearest a1 */
   vault: { file: number; rank: number; size: number };
   /** The vault's walls. Nothing stands on one or slides through one, though a knight jumps them. */
@@ -79,7 +83,7 @@ const steps = (a: SquareIndex, b: SquareIndex) =>
  * falls. The lights cross the hall a square at a time. A piece a light
  * comes onto jumps out of its way if there is anywhere to jump to, and is
  * caught and cannot move if there is not. Whoever carries the jewel cannot
- * jump clear at all. Whoever lands on the jewel lifts
+ * jump clear at all, and has one of the lights on them wherever they go. Whoever lands on the jewel lifts
  * it, and from then on can only creep a square at a time. Take the piece
  * carrying it and the jewel is yours. Get it back to your own first two
  * rows to win. There are no kings.
@@ -176,10 +180,19 @@ export class HeistPlugin implements ModePlugin {
     return { ...light, df, dr, file: light.file + df, rank: light.rank + dr };
   }
 
+  /**
+   * The lights sweeping the hall. With the jewel out of the vault one of
+   * the three leaves its beat and stays on whoever carries it. That one
+   * only shows the thief up: it does not pin anyone, and can be walked into.
+   */
+  private get patrol(): Light[] {
+    return this.carrier === null ? this.lights : this.lights.slice(1);
+  }
+
   private isLit(sq: SquareIndex): boolean {
     const file = fileOf(sq);
     const rank = rankOf(sq);
-    return this.lights.some(
+    return this.patrol.some(
       (light) =>
         file >= light.file &&
         file < light.file + LIGHT_SIZE &&
@@ -268,7 +281,10 @@ export class HeistPlugin implements ModePlugin {
   onTurnEnd(ctx: PluginContext): void {
     const lit = (sq: SquareIndex) => this.isLit(sq);
     const wasLit = new Set(ALL_SQUARES.filter(lit));
-    this.lights = this.lights.map((light) => this.stepped(light));
+    const sweeping = new Set(this.patrol);
+    this.lights = this.lights.map((light) =>
+      sweeping.has(light) ? this.stepped(light) : light,
+    );
     this.dodged = [];
     for (const from of ALL_SQUARES.filter(lit)) {
       // One already caught stays caught until the light moves off it
@@ -289,7 +305,7 @@ export class HeistPlugin implements ModePlugin {
   private wayOut(board: Board, from: SquareIndex): SquareIndex | undefined {
     const fromLights = (sq: SquareIndex) =>
       Math.min(
-        ...this.lights.map((light) =>
+        ...this.patrol.map((light) =>
           Math.hypot(
             fileOf(sq) - (light.file + (LIGHT_SIZE - 1) / 2),
             rankOf(sq) - (light.rank + (LIGHT_SIZE - 1) / 2),
@@ -346,8 +362,13 @@ export class HeistPlugin implements ModePlugin {
     const view: HeistView = {
       sq: this.sq,
       carrier: this.carrier,
-      lights: this.lights.map(({ id, file, rank }) => ({ id, file, rank })),
+      lights: this.patrol.map(({ id, file, rank }) => ({ id, file, rank })),
       lit: ALL_SQUARES.filter((sq) => this.isLit(sq)),
+      spot: this.carrier === null ? null : this.sq,
+      shown: ALL_SQUARES.filter(
+        (sq) =>
+          this.isLit(sq) || (this.carrier !== null && steps(sq, this.sq) <= 1),
+      ),
       vault: this.vault,
       walls: [...this.walls],
       dodged: [...this.dodged],
@@ -358,7 +379,7 @@ export class HeistPlugin implements ModePlugin {
   /** How much the computer likes a move for the sake of the jewel, and for keeping out of the lights */
   squareBonus(to: SquareIndex, piece: Piece, from: SquareIndex): number {
     // Where the lights will be when this move has been made
-    const next = this.lights.map((light) => this.stepped(light));
+    const next = this.patrol.map((light) => this.stepped(light));
     const caught = next.some(
       (light) =>
         fileOf(to) >= light.file &&
