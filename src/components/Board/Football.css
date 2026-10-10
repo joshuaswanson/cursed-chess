@@ -355,9 +355,10 @@
   animation-iteration-count: infinite;
 }
 
+/* Three panel-lengths: from one black panel to the next along a row */
 @keyframes ball-roll {
   to {
-    transform: translate(46px, 0);
+    transform: translate(45px, 0);
   }
 }
 

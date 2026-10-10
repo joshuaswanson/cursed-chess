@@ -33,20 +33,29 @@ function legLengths(points: Point[]): number[] {
 
 const pct = (squares: number) => `${squares * 12.5}%`;
 
-/** How far apart the ball's black panels sit across its skin, and from row to row */
-const PANEL_GAP = 46;
-const PANEL_ROW = 40;
-/** The panels of the ball's skin, laid out well past its edges so the skin can roll */
-const PANELS = [-2, -1, 0, 1, 2].flatMap((row) =>
-  [-3, -2, -1, 0, 1, 2, 3].map((col) => ({
-    x: col * PANEL_GAP + (row % 2 ? PANEL_GAP / 2 : 0),
-    y: row * PANEL_ROW,
-  })),
+/** How big each panel of the ball is, from its middle to a corner */
+const PANEL = 15;
+const HEX_HEIGHT = PANEL * Math.sqrt(3);
+const HEXAGON = Array.from({ length: 6 }, (_, corner) => {
+  const angle = (corner * Math.PI) / 3;
+  return `${(PANEL * Math.cos(angle)).toFixed(2)},${(PANEL * Math.sin(angle)).toFixed(2)}`;
+}).join(" ");
+/**
+ * The ball's skin: a honeycomb of panels all the same size, every third
+ * one black, laid out well past the ball's edges so the skin can roll
+ */
+const PANELS = Array.from({ length: 11 }, (_, i) => i - 6).flatMap((q) =>
+  Array.from({ length: 13 }, (_, k) => k - 6).flatMap((r) => {
+    const x = PANEL * 1.5 * q;
+    const y = HEX_HEIGHT * (r + q / 2);
+    if (Math.abs(y) > 50 + PANEL) return [];
+    return [{ x, y, black: (((q - r) % 3) + 3) % 3 === 0 }];
+  }),
 );
 
 /**
- * A classic black and white panelled ball. Its skin is wider than the ball
- * and slides across it as it rolls, so new panels keep coming round.
+ * A black and white panelled ball. Its skin is wider than the ball and
+ * slides across it as it rolls, so new panels keep coming round.
  */
 export function SoccerBall({ className }: { className?: string }) {
   return (
@@ -68,21 +77,15 @@ export function SoccerBall({ className }: { className?: string }) {
       </defs>
       <circle r="47" fill="url(#ball-shade)" stroke="#1a1d22" strokeWidth="3" />
       <g clipPath="url(#ball-clip)">
-        <g className="ball-skin" fill="#1a1d22" stroke="#1a1d22">
-          {PANELS.map(({ x, y }) => (
-            <g key={`${x},${y}`} transform={`translate(${x} ${y})`}>
-              {/* The seams running to the panels beside and below */}
-              <path
-                d={`M0 0 H${PANEL_GAP} M0 0 L${PANEL_GAP / 2} ${PANEL_ROW} M0 0 L${-PANEL_GAP / 2} ${PANEL_ROW}`}
-                strokeWidth="2.2"
-                fill="none"
-              />
-              <path
-                d="M0 -13 L12.4 -4 L7.6 10.5 L-7.6 10.5 L-12.4 -4 Z"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-              />
-            </g>
+        <g className="ball-skin" stroke="#1a1d22" strokeWidth="1.6">
+          {PANELS.map(({ x, y, black }) => (
+            <polygon
+              key={`${x},${y}`}
+              points={HEXAGON}
+              transform={`translate(${x.toFixed(2)} ${y.toFixed(2)})`}
+              fill={black ? "#1a1d22" : "none"}
+              strokeLinejoin="round"
+            />
           ))}
         </g>
         <circle r="47" fill="url(#ball-round)" />
