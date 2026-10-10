@@ -265,7 +265,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "heist",
     title: "Heist",
     tagline:
-      "It is dark, and you cannot see their pieces. Get the jewel out of the vault and home to your first two rows. Whoever carries it creeps one square at a time. Pieces jump clear of the searchlights, but whoever has the jewel cannot, and is stuck in the light.",
+      "It is dark, and you cannot see their pieces. Get the jewel out of the vault and home to your first two rows. Whoever carries it creeps one square at a time. Pieces jump clear of the searchlights and cannot step into one. Whoever has the jewel is lit up wherever they go, and can always move.",
     catchphrase: "I'm putting together a team.",
     sky: ["#05070f", "#0c1428", "#1b2440"],
     accent: "#f5c542",

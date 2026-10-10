@@ -82,8 +82,9 @@ const steps = (a: SquareIndex, b: SquareIndex) =>
  * Nobody can see the other side's pieces, except where a searchlight
  * falls. The lights cross the hall a square at a time. A piece a light
  * comes onto jumps out of its way if there is anywhere to jump to, and is
- * caught and cannot move if there is not. Whoever carries the jewel cannot
- * jump clear at all, and has one of the lights on them wherever they go. Whoever lands on the jewel lifts
+ * caught and cannot move if there is not. Whoever carries the jewel has
+ * been caught already in a sense: one of the lights stays on them wherever
+ * they go, and no light stops them moving. Whoever lands on the jewel lifts
  * it, and from then on can only creep a square at a time. Take the piece
  * carrying it and the jewel is yours. Get it back to your own first two
  * rows to win. There are no kings.
@@ -92,7 +93,7 @@ export class HeistPlugin implements ModePlugin {
   id = "heist";
   name = "Heist";
   description =
-    "It is dark, and you cannot see their pieces. Get the jewel out of the vault and home to your first two rows. Whoever carries it creeps one square at a time. Pieces jump clear of the searchlights, but whoever has the jewel cannot, and is stuck in the light.";
+    "It is dark, and you cannot see their pieces. Get the jewel out of the vault and home to your first two rows. Whoever carries it creeps one square at a time. Pieces jump clear of the searchlights and cannot step into one. Whoever has the jewel is lit up wherever they go, and can always move.";
 
   private sq: SquareIndex = 0;
   private carrier: Color | null = null;
@@ -217,23 +218,27 @@ export class HeistPlugin implements ModePlugin {
 
   /**
    * Nothing standing in a searchlight moves, nothing steps into one, and
-   * nothing goes through a wall. Whoever carries the jewel gives up their own way of moving for a
-   * creep: one square in any direction, taking whatever stands there.
+   * nothing goes through a wall. Whoever carries the jewel gives up their
+   * own way of moving for a creep: one square in any direction, taking
+   * whatever stands there. The lights do not stop a creep.
    */
   modifyLegalMoves(ctx: PluginContext, moves: Move[], color: Color): Move[] {
     const free = moves.filter(
       (move) =>
-        !this.isLit(move.from) && !this.isLit(move.to) && !this.hitsWall(move),
+        !this.isLit(move.from) &&
+        // A sweeping light is no hiding place for the thief: they can be taken in one
+        (!this.isLit(move.to) ||
+          (this.carrier !== null && move.to === this.sq)) &&
+        !this.hitsWall(move),
     );
     if (this.carrier !== color) return free;
     const piece = ctx.board.get(this.sq);
     if (!piece) return free;
     const others = free.filter((move) => move.from !== this.sq);
-    if (this.isLit(this.sq)) return others;
+    // The thief has been seen already, and the lights mean nothing to them:
+    // they creep on whether they stand in one or step into one
     const creeps = STEPS.map((step) => this.sq + step)
-      .filter(
-        (to) => isValidSquare(to) && !this.walls.has(to) && !this.isLit(to),
-      )
+      .filter((to) => isValidSquare(to) && !this.walls.has(to))
       .flatMap((to): Move[] => {
         const there = ctx.board.get(to);
         if (there?.color === color) return [];
@@ -291,7 +296,7 @@ export class HeistPlugin implements ModePlugin {
       if (wasLit.has(from)) continue;
       const piece = ctx.board.get(from);
       if (!piece) continue;
-      // Whoever has the jewel is weighed down by it, and cannot jump clear
+      // Whoever has the jewel has been seen already, and just carries on
       if (this.carrier !== null && this.sq === from) continue;
       const to = this.wayOut(ctx.board, from);
       if (to === undefined) continue;
@@ -346,10 +351,12 @@ export class HeistPlugin implements ModePlugin {
     }
     if (this.walls.has(square)) mods.push({ className: "heist-wall" });
     if (this.isLit(square)) {
+      const thief = this.carrier !== null && square === this.sq;
       mods.push({
-        className: ctx.board.get(square)
-          ? "heist-lit heist-frozen"
-          : "heist-lit",
+        className:
+          ctx.board.get(square) && !thief
+            ? "heist-lit heist-frozen"
+            : "heist-lit",
       });
     }
     if (this.carrier !== null && isHome(this.carrier, r)) {
@@ -388,7 +395,8 @@ export class HeistPlugin implements ModePlugin {
         rankOf(to) < light.rank + LIGHT_SIZE,
     );
     const carrying = this.carrier === piece.color && from === this.sq;
-    let bonus = caught ? (carrying ? -4 : -0.8) : 0;
+    // The lights are nothing to whoever has the jewel
+    let bonus = caught && !carrying ? -0.8 : 0;
     const closer = steps(from, this.sq) - steps(to, this.sq);
     if (this.carrier === null) {
       // Nobody has it: get there first
