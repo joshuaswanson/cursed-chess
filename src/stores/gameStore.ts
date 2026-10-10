@@ -725,6 +725,7 @@ function modeSquareBonus(
   const tug = pluginManager.find<TugOfWarPlugin>("tug-of-war");
   const zombies = pluginManager.find<ZombiesPlugin>("zombies");
   const heist = pluginManager.find<HeistPlugin>("heist");
+  const hill = pluginManager.find<KingOfTheHillPlugin>("king-of-hill");
   return (square, piece, from) => {
     const classes = pluginManager
       .getSquareModifiers(square)
@@ -736,11 +737,11 @@ function modeSquareBonus(
     if (classes.includes("mine-warning") && piece.type !== PieceType.King) {
       bonus -= value;
     }
-    if (classes.includes("hill-square")) bonus += 0.5;
     if (football) bonus += football.squareBonus(board, square, piece, from);
     if (tug) bonus += tug.squareBonus(board, square, piece, from);
     if (zombies) bonus += zombies.squareBonus(square, piece);
     if (heist) bonus += heist.squareBonus(square, piece, from);
+    if (hill) bonus += hill.squareBonus(board, square, piece, from);
     return bonus;
   };
 }
