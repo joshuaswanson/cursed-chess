@@ -146,6 +146,7 @@ export class HeistPlugin implements ModePlugin {
     this.carrier = null;
     this.winner = null;
     this.walls = this.buildWalls();
+    this.walks = null;
     this.dodged = [];
     const [low, high] = this.lightRanks;
     const span = high - low;
@@ -381,6 +382,35 @@ export class HeistPlugin implements ModePlugin {
     return [{ type: "heist", squares: [this.sq], data: view }];
   }
 
+  private walks: { to: SquareIndex; steps: Map<SquareIndex, number> } | null =
+    null;
+
+  /**
+   * How many king's steps every square is from this one going round the
+   * walls, worked out once for wherever the jewel is
+   */
+  private walkTo(goal: SquareIndex): Map<SquareIndex, number> {
+    if (this.walks?.to === goal) return this.walks.steps;
+    const found = new Map<SquareIndex, number>([[goal, 0]]);
+    let edge = [goal];
+    while (edge.length > 0) {
+      const next: SquareIndex[] = [];
+      for (const sq of edge) {
+        for (const step of STEPS) {
+          const to = sq + step;
+          if (!isValidSquare(to) || this.walls.has(to) || found.has(to)) {
+            continue;
+          }
+          found.set(to, found.get(sq)! + 1);
+          next.push(to);
+        }
+      }
+      edge = next;
+    }
+    this.walks = { to: goal, steps: found };
+    return found;
+  }
+
   /** How much the computer likes a move for the sake of the jewel, and for keeping out of the lights */
   squareBonus(to: SquareIndex, piece: Piece, from: SquareIndex): number {
     // Where the lights will be when this move has been made
@@ -395,7 +425,10 @@ export class HeistPlugin implements ModePlugin {
     const carrying = this.carrier === piece.color && from === this.sq;
     // The lights are nothing to whoever has the jewel
     let bonus = caught && !carrying ? -0.8 : 0;
-    const closer = steps(from, this.sq) - steps(to, this.sq);
+    // Measured the way a piece would have to walk it, round the walls
+    const walk = this.walkTo(this.sq);
+    const far = (sq: SquareIndex) => walk.get(sq) ?? steps(sq, this.sq) + 6;
+    const closer = far(from) - far(to);
     if (this.carrier === null) {
       // Nobody has it: get there first
       bonus += to === this.sq ? 6 : closer * 0.7;
