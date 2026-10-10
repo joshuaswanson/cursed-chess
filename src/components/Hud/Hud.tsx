@@ -65,7 +65,7 @@ function NowPlaying() {
     modeIndex >= 0 &&
     (GAME_MODES[modeIndex].kingsSitOut || GAME_MODES[modeIndex].untilWon);
   const fraction = untimed ? 1 : Math.max(0, Math.min(1, remaining / duration));
-  const tagline = theme.tagline;
+  const tagline = theme.catchphrase;
   const urgent = !untimed && remaining <= 5;
 
   return (
