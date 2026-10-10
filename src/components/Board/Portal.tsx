@@ -6,7 +6,7 @@ export type PortalState = "idle" | "spawn" | "despawn" | "surge";
 
 const ARM_COUNT = 6;
 const DISC_RADIUS = 33;
-const PARTICLE_COUNT = 9;
+const PARTICLE_COUNT = 6;
 
 /** Archimedean spiral arm from the core to the rim, as an SVG path */
 function spiralArm(startAngle: number): string {
@@ -78,17 +78,22 @@ function rimArc(angle: number, rand: () => number): string {
 }
 
 const boltRand = seededRandom(7);
-const BOLTS = Array.from({ length: 8 }, (_, i) => ({
+/** Each one is an element animating by itself on every portal, so there are only as many as it takes to look alive */
+const BOLT_COUNT = 5;
+const BOLTS = Array.from({ length: BOLT_COUNT }, (_, i) => ({
   d:
     i % 3 === 2
-      ? rimArc((i / 8) * Math.PI * 2, boltRand)
-      : outwardBolt((i / 8) * Math.PI * 2 + boltRand() * 0.5, boltRand),
+      ? rimArc((i / BOLT_COUNT) * Math.PI * 2, boltRand)
+      : outwardBolt(
+          (i / BOLT_COUNT) * Math.PI * 2 + boltRand() * 0.5,
+          boltRand,
+        ),
   duration: 0.55 + boltRand() * 0.9,
   delay: -boltRand() * 1.5,
 }));
 
-const EMBERS = Array.from({ length: 6 }, (_, i) => ({
-  angle: i * 60 + 17,
+const EMBERS = Array.from({ length: 4 }, (_, i) => ({
+  angle: i * 90 + 17,
   delay: -(i * 0.53) % 2.4,
   duration: 1.1 + (i % 3) * 0.4,
 }));
