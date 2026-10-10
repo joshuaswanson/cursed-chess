@@ -738,7 +738,7 @@ function modeSquareBonus(
     }
     if (classes.includes("hill-square")) bonus += 0.5;
     if (football) bonus += football.squareBonus(board, square, piece, from);
-    if (tug) bonus += tug.squareBonus(square, piece);
+    if (tug) bonus += tug.squareBonus(board, square, piece, from);
     if (zombies) bonus += zombies.squareBonus(square, piece);
     if (heist) bonus += heist.squareBonus(square, piece, from);
     return bonus;

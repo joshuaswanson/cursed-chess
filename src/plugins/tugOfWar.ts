@@ -1,6 +1,7 @@
 import { Color, GameStatus, PieceType } from "../engine/types";
 import type { Piece, SquareIndex } from "../engine/types";
 import type { Board } from "../engine/board";
+import { isSquareAttacked } from "../engine/moves";
 import type {
   ModePlugin,
   PluginContext,
@@ -32,6 +33,12 @@ export interface TugView {
   /** Pieces the last heave moved */
   dragged: Haul[];
 }
+
+/** What the computer reckons one hand on the rope is worth, in pawns, with the flag at the centre */
+const HAND_WORTH = 3.2;
+
+/** How much of a hand's worth is lost by putting it where the other side can take it */
+const SHAKY_GRIP = 0.6;
 
 const onRope = (sq: SquareIndex) => ROPE_FILES.includes(fileOf(sq));
 
@@ -164,11 +171,30 @@ export class TugOfWarPlugin implements ModePlugin {
     return [{ className: `rope-square ${side}${team}` }];
   }
 
-  /** The computer wants its pieces on the rope, and more so the closer the flag is to its own end */
-  squareBonus(square: SquareIndex, piece: Piece): number {
-    if (!onRope(square)) return 0;
-    const losing = piece.color === Color.White ? -this.flag : this.flag;
-    return 0.6 + Math.max(0, losing) * 0.3;
+  /**
+   * What a move is worth to the computer for the sake of the rope: a hand
+   * put on it, a hand of the other side's taken off it by a capture, and
+   * a heavy cost for letting go. All of it counts for more the nearer the
+   * flag is to being lost, or to being won.
+   */
+  squareBonus(
+    board: Board,
+    to: SquareIndex,
+    piece: Piece,
+    from: SquareIndex,
+  ): number {
+    const toward = piece.color === Color.White ? this.flag : -this.flag;
+    const stakes = 1 + Math.abs(toward) * 0.6;
+    let hands = 0;
+    if (onRope(to) && !onRope(from)) hands += 1;
+    if (!onRope(to) && onRope(from)) hands -= 1;
+    const taken = board.get(to);
+    if (taken && taken.color !== piece.color && onRope(to)) hands += 1;
+    // A hand put where it can be taken straight off again is worth little
+    const foe = piece.color === Color.White ? Color.Black : Color.White;
+    const shaky =
+      onRope(to) && isSquareAttacked(board, to, foe) ? SHAKY_GRIP : 0;
+    return (hands - shaky) * HAND_WORTH * stakes;
   }
 
   getBoardOverlays(ctx: PluginContext): BoardOverlay[] {
