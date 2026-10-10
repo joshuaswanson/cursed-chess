@@ -76,6 +76,29 @@ const ROUND_GAP_MS = 85;
 /** A shot's chance of hitting, by where its target stands */
 const RIFLE_HIT = { trench: 0.07, reserve: 0.18, open: 0.5 };
 const ROUND_HIT = { trench: 0.025, reserve: 0.07, open: 0.3 };
+/**
+ * A machine gun dug into a trench is the best thing there is for holding a
+ * line: longer bursts, murderous against anyone out of a trench, and its
+ * crew well covered from fire coming the other way
+ */
+const NEST_ROUNDS = 9;
+const NEST_HIT = { trench: 0.03, reserve: 0.22, open: 0.62 };
+const NEST_COVER = 0.45;
+/** Fired off the ground by a team caught in the open, it is a poor weapon to attack with */
+const CARRIED_AIM = 0.5;
+/**
+ * Assault troops are for taking ground. They cross no man's land fast,
+ * are quickly through the wire, are hard to hit on the run, throw grenades
+ * as fast as they can pull the pins while attacking, and win hand to hand.
+ * Standing in a trench with a rifle they are no better than anyone, and worse.
+ */
+const ASSAULT_PACE = 0.6;
+const ASSAULT_WIRE = 0.35;
+const ASSAULT_DODGE = 0.55;
+const ASSAULT_GRENADES = 0.55;
+const ASSAULT_MELEE_HIT = 0.95;
+const ASSAULT_MELEE_DAMAGE = 3;
+const ASSAULT_RIFLE = 0.5;
 /** With every enemy down in a trench, a man only fires this often when his turn comes */
 const IDLE_FIRE = 0.3;
 /** How long a rifleman takes to bring his rifle up onto the target before firing */
@@ -141,6 +164,8 @@ export interface TrenchUnit extends Unit {
   exposedUntil: number;
   /** When a grenadier has his next grenade ready */
   grenadeAt: number;
+  /** One of the assault troops */
+  assault: boolean;
 }
 
 export interface Crater {
@@ -394,6 +419,7 @@ export class TrenchesPlugin implements ModePlugin {
       snaggedUntil: 0,
       exposedUntil: 0,
       grenadeAt: 0,
+      assault: type === PieceType.Knight,
     };
   }
 
@@ -806,8 +832,12 @@ export class TrenchesPlugin implements ModePlugin {
     if (this.fightInTrench(board, sq, unit, piece)) return;
     if (this.moveUp(board, sq, unit, piece)) return;
 
-    // Only the line nearest the enemy fires; the back trench keeps its head down
-    if (!this.canFire(board, sq, piece.color)) {
+    // Only the line nearest the enemy fires; the back trench keeps its head
+    // down, all but its snipers, who have the range to shoot from there
+    if (
+      !this.canFire(board, sq, piece.color) &&
+      armsFor(sq, piece, this.nests) !== "sniper"
+    ) {
       unit.readyIn = rand(800, 1600);
       return;
     }
@@ -827,7 +857,7 @@ export class TrenchesPlugin implements ModePlugin {
           // With men out in the open in front of him, he never lets up: one
           // burst runs straight into the next
           unit.readyIn = this.enemyInTheOpen(board, piece.color)
-            ? BURST_ROUNDS * ROUND_GAP_MS + rand(40, 120)
+            ? NEST_ROUNDS * ROUND_GAP_MS + rand(40, 120)
             : jitter(BURST_MS);
           return;
         }
@@ -948,7 +978,10 @@ export class TrenchesPlugin implements ModePlugin {
       });
       if (kill) this.fall(board, s, target, bursts);
     }
-    unit.grenadeAt = this.clock + jitter(GRENADE_MS);
+    // On the attack he throws as fast as he can; holding a trench, at his leisure
+    const attacking = unit.order === "charge" || coverAt(sq) !== "trench";
+    unit.grenadeAt =
+      this.clock + jitter(GRENADE_MS * (attacking ? ASSAULT_GRENADES : 1));
     unit.readyIn = bursts + jitter(RIFLE_MS * 0.6);
     return true;
   }
@@ -1024,12 +1057,18 @@ export class TrenchesPlugin implements ModePlugin {
     const to = options[0]?.to ?? this.through(board, sq, unit, piece);
     if (to === undefined) return false;
     const leap = Math.abs(rankOf(to) - rankOf(sq)) > 1;
-    const ms = Math.round(STEP_MS * rand(0.85, 1.2) * (leap ? 1.8 : 1));
+    const ms = Math.round(
+      STEP_MS *
+        rand(0.85, 1.2) *
+        (leap ? 1.8 : 1) *
+        (unit.assault ? ASSAULT_PACE : 1),
+    );
     this.relocate(board, sq, to);
     this.emit({ kind: "move", unitId: unit.id, from: sq, to, ms, delayMs: 0 });
     unit.readyIn = ms;
     if (this.wire.has(to)) {
-      unit.snaggedUntil = this.clock + ms + rand(...WIRE_MS);
+      unit.snaggedUntil =
+        this.clock + ms + rand(...WIRE_MS) * (unit.assault ? ASSAULT_WIRE : 1);
       unit.readyIn = unit.snaggedUntil - this.clock;
     }
     return true;
@@ -1130,13 +1169,14 @@ export class TrenchesPlugin implements ModePlugin {
           Math.abs(rankOf(a) - rank) - Math.abs(rankOf(b) - rank),
       )[0];
     if (to === undefined) return false;
-    const ms = Math.round(STEP_MS * pace);
+    const ms = Math.round(STEP_MS * pace * (unit.assault ? ASSAULT_PACE : 1));
     this.relocate(board, sq, to);
     this.digGun(board, to, board.get(to)!);
     this.emit({ kind: "move", unitId: unit.id, from: sq, to, ms, delayMs: 0 });
     unit.readyIn = ms + (pace < 1 ? rand(50, 200) : rand(300, 900));
     if (this.wire.has(to)) {
-      unit.snaggedUntil = this.clock + ms + rand(...WIRE_MS);
+      unit.snaggedUntil =
+        this.clock + ms + rand(...WIRE_MS) * (unit.assault ? ASSAULT_WIRE : 1);
       unit.readyIn = unit.snaggedUntil - this.clock;
     }
     return true;
@@ -1180,8 +1220,14 @@ export class TrenchesPlugin implements ModePlugin {
       open: 6,
     });
     if (target === null) return;
+    const poorShot =
+      this.units.get(sq)?.assault && coverAt(sq) === "trench"
+        ? ASSAULT_RIFLE
+        : 1;
     const chance =
-      this.hitChance(sq, target, RIFLE_HIT) * (running ? RUNNING_AIM : 1);
+      this.hitChance(sq, target, RIFLE_HIT) *
+      (running ? RUNNING_AIM : 1) *
+      poorShot;
     this.shoot(board, sq, target, piece, "rifle", chance, RISE_MS + AIM_MS, 0);
   }
 
@@ -1200,7 +1246,9 @@ export class TrenchesPlugin implements ModePlugin {
         open: 14,
       });
     if (target === null) return false;
-    for (let round = 0; round < BURST_ROUNDS; round++) {
+    const dugIn = this.nests.has(sq);
+    const rounds = dugIn ? NEST_ROUNDS : BURST_ROUNDS;
+    for (let round = 0; round < rounds; round++) {
       if (!board.get(target)) break;
       this.shoot(
         board,
@@ -1208,7 +1256,9 @@ export class TrenchesPlugin implements ModePlugin {
         target,
         piece,
         "mg",
-        this.hitChance(sq, target, ROUND_HIT),
+        dugIn
+          ? this.hitChance(sq, target, NEST_HIT)
+          : this.hitChance(sq, target, ROUND_HIT) * CARRIED_AIM,
         RISE_MS + round * ROUND_GAP_MS,
         round,
       );
@@ -1227,7 +1277,15 @@ export class TrenchesPlugin implements ModePlugin {
     // A man crouched below the parapet cannot be hit, unless he is fired on down the trench
     if (!enfilade && this.crouched(target)) return 0;
     const cover = enfilade ? "open" : coverAt(target);
-    return table[cover] + (snagged ? SNAGGED_HIT_BONUS : 0);
+    let odds = table[cover] + (snagged ? SNAGGED_HIT_BONUS : 0);
+    // A gun crew behind its own sandbags is hard to get at from in front
+    if (!enfilade && this.nests.has(target)) odds *= NEST_COVER;
+    // Assault troops on the run across open ground are hard to draw a bead on
+    const victim = this.units.get(target);
+    if (victim?.assault && victim.order === "charge" && cover === "open") {
+      odds *= ASSAULT_DODGE;
+    }
+    return odds;
   }
 
   /**
@@ -1337,8 +1395,9 @@ export class TrenchesPlugin implements ModePlugin {
   ): void {
     const target = this.units.get(to);
     if (!target) return;
-    const hit = Math.random() < MELEE_HIT;
-    if (hit) target.hp -= MELEE_DAMAGE;
+    const damage = unit.assault ? ASSAULT_MELEE_DAMAGE : MELEE_DAMAGE;
+    const hit = Math.random() < (unit.assault ? ASSAULT_MELEE_HIT : MELEE_HIT);
+    if (hit) target.hp -= damage;
     const kill = hit && target.hp <= 0;
     const hitMs = 170;
     this.emit({
@@ -1348,7 +1407,7 @@ export class TrenchesPlugin implements ModePlugin {
       color: piece.color,
       from,
       to,
-      damage: hit ? MELEE_DAMAGE : 0,
+      damage: hit ? damage : 0,
       ranged: false,
       kill,
       hitMs,
