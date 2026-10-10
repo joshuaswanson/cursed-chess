@@ -8,6 +8,8 @@ import {
   MultiplayerPreview,
 } from "./ModePreview";
 import { Logo } from "../Logo/Logo";
+import { Lobby } from "./Lobby";
+import { onlineModeIndexes } from "../../net/onlineModes";
 import "./MainMenu.css";
 
 /** One thing to play on the menu: its scene playing while it is on screen, its name, and its tagline */
@@ -65,6 +67,8 @@ const COFFEE_URL = "https://buymeacoffee.com/swanson";
  */
 export function MainMenu() {
   const open = useGameStore((s) => s.menuOpen);
+  const link = useGameStore((s) => s.net);
+  const lobbyOpen = useGameStore((s) => s.lobbyOpen);
   const { startAdventure, startSingle } = useGameStore.getState();
   if (!open) return null;
   /** A card for every mode that is, or is not, still in beta */
@@ -98,63 +102,78 @@ export function MainMenu() {
             Made by <b>Joshua Swanson</b>
           </a>
         </header>
-        <div className="menu-list">
-          {/* The two ways to play everything, on a row of their own */}
-          <div className="menu-featured">
-            <ModeCard
-              title="Story Mode"
-              tagline="One mode after another!"
-              colors={["#6a1fd6", "#ff2e88"]}
-              onPlay={startAdventure}
-            >
-              <AdventurePreview />
-            </ModeCard>
-            {/* Not a button: there is nothing to play yet */}
-            <div
-              className="menu-mode is-soon"
-              style={
-                {
-                  "--chip-a": "#6b2fd6",
-                  "--chip-b": "#3ee6b0",
-                } as React.CSSProperties
-              }
-            >
-              <MultiplayerPreview />
-              <span className="menu-mode-text">
-                <span className="menu-mode-title">Multiplayer</span>
-                <span className="menu-mode-tagline">Curse your friends!</span>
-              </span>
-              <span className="menu-soon">Coming soon</span>
-            </div>
+        {link || lobbyOpen ? (
+          <div className="menu-list">
+            <Lobby />
+            {link?.role === "host" && link.status === "connected" && (
+              <div className="menu-modes">
+                {onlineModeIndexes().map((i) => {
+                  const theme = THEMES[GAME_MODES[i].theme];
+                  return (
+                    <ModeCard
+                      key={theme.id}
+                      title={theme.title}
+                      tagline={theme.catchphrase}
+                      colors={[theme.sky[1], theme.accent]}
+                      onPlay={() => startSingle(i)}
+                    >
+                      <ModePreview theme={theme.id} />
+                    </ModeCard>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          <h2 className="menu-divider">
-            <span>Single modes</span>
-          </h2>
-          <div className="menu-modes">{modeCards(false)}</div>
-          <h2 className="menu-divider">
-            <span>Beta modes</span>
-          </h2>
-          <p className="menu-note">
-            Still being worked on. Expect rough edges.
-          </p>
-          <div className="menu-modes">{modeCards(true)}</div>
-          <footer className="menu-foot">
-            <a href={SITE_URL} target="_blank" rel="noreferrer">
-              Made by Joshua Swanson
-            </a>
-            <a href={BUGS_URL} target="_blank" rel="noreferrer">
-              Report a bug
-            </a>
-            <a
-              className="menu-foot-coffee"
-              href={COFFEE_URL}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Enjoyed playing? Buy me a coffee
-            </a>
-          </footer>
-        </div>
+        ) : (
+          <div className="menu-list">
+            {/* The two ways to play everything, on a row of their own */}
+            <div className="menu-featured">
+              <ModeCard
+                title="Story Mode"
+                tagline="One mode after another!"
+                colors={["#6a1fd6", "#ff2e88"]}
+                onPlay={startAdventure}
+              >
+                <AdventurePreview />
+              </ModeCard>
+              <ModeCard
+                title="Multiplayer"
+                tagline="Curse your friends!"
+                colors={["#6b2fd6", "#3ee6b0"]}
+                onPlay={() => useGameStore.setState({ lobbyOpen: true })}
+              >
+                <MultiplayerPreview />
+              </ModeCard>
+            </div>
+            <h2 className="menu-divider">
+              <span>Single modes</span>
+            </h2>
+            <div className="menu-modes">{modeCards(false)}</div>
+            <h2 className="menu-divider">
+              <span>Beta modes</span>
+            </h2>
+            <p className="menu-note">
+              Still being worked on. Expect rough edges.
+            </p>
+            <div className="menu-modes">{modeCards(true)}</div>
+            <footer className="menu-foot">
+              <a href={SITE_URL} target="_blank" rel="noreferrer">
+                Made by Joshua Swanson
+              </a>
+              <a href={BUGS_URL} target="_blank" rel="noreferrer">
+                Report a bug
+              </a>
+              <a
+                className="menu-foot-coffee"
+                href={COFFEE_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Enjoyed playing? Buy me a coffee
+              </a>
+            </footer>
+          </div>
+        )}
       </div>
     </div>
   );

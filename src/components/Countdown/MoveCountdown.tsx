@@ -100,12 +100,16 @@ export function MoveCountdown() {
   const theme = useTheme();
   const cursed = useGameStore((s) => s.cursed);
   const turn = useGameStore((s) => s.turn);
-  const timeWhite = useGameStore((s) => s.timeWhite);
+  const seat = useGameStore((s) => s.seat);
+  // Your own clock, whichever side you play
+  const timeWhite = useGameStore((s) =>
+    s.seat === Color.White ? s.timeWhite : s.timeBlack,
+  );
   const autonomous = useGameStore((s) => s.pluginManager.isAutonomous());
   const introDone = useGameStore((s) => s.introDone);
 
   const seconds =
-    cursed && !autonomous && turn === Color.White && timeWhite > 0
+    cursed && !autonomous && turn === seat && timeWhite > 0
       ? Math.ceil(timeWhite)
       : null;
   const counting = seconds !== null && seconds <= COUNTDOWN_FROM;
@@ -122,7 +126,11 @@ export function MoveCountdown() {
     const stop = useGameStore.subscribe((now, before) => {
       const skipped = now.skippedTurn;
       if (!skipped || skipped.id === before.skippedTurn?.id) return;
-      if (skipped.reason !== "time" || skipped.color !== Color.White) return;
+      if (
+        skipped.reason !== "time" ||
+        skipped.color !== useGameStore.getState().seat
+      )
+        return;
       setTimeUp(true);
       sfx.whistle(false);
       window.clearTimeout(done);

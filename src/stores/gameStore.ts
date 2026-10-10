@@ -266,6 +266,14 @@ export interface GameStore {
   lastPortalMove: PortalMoveInfo | null;
   promotionPending: { from: SquareIndex; to: SquareIndex } | null;
   flipped: boolean;
+  /** The colour this browser plays: White, except for the guest of an online game */
+  seat: Color;
+  /** An online game with a friend, if one is on: which end of it this browser is, and how the link stands */
+  net: NetLink | null;
+  /** The guest's copy of the moves open to them, sent over by the host with each position */
+  netLegal: Move[];
+  /** The main menu is showing the online lobby */
+  lobbyOpen: boolean;
 
   scoreWhite: number;
   scoreBlack: number;
@@ -428,6 +436,35 @@ function dealClashHand(): ClashHand {
     dealt: Array(CLASH_HAND_SIZE).fill(0),
   };
 }
+
+/** One end of an online game: the host's browser runs it, and the guest's shows what it is sent */
+export interface NetLink {
+  role: "host" | "guest";
+  /** The code the two found each other by */
+  code: string;
+  status: "waiting" | "connecting" | "connected" | "lost";
+}
+
+/** What the guest sends the host: for now, only the moves it wants played */
+export type GuestMessage = {
+  t: "move";
+  from: SquareIndex;
+  to: SquareIndex;
+  promotion?: PieceType;
+};
+
+let sendToHost: ((message: GuestMessage) => void) | null = null;
+/** Gives the store its line to the host, or takes it away */
+export function connectGuestLine(
+  send: ((message: GuestMessage) => void) | null,
+): void {
+  sendToHost = send;
+}
+
+const isGuest = () => useGameStore.getState().net?.role === "guest";
+/** How long Black has for a move: a moment for the computer, a full turn for a friend */
+const foeSeconds = () =>
+  useGameStore.getState().net ? PLAYER_MOVE_SECONDS : AI_MOVE_SECONDS;
 
 /** How many moves had been played when the current mode began */
 let modeStartPly = 0;
@@ -613,7 +650,7 @@ function passTurnWithoutMoving(endDelayMs: number): void {
     status,
     timeWhite:
       game.turn === Color.White ? PLAYER_MOVE_SECONDS : state.timeWhite,
-    timeBlack: AI_MOVE_SECONDS,
+    timeBlack: foeSeconds(),
     moveTimerActive: true,
   });
   if (isGameOver(status)) {
@@ -725,6 +762,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   pluginManager: freshPluginManager(initialGame),
   ...FRESH_BOARD,
   flipped: false,
+  seat: Color.White,
+  net: null,
+  netLegal: [],
+  lobbyOpen: false,
 
   scoreWhite: 0,
   scoreBlack: 0,
@@ -809,7 +850,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       status,
       timeWhite:
         hexGame.turn === Color.White ? PLAYER_MOVE_SECONDS : get().timeWhite,
-      timeBlack: AI_MOVE_SECONDS,
+      timeBlack: foeSeconds(),
       moveTimerActive: true,
     });
 
@@ -820,6 +861,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   legalMovesFrom: (square) => {
     const { game, pluginManager } = get();
+    // The guest plays from the moves the host says are open
+    if (isGuest()) return get().netLegal.filter((m) => m.from === square);
     return pluginManager
       .invokeModifyLegalMoves(game.getLegalMoves(square), game.turn)
       .filter((move) => move.from === square);
@@ -837,8 +880,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         });
       return;
     }
-    // The human always plays White
-    if (state.game.turn !== Color.White) return;
+    // Each player moves only their own side
+    if (state.game.turn !== state.seat) return;
 
     const { game, selectedSquare, legalMoveSquares, kickOptions } = state;
     if (selectedSquare !== null && legalMoveSquares.includes(square)) {
@@ -896,6 +939,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   makeMove: (from, to, promotion) => {
+    // The guest's moves are played on the host's board, and come back from there
+    if (isGuest()) {
+      sendToHost?.({ t: "move", from, to, promotion });
+      set({ ...CLEARED_SELECTION, promotionPending: null });
+      return;
+    }
     const state = get();
     // Nobody moves while pieces fall or the undead are still acting
     if (state.paused || state.gravityFalling || state.zombiesActing) return;
@@ -982,7 +1031,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         : game.turn === Color.White
           ? PLAYER_MOVE_SECONDS
           : state.timeWhite,
-      timeBlack: AI_MOVE_SECONDS,
+      timeBlack: foeSeconds(),
       moveTimerActive: true,
     });
 
@@ -1059,6 +1108,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   clearSelection: () => set({ ...CLEARED_SELECTION, promotionPending: null }),
 
   togglePause: () => {
+    if (isGuest()) return;
     set((s) => ({ userPaused: !s.userPaused }));
     syncPaused();
   },
@@ -1170,6 +1220,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   tickTimer: () => {
+    if (isGuest()) return;
     const { turn, moveTimerActive, paused, pluginManager } = get();
     if (
       !moveTimerActive ||
@@ -1191,14 +1242,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   // Black's move comes from the AI. A human who runs out of time gets a random move.
   expireTimer: () => {
+    if (isGuest()) return;
     const { isHexMode, hexGame, game } = get();
     // A player who runs out of time just misses their move
-    const playersTurn = (isHexMode ? hexGame?.turn : game.turn) === Color.White;
+    const toMove = (isHexMode ? hexGame?.turn : game.turn) ?? Color.White;
+    // Against a friend, Black is a player too
+    const playersTurn = toMove === Color.White || get().net !== null;
     if (playersTurn) {
       set((s) => ({
         skippedTurn: {
           id: (s.skippedTurn?.id ?? 0) + 1,
-          color: Color.White,
+          color: toMove,
           reason: "time",
         },
       }));
@@ -1208,7 +1262,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           turn: Color.Black,
           selectedHex: null,
           legalHexMoves: [],
-          timeBlack: AI_MOVE_SECONDS,
+          timeBlack: foeSeconds(),
           moveTimerActive: true,
         });
       } else {
@@ -1282,6 +1336,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   tickAutonomous: () => {
+    if (isGuest()) return;
     const { pluginManager, paused, status } = get();
     if (paused || isGameOver(status) || !pluginManager.isAutonomous()) return;
 
@@ -1302,6 +1357,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   tickGravity: () => {
+    if (isGuest()) return;
     const { pluginManager, game, paused, status, introDone, gravityFalling } =
       get();
     const gravity = pluginManager.find<GravityPlugin>("gravity");
@@ -1332,6 +1388,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   tickModeTimer: () => {
+    if (isGuest()) return;
     const { paused, modeTimeRemaining } = get();
     if (paused) return;
     // Modes the kings sit out run until one side wins them, with no clock
@@ -1344,6 +1401,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   settlePortals: () => {
+    if (isGuest()) return;
     const { pluginManager, game } = get();
     const portals = pluginManager.find<PortalChessPlugin>("portal-chess");
     if (!portals?.settle({ game, board: game.board })) return;
@@ -1352,6 +1410,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   resolveExplosion: (square) => {
+    if (isGuest()) return;
     const { pluginManager, game } = get();
     const minefield = pluginManager.find<MinefieldPlugin>("minefield");
     if (!minefield) return;

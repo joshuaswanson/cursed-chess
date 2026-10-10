@@ -1,4 +1,3 @@
-import { Color } from "../../engine";
 import { useGameStore } from "../../stores/gameStore";
 import "./Reinforcements.css";
 
@@ -18,6 +17,7 @@ const COPY = {
 /** Announces over the board that a side has missed its turn, and why */
 export function SkipBanner() {
   const skipped = useGameStore((s) => s.skippedTurn);
+  const seat = useGameStore((s) => s.seat);
   if (!skipped) return null;
   const copy = COPY[skipped.reason];
   return (
@@ -28,7 +28,7 @@ export function SkipBanner() {
     >
       <span className="reinforce-title">{copy.title}</span>
       <span className="reinforce-sub">
-        {skipped.color === Color.White ? copy.you : copy.foe}
+        {skipped.color === seat ? copy.you : copy.foe}
       </span>
     </div>
   );

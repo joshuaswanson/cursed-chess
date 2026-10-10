@@ -21,7 +21,7 @@ export class StrategoPlugin implements ModePlugin {
   name = "Stratego";
   description = "Hidden enemy pieces, lakes block the center";
 
-  /** Squares with revealed Black pieces (persist until captured or game ends) */
+  /** Squares whose pieces have given themselves away by taking something, for as long as they live */
   private revealed = new Set<SquareIndex>();
 
   onGameStart(ctx: PluginContext): void {
@@ -76,21 +76,15 @@ export class StrategoPlugin implements ModePlugin {
   }
 
   onAfterMove(_ctx: PluginContext, move: Move): void {
-    // Track revealed pieces when Black moves a revealed piece
-    if (move.piece.color === Color.Black && this.revealed.has(move.from)) {
+    // Whatever stood on the square taken is gone, known or not
+    if (move.captured) this.revealed.delete(move.to);
+    // A piece that is known stays known wherever it goes
+    if (this.revealed.has(move.from)) {
       this.revealed.delete(move.from);
       this.revealed.add(move.to);
     }
-
-    // Reveal enemy pieces when they capture (their identity becomes known)
-    if (move.captured && move.piece.color === Color.Black) {
-      this.revealed.add(move.to);
-    }
-
-    // Reveal enemy pieces when captured (briefly visible before removal)
-    if (move.captured && move.captured.color === Color.Black) {
-      this.revealed.delete(move.to);
-    }
+    // Taking a piece gives the taker away
+    if (move.captured) this.revealed.add(move.to);
   }
 
   modifyGameStatus(_ctx: PluginContext, status: GameStatus): GameStatus {
@@ -99,20 +93,17 @@ export class StrategoPlugin implements ModePlugin {
     return status;
   }
 
-  getBoardOverlays(ctx: PluginContext): BoardOverlay[] {
-    const hiddenSquares: SquareIndex[] = [];
-    for (let rank = 0; rank < 8; rank++) {
-      for (let file = 0; file < 8; file++) {
-        const sq = toIndex(file, rank) as SquareIndex;
-        const piece = ctx.board.get(sq);
-        if (piece && piece.color === Color.Black && !this.revealed.has(sq)) {
-          hiddenSquares.push(sq);
-        }
-      }
-    }
+  /** The squares whose pieces this side cannot make out: the other side's, until they give themselves away */
+  hiddenFrom(ctx: PluginContext, viewer: Color): SquareIndex[] {
+    return ALL_SQUARES.filter((sq) => {
+      const piece = ctx.board.get(sq);
+      return piece && piece.color !== viewer && !this.revealed.has(sq);
+    });
+  }
 
+  getBoardOverlays(ctx: PluginContext): BoardOverlay[] {
     return [
-      { type: "stratego-hidden", squares: hiddenSquares },
+      { type: "stratego-hidden", squares: this.hiddenFrom(ctx, Color.White) },
       { type: "stratego-lake", squares: [...LAKE_SQUARES] },
     ];
   }

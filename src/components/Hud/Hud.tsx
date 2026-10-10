@@ -7,6 +7,7 @@ import { sfx } from "../../audio/sfx";
 import { MenuIcon, MuteIcon, PauseIcon, PlayIcon, SoundIcon } from "./icons";
 import "./Hud.css";
 import { ChessbotCorner } from "../Chessbot/ChessbotCorner";
+import { leaveGame } from "../../net/multiplayer";
 
 const MOVE_SECONDS = 10;
 const RING_RADIUS = 26;
@@ -15,6 +16,11 @@ const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 function Scoreboard() {
   const scoreWhite = useGameStore((s) => s.scoreWhite);
   const scoreBlack = useGameStore((s) => s.scoreBlack);
+  // Online, each side of the score is whoever is playing it
+  const online = useGameStore((s) => s.net !== null);
+  const seat = useGameStore((s) => s.seat);
+  const nameOf = (color: Color) =>
+    color === seat ? "You" : online ? "Friend" : "Chessbot";
   return (
     <section className="hud-card scoreboard" aria-label="Score">
       <div className="score-side">
@@ -23,7 +29,7 @@ function Scoreboard() {
           src={pieceImage({ type: PieceType.King, color: Color.White })}
           alt=""
         />
-        <span className="score-name">You</span>
+        <span className="score-name">{nameOf(Color.White)}</span>
         <span className="score-value" key={scoreWhite}>
           {scoreWhite}
         </span>
@@ -35,7 +41,7 @@ function Scoreboard() {
         <span className="score-value" key={scoreBlack}>
           {scoreBlack}
         </span>
-        <span className="score-name">Chessbot</span>
+        <span className="score-name">{nameOf(Color.Black)}</span>
         <img
           className="score-avatar"
           src={pieceImage({ type: PieceType.King, color: Color.Black })}
@@ -99,7 +105,12 @@ function NowPlaying() {
 
 function MoveClock() {
   const turn = useGameStore((s) => s.turn);
-  const timeWhite = useGameStore((s) => s.timeWhite);
+  const seat = useGameStore((s) => s.seat);
+  const online = useGameStore((s) => s.net !== null);
+  // Your own clock, whichever side you play
+  const timeWhite = useGameStore((s) =>
+    s.seat === Color.White ? s.timeWhite : s.timeBlack,
+  );
   const autonomous = useGameStore((s) => s.pluginManager.isAutonomous());
 
   if (autonomous) {
@@ -109,11 +120,11 @@ function MoveClock() {
       </section>
     );
   }
-  if (turn !== Color.White) {
+  if (turn !== seat) {
     return (
       <section className="hud-card move-clock foe-turn">
         <span className="clock-label">
-          Chessbot is thinking
+          {online ? "Your friend is thinking" : "Chessbot is thinking"}
           <span className="thinking-dots" aria-hidden>
             <i />
             <i />
@@ -195,11 +206,16 @@ function Toolbar() {
   const userPaused = useGameStore((s) => s.userPaused);
   const soundOn = useSyncExternalStore(sfx.subscribe, sfx.isEnabled);
   const { togglePause, openMenu } = useGameStore.getState();
+  const guest = useGameStore((s) => s.net?.role === "guest");
   useShortcuts();
 
   return (
     <nav className="toolbar" aria-label="Game controls">
-      <ToolButton label="Main menu" onClick={openMenu}>
+      {/* A guest has no game of their own to go back to the menu from: they leave their friend's */}
+      <ToolButton
+        label={guest ? "Leave game" : "Main menu"}
+        onClick={guest ? leaveGame : openMenu}
+      >
         <MenuIcon />
       </ToolButton>
       <ToolButton

@@ -198,6 +198,7 @@ export function Board() {
     lastPortalMove,
     flipped,
     status,
+    seat,
     selectSquare,
     game,
     pluginManager,
@@ -391,10 +392,8 @@ export function Board() {
   const heistLit = new Set(overlays.heist?.shown ?? []);
   // In the dark, a check on you shows your king and whatever is giving it
   const kingInCheck =
-    overlays.lanterns &&
-    status === GameStatus.Check &&
-    game.turn === Color.White
-      ? game.board.findKing(Color.White)
+    overlays.lanterns && status === GameStatus.Check && game.turn === seat
+      ? game.board.findKing(seat)
       : null;
   const shownByCheck =
     kingInCheck === null
@@ -403,7 +402,7 @@ export function Board() {
           kingInCheck,
           ...generatePseudoLegalMoves(
             game.board,
-            Color.Black,
+            seat === Color.White ? Color.Black : Color.White,
             game.enPassant,
             game.pawnRules,
           )
@@ -1059,7 +1058,7 @@ export function Board() {
           )}
           <BoardFog
             active={overlays.hasFog && introDone}
-            enemyOnTop={!flipped}
+            enemyOnTop={(seat === Color.White) !== flipped}
           />
           {drag?.isDragging && (
             <DraggedPiece

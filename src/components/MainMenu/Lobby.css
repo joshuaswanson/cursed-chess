@@ -1,0 +1,137 @@
+/* --- The online lobby: a panel under the logo for opening or joining a game with a friend --- */
+
+.lobby {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  padding: 26px 24px 22px;
+  text-align: center;
+  color: var(--paper);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 16px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #6b2fd6 55%, #12082b),
+    color-mix(in srgb, #3ee6b0 30%, #12082b)
+  );
+  border: 3px solid var(--plum-ink);
+  border-radius: 18px;
+  box-shadow: 5px 6px 0 var(--plum-ink);
+}
+
+.lobby p {
+  margin: 0;
+}
+
+.lobby-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: normal;
+  font-size: clamp(22px, 3vw, 32px);
+  text-shadow: 2px 3px 0 var(--plum-ink);
+}
+
+.lobby-ways {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  width: min(620px, 100%);
+}
+
+.lobby-way {
+  display: grid;
+  align-content: space-between;
+  justify-items: center;
+  gap: 12px;
+  padding: 18px;
+  background: color-mix(in srgb, var(--plum-ink) 45%, transparent);
+  border-radius: 14px;
+}
+
+.lobby-btn {
+  padding: 9px 20px 8px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--plum-ink);
+  background: var(--lemon);
+  border: 3px solid var(--plum-ink);
+  border-radius: 999px;
+  box-shadow: 3px 4px 0 var(--plum-ink);
+  cursor: pointer;
+}
+
+.lobby-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.lobby-btn:focus-visible,
+.lobby-input:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.lobby-leave {
+  color: var(--paper);
+  background: color-mix(in srgb, var(--paper) 12%, transparent);
+}
+
+.lobby-input,
+.lobby-code {
+  font-family: var(--font-display);
+  letter-spacing: 0.3em;
+  text-align: center;
+  color: var(--plum-ink);
+  background: var(--paper);
+  border: 3px solid var(--plum-ink);
+  border-radius: 12px;
+}
+
+.lobby-input {
+  width: 9em;
+  padding: 8px 6px 7px 12px;
+  font-size: 20px;
+}
+
+.lobby-code {
+  padding: 10px 20px 8px 30px;
+  font-size: clamp(30px, 6vw, 48px);
+  box-shadow: 4px 5px 0 var(--plum-ink);
+  user-select: all;
+}
+
+.lobby-status {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.lobby-hint {
+  opacity: 0.75;
+  animation: lobby-wait 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes lobby-wait {
+  to {
+    opacity: 0.35;
+  }
+}
+
+.lobby-lost {
+  color: #ffb3b3;
+}
+
+@media (max-width: 540px) {
+  .lobby-ways {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lobby-hint {
+    animation: none;
+  }
+}
