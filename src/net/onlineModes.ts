@@ -5,10 +5,13 @@ import type { ThemeId } from "../theme/themes";
 const ONLINE_MODES: ThemeId[] = [
   "portals",
   "fog",
+  "fifa",
   "tug",
   "mines",
   "royale",
   "hill",
+  "gravity",
+  "hex",
   "lanterns",
   "zombies",
   "stratego",

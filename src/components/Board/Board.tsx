@@ -411,11 +411,11 @@ export function Board() {
         ];
   const footballRules = pluginManager.find<FootballPlugin>("football");
   const ourBall =
-    football !== null && game.board.get(football.ball)?.color === Color.White;
+    football !== null && game.board.get(football.ball)?.color === seat;
   const canShoot =
     footballRules !== undefined &&
     ourBall &&
-    game.turn === Color.White &&
+    game.turn === seat &&
     !isGameOver(status) &&
     !game.isInCheck();
   const shot = canShoot
@@ -424,7 +424,7 @@ export function Board() {
   const shotChance = shot?.chance ?? null;
   const noShotReason = !ourBall
     ? "Win the ball first!"
-    : game.turn !== Color.White
+    : game.turn !== seat
       ? "Wait for your turn!"
       : "No clear shot!";
   const battleRoyale = overlays.battleRoyale;
@@ -954,8 +954,8 @@ export function Board() {
                 atTop={(defender === Color.Black) !== flipped}
                 flipped={flipped}
                 defender={defender}
-                attacked={defender === Color.Black}
-                shotChance={defender === Color.Black ? shotChance : null}
+                attacked={defender !== seat}
+                shotChance={defender !== seat ? shotChance : null}
                 shotExitFile={shot?.exitFile ?? null}
                 noShotReason={noShotReason}
                 scoredKick={

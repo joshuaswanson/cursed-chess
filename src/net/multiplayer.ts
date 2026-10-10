@@ -1,7 +1,16 @@
 import Peer from "peerjs";
 import type { DataConnection } from "peerjs";
 import { Color, Game } from "../engine";
-import type { Move, SquareIndex } from "../engine";
+import type { Move, Piece, SquareIndex } from "../engine";
+import { HexGame } from "../engine/hex";
+import type { HexCoord } from "../engine/hex";
+import type {
+  FootballPlugin,
+  Kick,
+  PassOption,
+  ShotOption,
+} from "../plugins/football";
+import type { GravityPlugin } from "../plugins/gravity";
 import { PluginManager } from "../plugins/manager";
 import type {
   BoardOverlay,
@@ -56,6 +65,10 @@ const SHARED = [
   "sidelineBench",
   "arrivalStyle",
   "autonomousTick",
+  "isHexMode",
+  "lastHexMove",
+  "hexTransition",
+  "hexArrivals",
 ] as const satisfies readonly (keyof GameStore)[];
 
 /** The state of play as the host sends it */
@@ -72,6 +85,18 @@ interface Snapshot {
   lastRecord: GameStore["moveHistory"];
   /** Whether Portals is about to move its portals */
   portalsDue: boolean | null;
+  pawnRules: Game["pawnRules"];
+  /** How far Gravity's board has turned, in degrees */
+  spin: number | null;
+  /** FIFA: where the ball is, the last kick, and what the guest could do with the ball */
+  football: {
+    ball: SquareIndex;
+    lastKick: Kick | null;
+    passes: PassOption[];
+    shot: ShotOption | null;
+  } | null;
+  /** Hex chess: every piece on the hex board and whose turn it is */
+  hex: { cells: [HexCoord, Piece][]; turn: Color } | null;
 }
 
 let peer: Peer | null = null;
@@ -100,6 +125,10 @@ function snapshot(): Snapshot {
   const guestToMove = game.turn === Color.Black && !state.menuOpen;
   const stratego = pluginManager.find<StrategoPlugin>("stratego");
   const context = { game, board: game.board };
+  const football = pluginManager.find<FootballPlugin>("football");
+  const guestHasBall =
+    football !== undefined &&
+    game.board.get(football.ball)?.color === Color.Black;
   return {
     shared: Object.fromEntries(
       SHARED.map((key) => [key, state[key]]),
@@ -122,6 +151,26 @@ function snapshot(): Snapshot {
     lastRecord: state.moveHistory.slice(-1),
     portalsDue:
       pluginManager.find<PortalChessPlugin>("portal-chess")?.respawnDue ?? null,
+    pawnRules: game.pawnRules,
+    spin:
+      pluginManager.find<GravityPlugin>("gravity")?.spinAt(performance.now()) ??
+      null,
+    football: football
+      ? {
+          ball: football.ball,
+          lastKick: football.lastKick,
+          passes: guestHasBall
+            ? football.passOptions(game.board, football.ball)
+            : [],
+          shot: guestHasBall
+            ? football.shotOption(game.board, football.ball)
+            : null,
+        }
+      : null,
+    hex:
+      state.isHexMode && state.hexGame
+        ? { cells: state.hexGame.board.entries(), turn: state.hexGame.turn }
+        : null,
   };
 }
 
@@ -146,7 +195,60 @@ function mirror(game: Game, snap: Snapshot): PluginManager {
       respawnDue: snap.portalsDue,
     } as ModePlugin);
   }
+  if (snap.football) {
+    const { ball, lastKick, passes, shot } = snap.football;
+    manager.register({
+      id: "football",
+      name: "",
+      description: "",
+      ball,
+      lastKick,
+      passOptions: () => passes,
+      shotOption: () => shot,
+      carrier: (board: Game["board"]) => board.get(ball),
+    } as unknown as ModePlugin);
+  }
+  if (snap.spin !== null) {
+    manager.register({
+      id: "gravity",
+      name: "",
+      description: "",
+      spinAt: turningAt,
+    } as unknown as ModePlugin);
+  }
   return manager;
+}
+
+/**
+ * Gravity's board turns all the time, and word of it comes only now and
+ * then: between times the guest carries the turn on at the rate it was
+ * last seen going
+ */
+let spin = { angle: 0, at: 0, perMs: 0 };
+function heardSpin(angle: number): void {
+  const now = performance.now();
+  const since = now - spin.at;
+  const turned = angle - spin.angle;
+  spin = {
+    angle,
+    at: now,
+    // A long gap or a jump is a fresh start, with no rate to go on
+    perMs:
+      since > 0 && since < 500 && Math.abs(turned) < 20 ? turned / since : 0,
+  };
+}
+function turningAt(now: number): number {
+  return spin.angle + spin.perMs * Math.min(250, now - spin.at);
+}
+
+/** The host's hex board, set up again on the guest's side */
+function hexBoard(hex: NonNullable<Snapshot["hex"]>): HexGame {
+  const game = new HexGame([], []);
+  for (const [coord, piece] of hex.cells) {
+    game.board.set(coord.q, coord.r, piece);
+  }
+  game.turn = hex.turn;
+  return game;
 }
 
 /** Shows the guest the game as the host has it, turned round to their own side of the board */
@@ -155,6 +257,8 @@ function show(snap: Snapshot): void {
     setBoardSize(snap.ranks, snap.files);
   }
   const game = new Game(snap.fen);
+  game.pawnRules = snap.pawnRules;
+  if (snap.spin !== null) heardSpin(snap.spin);
   const { announcementType } = snap.shared;
   useGameStore.setState({
     ...snap.shared,
@@ -167,6 +271,7 @@ function show(snap: Snapshot): void {
           : announcementType,
     game,
     pluginManager: mirror(game, snap),
+    hexGame: snap.hex ? hexBoard(snap.hex) : null,
     moveHistory: snap.lastRecord,
     netLegal: snap.legal,
     seat: Color.Black,
@@ -199,8 +304,14 @@ function keepSending(): () => void {
 /** The guest wants a move played: the host plays it, if it is theirs to make */
 function hear(message: GuestMessage): void {
   const state = store();
-  if (message.t !== "move" || state.game.turn !== Color.Black) return;
-  state.makeMove(message.from, message.to, message.promotion);
+  if (state.turn !== Color.Black) return;
+  if (message.t === "move") {
+    state.makeMove(message.from, message.to, message.promotion);
+  } else if (message.t === "kick") {
+    state.kick(message.target);
+  } else {
+    state.makeHexMove(message.from, message.to, message.promotion);
+  }
 }
 
 function lost(): void {

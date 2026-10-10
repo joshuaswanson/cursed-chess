@@ -88,6 +88,7 @@ export function HexBoard() {
   const makeHexMove = useGameStore((s) => s.makeHexMove);
   const status = useGameStore((s) => s.status);
   const turn = useGameStore((s) => s.turn);
+  const seat = useGameStore((s) => s.seat);
 
   const [hovered, setHovered] = useState<string | null>(null);
   const [drag, setDrag] = useState<HexDrag | null>(null);
@@ -234,8 +235,7 @@ export function HexBoard() {
     if (!hexGame || hexPromotionPending) return;
     const piece = hexGame.board.getCoord(coord);
     const isLegalTarget = legalMoveKeys.has(coordKey(coord));
-    const ownPiece =
-      piece && piece.color === hexGame.turn && turn === Color.White;
+    const ownPiece = piece && piece.color === hexGame.turn && turn === seat;
     if (!ownPiece || isLegalTarget) {
       handleHexClick(coord);
       return;

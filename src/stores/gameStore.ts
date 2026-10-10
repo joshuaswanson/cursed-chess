@@ -445,13 +445,11 @@ export interface NetLink {
   status: "waiting" | "connecting" | "connected" | "lost";
 }
 
-/** What the guest sends the host: for now, only the moves it wants played */
-export type GuestMessage = {
-  t: "move";
-  from: SquareIndex;
-  to: SquareIndex;
-  promotion?: PieceType;
-};
+/** What the guest sends the host: the moves, kicks and hex moves it wants played */
+export type GuestMessage =
+  | { t: "move"; from: SquareIndex; to: SquareIndex; promotion?: PieceType }
+  | { t: "kick"; target: KickTarget }
+  | { t: "hex"; from: HexCoord; to: HexCoord; promotion?: PieceType };
 
 let sendToHost: ((message: GuestMessage) => void) | null = null;
 /** Gives the store its line to the host, or takes it away */
@@ -799,7 +797,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   selectHex: (coord) => {
     const { paused, hexGame, selectedHex, legalHexMoves, makeHexMove } = get();
-    if (paused || !hexGame || hexGame.turn !== Color.White) return;
+    if (paused || !hexGame || hexGame.turn !== get().seat) return;
 
     if (selectedHex) {
       const move = legalHexMoves.find(
@@ -821,6 +819,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   makeHexMove: (from, to, promotion) => {
+    // The guest's moves are played on the host's board, and come back from there
+    if (isGuest()) {
+      sendToHost?.({ t: "hex", from, to, promotion });
+      set({ selectedHex: null, legalHexMoves: [], hexPromotionPending: null });
+      return;
+    }
     const { paused, hexGame } = get();
     if (paused || !hexGame) return;
 
@@ -1061,6 +1065,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   kick: (target) => {
+    if (isGuest()) {
+      sendToHost?.({ t: "kick", target });
+      set(CLEARED_SELECTION);
+      return true;
+    }
     const state = get();
     const { game, pluginManager } = state;
     if (state.paused || isGameOver(state.status)) return false;
@@ -1257,11 +1266,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
         },
       }));
       if (isHexMode && hexGame) {
-        hexGame.turn = Color.Black;
+        hexGame.turn = opponent(toMove);
         set({
-          turn: Color.Black,
+          turn: hexGame.turn,
           selectedHex: null,
           legalHexMoves: [],
+          timeWhite: PLAYER_MOVE_SECONDS,
           timeBlack: foeSeconds(),
           moveTimerActive: true,
         });
