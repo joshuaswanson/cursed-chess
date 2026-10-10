@@ -89,6 +89,9 @@ export function HexBoard() {
   const status = useGameStore((s) => s.status);
   const turn = useGameStore((s) => s.turn);
   const seat = useGameStore((s) => s.seat);
+  // Whoever plays Black sees the board turned round, their own side nearest
+  const place = (q: number, r: number) =>
+    seat === Color.Black ? hexToPixel(-q, -r) : hexToPixel(q, r);
 
   const [hovered, setHovered] = useState<string | null>(null);
   const [drag, setDrag] = useState<HexDrag | null>(null);
@@ -273,7 +276,7 @@ export function HexBoard() {
         }
       >
         {ALL_HEXES.map((coord) => {
-          const { x, y } = hexToPixel(coord.q, coord.r);
+          const { x, y } = place(coord.q, coord.r);
           const key = coordKey(coord);
           const piece = hexGame.board.getCoord(coord);
           const color = hexColor(coord.q, coord.r);
@@ -330,13 +333,13 @@ export function HexBoard() {
           const piece = hexGame.board.getCoord(coord);
           if (!piece) return null;
           const key = coordKey(coord);
-          const { x, y } = hexToPixel(coord.q, coord.r);
+          const { x, y } = place(coord.q, coord.r);
           const arriving =
             lastHexMove !== null &&
             coordKey(lastHexMove.to) === key &&
             !dropped;
           const from = arriving
-            ? hexToPixel(lastHexMove.from.q, lastHexMove.from.r)
+            ? place(lastHexMove.from.q, lastHexMove.from.r)
             : null;
           return (
             <img
@@ -367,8 +370,8 @@ export function HexBoard() {
           <div
             className="hex-burst-anchor"
             style={{
-              left: OFFSET_X + hexToPixel(burstAt[0], burstAt[1]).x - HEX_W / 2,
-              top: OFFSET_Y + hexToPixel(burstAt[0], burstAt[1]).y - HEX_H / 2,
+              left: OFFSET_X + place(burstAt[0], burstAt[1]).x - HEX_W / 2,
+              top: OFFSET_Y + place(burstAt[0], burstAt[1]).y - HEX_H / 2,
               width: HEX_W,
               height: HEX_H,
             }}

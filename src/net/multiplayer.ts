@@ -86,8 +86,8 @@ interface Snapshot {
   /** Whether Portals is about to move its portals */
   portalsDue: boolean | null;
   pawnRules: Game["pawnRules"];
-  /** How far Gravity's board has turned, in degrees */
-  spin: number | null;
+  /** How far Gravity's board has turned, in degrees, and how fast it is turning, in degrees a millisecond */
+  spin: { angle: number; perMs: number } | null;
   /** FIFA: where the ball is, the last kick, and what the guest could do with the ball */
   football: {
     ball: SquareIndex;
@@ -126,6 +126,8 @@ function snapshot(): Snapshot {
   const stratego = pluginManager.find<StrategoPlugin>("stratego");
   const context = { game, board: game.board };
   const football = pluginManager.find<FootballPlugin>("football");
+  const gravity = pluginManager.find<GravityPlugin>("gravity");
+  const now = performance.now();
   const guestHasBall =
     football !== undefined &&
     game.board.get(football.ball)?.color === Color.Black;
@@ -152,9 +154,12 @@ function snapshot(): Snapshot {
     portalsDue:
       pluginManager.find<PortalChessPlugin>("portal-chess")?.respawnDue ?? null,
     pawnRules: game.pawnRules,
-    spin:
-      pluginManager.find<GravityPlugin>("gravity")?.spinAt(performance.now()) ??
-      null,
+    spin: gravity
+      ? {
+          angle: gravity.spinAt(now),
+          perMs: (gravity.spinAt(now + 1000) - gravity.spinAt(now)) / 1000,
+        }
+      : null,
     football: football
       ? {
           ball: football.ball,
@@ -221,24 +226,14 @@ function mirror(game: Game, snap: Snapshot): PluginManager {
 
 /**
  * Gravity's board turns all the time, and word of it comes only now and
- * then: between times the guest carries the turn on at the rate it was
- * last seen going
+ * then: between times the guest carries the turn on at the rate the host
+ * says it is going
  */
 let spin = { angle: 0, at: 0, perMs: 0 };
-function heardSpin(angle: number): void {
-  const now = performance.now();
-  const since = now - spin.at;
-  const turned = angle - spin.angle;
-  spin = {
-    angle,
-    at: now,
-    // A long gap or a jump is a fresh start, with no rate to go on
-    perMs:
-      since > 0 && since < 500 && Math.abs(turned) < 20 ? turned / since : 0,
-  };
-}
+/** How long the guest goes on turning the board with no word from the host */
+const SPIN_COAST_MS = 2000;
 function turningAt(now: number): number {
-  return spin.angle + spin.perMs * Math.min(250, now - spin.at);
+  return spin.angle + spin.perMs * Math.min(SPIN_COAST_MS, now - spin.at);
 }
 
 /** The host's hex board, set up again on the guest's side */
@@ -258,7 +253,7 @@ function show(snap: Snapshot): void {
   }
   const game = new Game(snap.fen);
   game.pawnRules = snap.pawnRules;
-  if (snap.spin !== null) heardSpin(snap.spin);
+  if (snap.spin) spin = { ...snap.spin, at: performance.now() };
   const { announcementType } = snap.shared;
   useGameStore.setState({
     ...snap.shared,

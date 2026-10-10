@@ -30,19 +30,24 @@ export function Stands() {
     if (!football) return false;
     const carrier = s.game.board.get(football.ball);
     return (
-      carrier?.color === Color.White && rankOf(football.ball) >= CHANT_RANK
+      carrier?.color === s.seat &&
+      // Deep in the other side's half, whichever way you are playing
+      (s.seat === Color.White
+        ? rankOf(football.ball) >= CHANT_RANK
+        : rankOf(football.ball) <= 7 - CHANT_RANK)
     );
   });
+  const seat = useGameStore((s) => s.seat);
   const [mood, setMood] = useState<Mood>(null);
 
   useEffect(() => {
     if (!kick || kick.kind !== "shot") return;
     const next: Mood =
       kick.outcome === "goal"
-        ? kick.color === Color.White
+        ? kick.color === seat
           ? "erupt"
           : "hush"
-        : kick.color === Color.White
+        : kick.color === seat
           ? "groan"
           : null;
     if (!next) return;
