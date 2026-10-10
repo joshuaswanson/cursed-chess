@@ -63,7 +63,7 @@ interface Light {
 const STEPS = [-17, -16, -15, -1, 1, 15, 16, 17];
 /** How many squares across the vault is inside its walls */
 const VAULT_SIZE = 3;
-/** How many squares of wall stand either side of each door */
+/** How many squares each wall runs either side of its middle */
 const WALL_ARM = 3;
 const LIGHT_SIZE = 2;
 const LIGHTS = 3;
@@ -80,8 +80,8 @@ const steps = (a: SquareIndex, b: SquareIndex) =>
 
 /**
  * A museum at night: a long dark hall with one jewel on the square at its
- * very middle, in a vault walled off from each army by a wall with one
- * door in it, and open at its two ends.
+ * very middle, in a vault walled off from each army by a solid wall, and
+ * open at its two ends.
  * Nobody can see the other side's pieces, except where a searchlight
  * falls. The lights cross the hall a square at a time. A piece a light
  * comes onto jumps out of its way if there is anywhere to jump to, and is
@@ -125,17 +125,17 @@ export class HeistPlugin implements ModePlugin {
   }
 
   /**
-   * Two walls across the hall, one on each army's side of the vault's
-   * floor: each three squares long either side of a door in its middle.
-   * The vault stands open to the left and right.
+   * Two solid walls across the hall, one on each army's side of the
+   * vault's floor. The only ways in are round their ends, where the vault
+   * stands open to the left and right.
    */
   private buildWalls(): Set<SquareIndex> {
     const { file, rank, size } = this.vault;
     const walls = new Set<SquareIndex>();
-    const door = file + (size - 1) / 2;
+    const middle = file + (size - 1) / 2;
     for (const wallRank of [rank - 1, rank + size]) {
-      for (let f = door - WALL_ARM; f <= door + WALL_ARM; f++) {
-        if (f !== door) walls.add(toIndex(f, wallRank));
+      for (let f = middle - WALL_ARM; f <= middle + WALL_ARM; f++) {
+        walls.add(toIndex(f, wallRank));
       }
     }
     return walls;
