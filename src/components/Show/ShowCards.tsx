@@ -330,7 +330,9 @@ export function ShowCards() {
     key: number;
   } | null>(null);
   const [closing, setClosing] = useState(false);
-  const [prev, setPrev] = useState(announcement);
+  // Nothing has been shown yet when this first appears, so a card already
+  // up at that moment, as when a mode is picked from the menu, still plays
+  const [prev, setPrev] = useState<string | null>(null);
 
   // Keep the last card mounted while its exit plays
   if (announcement !== prev) {
