@@ -38,18 +38,18 @@ export const SQUADS: Squad[] = [
     readyMs: 9000,
   },
   {
+    id: "assault",
+    name: "Assault team",
+    men: [PieceType.Knight, PieceType.Knight],
+    readyMs: 12000,
+  },
+  {
     id: "guns",
     name: "Machine gun team",
     men: [PieceType.Rook, PieceType.Pawn, PieceType.Pawn],
     readyMs: 16000,
   },
   { id: "sniper", name: "Sniper", men: [PieceType.Bishop], readyMs: 11000 },
-  {
-    id: "assault",
-    name: "Assault team",
-    men: [PieceType.Knight, PieceType.Knight],
-    readyMs: 12000,
-  },
 ];
 
 /** How often the enemy looks to move men up from its back trench */
