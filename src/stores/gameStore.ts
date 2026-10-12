@@ -86,6 +86,8 @@ const OPENING_LINE_MS = 3000;
 const GAME_END_DELAY_MS = 600;
 /** Long enough for a piece to go through a portal and land before the result shows */
 const PORTAL_END_DELAY_MS = 2400;
+/** The last heave of Tug of War lands, and the flag crosses the line, before the result shows */
+const TUG_FINISH_MS = 2600;
 /** A goal gets its celebration before the result banner */
 const GOAL_CELEBRATION_MS = 3600;
 const RESULT_MS = 2500;
@@ -584,9 +586,14 @@ function endGameSoon(
   const zombies = useGameStore
     .getState()
     .pluginManager.find<ZombiesPlugin>("zombies");
+  const tug = useGameStore
+    .getState()
+    .pluginManager.find<TugOfWarPlugin>("tug-of-war");
   const wait = zombies?.finishingBite
     ? Math.max(delayMs, ZOMBIE_FINISH_MS)
-    : delayMs;
+    : tug && tug.getWinner() !== null
+      ? Math.max(delayMs, TUG_FINISH_MS)
+      : delayMs;
   schedule(() => useGameStore.getState().handleGameEnd(winner), wait);
 }
 
