@@ -1335,7 +1335,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
         .moveHistory.slice(modeStartPly)
         .some((m) => m.move.piece.color === Color.Black);
     const sparing = moves.filter((m) => !regicides.has(m));
-    const allowed = firstInPortals && sparing.length > 0 ? sparing : moves;
+    // And where he can, he opens by going through a portal, to show it off
+    const showy = sparing.filter((m) => m.flags & MoveFlag.Portal);
+    const allowed = !firstInPortals
+      ? moves
+      : showy.length > 0
+        ? showy
+        : sparing.length > 0
+          ? sparing
+          : moves;
 
     const pick =
       game.turn === Color.Black
