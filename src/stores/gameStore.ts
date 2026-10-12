@@ -475,7 +475,7 @@ export const inPortalLesson = (s: GameStore): boolean =>
   !s.paused &&
   !s.announcement &&
   !s.portalTravelling &&
-  !isGameOver(s.status) &&
+  s.status === GameStatus.Active &&
   s.turn === Color.White &&
   GAME_MODES[s.currentModeIndex]?.theme === "portals" &&
   !s.moveHistory
@@ -1357,15 +1357,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
         .moveHistory.slice(modeStartPly)
         .some((m) => m.move.piece.color === Color.Black);
     const sparing = moves.filter((m) => !regicides.has(m));
+    // Nor does he put you in check with it, so your first turn is yours to try a portal
+    const checks = (move: Move): boolean => {
+      if (!portals || !game.executeTrustedMove(portals.landing(move))) {
+        return false;
+      }
+      const inCheck =
+        game.isInCheck() || portals.kingCapturable(game.board, game.turn);
+      game.undoMove();
+      return inCheck;
+    };
+    const gentle = firstInPortals ? sparing.filter((m) => !checks(m)) : [];
     // And where he can, he opens by going through a portal, to show it off
-    const showy = sparing.filter((m) => m.flags & MoveFlag.Portal);
+    const throughPortal = (pool: Move[]) =>
+      pool.filter((m) => m.flags & MoveFlag.Portal);
     const allowed = !firstInPortals
       ? moves
-      : showy.length > 0
-        ? showy
-        : sparing.length > 0
-          ? sparing
-          : moves;
+      : ([throughPortal(gentle), gentle, throughPortal(sparing), sparing].find(
+          (pool) => pool.length > 0,
+        ) ?? moves);
 
     const pick =
       game.turn === Color.Black

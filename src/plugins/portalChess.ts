@@ -224,8 +224,13 @@ export class PortalChessPlugin implements ModePlugin {
     return this.canEscape(ctx, color) ? GameStatus.Check : GameStatus.Checkmate;
   }
 
+  /** Where a move onto a portal really ends up. Only good for the moves generated last. */
+  landing(move: Move): Move {
+    return this.portalRedirects.get(`${move.from}-${move.to}`) ?? move;
+  }
+
   /** Whether the foe could take this side's king next move, straight or through a portal */
-  private kingCapturable(board: Board, color: Color): boolean {
+  kingCapturable(board: Board, color: Color): boolean {
     const kingSq = board.findKing(color);
     if (kingSq === null) return false;
     const foe = opponent(color);
