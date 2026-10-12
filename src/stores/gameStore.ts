@@ -461,6 +461,27 @@ export function connectGuestLine(
   sendToHost = send;
 }
 
+/** How fast the clocks run while you look over your first turn of Portals */
+const PORTAL_LESSON_PACE = 0.04;
+
+/**
+ * Your first turn of Portals against Chessbot, before you have moved: the
+ * game all but stops while you are shown what the portals are for
+ */
+export const inPortalLesson = (s: GameStore): boolean =>
+  s.cursed &&
+  s.net === null &&
+  s.introDone &&
+  !s.paused &&
+  !s.announcement &&
+  !s.portalTravelling &&
+  !isGameOver(s.status) &&
+  s.turn === Color.White &&
+  GAME_MODES[s.currentModeIndex]?.theme === "portals" &&
+  !s.moveHistory
+    .slice(modeStartPly)
+    .some((m) => m.move.piece.color === Color.White);
+
 const isGuest = () => useGameStore.getState().net?.role === "guest";
 /** How long Black has for a move: a moment for the computer, a full turn for a friend */
 const foeSeconds = () =>
@@ -1247,7 +1268,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const minefield = pluginManager.find<MinefieldPlugin>("minefield");
     if (minefield && minefield.pendingExplosions.size > 0) return;
     const key = turn === Color.White ? "timeWhite" : "timeBlack";
-    const next = Math.max(0, get()[key] - 0.1);
+    const pace = inPortalLesson(get()) ? PORTAL_LESSON_PACE : 1;
+    const next = Math.max(0, get()[key] - 0.1 * pace);
     set({ [key]: next });
     if (next <= 0) get().expireTimer();
   },
@@ -1415,6 +1437,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Modes the kings sit out run until one side wins them, with no clock
     const mode = GAME_MODES[get().currentModeIndex];
     if (mode?.kingsSitOut || mode?.untilWon) return;
+    if (inPortalLesson(get())) return;
     const next = Math.max(0, modeTimeRemaining - 1);
     set({ modeTimeRemaining: next });
     if (next > 0) return;

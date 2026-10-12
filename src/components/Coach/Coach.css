@@ -1,0 +1,43 @@
+.coach {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+}
+
+.coach-dark,
+.coach-shade {
+  position: absolute;
+  inset: 0;
+  animation: coach-in 0.7s ease-out both;
+}
+
+.coach-dark {
+  background: rgba(5, 3, 18, 0.78);
+}
+
+.coach-shade {
+  background: rgba(5, 3, 18, 0.5);
+}
+
+@keyframes coach-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.coach-tip {
+  position: absolute;
+  margin: 0;
+  padding: 8px 16px;
+  translate: -50% -50%;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: clamp(14px, 1.6vw, 19px);
+  color: var(--ink);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 4px 5px 0 var(--ink);
+  animation: coach-in 0.5s 0.3s ease-out both;
+}

@@ -378,43 +378,7 @@
   --square-size: clamp(34px, min(7.2vh, 6.6vw), 78px);
 }
 
-/* --- First card: the arena goes dark round your half and your hand --- */
-
-.deploy-coach {
-  position: fixed;
-  inset: 0;
-  z-index: 45;
-  pointer-events: none;
-}
-
-.deploy-coach-dark {
-  position: absolute;
-  inset: 0;
-  background: rgba(5, 3, 18, 0.78);
-  animation: deploy-coach-dim 0.7s ease-out both;
-}
-
-@keyframes deploy-coach-dim {
-  from {
-    opacity: 0;
-  }
-}
-
-.deploy-coach-tip {
-  position: absolute;
-  margin: 0;
-  padding: 8px 16px;
-  translate: -50% -50%;
-  white-space: nowrap;
-  font-weight: 800;
-  font-size: clamp(14px, 1.6vw, 19px);
-  color: var(--ink);
-  background: var(--paper);
-  border: 3px solid var(--ink);
-  border-radius: 999px;
-  box-shadow: 4px 5px 0 var(--ink);
-  animation: deploy-coach-dim 0.5s 0.3s ease-out both;
-}
+/* --- First card: a hand drags one out onto your half --- */
 
 .deploy-coach-hand {
   position: absolute;

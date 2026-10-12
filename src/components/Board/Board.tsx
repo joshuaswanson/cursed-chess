@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useGameStore } from "../../stores/gameStore";
+import { inPortalLesson, useGameStore } from "../../stores/gameStore";
+import { Coach } from "../Coach/Coach";
 import {
   ALL_SQUARES,
   boardFiles,
@@ -280,6 +281,7 @@ export function Board() {
     pluginManager.find<PortalChessPlugin>("portal-chess")?.respawnDue ?? false;
   const trenchPicked = useGameStore((s) => s.trenchPicked);
   const settlePortals = useGameStore((s) => s.settlePortals);
+  const portalLesson = useGameStore(inPortalLesson);
 
   const slides = useSlideAnimation({
     lastMove,
@@ -937,6 +939,18 @@ export function Board() {
               targets={legalMoveSquares}
               flipped={flipped}
               squareSize={squareSize}
+            />
+          )}
+          {portalLesson && (
+            <Coach
+              lit={[{ selector: ".board-shell" }]}
+              shade={{
+                over: ".board-shell",
+                lit: [{ selector: ".portal-overlay", pad: 4, round: true }],
+              }}
+              tip="Move a piece onto a portal and it comes out of the other one"
+              tipOver=".board-shell"
+              tipAt={0}
             />
           )}
           {overlays.lanterns && (

@@ -1,11 +1,12 @@
 import { useState, useEffect, useLayoutEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { useGameStore } from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import { PIECE_COST } from "../../plugins/clashRoyale";
 import type { RallyPlugin } from "../../plugins/clashRoyale";
 import { pieceImage } from "../../utils/pieceImages";
+import { Coach, centre } from "../Coach/Coach";
+import type { Box } from "../Coach/Coach";
 import "./RallyPanel.css";
 
 const MAX_ELIXIR = 10;
@@ -74,77 +75,41 @@ function ElixirMeter({
   );
 }
 
-interface Box {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
-
-const boxOf = (selector: string): Box | null => {
-  const el = document.querySelector(selector);
-  if (!el) return null;
-  const { left, top, width, height } = el.getBoundingClientRect();
-  return { left, top, width, height };
-};
-
-const hole = ({ left, top, width, height }: Box, pad: number) =>
-  `M${left - pad} ${top - pad}h${width + pad * 2}v${height + pad * 2}h${-(width + pad * 2)}z`;
-
-const centre = (box: Box) => ({
-  x: box.left + box.width / 2,
-  y: box.top + box.height / 2,
-});
-
 /**
  * Shown while you sit on a full bar before your first card: everything goes
  * dark but your half of the board and your cards, and a hand drags one out
  */
 function DeployCoach({ holding }: { holding: boolean }) {
-  const [boxes, setBoxes] = useState<{
-    zone: Box;
-    bar: Box;
-    card: Box;
-  } | null>(null);
-
+  const [reach, setReach] = useState<{ from: Box; to: Box } | null>(null);
   useLayoutEffect(() => {
+    const box = (selector: string) =>
+      document.querySelector(selector)?.getBoundingClientRect();
     const measure = () => {
-      const zone = boxOf(".deploy-zone-border");
-      const bar = boxOf(".rally-bar-you");
-      const card = boxOf(".deploy-hand .deploy-card:not(.disabled)");
-      setBoxes(zone && bar && card ? { zone, bar, card } : null);
+      const from = box(".deploy-hand .deploy-card:not(.disabled)");
+      const to = box(".deploy-zone-border");
+      setReach(from && to ? { from, to } : null);
     };
     measure();
     window.addEventListener("resize", measure);
-    window.addEventListener("scroll", measure, true);
-    return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure, true);
-    };
+    return () => window.removeEventListener("resize", measure);
   }, []);
-
-  if (!boxes) return null;
-  const { zone, bar, card } = boxes;
-  const from = centre(card);
-  const to = centre(zone);
-  const page = `M0 0H${window.innerWidth}V${window.innerHeight}H0z`;
-  return createPortal(
-    <div className="deploy-coach" aria-hidden>
-      <div
-        className="deploy-coach-dark"
-        style={{
-          clipPath: `path(evenodd, "${page}${hole(zone, 6)}${hole(bar, 8)}")`,
-        }}
-      />
-      <p
-        className="deploy-coach-tip"
-        style={{ left: to.x, top: zone.top + zone.height * 0.2 }}
-      >
-        {holding
+  const from = reach && centre(reach.from);
+  const to = reach && centre(reach.to);
+  return (
+    <Coach
+      lit={[
+        { selector: ".deploy-zone-border", pad: 6 },
+        { selector: ".rally-bar-you", pad: 8 },
+      ]}
+      tip={
+        holding
           ? "Now click a square on your half"
-          : "Drag a card onto your half of the board"}
-      </p>
-      {!holding && (
+          : "Drag a card onto your half of the board"
+      }
+      tipOver=".deploy-zone-border"
+      tipAt={0.2}
+    >
+      {!holding && from && to && (
         <svg
           className="deploy-coach-hand"
           viewBox="0 0 48 56"
@@ -160,8 +125,7 @@ function DeployCoach({ holding }: { holding: boolean }) {
           <path d="M17 3c-2.8 0-5 2.2-5 5v22l-3.2-3.4c-1.900-2-5.100-2.100-7.100-.2-1.900 1.800-2.200 4.700-.7 6.800L13 50c2.400 3.500 6.400 5.600 10.600 5.600H32c7.200 0 13-5.800 13-13V27c0-2.500-2-4.500-4.500-4.500S36 24.500 36 27v-3.500c0-2.500-2-4.500-4.500-4.500S27 21 27 23.500V21c0-2.500-2.200-4.500-5-4.500V8c0-2.800-2.200-5-5-5z" />
         </svg>
       )}
-    </div>,
-    document.body,
+    </Coach>
   );
 }
 
