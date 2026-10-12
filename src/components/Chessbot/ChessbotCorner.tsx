@@ -179,8 +179,13 @@ function useQuip(): string | undefined {
       }
       if (now.moveHistory.length > before.moveHistory.length) {
         const { move } = now.moveHistory[now.moveHistory.length - 1];
-        if (!move.captured || move.captured.color === move.piece.color) return;
         const yours = move.piece.color === Color.White;
+        if (!move.captured || move.captured.color === move.piece.color) {
+          if (yours && Math.random() < VERDICT_CHANCE) {
+            say(pick(QUIPS.yourMove));
+          }
+          return;
+        }
         // Losing a piece he prizes leaves him speechless for a moment too
         if (yours && PRIZED.includes(move.captured.type)) {
           sayOnceCalm(pick(QUIPS.lost));
@@ -197,6 +202,9 @@ function useQuip(): string | undefined {
   }, []);
   return line;
 }
+
+/** How often a quiet move of yours gets his verdict, of the moves he remarks on at all */
+const VERDICT_CHANCE = 0.3;
 
 /** How long his pitch for a mode stays up once its title card has cleared */
 const PITCH_MS = 5000;

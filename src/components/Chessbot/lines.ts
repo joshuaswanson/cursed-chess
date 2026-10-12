@@ -57,12 +57,13 @@ export const SKIPS = {
 
 /** The things he comes out with during play: out of nowhere, and at what happens on the board */
 export const QUIPS = {
+  /** His verdict on a move you have just made */
+  yourMove: ["interesting. wrong, but interesting."],
   /** Now and then, apropos of nothing */
   idle: [
     "you've fallen right into my trap.",
     "i have already calculated your next mistake.",
     "take your time. i'm only a supercomputer.",
-    "interesting. wrong, but interesting.",
     "i can see 40 moves ahead. it gets worse for you.",
     "is that your final answer?",
     "i'm not cheating. i'm innovating.",
