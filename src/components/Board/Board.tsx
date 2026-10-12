@@ -962,6 +962,7 @@ export function Board() {
                     )
                   : []
               }
+              picked={selectedSquare}
               flipped={flipped}
             />
           )}

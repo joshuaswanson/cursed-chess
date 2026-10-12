@@ -138,9 +138,12 @@ export function LanternIcon({ count }: { count: number }) {
  */
 export function LanternFeel({
   mine,
+  picked,
   flipped,
 }: {
   mine: SquareIndex[];
+  /** The piece you have picked up, which keeps its ring while you hold it */
+  picked: SquareIndex | null;
   flipped: boolean;
 }) {
   const layer = useRef<HTMLDivElement>(null);
@@ -162,19 +165,23 @@ export function LanternFeel({
       board.removeEventListener("pointerleave", leave);
     };
   }, []);
-  const found = under !== null && mine.includes(under);
+  const held = picked !== null && mine.includes(picked) ? picked : null;
+  const felt =
+    under !== null && under !== held && mine.includes(under) ? under : null;
+  const ring = (square: SquareIndex) => (
+    <span
+      key={square}
+      className="lantern-feel-ring"
+      style={{
+        left: `${(visualCol(square, flipped) + 0.5) * 12.5}%`,
+        top: `${(visualRow(square, flipped) + 0.5) * 12.5}%`,
+      }}
+    />
+  );
   return (
     <div ref={layer} className="lantern-feel" aria-hidden>
-      {found && (
-        <span
-          key={under}
-          className="lantern-feel-ring"
-          style={{
-            left: `${(visualCol(under, flipped) + 0.5) * 12.5}%`,
-            top: `${(visualRow(under, flipped) + 0.5) * 12.5}%`,
-          }}
-        />
-      )}
+      {held !== null && ring(held)}
+      {felt !== null && ring(felt)}
     </div>
   );
 }

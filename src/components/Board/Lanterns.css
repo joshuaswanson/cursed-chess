@@ -103,7 +103,7 @@
   inset: -2px;
   border: 2px solid rgba(255, 214, 140, 0.6);
   border-radius: 50%;
-  animation: lantern-feel-ripple 1.3s ease-out infinite;
+  animation: lantern-feel-ripple 0.7s ease-out both;
 }
 
 @keyframes lantern-feel-in {
