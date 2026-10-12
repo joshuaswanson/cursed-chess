@@ -165,7 +165,7 @@
     inset 0 0 0 0.03em #3a3f47,
     0 0 0 0.025em #9ca3af,
     0.06em 0.09em 0 var(--ink),
-    0 0 0.6em rgba(255, 59, 48, 0.35);
+    0 0 0.9em rgba(255, 59, 48, 0.6);
   animation: count-board 0.35s ease-out;
 }
 
@@ -182,7 +182,7 @@
 }
 
 .move-countdown[data-held] .countdown-digit {
-  filter: brightness(0.82);
+  filter: brightness(0.9);
 }
 
 /* Each digit leans a little, the way scoreboard digits do */
@@ -200,9 +200,9 @@
 }
 
 .led-bar.lit {
-  fill: #ff3b30;
-  filter: drop-shadow(0 0 3px #ff3b30)
-    drop-shadow(0 0 9px rgba(255, 59, 48, 0.7));
+  fill: #ffa894;
+  filter: drop-shadow(0 0 1.5px #fff1ec) drop-shadow(0 0 5px #ff3b30)
+    drop-shadow(0 0 12px rgba(255, 59, 48, 0.85));
 }
 
 /* --- Time up: the board gives a short jolt, flashes all zeroes a few
