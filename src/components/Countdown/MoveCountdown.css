@@ -182,7 +182,7 @@
 }
 
 .move-countdown[data-held] .countdown-digit {
-  filter: brightness(0.9);
+  filter: saturate(1.25);
 }
 
 /* Each digit leans a little, the way scoreboard digits do */
@@ -196,13 +196,13 @@
 
 /* Every bar is there, dark; the lit ones glow */
 .led-bar {
-  fill: #2a0808;
+  fill: #1c0404;
 }
 
 .led-bar.lit {
-  fill: #ffa894;
-  filter: drop-shadow(0 0 1.5px #fff1ec) drop-shadow(0 0 5px #ff3b30)
-    drop-shadow(0 0 12px rgba(255, 59, 48, 0.85));
+  fill: #ff2414;
+  filter: drop-shadow(0 0 1.5px #ff2414) drop-shadow(0 0 4px #ff1a0d)
+    drop-shadow(0 0 11px rgba(255, 26, 13, 0.75));
 }
 
 /* --- Time up: the board gives a short jolt, flashes all zeroes a few
