@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SquareIndex } from "../../engine";
 import { useGameStore } from "../../stores/gameStore";
 import type { Lantern } from "../../plugins/lanterns";
@@ -129,6 +129,53 @@ export function LanternIcon({ count }: { count: number }) {
         </svg>
       ))}
     </span>
+  );
+}
+
+/**
+ * A ring under the cursor wherever one of your own pieces stands in the
+ * dark, so you can feel out where they are without seeing them
+ */
+export function LanternFeel({
+  mine,
+  flipped,
+}: {
+  mine: SquareIndex[];
+  flipped: boolean;
+}) {
+  const layer = useRef<HTMLDivElement>(null);
+  const [under, setUnder] = useState<SquareIndex | null>(null);
+  useEffect(() => {
+    const board = layer.current?.parentElement;
+    if (!board) return;
+    const feel = (e: PointerEvent) => {
+      const square = (e.target as Element | null)
+        ?.closest?.("[data-sq]")
+        ?.getAttribute("data-sq");
+      setUnder(square == null ? null : (Number(square) as SquareIndex));
+    };
+    const leave = () => setUnder(null);
+    board.addEventListener("pointermove", feel);
+    board.addEventListener("pointerleave", leave);
+    return () => {
+      board.removeEventListener("pointermove", feel);
+      board.removeEventListener("pointerleave", leave);
+    };
+  }, []);
+  const found = under !== null && mine.includes(under);
+  return (
+    <div ref={layer} className="lantern-feel" aria-hidden>
+      {found && (
+        <span
+          key={under}
+          className="lantern-feel-ring"
+          style={{
+            left: `${(visualCol(under, flipped) + 0.5) * 12.5}%`,
+            top: `${(visualRow(under, flipped) + 0.5) * 12.5}%`,
+          }}
+        />
+      )}
+    </div>
   );
 }
 

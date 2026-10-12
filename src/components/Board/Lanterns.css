@@ -74,3 +74,55 @@
 .app[data-theme="lanterns"] .backdrop-halftone {
   display: none;
 }
+
+/* --- Feeling for your own pieces in the dark --- */
+
+.lantern-feel {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+}
+
+.lantern-feel-ring {
+  position: absolute;
+  width: 8.6%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border: 2px solid rgba(255, 214, 140, 0.75);
+  border-radius: 50%;
+  box-shadow:
+    0 0 10px rgba(255, 180, 80, 0.45),
+    inset 0 0 8px rgba(255, 180, 80, 0.25);
+  animation: lantern-feel-in 0.22s ease-out both;
+}
+
+.lantern-feel-ring::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid rgba(255, 214, 140, 0.6);
+  border-radius: 50%;
+  animation: lantern-feel-ripple 1.3s ease-out infinite;
+}
+
+@keyframes lantern-feel-in {
+  from {
+    opacity: 0;
+    scale: 0.5;
+  }
+}
+
+@keyframes lantern-feel-ripple {
+  to {
+    opacity: 0;
+    scale: 1.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lantern-feel-ring::after {
+    animation: none;
+    opacity: 0;
+  }
+}

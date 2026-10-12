@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import {
+  ALL_SQUARES,
   boardFiles,
   boardRanks,
   rankOf,
@@ -22,7 +23,7 @@ import { BoardShatter } from "../HexWarp/HexWarp";
 import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
 import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
-import { LanternDark, LanternIcon } from "./Lanterns";
+import { LanternDark, LanternFeel, LanternIcon } from "./Lanterns";
 import { HeistLights, HeistLoot } from "./Heist";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
@@ -936,6 +937,18 @@ export function Board() {
               targets={legalMoveSquares}
               flipped={flipped}
               squareSize={squareSize}
+            />
+          )}
+          {overlays.lanterns && (
+            <LanternFeel
+              mine={
+                game.turn === seat
+                  ? ALL_SQUARES.filter(
+                      (sq) => game.board.get(sq)?.color === seat,
+                    )
+                  : []
+              }
+              flipped={flipped}
             />
           )}
           {overlays.lanterns && (
