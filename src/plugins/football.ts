@@ -402,11 +402,12 @@ export class FootballPlugin implements ModePlugin {
             ],
           });
         }
-        this.ball = this.goalKickSpot(board, opponent(kicker.color));
+        const out = exit.file + side * 2.6;
+        this.ball = this.goalKickSpot(board, opponent(kicker.color), out);
         return finish({
           kind: "shot",
           outcome: "wide",
-          waypoints: [start, { ...exit, file: exit.file + side * 2.6 }],
+          waypoints: [start, { ...exit, file: out }],
         });
       }
       this.scorer = kicker.color;
@@ -534,7 +535,6 @@ export class FootballPlugin implements ModePlugin {
     return byCenter.find((sq) => !board.get(sq)) ?? byCenter[0];
   }
 
-  /** After a miss, the defending piece nearest its own goal takes the ball */
   /** Gives every piece on the pitch a number, by position and then by file */
   private handOutShirts(board: Board): void {
     this.shirts.clear();
@@ -591,7 +591,12 @@ export class FootballPlugin implements ModePlugin {
       : null;
   }
 
-  private goalKickSpot(board: Board, defender: Color): SquareIndex {
+  /** After a miss, the defender nearest where the ball crossed their goal line takes it */
+  private goalKickSpot(
+    board: Board,
+    defender: Color,
+    outAtFile: number,
+  ): SquareIndex {
     const goalLine = defender === Color.White ? 0 : 7;
     const mouth = toIndex(3, goalLine);
     const pieces = ALL_SQUARES.filter(
@@ -599,8 +604,8 @@ export class FootballPlugin implements ModePlugin {
     );
     if (pieces.length === 0) return mouth;
     return pieces.reduce((a, b) =>
-      Math.hypot(fileOf(a) - 3.5, rankOf(a) - goalLine) <=
-      Math.hypot(fileOf(b) - 3.5, rankOf(b) - goalLine)
+      Math.hypot(fileOf(a) - outAtFile, rankOf(a) - goalLine) <=
+      Math.hypot(fileOf(b) - outAtFile, rankOf(b) - goalLine)
         ? a
         : b,
     );
