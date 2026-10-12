@@ -80,6 +80,8 @@ const MODE_ANNOUNCE_MS = 2000;
 /** How long the mode's title card owns the screen: the title, then its catchphrase */
 const MODE_CARD_MS = 4200;
 const INTRO_HOLD_MS = 4700;
+/** How long Chessbot gets to say his opening line before he starts on a move that is his to make */
+const OPENING_LINE_MS = 3000;
 /** Lets the final move animate before the result banner covers the board */
 const GAME_END_DELAY_MS = 600;
 /** Long enough for a piece to go through a portal and land before the result shows */
@@ -1612,6 +1614,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       moveHistory: [...nextGame.history],
       ...(isHexMode || resized ? { lastMove: null } : {}),
     });
+    if (
+      get().net === null &&
+      nextGame.turn === Color.Black &&
+      !get().pluginManager.isAutonomous()
+    ) {
+      holdPause(MODE_CARD_MS + OPENING_LINE_MS);
+    }
     schedule(() => {
       get().pluginManager.invokeOnIntroEnd();
       set({ introDone: true });

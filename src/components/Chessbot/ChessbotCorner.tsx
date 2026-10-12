@@ -282,6 +282,16 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
     return () => window.clearInterval(timer);
   }, [peeking]);
 
+  // His turn in a game played move by move: he is working one out
+  const thinking = useGameStore(
+    (s) =>
+      s.cursed &&
+      s.introDone &&
+      !s.paused &&
+      !s.announcement &&
+      s.turn === Color.Black &&
+      !s.pluginManager.isAutonomous(),
+  );
   const line =
     entrance === "oops"
       ? ENTRANCE.oops
@@ -289,7 +299,7 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
         ? kind === "mode"
           ? undefined
           : VERDICTS[kind][played % VERDICTS[kind].length]
-        : (skipLine ?? pitch ?? quip);
+        : (skipLine ?? (thinking ? undefined : pitch) ?? quip);
   // Over a card, or making his entrance, he wears the look that goes with
   // it, unless the game has just rattled him
   const staged: ChessbotMood | undefined = peeking
@@ -309,15 +319,6 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
               : kind === "lose"
                 ? "proud"
                 : "smug";
-  // His turn in a game played move by move: he is working one out
-  const thinking = useGameStore(
-    (s) =>
-      s.cursed &&
-      s.introDone &&
-      !s.announcement &&
-      s.turn === Color.Black &&
-      !s.pluginManager.isAutonomous(),
-  );
   // Making excuses for walking onto his own mine, he cannot look at you
   const sheepish =
     quip !== undefined && (OWN_MINE as readonly string[]).includes(quip);
