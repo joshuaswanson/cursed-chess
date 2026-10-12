@@ -40,6 +40,8 @@ const PIECE_VALUE: Record<PieceType, number> = {
 };
 
 const MAX_ELIXIR = 10;
+/** How fast the battle runs while you sit on a full bar before your first card */
+const WAITING_PACE = 0.04;
 const ELIXIR_MS = 1300;
 /** How far a king tower can shoot, in squares */
 const TOWER_RANGE = 2;
@@ -192,6 +194,12 @@ export class RallyPlugin implements ModePlugin {
   private elixirClock = 0;
   private foeCard = this.drawCard();
   private winner: Color | null = null;
+  private youHaveDeployed = false;
+
+  /** Your bar is full and you have yet to play a card this battle */
+  get awaitingFirstDeploy(): boolean {
+    return !this.youHaveDeployed && this.resourceWhite >= MAX_ELIXIR;
+  }
 
   onGameStart(ctx: PluginContext): void {
     this.units.clear();
@@ -202,6 +210,7 @@ export class RallyPlugin implements ModePlugin {
     this.resourceWhite = 5;
     this.resourceBlack = 5;
     this.winner = null;
+    this.youHaveDeployed = false;
     // Positions change outside normal moves, so old castling rights no longer hold
     for (const color of [Color.White, Color.Black]) {
       ctx.game.castling[color] = { kingSide: false, queenSide: false };
@@ -211,9 +220,12 @@ export class RallyPlugin implements ModePlugin {
   }
 
   /** Returns the winner once a king tower falls */
-  tickAutonomous(ctx: PluginContext, tickMs: number): Color | null {
+  tickAutonomous(ctx: PluginContext, fullTickMs: number): Color | null {
     if (this.winner !== null) return this.winner;
     const { board } = ctx;
+    const tickMs = this.awaitingFirstDeploy
+      ? fullTickMs * WAITING_PACE
+      : fullTickMs;
     this.clock += tickMs;
     this.gainElixir(tickMs);
     this.enlist(board);
@@ -252,8 +264,10 @@ export class RallyPlugin implements ModePlugin {
     const purse =
       color === Color.White ? this.resourceWhite : this.resourceBlack;
     if (cost === undefined || purse < cost || board.get(sq)) return false;
-    if (color === Color.White) this.resourceWhite -= cost;
-    else this.resourceBlack -= cost;
+    if (color === Color.White) {
+      this.resourceWhite -= cost;
+      this.youHaveDeployed = true;
+    } else this.resourceBlack -= cost;
 
     board.put(sq, { type, color });
     const unit = this.recruit(type, DROP_MS + rand(150, 450));
