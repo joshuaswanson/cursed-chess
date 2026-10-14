@@ -4,7 +4,7 @@ import { audio, noiseSource, sfx } from "./sfx";
 // sound effects: a four-bar intro, then a loop that builds, drops out
 // briefly, and comes back harder.
 
-const BPM = 140;
+const BPM = 128;
 const STEP = 60 / BPM / 4;
 const STEPS_PER_BAR = 16;
 /** Schedule notes this far ahead, so the beat stays tight when the page is busy */
