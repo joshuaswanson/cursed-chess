@@ -81,25 +81,3 @@
     drop-shadow(0 -2px 0 var(--plum-ink))
     drop-shadow(0.07em 0.07em 0 var(--plum-ink));
 }
-
-/* Chessbot sits on the last letter of CHESS, tipped back against it */
-.logo-chess {
-  position: relative;
-}
-
-.logo-bot {
-  position: absolute;
-  left: 100%;
-  bottom: 0.32em;
-  width: 0.95em;
-  margin-left: -0.3em;
-  rotate: 14deg;
-  transform-origin: 30% 100%;
-  filter: drop-shadow(0.05em 0.05em 0 var(--plum-ink));
-  pointer-events: none;
-}
-
-.logo-bot .chessbot {
-  width: 100%;
-  height: auto;
-}
