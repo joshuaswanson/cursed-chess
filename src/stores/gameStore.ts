@@ -15,8 +15,10 @@ import {
   ALL_SQUARES,
   boardFiles,
   boardRanks,
+  fileOf,
   rankOf,
   setBoardSize,
+  toIndex,
 } from "../utils/squareUtils";
 import { PortalChessPlugin } from "../plugins/portalChess";
 import type { PortalMoveInfo } from "../plugins/portalChess";
@@ -739,6 +741,41 @@ function skipStuckTurn(): void {
   }, SKIP_DELAY_MS);
 }
 
+/**
+ * Chessbot's move in Lanterns, weighed knowing only what you know: your
+ * pieces out of the light are hidden from him, and a move onto one looks to
+ * him like a move onto an empty square
+ */
+function chooseInTheDark(
+  game: Game,
+  moves: Move[],
+  lit: Set<SquareIndex>,
+  bonus: SquareBonus,
+): Move {
+  const foe = opponent(game.turn);
+  const seen = new Game(game.toFen());
+  seen.pawnRules = game.pawnRules;
+  seen.castling[foe] = { kingSide: false, queenSide: false };
+  for (const sq of ALL_SQUARES) {
+    if (seen.board.get(sq)?.color === foe && !lit.has(sq))
+      seen.board.remove(sq);
+  }
+  const takenFrom = (move: Move) =>
+    move.flags & MoveFlag.EnPassant
+      ? toIndex(fileOf(move.to), rankOf(move.from))
+      : move.to;
+  const guesses = moves.map((move) =>
+    !move.captured || lit.has(takenFrom(move))
+      ? move
+      : {
+          ...move,
+          captured: undefined,
+          flags: move.flags & ~MoveFlag.Capture,
+        },
+  );
+  return moves[guesses.indexOf(chooseMove(seen, guesses, bonus))];
+}
+
 /** Alternates two lists, so both sides' reinforcements arrive together */
 function interleave<T>(a: T[], b: T[]): T[] {
   return Array.from({ length: Math.max(a.length, b.length) }, (_, i) =>
@@ -1384,14 +1421,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
           (pool) => pool.length > 0,
         ) ?? moves);
 
+    const lanterns = get().pluginManager.find<LanternsPlugin>("lanterns");
+    const bonus = modeSquareBonus(get().pluginManager, game.board);
     const pick =
-      game.turn === Color.Black
-        ? chooseMove(
-            game,
-            allowed,
-            modeSquareBonus(get().pluginManager, game.board),
-          )
-        : moves[Math.floor(Math.random() * moves.length)];
+      game.turn !== Color.Black
+        ? moves[Math.floor(Math.random() * moves.length)]
+        : lanterns
+          ? chooseInTheDark(game, allowed, lanterns.litSquares(), bonus)
+          : chooseMove(game, allowed, bonus);
     get().makeMove(pick.from, pick.to, pick.promotion);
   },
 

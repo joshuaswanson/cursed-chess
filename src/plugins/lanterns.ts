@@ -76,6 +76,23 @@ export class LanternsPlugin implements ModePlugin {
     }
   }
 
+  /** The squares the lanterns light: each carrier's and the eight round it */
+  litSquares(): Set<SquareIndex> {
+    const lit = new Set<SquareIndex>();
+    for (const { sq } of this.lanterns) {
+      for (let df = -1; df <= 1; df++) {
+        for (let dr = -1; dr <= 1; dr++) {
+          const file = fileOf(sq) + df;
+          const rank = rankOf(sq) + dr;
+          if (file >= 0 && file < 8 && rank >= 0 && rank < 8) {
+            lit.add(toIndex(file, rank));
+          }
+        }
+      }
+    }
+    return lit;
+  }
+
   getBoardOverlays(): BoardOverlay[] {
     const view: LanternView = {
       lanterns: this.lanterns.map((lantern) => ({ ...lantern })),
