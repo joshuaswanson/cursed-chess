@@ -742,38 +742,41 @@ function skipStuckTurn(): void {
 }
 
 /**
- * Chessbot's move in Lanterns, weighed knowing only what you know: your
- * pieces out of the light are hidden from him, and a move onto one looks to
- * him like a move onto an empty square
+ * Chessbot's move in Lanterns, weighed on the board as he remembers it: your
+ * pieces where he last saw them, which may have moved on in the dark
  */
 function chooseInTheDark(
   game: Game,
   moves: Move[],
-  lit: Set<SquareIndex>,
+  recalled: ReadonlyMap<SquareIndex, Piece>,
   bonus: SquareBonus,
 ): Move {
   const foe = opponent(game.turn);
-  const seen = new Game(game.toFen());
-  seen.pawnRules = game.pawnRules;
-  seen.castling[foe] = { kingSide: false, queenSide: false };
+  const believed = new Game(game.toFen());
+  believed.pawnRules = game.pawnRules;
+  believed.castling[foe] = { kingSide: false, queenSide: false };
   for (const sq of ALL_SQUARES) {
-    if (seen.board.get(sq)?.color === foe && !lit.has(sq))
-      seen.board.remove(sq);
+    if (believed.board.get(sq)?.color === foe) believed.board.remove(sq);
+  }
+  for (const [sq, piece] of recalled) {
+    if (!believed.board.get(sq)) believed.board.put(sq, { ...piece });
   }
   const takenFrom = (move: Move) =>
     move.flags & MoveFlag.EnPassant
       ? toIndex(fileOf(move.to), rankOf(move.from))
       : move.to;
-  const guesses = moves.map((move) =>
-    !move.captured || lit.has(takenFrom(move))
-      ? move
-      : {
-          ...move,
-          captured: undefined,
-          flags: move.flags & ~MoveFlag.Capture,
-        },
-  );
-  return moves[guesses.indexOf(chooseMove(seen, guesses, bonus))];
+  const guesses = moves.map((move): Move => {
+    const expected = believed.board.get(takenFrom(move));
+    const captured = expected?.color === foe ? expected : undefined;
+    return {
+      ...move,
+      captured,
+      flags: captured
+        ? move.flags | MoveFlag.Capture
+        : move.flags & ~MoveFlag.Capture,
+    };
+  });
+  return moves[guesses.indexOf(chooseMove(believed, guesses, bonus))];
 }
 
 /** Alternates two lists, so both sides' reinforcements arrive together */
@@ -1423,11 +1426,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const lanterns = get().pluginManager.find<LanternsPlugin>("lanterns");
     const bonus = modeSquareBonus(get().pluginManager, game.board);
+    if (game.turn === Color.Black) lanterns?.look(game.board);
     const pick =
       game.turn !== Color.Black
         ? moves[Math.floor(Math.random() * moves.length)]
         : lanterns
-          ? chooseInTheDark(game, allowed, lanterns.litSquares(), bonus)
+          ? chooseInTheDark(game, allowed, lanterns.memory(), bonus)
           : chooseMove(game, allowed, bonus);
     get().makeMove(pick.from, pick.to, pick.promotion);
   },
