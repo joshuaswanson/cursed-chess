@@ -1,8 +1,9 @@
 import { audio, noiseSource, sfx } from "./sfx";
 
-// A dark, driving synth track, sequenced and synthesized live like the
-// sound effects: a four-bar intro, then a loop that builds, drops out
-// briefly, and comes back harder.
+// A dark synth track, sequenced and synthesized live like the sound
+// effects: a slow, smooth melody and held chords over busy sixteenth-note
+// drums. A four-bar intro, then a loop that builds, drops out briefly, and
+// comes back harder.
 
 const BPM = 128;
 const STEP = 60 / BPM / 4;
@@ -23,16 +24,16 @@ const CHORDS = [
 ];
 
 const _ = null;
-/** The lead line, eight bars over two turns of the chords, a note or a rest on every sixteenth */
+/** The lead line, eight bars over two turns of the chords: each note holds until the next one, or to the end of its bar */
 const LEAD: (number | null)[][] = [
-  [76, _, 76, _, 74, _, 71, _, 72, _, 71, _, 67, _, 69, _],
-  [72, _, _, 71, 72, _, 76, _, 79, _, _, 76, _, 72, _, _],
-  [74, _, 74, _, 78, _, 74, _, 69, _, 74, _, 78, _, 81, _],
-  [78, _, _, 75, _, 71, _, 75, 78, _, _, _, 75, _, 71, _],
-  [79, _, 79, _, 78, _, 76, _, 71, _, 76, _, 79, _, 83, _],
-  [84, _, _, 83, 79, _, 76, _, 72, _, 76, _, 79, _, _, _],
-  [81, _, 78, _, 74, _, 78, _, 81, _, _, 83, _, 81, _, 78],
-  [75, _, _, _, 78, _, _, _, 83, _, _, _, 75, _, _, _],
+  [71, _, _, _, _, _, _, _, 74, _, _, _, 76, _, _, _],
+  [76, _, _, _, _, _, _, _, _, _, _, _, 74, _, _, _],
+  [74, _, _, _, _, _, _, _, 78, _, _, _, 74, _, _, _],
+  [75, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
+  [79, _, _, _, _, _, _, _, 78, _, _, _, 76, _, _, _],
+  [76, _, _, _, _, _, _, _, 72, _, _, _, _, _, _, _],
+  [74, _, _, _, _, _, 78, _, _, _, _, _, 81, _, _, _],
+  [78, _, _, _, _, _, _, _, 75, _, _, _, _, _, _, _],
 ];
 const ARP_ORDER = [0, 1, 2, 3, 2, 1, 2, 1];
 
@@ -111,13 +112,14 @@ function tone(
   type: OscillatorType,
   loudness: number,
   cutoff?: number,
+  attack = 0.006,
 ): void {
   const osc = c.createOscillator();
   osc.type = type;
   osc.frequency.value = freq;
   const gain = c.createGain();
   gain.gain.setValueAtTime(0.0001, at);
-  gain.gain.exponentialRampToValueAtTime(loudness, at + 0.006);
+  gain.gain.exponentialRampToValueAtTime(loudness, at + attack);
   gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
   let node: AudioNode = osc;
   if (cutoff) {
@@ -199,6 +201,18 @@ function noiseHit(
   src.stop(at + length + 0.02);
 }
 
+/** How long a lead note starting on this sixteenth holds, in sixteenths */
+function heldFor(line: (number | null)[], from: number): number {
+  const next = line.findIndex((note, i) => i > from && note !== null);
+  return (next === -1 ? line.length : next) - from;
+}
+
+/** Where the kick lands in a bar: a broken beat, with more of them in the drop */
+const KICKS = [0, 10];
+const DROP_KICKS = [0, 6, 10];
+/** Quiet snare hits between the backbeats, so the drums never sit still */
+const GHOSTS = [7, 9, 15];
+
 /** Everything that sounds on one sixteenth of the track */
 function playStep(
   c: AudioContext,
@@ -215,36 +229,46 @@ function playStep(
 
   // A crash marks the start of every part after the intro
   if (section !== INTRO && barIn === 0 && inBar === 0) {
-    noiseHit(c, out, at, "highpass", 4000, 1.6, 0.2);
+    noiseHit(c, out, at, "highpass", 4000, 1.6, 0.18);
   }
-  // The intro pounds on toms until the kick takes over halfway through
+  // The intro pounds on toms until the drums come in halfway through
   if (section === INTRO && barIn < 2 && inBar % 4 === 0) {
     tom(c, out, at, inBar === 12 ? 110 : 85);
   }
-  const kicking = section.kick || (section === INTRO && barIn >= 2);
-  // The drop adds a kick just before each bar comes round
-  const pushed = section.soar && (inBar === 14 || inBar === 7);
-  if (kicking && (inBar % 4 === 0 || pushed)) kick(c, out, at);
+  const drumming = section.kick || (section === INTRO && barIn >= 2);
+  if (drumming && (section.soar ? DROP_KICKS : KICKS).includes(inBar)) {
+    kick(c, out, at);
+  }
   if (section.clap && (inBar === 4 || inBar === 12)) {
     noiseHit(c, out, at, "bandpass", 1800, 0.2, 0.42);
     noiseHit(c, out, at, "highpass", 3000, 0.12, 0.2);
     tone(c, out, at, 210, 0.1, "triangle", 0.3);
   }
+  if (section.clap && GHOSTS.includes(inBar)) {
+    noiseHit(c, out, at, "bandpass", 2000, 0.06, 0.09);
+  }
   // Each part ends on a tom run down into the next
   if (section.clap && lastBar && inBar >= 12) {
     tom(c, out, at, [220, 170, 130, 95][inBar - 12]);
   }
-  if (section.hats) {
-    const open = inBar % 4 === 2;
+  // Sixteenth hats all the way, leaning on the offbeats, with a shaker
+  // underneath and a roll of thirty-seconds closing every fourth bar
+  if (drumming) {
+    const accent = inBar % 4 === 2 ? 0.16 : inBar % 2 ? 0.06 : 0.1;
+    const open = inBar === 14;
     noiseHit(
       c,
       out,
       at,
       "highpass",
       open ? 7000 : 9500,
-      open ? 0.1 : 0.03,
-      open ? 0.14 : inBar % 2 ? 0.06 : 0.09,
+      open ? 0.14 : 0.03,
+      open ? 0.15 : accent,
     );
+    noiseHit(c, out, at + STEP * 0.5, "bandpass", 6000, 0.025, 0.04);
+    if (barIn % 4 === 3 && inBar >= 12) {
+      noiseHit(c, out, at + STEP * 0.5, "highpass", 9500, 0.025, 0.08);
+    }
   }
   // The breakdown winds back up: a rising wash and a snare roll into the drop
   if (section === BREAKDOWN && lastBar) {
@@ -259,87 +283,97 @@ function playStep(
     );
     noiseHit(c, out, at, "bandpass", 1800, 0.07, 0.14 + inBar * 0.02);
   }
-  // A driven bass on every sixteenth the kick leaves free
+  // A steady bass in eighths, up an octave on the offbeat
   const bassline = section.bass || (section === INTRO && barIn >= 2);
-  if (bassline && inBar % 4 !== 0) {
+  if (bassline && inBar % 2 === 0) {
     const octave = inBar % 4 === 2 ? 12 : 0;
     tone(
       c,
       dirty,
       at,
       midi(chord.root + octave),
-      STEP * 0.85,
+      STEP * 1.7,
       "sawtooth",
-      0.13,
-      1300,
+      0.1,
+      900,
     );
-    tone(c, out, at, midi(chord.root - 12), STEP * 0.9, "sine", 0.18);
+    tone(c, out, at, midi(chord.root - 12), STEP * 1.8, "sine", 0.2);
   }
-  if (section.arp) {
+  // A soft arpeggio in the background, only once the melody is in
+  if (section.arp && section.lead && section !== BREAKDOWN) {
     const pick = ARP_ORDER[inBar % ARP_ORDER.length];
     const interval = pick === 3 ? 12 : chord.tones[pick];
-    // The intro's arpeggio opens up bar by bar
-    const cutoff = section === INTRO ? 1500 + barIn * 1200 : 5500;
     tone(
       c,
       out,
       at,
       midi(chord.root + 36 + interval),
       STEP * 0.7,
-      "sawtooth",
-      0.07,
-      cutoff,
+      "triangle",
+      0.05,
+      3200,
     );
   }
+  // A slow, smooth melody that swells into each note
   if (section.lead) {
-    const note = LEAD[barIn % LEAD.length][inBar];
+    const line = LEAD[barIn % LEAD.length];
+    const note = line[inBar];
     if (note !== null) {
-      const soft = section === BREAKDOWN;
+      const length = heldFor(line, inBar) * STEP;
+      tone(c, out, at, midi(note), length, "sawtooth", 0.08, 2600, 0.06);
       tone(
         c,
-        soft ? out : dirty,
+        out,
         at,
-        midi(note),
-        STEP * 1.9,
+        midi(note) * 1.006,
+        length,
         "sawtooth",
-        soft ? 0.09 : 0.11,
-        soft ? 2600 : 5000,
+        0.06,
+        2600,
+        0.06,
       );
       tone(
         c,
         out,
         at,
         midi(note - 12),
-        STEP * 1.9,
-        "square",
-        soft ? 0.05 : 0.07,
-        3000,
+        length,
+        "triangle",
+        0.08,
+        undefined,
+        0.04,
       );
       if (section.soar) {
-        tone(c, out, at, midi(note + 12), STEP * 1.6, "square", 0.06, 7000);
-      }
-    }
-  }
-  // Offbeat minor stabs drive the groove; the intro and breakdown hold their chords
-  if (section.pad) {
-    const held = section === BREAKDOWN || section === INTRO;
-    const stab = !held && section.kick && inBar % 4 === 2;
-    if ((held && inBar === 0) || stab) {
-      const length = held ? STEP * 15.5 : STEP * 1.4;
-      for (const interval of chord.tones) {
-        const freq = midi(chord.root + 24 + interval);
-        tone(c, out, at, freq, length, "sawtooth", 0.05, held ? 1800 : 3200);
         tone(
           c,
           out,
           at,
-          freq * 1.007,
+          midi(note + 12),
           length,
-          "sawtooth",
-          0.05,
-          held ? 1800 : 3200,
+          "sine",
+          0.06,
+          undefined,
+          0.08,
         );
       }
+    }
+  }
+  // Held chords under everything, changing once a bar
+  if (section.pad && inBar === 0) {
+    for (const interval of chord.tones) {
+      const freq = midi(chord.root + 24 + interval);
+      tone(c, out, at, freq, STEP * 15.8, "sawtooth", 0.045, 1500, 0.25);
+      tone(
+        c,
+        out,
+        at,
+        freq * 1.007,
+        STEP * 15.8,
+        "sawtooth",
+        0.045,
+        1500,
+        0.25,
+      );
     }
   }
 }
