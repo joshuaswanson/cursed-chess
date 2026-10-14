@@ -320,18 +320,8 @@ function playStep(
     const note = line[inBar];
     if (note !== null) {
       const length = heldFor(line, inBar) * STEP;
-      tone(c, out, at, midi(note), length, "sawtooth", 0.08, 2600, 0.06);
-      tone(
-        c,
-        out,
-        at,
-        midi(note) * 1.006,
-        length,
-        "sawtooth",
-        0.06,
-        2600,
-        0.06,
-      );
+      tone(c, out, at, midi(note), length, "sawtooth", 0.13, 2800, 0.06);
+      tone(c, out, at, midi(note) * 1.006, length, "sawtooth", 0.1, 2800, 0.06);
       tone(
         c,
         out,
@@ -339,7 +329,7 @@ function playStep(
         midi(note - 12),
         length,
         "triangle",
-        0.08,
+        0.12,
         undefined,
         0.04,
       );
@@ -351,7 +341,7 @@ function playStep(
           midi(note + 12),
           length,
           "sine",
-          0.06,
+          0.09,
           undefined,
           0.08,
         );
@@ -362,7 +352,7 @@ function playStep(
   if (section.pad && inBar === 0) {
     for (const interval of chord.tones) {
       const freq = midi(chord.root + 24 + interval);
-      tone(c, out, at, freq, STEP * 15.8, "sawtooth", 0.045, 1500, 0.25);
+      tone(c, out, at, freq, STEP * 15.8, "sawtooth", 0.065, 1700, 0.25);
       tone(
         c,
         out,
@@ -370,8 +360,8 @@ function playStep(
         freq * 1.007,
         STEP * 15.8,
         "sawtooth",
-        0.045,
-        1500,
+        0.065,
+        1700,
         0.25,
       );
     }
