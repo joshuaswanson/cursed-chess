@@ -399,13 +399,3 @@
     opacity: 0;
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .rain {
-    animation: none;
-  }
-
-  .lightning {
-    animation-duration: 0.2s;
-  }
-}

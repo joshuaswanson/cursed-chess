@@ -41,9 +41,6 @@ export function useParticleCanvas(
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
 
     let frame = 0;
     let last = performance.now();
@@ -76,7 +73,7 @@ export function useParticleCanvas(
     window.addEventListener("resize", resize);
 
     const tick = (now: number) => {
-      const dt = reducedMotion ? 0 : Math.min(MAX_DT, (now - last) / 1000);
+      const dt = Math.min(MAX_DT, (now - last) / 1000);
       last = now;
       if (!blank || particlesRef.current.length > 0) {
         ctx.clearRect(0, 0, w, h);

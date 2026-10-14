@@ -297,18 +297,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .main-menu {
-    animation: none;
-  }
-
-  .menu-mode,
-  .menu-credit,
-  .menu-foot a {
-    transition: none;
-  }
-}
-
 @media (max-width: 860px) {
   .menu-modes {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -349,66 +337,64 @@
    position, so it runs backward when you scroll back --- */
 
 @supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .main-menu {
-      scroll-snap-type: y proximity;
+  .main-menu {
+    scroll-snap-type: y proximity;
+  }
+
+  .menu-head {
+    scroll-snap-align: start;
+    scroll-margin-top: 72px;
+    animation: menu-head-sink linear both;
+    animation-timeline: scroll(nearest);
+    animation-range: 0 420px;
+    will-change: transform, opacity;
+  }
+
+  .menu-mode {
+    --deal-x: 0px;
+    --deal-tilt: 0deg;
+    scroll-snap-align: center;
+    animation: menu-deal linear both;
+    animation-timeline: view();
+    will-change: transform, opacity;
+  }
+
+  /* Dealt in from the side its column is on */
+  .menu-mode:nth-child(3n + 1) {
+    --deal-x: -70px;
+    --deal-tilt: -10deg;
+  }
+
+  .menu-mode:nth-child(3n) {
+    --deal-x: 70px;
+    --deal-tilt: 10deg;
+  }
+
+  .menu-featured .menu-mode:nth-child(2) {
+    --deal-x: 70px;
+    --deal-tilt: 10deg;
+  }
+
+  @media (max-width: 860px) {
+    .menu-mode:nth-child(n) {
+      --deal-x: 50px;
+      --deal-tilt: 8deg;
     }
 
-    .menu-head {
-      scroll-snap-align: start;
-      scroll-margin-top: 72px;
-      animation: menu-head-sink linear both;
-      animation-timeline: scroll(nearest);
-      animation-range: 0 420px;
-      will-change: transform, opacity;
+    .menu-mode:nth-child(odd) {
+      --deal-x: -50px;
+      --deal-tilt: -8deg;
     }
+  }
 
-    .menu-mode {
+  @media (max-width: 540px) {
+    .menu-mode:nth-child(n) {
       --deal-x: 0px;
-      --deal-tilt: 0deg;
-      scroll-snap-align: center;
-      animation: menu-deal linear both;
-      animation-timeline: view();
-      will-change: transform, opacity;
+      --deal-tilt: 5deg;
     }
 
-    /* Dealt in from the side its column is on */
-    .menu-mode:nth-child(3n + 1) {
-      --deal-x: -70px;
-      --deal-tilt: -10deg;
-    }
-
-    .menu-mode:nth-child(3n) {
-      --deal-x: 70px;
-      --deal-tilt: 10deg;
-    }
-
-    .menu-featured .menu-mode:nth-child(2) {
-      --deal-x: 70px;
-      --deal-tilt: 10deg;
-    }
-
-    @media (max-width: 860px) {
-      .menu-mode:nth-child(n) {
-        --deal-x: 50px;
-        --deal-tilt: 8deg;
-      }
-
-      .menu-mode:nth-child(odd) {
-        --deal-x: -50px;
-        --deal-tilt: -8deg;
-      }
-    }
-
-    @media (max-width: 540px) {
-      .menu-mode:nth-child(n) {
-        --deal-x: 0px;
-        --deal-tilt: 5deg;
-      }
-
-      .menu-mode:nth-child(odd) {
-        --deal-tilt: -5deg;
-      }
+    .menu-mode:nth-child(odd) {
+      --deal-tilt: -5deg;
     }
   }
 }

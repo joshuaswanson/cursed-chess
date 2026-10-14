@@ -117,14 +117,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .app[class*="unease-"] .boring-header,
-  .app[class*="unease-"] .board-container,
-  .app[class*="unease-"] .boring-sidebar {
-    animation: none;
-  }
-}
-
 .app.curse-glitch .boring-header,
 .app.curse-glitch .board-container,
 .app.curse-glitch .boring-sidebar {
@@ -417,15 +409,6 @@
   vertical-align: text-bottom;
   background: currentColor;
   animation: caret-blink 0.5s steps(1) infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .curse-install,
-  .install-done,
-  .install-done::before,
-  .install-done::after {
-    animation: none;
-  }
 }
 
 /* ===== The curse, part two: BOOM ===== */

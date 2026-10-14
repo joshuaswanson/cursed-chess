@@ -169,15 +169,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .heist-plinth .heist-jewel,
-  .heist-held,
-  .heist-glint,
-  .square.heist-exit::after {
-    animation: none;
-  }
-}
-
 /* --- The long hall: nine squares by thirteen, so the squares are smaller to fit --- */
 
 .app[data-theme="heist"] {
@@ -208,12 +199,6 @@
 @keyframes heist-pinned {
   50% {
     translate: 1px 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .square.heist-frozen .piece-img {
-    animation: none;
   }
 }
 

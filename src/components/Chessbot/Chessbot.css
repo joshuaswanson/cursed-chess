@@ -1044,30 +1044,3 @@
     opacity: 0;
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .chessbot-head,
-  .chessbot-antenna {
-    transition: none;
-  }
-
-  .chessbot-corner,
-  .chessbot-nudge,
-  .chessbot-dot,
-  .chessbot-sweat,
-  .chessbot-swirl,
-  .chessbot-spinner,
-  .chessbot-bar,
-  .chessbot-sweep,
-  .chessbot-fidget,
-  .chessbot-steam i,
-  .chessbot-vein,
-  .chessbot-tear,
-  .chessbot-panic,
-  .chessbot-panic .chessbot-says,
-  .chessbot-hop,
-  .chessbot-ground,
-  .chessbot-speech {
-    animation: none;
-  }
-}

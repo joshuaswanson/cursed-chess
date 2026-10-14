@@ -366,13 +366,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .deploy-card.dealt,
-  .deploy-card.deploy-next-card {
-    animation: none;
-  }
-}
-
 /* The arena bars take vertical room, so the board shrinks to keep everything on screen */
 .app[data-theme="clash"] {
   --square-size: clamp(34px, min(7.2vh, 6.6vw), 78px);
@@ -421,11 +414,5 @@
     opacity: 0;
     translate: var(--reach-x) var(--reach-y);
     scale: 1.15;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .deploy-coach-hand {
-    animation: none;
   }
 }

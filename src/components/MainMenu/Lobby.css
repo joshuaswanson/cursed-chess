@@ -129,9 +129,3 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .lobby-hint {
-    animation: none;
-  }
-}

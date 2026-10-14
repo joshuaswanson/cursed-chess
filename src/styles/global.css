@@ -6,46 +6,55 @@
   inherits: true;
   initial-value: #3b0f8c;
 }
+
 @property --sky-2 {
   syntax: "<color>";
   inherits: true;
   initial-value: #6b2fd6;
 }
+
 @property --sky-3 {
   syntax: "<color>";
   inherits: true;
   initial-value: #ff4fa3;
 }
+
 @property --accent {
   syntax: "<color>";
   inherits: true;
   initial-value: #ffd23f;
 }
+
 @property --accent-2 {
   syntax: "<color>";
   inherits: true;
   initial-value: #3ee6b0;
 }
+
 @property --ink {
   syntax: "<color>";
   inherits: true;
   initial-value: #1b1033;
 }
+
 @property --frame {
   syntax: "<color>";
   inherits: true;
   initial-value: #5a21c2;
 }
+
 @property --tile-light {
   syntax: "<color>";
   inherits: true;
   initial-value: #fde6c8;
 }
+
 @property --tile-dark {
   syntax: "<color>";
   inherits: true;
   initial-value: #c98a5e;
 }
+
 @property --sky-text {
   syntax: "<color>";
   inherits: true;
@@ -173,14 +182,4 @@ button {
   z-index: 1;
   flex-shrink: 0;
   overflow: visible;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
 }

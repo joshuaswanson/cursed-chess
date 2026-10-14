@@ -203,13 +203,6 @@
   opacity: 0;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .flare-core,
-  .flare-light {
-    animation-name: none;
-  }
-}
-
 .board-craters {
   position: absolute;
   inset: 0;

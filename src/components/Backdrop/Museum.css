@@ -200,10 +200,3 @@
   );
   animation-duration: 3.6s;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .museum-beam,
-  .museum.is-alarmed .museum-lamp {
-    animation: none;
-  }
-}

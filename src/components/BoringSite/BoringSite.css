@@ -398,19 +398,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .boring-bot-avatar,
-  .boring-bot-true,
-  .boring-bot-icon,
-  .boring-bot-name > span {
-    animation: none !important;
-  }
-
-  .boring-bot.vacated .boring-bot-avatar > .boring-bot-true {
-    opacity: 0;
-  }
-}
-
 .boring-rating {
   color: #8b8987;
 }

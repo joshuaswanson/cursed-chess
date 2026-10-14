@@ -57,13 +57,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .lantern-held,
-  .lantern-flame {
-    animation: none;
-  }
-}
-
 /* --- Nothing but the lamplight: the board's frame loses its highlight and
    shadow, and the backdrop its dot pattern, so no edge of the board shows --- */
 
@@ -117,12 +110,5 @@
   to {
     opacity: 0;
     scale: 1.55;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lantern-feel-ring::after {
-    animation: none;
-    opacity: 0;
   }
 }

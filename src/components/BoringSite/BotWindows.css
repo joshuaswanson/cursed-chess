@@ -571,17 +571,3 @@
 .app.corrupt-9 .board {
   filter: invert(1) hue-rotate(40deg) saturate(2.5);
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .bot-window,
-  .bot-window.is-angry,
-  .bot-window.is-furious,
-  .bot-corruption.is-angry,
-  .replay-man,
-  .app[class*="corrupt-"] .boring-header,
-  .app[class*="corrupt-"] .board-container,
-  .app[class*="corrupt-"] .boring-sidebar,
-  .app[class*="corrupt-"] .boring-footer {
-    animation: none;
-  }
-}

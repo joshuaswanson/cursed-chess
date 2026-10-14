@@ -2083,14 +2083,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .in-view .mode-preview *,
-  .in-view .mode-preview *::before,
-  .in-view .mode-preview *::after {
-    animation-play-state: paused;
-  }
-}
-
 /* --- Lanterns --- */
 
 /* The dark over the scene, with a pool of light following the pawn across it */
