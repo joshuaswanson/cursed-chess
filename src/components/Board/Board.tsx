@@ -24,7 +24,7 @@ import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
 import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
 import { LanternDark, LanternFeel, LanternIcon } from "./Lanterns";
-import { StormBolt } from "./Thunderstorm";
+import { StormBolt, StormScars } from "./Thunderstorm";
 import { HeistLights, HeistLoot } from "./Heist";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
@@ -1044,6 +1044,9 @@ export function Board() {
               tipAt={0}
             />
           )}
+          {overlays.storm && (
+            <StormScars strikes={overlays.storm.recent} flipped={flipped} />
+          )}
           {dark && (
             <LanternFeel
               mine={
@@ -1071,7 +1074,7 @@ export function Board() {
             />
           )}
           {overlays.storm && (
-            <StormBolt strike={overlays.storm.strike} flipped={flipped} />
+            <StormBolt strikes={overlays.storm.recent} flipped={flipped} />
           )}
           {football &&
             [Color.Black, Color.White].map((defender) => (

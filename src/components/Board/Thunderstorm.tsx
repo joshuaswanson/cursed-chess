@@ -46,131 +46,199 @@ function crooked(
   ];
 }
 
+/** Knocks every point a little off line, for the sharp kinks lightning has all along it */
+const kinked = (rand: () => number, points: Point[], by: number): Point[] =>
+  points.map(([x, y], i) =>
+    i === 0 || i === points.length - 1
+      ? [x, y]
+      : [x + (rand() - 0.5) * by, y + (rand() - 0.5) * by],
+  );
+
 const pathOf = (points: Point[]) =>
   `M${points.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(" L")}`;
 
-/** A branch splitting off a line at `from`, heading away from it at an angle */
-function branchOff(
+/** Roughly normal noise, mostly small, now and then large */
+const wobble = (rand: () => number) => (rand() + rand() + rand() - 1.5) / 1.5;
+
+/** One straight piece of a channel, as wide and as bright as that part of it */
+interface Segment {
+  a: Point;
+  b: Point;
+  width: number;
+  bright: number;
+}
+
+interface Channel {
+  from: Point;
+  heading: number;
+  /** How far it grows, in drawing units */
+  length: number;
+  width: number;
+  /** Where it is drawn to, for the main channel coming down onto its square */
+  toward?: Point;
+  /** How many more times it can fork */
+  forks: number;
+}
+
+/**
+ * A channel grown a short step at a time, as lightning is: each step turns
+ * a little at random from the way it was going, while it keeps to its
+ * heading overall. Branches grow off it the same way, thinner, and fading
+ * toward their tips.
+ */
+function grow(
   rand: () => number,
-  from: Point,
-  heading: number,
-  length: number,
-  depth: number,
-): Point[] {
-  const turn = (rand() < 0.5 ? -1 : 1) * (0.35 + rand() * 0.55);
-  const angle = heading + turn;
-  const to: Point = [
-    from[0] + Math.cos(angle) * length,
-    from[1] + Math.sin(angle) * length,
-  ];
-  return crooked(rand, from, to, length * 0.35, depth);
-}
-
-interface Fork {
-  d: string;
-  /** How far down the main bolt it splits off, 0 to 1, which is when it is drawn */
-  at: number;
-  /** 1 for the main bolt, less for each branch off it */
-  weight: number;
-}
-
-/** The bolt: a main channel down from the sky and the branches splitting off it */
-function boltForks(rand: () => number, target: Point): Fork[] {
-  const start: Point = [target[0] + (rand() - 0.5) * 4 * UNIT, BOLT_TOP];
-  const main = crooked(
-    rand,
-    start,
-    target,
-    Math.hypot(target[0] - start[0], target[1] - start[1]) * 0.16,
-    8,
-  );
-  const forks: Fork[] = [{ d: pathOf(main), at: 0, weight: 1 }];
-  // Branches split off where they can be seen, from just above the board down to near where it lands
-  const seen = main
-    .map((point, k) => ({ point, k }))
-    .filter(({ point, k }) => k < main.length - 2 && point[1] > -2.5 * UNIT)
-    .filter(({ point }) => point[1] < target[1] - UNIT * 0.4);
-  const branches = seen.length > 0 ? 5 + Math.floor(rand() * 4) : 0;
-  for (let i = 0; i < branches; i++) {
-    const { k } = seen[Math.floor(rand() * seen.length)];
-    const at = k / (main.length - 1);
-    const [x0, y0] = main[k];
-    const [x1, y1] = main[k + 1];
-    const heading = Math.atan2(y1 - y0, x1 - x0);
-    const reach = UNIT * (0.9 + rand() * 1.8);
-    const branch = branchOff(rand, main[k], heading, reach, 5);
-    forks.push({ d: pathOf(branch), at, weight: 0.5 });
-    if (rand() < 0.6) {
-      const j = Math.floor(branch.length * (0.3 + rand() * 0.4));
-      const [bx0, by0] = branch[j];
-      const [bx1, by1] = branch[j + 1] ?? branch[j];
-      forks.push({
-        d: pathOf(
-          branchOff(
-            rand,
-            branch[j],
-            Math.atan2(by1 - by0, bx1 - bx0),
-            reach * 0.45,
-            4,
-          ),
-        ),
-        at: at + (1 - at) * 0.3,
-        weight: 0.28,
-      });
+  channel: Channel,
+  out: Segment[],
+  forkChance: number,
+  canFork: (at: Point) => boolean,
+) {
+  let at = channel.from;
+  let drift = 0;
+  let grown = 0;
+  const main = channel.toward !== undefined;
+  for (let i = 0; i < 400; i++) {
+    const step = 8 + rand() * 18;
+    const [x, y] = at;
+    const aim = channel.toward
+      ? Math.atan2(channel.toward[1] - y, channel.toward[0] - x)
+      : channel.heading;
+    drift = drift * 0.82 + wobble(rand) * 0.55;
+    const angle = aim + drift;
+    const left = main ? 1 : 1 - grown / channel.length;
+    const near =
+      channel.toward &&
+      Math.hypot(channel.toward[0] - x, channel.toward[1] - y) < step * 1.2;
+    const next: Point = near
+      ? channel.toward!
+      : [x + Math.cos(angle) * step, y + Math.sin(angle) * step];
+    out.push({
+      a: at,
+      b: next,
+      width: channel.width * (0.3 + 0.7 * left),
+      bright: main ? 1 : 0.3 + 0.7 * left,
+    });
+    if (near) return;
+    if (channel.forks > 0 && rand() < forkChance && canFork(next)) {
+      const side = rand() < 0.5 ? -1 : 1;
+      grow(
+        rand,
+        {
+          from: next,
+          heading: angle + side * (0.35 + rand() * 0.6),
+          length:
+            (main ? 110 + rand() * 230 : channel.length - grown) *
+            (0.35 + rand() * 0.35),
+          width: channel.width * (0.3 + 0.7 * left) * 0.55,
+          forks: channel.forks - 1,
+        },
+        out,
+        forkChance * 0.9,
+        canFork,
+      );
     }
+    at = next;
+    grown += step;
+    if (!main && grown >= channel.length) return;
   }
-  return forks;
 }
 
-/** The burn scar a strike leaves: branching like a fern out from where it hit */
-function burnScar(rand: () => number): { d: string; weight: number }[] {
-  const veins: { d: string; weight: number }[] = [];
-  const arms = 7 + Math.floor(rand() * 4);
-  for (let i = 0; i < arms; i++) {
-    const angle = (i / arms) * Math.PI * 2 + rand() * 0.5;
-    const reach = UNIT * (0.7 + rand() * 0.9);
-    const arm = crooked(
-      rand,
-      [0, 0],
-      [Math.cos(angle) * reach, Math.sin(angle) * reach],
-      reach * 0.45,
-      5,
+/**
+ * Segments gathered into one path for each width and brightness they come
+ * in, so a bolt of hundreds of pieces is drawn with a handful of paths
+ */
+function bundle(segments: Segment[]) {
+  const bundles = new Map<
+    string,
+    { width: number; bright: number; d: string[] }
+  >();
+  for (const { a, b, width, bright } of segments) {
+    const w = Math.max(0.25, Math.round(width * 4) / 4);
+    const o = Math.round(bright * 5) / 5;
+    const key = `${w} ${o}`;
+    const found = bundles.get(key) ?? { width: w, bright: o, d: [] };
+    found.d.push(
+      `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`,
     );
-    veins.push({ d: pathOf(arm), weight: 1 });
-    for (let b = 0; b < 3; b++) {
-      const k = Math.floor(arm.length * (0.25 + rand() * 0.55));
-      veins.push({
-        d: pathOf(branchOff(rand, arm[k], angle, reach * 0.4, 4)),
-        weight: 0.55,
-      });
-    }
+    bundles.set(key, found);
   }
-  return veins;
+  return [...bundles.values()].map(({ width, bright, d }) => ({
+    width,
+    bright,
+    d: d.join(""),
+  }));
 }
 
-/** The crater's ragged edge, round the point it was struck */
+/** The bolt: a main channel wandering down out of the sky onto its square, branching where it can be seen */
+function bolt(rand: () => number, target: Point) {
+  const segments: Segment[] = [];
+  grow(
+    rand,
+    {
+      from: [target[0] + (rand() - 0.5) * 3 * UNIT, BOLT_TOP],
+      heading: Math.PI / 2,
+      length: Infinity,
+      width: 3.2,
+      toward: target,
+      forks: 3,
+    },
+    segments,
+    0.17,
+    ([, y]) => y > -2.5 * UNIT && y < target[1] - UNIT * 0.3,
+  );
+  return bundle(segments);
+}
+
+/** The burn it leaves: channels fanning out over the ground from where it hit, the way a strike burns a fern into it */
+function burn(rand: () => number) {
+  const segments: Segment[] = [];
+  const arms = 10 + Math.floor(rand() * 5);
+  for (let i = 0; i < arms; i++) {
+    grow(
+      rand,
+      {
+        from: [0, 0],
+        heading: (i / arms) * Math.PI * 2 + wobble(rand) * 0.4,
+        length: UNIT * (0.7 + rand() * 0.8),
+        width: 3.6,
+        forks: 3,
+      },
+      segments,
+      0.3,
+      () => true,
+    );
+  }
+  return bundle(segments);
+}
+
+/** The pit at the middle, its edge ragged */
 function crater(rand: () => number): string {
-  const points: Point[] = Array.from({ length: 14 }, (_, i) => {
-    const angle = (i / 14) * Math.PI * 2;
-    const r = UNIT * (0.2 + rand() * 0.13);
+  const corners = 18;
+  const points: Point[] = Array.from({ length: corners }, (_, i) => {
+    const angle = (i / corners) * Math.PI * 2;
+    const r = UNIT * (0.11 + rand() * 0.07);
     return [Math.cos(angle) * r, Math.sin(angle) * r];
   });
   return `${pathOf(points)} Z`;
 }
 
-/** Arcs of electricity crawling over a piece as it is struck */
+/** Arcs of electricity crawling over a piece as it is struck, a fresh set every few frames */
 function arcs(rand: () => number): string[] {
-  return Array.from({ length: 5 }, () => {
+  return Array.from({ length: 12 }, () => {
     const a = rand() * Math.PI * 2;
-    const b = a + 1.2 + rand() * 2;
-    const r = 30 + rand() * 14;
+    const b = a + 0.8 + rand() * 2.2;
+    const r = 24 + rand() * 22;
     return pathOf(
-      crooked(
+      kinked(
         rand,
-        [50 + Math.cos(a) * r, 50 + Math.sin(a) * r],
-        [50 + Math.cos(b) * r, 50 + Math.sin(b) * r],
-        40,
-        4,
+        crooked(
+          rand,
+          [50 + Math.cos(a) * r, 50 + Math.sin(a) * r],
+          [50 + Math.cos(b) * (r + 8), 50 + Math.sin(b) * (r + 8)],
+          55,
+          5,
+        ),
+        5,
       ),
     );
   });
@@ -221,60 +289,118 @@ const middleOf = (sq: Strike["sq"], flipped: boolean) => ({
  * Strikes from before the board was drawn have already been and gone, so
  * only the ones after it show
  */
-function useFreshStrike(strike: Strike | null): Strike | null {
-  const [before] = useState(strike?.id ?? null);
-  return strike && strike.id !== before ? strike : null;
+function useFreshStrikes(strikes: Strike[]): Strike[] {
+  const [before] = useState(strikes[strikes.length - 1]?.id ?? 0);
+  return strikes.filter((strike) => strike.id > before);
+}
+
+/** The burns the bolts leave, drawn on the board under the pieces standing on it */
+export function StormScars({
+  strikes,
+  flipped,
+}: {
+  strikes: Strike[];
+  flipped: boolean;
+}) {
+  const fresh = useFreshStrikes(strikes);
+  return (
+    <div className="storm-scars" aria-hidden>
+      {fresh.map((strike) => (
+        <Scar key={strike.id} strike={strike} flipped={flipped} />
+      ))}
+    </div>
+  );
+}
+
+/** A crater with a molten rim, soot blown out round it, and a burn forking out over the squares nearby, glowing and cooling to black */
+function Scar({ strike, flipped }: { strike: Strike; flipped: boolean }) {
+  const rand = seededRandom(strike.id * 313 + strike.sq);
+  const scar = burn(rand);
+  const pit = crater(rand);
+  const soot = `storm-soot-${strike.id}`;
+  return (
+    <svg
+      className="storm-scar"
+      viewBox={`-${UNIT * 1.6} -${UNIT * 1.6} ${UNIT * 3.2} ${UNIT * 3.2}`}
+      style={middleOf(strike.sq, flipped)}
+    >
+      <defs>
+        <filter id={soot} x="-50%" y="-50%" width="200%" height="200%">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.05"
+            numOctaves="3"
+            seed={strike.id}
+          />
+          <feDisplacementMap in="SourceGraphic" scale="46" />
+        </filter>
+        <radialGradient id={`${soot}-fill`}>
+          <stop offset="0" stopColor="#060403" stopOpacity="0.95" />
+          <stop offset="0.55" stopColor="#140c07" stopOpacity="0.75" />
+          <stop offset="1" stopColor="#1c120a" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle
+        className="storm-soot"
+        r={UNIT * 0.62}
+        fill={`url(#${soot}-fill)`}
+        filter={`url(#${soot})`}
+      />
+      {scar.map(({ width, d }, i) => (
+        <path
+          key={`c${i}`}
+          className="storm-scar-char"
+          d={d}
+          style={{ strokeWidth: width * 2.2 }}
+        />
+      ))}
+      <path className="storm-crater" d={pit} />
+      {scar.map(({ width, bright, d }, i) => (
+        <path
+          key={`e${i}`}
+          className="storm-scar-ember"
+          d={d}
+          style={{ strokeWidth: width * 0.45, opacity: bright }}
+        />
+      ))}
+      <path className="storm-crater-rim" d={pit} />
+    </svg>
+  );
 }
 
 /**
- * The bolt coming down out of the sky onto its square, branching as it
- * goes, with the flash, shock wave, and sparks where it lands, and the burn
- * it leaves behind. Drawn over the dark, since it lights itself.
+ * The bolts coming down out of the sky onto their squares, branching as
+ * they go, with the flash, shock wave, and sparks where each lands, the
+ * current crackling over the pieces next to it, and any piece it hits
+ * destroyed. Drawn over the dark, since they light themselves.
  */
 export function StormBolt({
-  strike,
+  strikes,
   flipped,
 }: {
-  strike: Strike | null;
+  strikes: Strike[];
   flipped: boolean;
 }) {
-  const fresh = useFreshStrike(strike);
-  if (!fresh) return null;
-  const rand = seededRandom(fresh.id * 131 + fresh.sq);
-  const target: Point = [
-    (visualCol(fresh.sq, flipped) + 0.5) * UNIT,
-    (visualRow(fresh.sq, flipped) + 0.5) * UNIT,
-  ];
-  const forks = boltForks(rand, target);
-  const scar = burnScar(rand);
-  const pit = crater(rand);
-  const middle = middleOf(fresh.sq, flipped);
+  const fresh = useFreshStrikes(strikes);
   return (
-    <div className="storm-strike" key={fresh.id} aria-hidden>
-      <svg
-        className="storm-scar"
-        viewBox={`-${UNIT * 1.6} -${UNIT * 1.6} ${UNIT * 3.2} ${UNIT * 3.2}`}
-        style={middle}
-      >
-        {scar.map(({ d, weight }, i) => (
-          <path
-            key={`c${i}`}
-            className="storm-scar-char"
-            d={d}
-            style={{ strokeWidth: 9 * weight }}
-          />
-        ))}
-        <path className="storm-crater" d={pit} />
-        {scar.map(({ d, weight }, i) => (
-          <path
-            key={`e${i}`}
-            className="storm-scar-ember"
-            d={d}
-            style={{ strokeWidth: 3.2 * weight }}
-          />
-        ))}
-        <path className="storm-crater-rim" d={pit} />
-      </svg>
+    <>
+      {fresh.map((strike) => (
+        <Bolt key={strike.id} strike={strike} flipped={flipped} />
+      ))}
+    </>
+  );
+}
+
+function Bolt({ strike, flipped }: { strike: Strike; flipped: boolean }) {
+  const rand = seededRandom(strike.id * 131 + strike.sq);
+  const target: Point = [
+    (visualCol(strike.sq, flipped) + 0.5) * UNIT,
+    (visualRow(strike.sq, flipped) + 0.5) * UNIT,
+  ];
+  const channels = bolt(rand, target);
+  const middle = middleOf(strike.sq, flipped);
+  return (
+    <div className="storm-strike" aria-hidden>
       <svg
         className="storm-bolt"
         viewBox={`0 0 ${8 * UNIT} ${8 * UNIT}`}
@@ -282,16 +408,12 @@ export function StormBolt({
       >
         {(["haze", "glow", "core"] as const).map((layer) => (
           <g key={layer} className={`storm-bolt-${layer}`}>
-            {forks.map(({ d, at, weight }, i) => (
+            {channels.map(({ width, bright, d }, i) => (
               <path
                 key={i}
                 d={d}
-                pathLength={1}
                 style={
-                  {
-                    "--weight": weight,
-                    animationDelay: `${Math.round(at * 70)}ms`,
-                  } as CSSProperties
+                  { "--width": width, "--bright": bright } as CSSProperties
                 }
               />
             ))}
@@ -302,11 +424,31 @@ export function StormBolt({
         <span className="storm-bloom" />
         <span className="storm-shock" />
         <span className="storm-shock storm-shock-late" />
+        {[0, 1, 2].map((i) => (
+          <i
+            key={`w${i}`}
+            className="storm-wisp"
+            style={{ "--i": i } as CSSProperties}
+          />
+        ))}
         {sparks(rand, 18).map((style, i) => (
           <i key={i} className="storm-spark" style={style} />
         ))}
       </span>
-      {fresh.killed && <Annihilation strike={fresh} flipped={flipped} />}
+      {strike.shocked.map((sq) => (
+        <span key={sq} className="storm-crackle" style={middleOf(sq, flipped)}>
+          <svg className="storm-arcs" viewBox="0 0 100 100">
+            {arcs(seededRandom(strike.id * 53 + sq)).map((d, i) => (
+              <path
+                key={i}
+                d={d}
+                style={{ animationDelay: `${110 + i * 115}ms` }}
+              />
+            ))}
+          </svg>
+        </span>
+      ))}
+      {strike.killed && <Annihilation strike={strike} flipped={flipped} />}
     </div>
   );
 }
@@ -361,7 +503,9 @@ function Annihilation({
             <path
               key={i}
               d={d}
-              style={{ animationDelay: `${90 + i * 45}ms` }}
+              style={{
+                animationDelay: `${70 + (i % 4) * 35 + Math.floor(i / 4) * 140}ms`,
+              }}
             />
           ))}
         </svg>
