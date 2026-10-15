@@ -1488,23 +1488,6 @@
   }
 }
 
-/* A king caught on the collapsing ring leaps to safe ground */
-@keyframes br-king-leap {
-  0% {
-    translate: var(--slide-from-x) var(--slide-from-y);
-    scale: 1;
-  }
-  50% {
-    translate: calc(var(--slide-from-x) * 0.5)
-      calc(var(--slide-from-y) * 0.5 - 30px);
-    scale: 1.5;
-  }
-  100% {
-    translate: 0 0;
-    scale: 1;
-  }
-}
-
 /* --- Highlights: a plain chess site's yellow until the curse, then the channel accent --- */
 
 .square.last-move.light {

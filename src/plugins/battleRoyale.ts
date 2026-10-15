@@ -1,7 +1,6 @@
 import { Color, GameStatus, PieceType } from "../engine/types";
 import type { Move, Piece, SquareIndex } from "../engine/types";
 import type { Board } from "../engine/board";
-import { isSquareAttacked } from "../engine/moves";
 import { PIECE_VALUE } from "../ai/chooseMove";
 import type {
   ModePlugin,
@@ -35,6 +34,8 @@ export const FINAL_ROUNDS = 3;
 const ESCAPE_WORTH = 0.9;
 /** What the computer sees in getting a piece into the final zone */
 const FINAL_ZONE_PULL = 0.2;
+/** What the computer counts his king as worth when the ground under it is about to fall, since losing it loses the game */
+const KING_WORTH = 50;
 
 /** What fell away the last time the board collapsed, for the board to animate */
 export interface Collapse {
@@ -42,7 +43,6 @@ export interface Collapse {
   id: number;
   squares: SquareIndex[];
   fallen: { sq: SquareIndex; piece: Piece }[];
-  kingLeaps: { from: SquareIndex; to: SquareIndex }[];
 }
 
 export interface BattleRoyaleOverlay {
@@ -99,8 +99,8 @@ const material = (board: Board, color: Color) =>
 /**
  * The board falls away a line at a time, each line marked rounds before it
  * goes, closing in on a final zone shown from the start. Whatever stands on
- * a line when it falls goes with it, but a king leaps clear. A few rounds
- * after the last line falls, whoever has more material left wins.
+ * a line when it falls goes with it, and a side whose king falls loses. A
+ * few rounds after the last line falls, whoever has more material left wins.
  */
 export class BattleRoyalePlugin implements ModePlugin {
   id = "battle-royale";
@@ -150,7 +150,7 @@ export class BattleRoyalePlugin implements ModePlugin {
         white > black ? Color.White : black > white ? Color.Black : "draw";
       return;
     }
-    this.collapse(ctx, next);
+    this.collapse(ctx);
     this.zone = next;
     this.steps.shift();
     this.countdown(
@@ -203,16 +203,20 @@ export class BattleRoyalePlugin implements ModePlugin {
   /**
    * What a move is worth to the computer for the sake of the ground under
    * it: getting a piece off a line before it falls, more so the sooner it
-   * falls, and a little for getting into the final zone
+   * falls, and a little for getting into the final zone. His king also
+   * keeps off a line that is going to fall.
    */
   squareBonus(to: SquareIndex, piece: Piece, from: SquareIndex): number {
-    if (piece.type === PieceType.King) return 0;
+    const isKing = piece.type === PieceType.King;
     const doomed = this.doomedSquares();
     const final = this.final();
+    const saving =
+      ((isKing ? KING_WORTH : PIECE_VALUE[piece.type]) * ESCAPE_WORTH) /
+      Math.max(1, this.roundsLeft);
     let bonus = 0;
-    if (doomed.includes(from) && !doomed.includes(to)) {
-      bonus +=
-        (PIECE_VALUE[piece.type] * ESCAPE_WORTH) / Math.max(1, this.roundsLeft);
+    if (doomed.includes(from) && !doomed.includes(to)) bonus += saving;
+    if (isKing && doomed.includes(to) && !doomed.includes(from)) {
+      bonus -= saving;
     }
     if (inZone(to, final) && !inZone(from, final)) bonus += FINAL_ZONE_PULL;
     return bonus;
@@ -226,59 +230,30 @@ export class BattleRoyalePlugin implements ModePlugin {
     );
   }
 
-  private collapse(ctx: PluginContext, next: Zone): void {
+  private collapse(ctx: PluginContext): void {
     const squaresToRemove = this.doomedSquares();
-    const kingLeaps: Collapse["kingLeaps"] = [];
     const fallen: Collapse["fallen"] = [];
-
-    // Kings leap to the nearest safe square, sacrificing a friendly piece if needed
-    for (const sq of squaresToRemove) {
-      const piece = ctx.board.get(sq);
-      if (piece?.type !== PieceType.King) continue;
-      const safeSq = this.findLanding(ctx.board, sq, piece.color, next);
-      if (safeSq === null) continue;
-      ctx.board.remove(sq);
-      ctx.board.remove(safeSq);
-      ctx.board.put(safeSq, piece);
-      kingLeaps.push({ from: sq, to: safeSq });
-    }
-
     for (const sq of squaresToRemove) {
       this.deadSquares.add(sq);
       const piece = ctx.board.remove(sq);
       if (piece) fallen.push({ sq, piece });
     }
 
+    const kingFell = (color: Color) =>
+      fallen.some(
+        (f) => f.piece.type === PieceType.King && f.piece.color === color,
+      );
+    const whiteFell = kingFell(Color.White);
+    const blackFell = kingFell(Color.Black);
+    if (whiteFell || blackFell) {
+      this.result =
+        whiteFell && blackFell ? "draw" : whiteFell ? Color.Black : Color.White;
+    }
+
     this.lastCollapse = {
       id: (this.lastCollapse?.id ?? 0) + 1,
       squares: squaresToRemove,
       fallen,
-      kingLeaps,
     };
-  }
-
-  /** The nearest empty square in what is left, out of the enemy's reach if there is one, or else a friend's square */
-  private findLanding(
-    board: Board,
-    from: SquareIndex,
-    color: Color,
-    next: Zone,
-  ): SquareIndex | null {
-    const foe = color === Color.White ? Color.Black : Color.White;
-    const distance = (sq: SquareIndex) =>
-      Math.abs(fileOf(sq) - fileOf(from)) + Math.abs(rankOf(sq) - rankOf(from));
-    const cost = (sq: SquareIndex) => {
-      const occupant = board.get(sq);
-      if (occupant && (occupant.color !== color || occupant.type === PieceType.King)) {
-        return Infinity;
-      }
-      const tier = occupant ? 2 : isSquareAttacked(board, sq, foe) ? 1 : 0;
-      return tier * 100 + distance(sq);
-    };
-    const best = ALL_SQUARES.filter((sq) => inZone(sq, next))
-      .map((sq) => ({ sq, cost: cost(sq) }))
-      .filter((c) => c.cost < Infinity)
-      .sort((a, b) => a.cost - b.cost)[0];
-    return best?.sq ?? null;
   }
 }

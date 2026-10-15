@@ -482,12 +482,6 @@ export function Board() {
   );
   const doomed = new Set(battleRoyale?.doomed ?? []);
   const brBroken = (battleRoyale?.lastCollapse ?? null) !== null;
-  const kingLeaps = new Map(
-    (collapse?.kingLeaps ?? []).map((leap) => [
-      leap.to,
-      offsetBetween(leap.from, leap.to, flipped, squareSize),
-    ]),
-  );
 
   // Stratego's lakes sit in a river across the middle; the other squares there are bridges
   const lakes = overlays.strategoLakes;
@@ -585,7 +579,6 @@ export function Board() {
 
       const slide = slides.get(sq);
       const fall = gravityFalls.get(sq);
-      const leap = kingLeaps.get(sq);
       const dive = shotDives.get(sq);
       const hauled = tugDrags.get(sq);
       const ride = rides.get(sq);
@@ -604,58 +597,52 @@ export function Board() {
             "--spin": `${offsetBetween(bounceFrom.via, sq, flipped, 1).x > 0 ? -360 : 360}deg`,
             animation: `grave-bounce ${SLIDE_MS + 560}ms linear both`,
           } as React.CSSProperties)
-        : leap
+        : hauled
           ? ({
-              "--slide-from-x": `${leap.x}px`,
-              "--slide-from-y": `${leap.y}px`,
-              animation: "br-king-leap 0.75s cubic-bezier(0.3, 0, 0.3, 1) both",
+              "--slide-from-x": `${hauled.x}px`,
+              "--slide-from-y": `${hauled.y}px`,
+              ...(hauled.off && {
+                "--off-x": `${hauled.off.x}px`,
+                "--off-y": `${hauled.off.y}px`,
+              }),
+              animation: hauled.off
+                ? `tug-runoff ${RUNOFF_MS}ms linear ${heaveDelay}ms both`
+                : `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) ${heaveDelay}ms both`,
             } as React.CSSProperties)
-          : hauled
+          : ride
             ? ({
-                "--slide-from-x": `${hauled.x}px`,
-                "--slide-from-y": `${hauled.y}px`,
-                ...(hauled.off && {
-                  "--off-x": `${hauled.off.x}px`,
-                  "--off-y": `${hauled.off.y}px`,
-                }),
-                animation: hauled.off
-                  ? `tug-runoff ${RUNOFF_MS}ms linear ${heaveDelay}ms both`
-                  : `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) ${heaveDelay}ms both`,
+                "--ride-from-x": `${ride.from.x}px`,
+                "--ride-from-y": `${ride.from.y}px`,
+                "--ride-via-x": `${ride.via.x}px`,
+                "--ride-via-y": `${ride.via.y}px`,
+                animation: `belt-ride ${BELT_RUN_MS}ms both`,
               } as React.CSSProperties)
-            : ride
+            : slide
+            ? ({
+                "--slide-from-x": `${slide.x}px`,
+                "--slide-from-y": `${slide.y}px`,
+                animation: `slide-in ${SLIDE_MS}ms ease-out forwards`,
+              } as React.CSSProperties)
+            : fall
               ? ({
-                  "--ride-from-x": `${ride.from.x}px`,
-                  "--ride-from-y": `${ride.from.y}px`,
-                  "--ride-via-x": `${ride.via.x}px`,
-                  "--ride-via-y": `${ride.via.y}px`,
-                  animation: `belt-ride ${BELT_RUN_MS}ms both`,
+                  "--grav-x": `${fall.x}px`,
+                  "--grav-y": `${fall.y}px`,
+                  animation: `gravity-drop ${fall.durationMs}ms ${fall.delayMs}ms both`,
                 } as React.CSSProperties)
-              : slide
-              ? ({
-                  "--slide-from-x": `${slide.x}px`,
-                  "--slide-from-y": `${slide.y}px`,
-                  animation: `slide-in ${SLIDE_MS}ms ease-out forwards`,
-                } as React.CSSProperties)
-              : fall
+              : dive
                 ? ({
-                    "--grav-x": `${fall.x}px`,
-                    "--grav-y": `${fall.y}px`,
-                    animation: `gravity-drop ${fall.durationMs}ms ${fall.delayMs}ms both`,
+                    "--slide-from-x": `${dive.x}px`,
+                    "--slide-from-y": `${dive.y}px`,
+                    "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
+                    animation: `${dive.x === 0 && dive.y === 0 ? "fifa-jump" : "fifa-dive"} ${DIVE_MS}ms ${dive.delayMs}ms both`,
                   } as React.CSSProperties)
-                : dive
-                  ? ({
-                      "--slide-from-x": `${dive.x}px`,
-                      "--slide-from-y": `${dive.y}px`,
-                      "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
-                      animation: `${dive.x === 0 && dive.y === 0 ? "fifa-jump" : "fifa-dive"} ${DIVE_MS}ms ${dive.delayMs}ms both`,
-                    } as React.CSSProperties)
-                  : piece
-                    ? goalReaction(
-                        overlays.football?.lastKick ?? null,
-                        sq,
-                        piece.color,
-                      )
-                    : undefined;
+                : piece
+                  ? goalReaction(
+                      overlays.football?.lastKick ?? null,
+                      sq,
+                      piece.color,
+                    )
+                  : undefined;
 
       // Pieces next to a detonating mine are shoved away from it
       const blastFrom = [...minesBlasting].find(
