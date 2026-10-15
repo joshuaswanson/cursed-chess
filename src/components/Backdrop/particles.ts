@@ -656,6 +656,7 @@ export const PRESETS: Partial<Record<ThemeId, Preset>> = {
   portals: stars,
   fog: wisps,
   royale: embers,
+  conveyor: embers,
   clash: confetti,
   mines: blips,
   hill: glitter,

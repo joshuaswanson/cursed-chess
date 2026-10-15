@@ -14,6 +14,7 @@ export type ThemeId =
   | "zombies"
   | "trenches"
   | "lanterns"
+  | "conveyor"
   | "heist";
 
 /** Which animated scene sits behind the board */
@@ -260,6 +261,21 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#c9b892",
     dark: "#7a6648",
     text: "#f3e6c8",
+  },
+  conveyor: {
+    id: "conveyor",
+    title: "Conveyor",
+    tagline:
+      "The board is four looping conveyor belts. After every move each belt carries everything on it one place along, the opposite way to the belt next to it. A pawn carried onto its last rank becomes a queen.",
+    catchphrase: "Keep it moving!",
+    sky: ["#0e1114", "#1c2228", "#3b2a14"],
+    accent: "#ffc21a",
+    accent2: "#ff6a1a",
+    ink: "#0d0f12",
+    frame: "#2b3138",
+    light: "#d9dcd6",
+    dark: "#8d969b",
+    text: "#f2efe6",
   },
   heist: {
     id: "heist",

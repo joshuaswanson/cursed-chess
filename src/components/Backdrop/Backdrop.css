@@ -973,6 +973,139 @@
   background: url("./tug-grass.svg") 0 0 / 120px 120px;
 }
 
+/* --- Conveyor: a factory floor at night --- */
+
+.factory {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 70% 50% at 50% 10%,
+      rgba(255, 194, 26, 0.12),
+      transparent 70%
+    ),
+    linear-gradient(180deg, #14181c, #20262c 60%, #2a2318);
+}
+
+/* Steel trusses across the roof */
+.factory-girders {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 26vh;
+  background:
+    repeating-linear-gradient(
+      60deg,
+      transparent 0 34px,
+      #2f363d 34px 42px,
+      transparent 42px 76px
+    ),
+    repeating-linear-gradient(
+      -60deg,
+      transparent 0 34px,
+      #2f363d 34px 42px,
+      transparent 42px 76px
+    );
+  border-bottom: 12px solid #2f363d;
+  mask-image: linear-gradient(180deg, #000 60%, transparent);
+}
+
+/* A warning light whose beam sweeps round */
+.factory-beacon {
+  position: absolute;
+  top: 27vh;
+  width: 26px;
+  height: 18px;
+  border-radius: 13px 13px 3px 3px;
+  background: #ff8a1a;
+  box-shadow: 0 0 24px 8px rgba(255, 138, 26, 0.55);
+}
+
+.factory-beacon::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70vmax;
+  height: 70vmax;
+  translate: -50% -50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 150, 30, 0.22) 0deg 18deg,
+    transparent 18deg 180deg,
+    rgba(255, 150, 30, 0.22) 180deg 198deg,
+    transparent 198deg
+  );
+  mask-image: radial-gradient(circle, #000, transparent 60%);
+  animation: beacon-sweep 2.4s linear infinite;
+  pointer-events: none;
+}
+
+.factory-beacon-left {
+  left: 6vw;
+}
+
+.factory-beacon-right {
+  right: 6vw;
+}
+
+.factory-beacon-right::before {
+  animation-direction: reverse;
+}
+
+@keyframes beacon-sweep {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* The belt along the back wall, with crates riding it */
+.factory-belt {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 9vh;
+  height: 16px;
+  background: repeating-linear-gradient(
+    90deg,
+    #111417 0 18px,
+    #1d2226 18px 22px
+  );
+  border-top: 4px solid #3a424a;
+  border-bottom: 4px solid #3a424a;
+  animation: factory-belt-run 1s linear infinite;
+}
+
+@keyframes factory-belt-run {
+  to {
+    background-position: 22px 0;
+  }
+}
+
+.factory-crate {
+  position: absolute;
+  bottom: 100%;
+  left: -80px;
+  width: 54px;
+  height: 46px;
+  border: 3px solid #4a3416;
+  border-radius: 3px;
+  background:
+    linear-gradient(45deg, transparent 46%, #4a3416 46% 54%, transparent 54%),
+    #b9823d;
+  animation: factory-crate-ride 18s linear infinite;
+}
+
+.factory-crate:nth-child(3n) {
+  width: 40px;
+  height: 36px;
+}
+
+@keyframes factory-crate-ride {
+  to {
+    left: calc(100% + 80px);
+  }
+}
+
 /* --- Zombies: a graveyard under a sickly moon --- */
 
 .graveyard {

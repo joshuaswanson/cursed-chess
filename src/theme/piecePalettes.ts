@@ -64,6 +64,11 @@ export const PIECE_PALETTES: Partial<
     light: ["#fff6dc", "#f0d79a", "#b98f4a"],
     dark: ["#8f86c9", "#3b3378", "#141033"],
   },
+  // Hard-hat yellow against steel blue
+  conveyor: {
+    light: ["#fffbe8", "#ffd84d", "#c08a00"],
+    dark: ["#9fb4c4", "#3d5468", "#121c26"],
+  },
   // The museum's guards in ivory and brass against burglars dressed for the dark
   heist: {
     light: ["#fbf3dc", "#e6cf98", "#a8843e"],

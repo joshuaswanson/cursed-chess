@@ -400,6 +400,17 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <span className="pv-flag" />
     </>
   ),
+  // Two belts run opposite ways, clunking their pieces along a place at a time
+  conveyor: (
+    <>
+      <span className="pv-belt pv-belt-top" />
+      <span className="pv-belt pv-belt-bottom" />
+      <Piece is="wR" x={18} y={30} size={20} className="pv-ride" />
+      <Piece is="bN" x={52} y={30} size={20} className="pv-ride" />
+      <Piece is="bP" x={48} y={70} size={20} className="pv-ride pv-ride-back" />
+      <Piece is="wQ" x={82} y={70} size={20} className="pv-ride pv-ride-back" />
+    </>
+  ),
   // A pawn steps forward onto exactly the wrong square
   mines: <MineScene />,
   // The edge of the board falls away tile by tile, closing in on the king

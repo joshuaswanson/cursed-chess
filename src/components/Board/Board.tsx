@@ -63,6 +63,13 @@ import {
   Fissure,
 } from "./BattleRoyale";
 import { useCollapse } from "./useCollapse";
+import {
+  BeltLanding,
+  BeltRails,
+  useBeltRun,
+  useHoveredSquare,
+} from "./Conveyor";
+import { BELT_RUN_MS, carried } from "../../plugins/conveyor";
 import { offsetBetween } from "./boardGeometry";
 import { readOverlays } from "./readOverlays";
 import { usePieceDrag } from "./usePieceDrag";
@@ -289,6 +296,11 @@ export function Board() {
   const settlePortals = useGameStore((s) => s.settlePortals);
   const lesson = useGameStore(lessonFor);
 
+  const conveyor = overlays.conveyor;
+  const rides = useBeltRun(conveyor, flipped, squareSize, wasDropRef);
+  const hovered = useHoveredSquare(boardRef, conveyor !== null);
+  const selectedPiece =
+    selectedSquare !== null ? game.board.get(selectedSquare) : null;
   const slides = useSlideAnimation({
     lastMove,
     isPortalMove: lastPortalMove !== null,
@@ -498,11 +510,16 @@ export function Board() {
       const zombieAct = zombieActs.get(sq);
       const rising = zombieAct?.kind === "rise" ? zombieAct : null;
       // In the dark of the heist a move leaves no mark to give it away
+      // On the belts, the squares of the last move have since been carried one place along
+      const markedMove =
+        lastMove && conveyor
+          ? { from: carried(lastMove.from), to: carried(lastMove.to) }
+          : lastMove;
       const isLastMove =
         !battle &&
         !overlays.heist &&
-        lastMove &&
-        (sq === lastMove.from || sq === lastMove.to);
+        markedMove &&
+        (sq === markedMove.from || sq === markedMove.to);
       // Their pieces cannot be seen there, except in a searchlight or holding the jewel
       const unseen =
         overlays.heist != null &&
@@ -547,6 +564,7 @@ export function Board() {
       const leap = kingLeaps.get(sq);
       const dive = shotDives.get(sq);
       const hauled = tugDrags.get(sq);
+      const ride = rides.get(sq);
       const bounceFrom = graveBounce?.to === sq ? graveBounce : null;
       const pieceStyle = bounceFrom
         ? ({
@@ -580,7 +598,15 @@ export function Board() {
                   ? `tug-runoff ${RUNOFF_MS}ms linear ${heaveDelay}ms both`
                   : `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) ${heaveDelay}ms both`,
               } as React.CSSProperties)
-            : slide
+            : ride
+              ? ({
+                  "--ride-from-x": `${ride.from.x}px`,
+                  "--ride-from-y": `${ride.from.y}px`,
+                  "--ride-via-x": `${ride.via.x}px`,
+                  "--ride-via-y": `${ride.via.y}px`,
+                  animation: `belt-ride ${BELT_RUN_MS}ms both`,
+                } as React.CSSProperties)
+              : slide
               ? ({
                   "--slide-from-x": `${slide.x}px`,
                   "--slide-from-y": `${slide.y}px`,
@@ -900,6 +926,17 @@ export function Board() {
             />
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
+          {conveyor && <BeltRails run={conveyor.run} />}
+          {conveyor &&
+            selectedPiece &&
+            hovered !== null &&
+            legalMoveSquares.includes(hovered) && (
+              <BeltLanding
+                piece={selectedPiece}
+                target={hovered}
+                flipped={flipped}
+              />
+            )}
           {overlays.tug && (
             <TugLayer
               view={overlays.tug}

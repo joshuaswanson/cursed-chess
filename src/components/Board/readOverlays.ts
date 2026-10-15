@@ -2,6 +2,7 @@ import type { SquareIndex } from "../../engine";
 import type { BoardOverlay } from "../../plugins/types";
 import type { PortalColor } from "../../plugins/portalChess";
 import type { BattleRoyaleOverlay } from "../../plugins/battleRoyale";
+import type { ConveyorView } from "../../plugins/conveyor";
 import type { BattleView } from "../../plugins/clashRoyale";
 import type { FootballView } from "../../plugins/football";
 import type { TugView } from "../../plugins/tugOfWar";
@@ -33,6 +34,7 @@ export interface BoardOverlays {
   /** Rounds each side has held the hill in a row, and how many it takes to win */
   hillStreak: { white: number; black: number; needed: number };
   battleRoyale: BattleRoyaleOverlay | null;
+  conveyor: ConveyorView | null;
   gravityDirection: string | null;
   gravityAngle: number | null;
   gravityMoves: { from: SquareIndex; to: SquareIndex }[];
@@ -58,6 +60,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     hillSquares: [],
     hillStreak: { white: 0, black: 0, needed: 3 },
     battleRoyale: null,
+    conveyor: null,
     gravityDirection: null,
     gravityAngle: null,
     gravityMoves: [],
@@ -123,6 +126,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
       }
       case "battle-royale":
         result.battleRoyale = overlay.data as BattleRoyaleOverlay;
+        break;
+      case "conveyor":
+        result.conveyor = overlay.data as ConveyorView;
         break;
       case "stratego-hidden":
         result.strategoHidden = new Set(overlay.squares);

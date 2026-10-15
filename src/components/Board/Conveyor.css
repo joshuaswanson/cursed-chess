@@ -1,0 +1,120 @@
+/* --- Conveyor: four looping belts on a factory floor --- */
+
+[data-theme="conveyor"] .board-shell {
+  background: repeating-linear-gradient(
+    135deg,
+    #ffc21a 0 14px,
+    #15171a 14px 28px
+  );
+  box-shadow:
+    10px 12px 0 var(--ink),
+    0 0 40px rgba(255, 194, 26, 0.25);
+}
+
+/* Every other belt runs a shade darker, so each loop reads as one */
+.square.belt-1,
+.square.belt-3 {
+  background-image: linear-gradient(rgba(20, 24, 28, 0.2), rgba(20, 24, 28, 0.2));
+}
+
+/* The rollers between the belts, striped like a hazard line */
+.belt-rails {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.belt-rail,
+.belt-rail-stripes {
+  fill: none;
+  stroke-width: 7;
+}
+
+.belt-rail {
+  stroke: #15171a;
+}
+
+.belt-rail-stripes {
+  stroke: #ffc21a;
+  stroke-dasharray: 10 10;
+  stroke-width: 3;
+}
+
+/* Which way each belt runs: they nudge forward each time the belts run */
+.belt-arrow {
+  fill: none;
+  stroke: rgba(255, 194, 26, 0.85);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
+}
+
+.belt-arrows {
+  animation: belt-arrows-nudge 0.55s 0.45s ease-out both;
+}
+
+@keyframes belt-arrows-nudge {
+  40% {
+    opacity: 0.3;
+  }
+}
+
+/* The piece just moved slides in, then the belts carry everything one place
+   along with a clunk */
+@keyframes belt-ride {
+  0% {
+    translate: var(--ride-from-x) var(--ride-from-y);
+    animation-timing-function: ease-out;
+  }
+  35% {
+    translate: var(--ride-via-x) var(--ride-via-y);
+  }
+  45% {
+    translate: var(--ride-via-x) var(--ride-via-y);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.3, 1.35);
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+/* Where the move would leave the piece once the belts have run */
+.belt-landing {
+  position: absolute;
+  z-index: 2;
+  width: 12.5%;
+  height: 12.5%;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  border: 3px dashed #ffc21a;
+  border-radius: 6px;
+  background: rgba(255, 194, 26, 0.18);
+}
+
+.belt-landing img {
+  width: 82%;
+  height: 82%;
+  opacity: 0.55;
+}
+
+.belt-landing-path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.belt-landing-path line {
+  stroke: #ffc21a;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 2 12;
+}

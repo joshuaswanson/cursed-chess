@@ -24,6 +24,7 @@ import { PortalChessPlugin } from "../plugins/portalChess";
 import type { PortalMoveInfo } from "../plugins/portalChess";
 import { FogOfWarPlugin } from "../plugins/fogOfWar";
 import { BattleRoyalePlugin } from "../plugins/battleRoyale";
+import { BELT_RUN_MS, ConveyorPlugin, runBelts } from "../plugins/conveyor";
 import { RallyPlugin } from "../plugins/clashRoyale";
 import { MinefieldPlugin } from "../plugins/minefield";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
@@ -201,6 +202,11 @@ export const GAME_MODES: GameMode[] = [
     name: "LANTERNS",
     theme: "lanterns",
     create: () => [new LanternsPlugin()],
+  },
+  {
+    name: "CONVEYOR",
+    theme: "conveyor",
+    create: () => [new ConveyorPlugin()],
   },
   {
     name: "HEIST",
@@ -1104,6 +1110,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     pluginManager.invokeOnAfterMove(processedMove);
     pluginManager.invokeOnTurnEnd(mover);
+    // Nobody moves again until the belts have stopped
+    if (pluginManager.find<ConveyorPlugin>("conveyor")) {
+      holdPause(BELT_RUN_MS);
+    }
 
     const status = pluginManager.invokeModifyGameStatus(game.getStatus());
     const isNormalChess = state.currentModeIndex < 0;
@@ -1434,7 +1444,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ? moves[Math.floor(Math.random() * moves.length)]
         : lanterns
           ? chooseInTheDark(game, allowed, lanterns.memory(), bonus)
-          : chooseMove(game, allowed, bonus);
+          : chooseMove(
+              game,
+              allowed,
+              bonus,
+              get().pluginManager.find<ConveyorPlugin>("conveyor") &&
+                ((board) => void runBelts(board)),
+            );
     get().makeMove(pick.from, pick.to, pick.promotion);
   },
 

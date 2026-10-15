@@ -144,6 +144,8 @@ function Flair({ theme }: { theme: ThemeId }) {
           </svg>
         </>
       );
+    case "conveyor":
+      return <span className="card-belt" />;
     case "lanterns":
       return (
         <>
