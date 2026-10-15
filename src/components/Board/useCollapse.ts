@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { RingCollapse } from "../../plugins/battleRoyale";
+import type { Collapse } from "../../plugins/battleRoyale";
 import { sfx } from "../../audio/sfx";
 
 /** Time from the first tile breaking loose to the last one vanishing */
@@ -7,12 +7,12 @@ const COLLAPSE_MS = 2000;
 
 /**
  * The collapse currently playing, if any. Rumbles as danger builds and
- * booms when a ring falls.
+ * booms when a line falls.
  */
-export function useRingCollapse(
-  collapse: RingCollapse | null,
+export function useCollapse(
+  collapse: Collapse | null,
   dangerProgress: number,
-): RingCollapse | null {
+): Collapse | null {
   // A collapse that already happened before the board mounted is not replayed
   const [played, setPlayed] = useState(collapse);
   const active = collapse && collapse !== played ? collapse : null;

@@ -9,7 +9,6 @@
   user-select: none;
   -webkit-user-select: none;
   position: relative;
-  --shrink-ring: 0;
 }
 
 .board-row {
@@ -1187,6 +1186,43 @@
       rgba(255, 80, 0, calc(0.3 + var(--heat) * 0.6)),
     inset 0 0 calc(var(--heat) * 14px) rgba(255, 80, 0, calc(var(--heat) * 0.6));
   animation: br-fissure-flicker 1.1s ease-in-out infinite;
+}
+
+/* The ground that never falls: marked out in chalk from the start */
+.br-final-zone {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  border: 3px dashed rgba(255, 210, 63, 0.85);
+  border-radius: 4px;
+  box-shadow: 0 0 12px rgba(255, 210, 63, 0.35);
+}
+
+.br-final-zone.closed {
+  border-style: solid;
+  animation: br-final-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes br-final-pulse {
+  50% {
+    box-shadow: 0 0 22px rgba(255, 210, 63, 0.75);
+  }
+}
+
+.br-final-label {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  translate: -50% -55%;
+  padding: 1px 9px;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: calc(var(--square-size, 72px) * 0.17);
+  color: var(--ink);
+  background: #ffd23f;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--ink);
 }
 
 /* The broken edge of what is left: a rock lip, the slab's cliff face, and lava in the seams */

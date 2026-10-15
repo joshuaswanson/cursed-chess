@@ -1,5 +1,8 @@
-import { Color, PieceType } from "../engine/types";
+import { Color, GameStatus, PieceType } from "../engine/types";
 import type { Move, Piece, SquareIndex } from "../engine/types";
+import type { Board } from "../engine/board";
+import { isSquareAttacked } from "../engine/moves";
+import { PIECE_VALUE } from "../ai/chooseMove";
 import type {
   ModePlugin,
   PluginContext,
@@ -8,12 +11,33 @@ import type {
 } from "./types";
 import { fileOf, rankOf, ALL_SQUARES } from "../utils/squareUtils";
 
-/** Rings removed before the board stops shrinking (1 ring leaves 6x6) */
-export const MAX_SHRINK_RING = 1;
-const SHRINK_EVERY_ROUNDS = 3;
+/** The part of the board still standing: its first and last file and rank */
+export interface Zone {
+  f0: number;
+  f1: number;
+  r0: number;
+  r1: number;
+}
 
-/** What fell away the last time a ring collapsed, for the board to animate */
-export interface RingCollapse {
+/** One collapse: the file at either side, or both end ranks at once so neither side loses more of its home */
+type Step = "left" | "right" | "ends";
+
+/** Files that fall before the board stops shrinking, leaving four */
+const FILE_DROPS = 4;
+/** Rounds of warning before a line falls */
+const STEP_ROUNDS: Record<Step, number> = { left: 2, right: 2, ends: 3 };
+/** The first line gives an extra round, to get the pieces moving */
+const FIRST_STEP_EXTRA = 1;
+/** Rounds fought in the final zone before the material left decides it */
+export const FINAL_ROUNDS = 3;
+
+/** How much of a doomed piece's worth the computer sees in saving it, with one round left */
+const ESCAPE_WORTH = 0.9;
+/** What the computer sees in getting a piece into the final zone */
+const FINAL_ZONE_PULL = 0.2;
+
+/** What fell away the last time the board collapsed, for the board to animate */
+export interface Collapse {
   /** Increments with every collapse so the board can tell them apart */
   id: number;
   squares: SquareIndex[];
@@ -22,56 +46,129 @@ export interface RingCollapse {
 }
 
 export interface BattleRoyaleOverlay {
-  shrinkRing: number;
+  zone: Zone;
+  /** What will be left after the next collapse, if there is one to come */
+  next: Zone | null;
+  final: Zone;
+  /** Rounds until the next line falls, or until the end once nothing is left to fall */
+  roundsLeft: number;
+  /** How many rounds that countdown started from */
+  countdownRounds: number;
   /** 0 just after a collapse, approaching 1 as the next one nears */
   dangerProgress: number;
-  /** Squares of the ring that will collapse next */
   doomed: SquareIndex[];
-  lastCollapse: RingCollapse | null;
+  lastCollapse: Collapse | null;
 }
 
-function isInRing(sq: SquareIndex, ring: number): boolean {
-  const file = fileOf(sq);
-  const rank = rankOf(sq);
-  return file < ring || file >= 8 - ring || rank < ring || rank >= 8 - ring;
+const inZone = (sq: SquareIndex, z: Zone) =>
+  fileOf(sq) >= z.f0 &&
+  fileOf(sq) <= z.f1 &&
+  rankOf(sq) >= z.r0 &&
+  rankOf(sq) <= z.r1;
+
+function shrink(z: Zone, step: Step): Zone {
+  if (step === "left") return { ...z, f0: z.f0 + 1 };
+  if (step === "right") return { ...z, f1: z.f1 - 1 };
+  return { ...z, r0: z.r0 + 1, r1: z.r1 - 1 };
 }
 
+/**
+ * The files fall from either side at random, so the final zone can end up
+ * anywhere across the board. The end ranks always fall in pairs.
+ */
+function planSteps(): Step[] {
+  const left = Math.floor(Math.random() * (FILE_DROPS + 1));
+  const sides: Step[] = Array.from({ length: FILE_DROPS }, (_, i) =>
+    i < left ? "left" : "right",
+  );
+  for (let i = sides.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [sides[i], sides[j]] = [sides[j], sides[i]];
+  }
+  return [sides[0], sides[1], "ends", sides[2], sides[3], "ends"];
+}
+
+const material = (board: Board, color: Color) =>
+  ALL_SQUARES.reduce((sum, sq) => {
+    const piece = board.get(sq);
+    return piece?.color === color && piece.type !== PieceType.King
+      ? sum + PIECE_VALUE[piece.type]
+      : sum;
+  }, 0);
+
+/**
+ * The board falls away a line at a time, each line marked rounds before it
+ * goes, closing in on a final zone shown from the start. Whatever stands on
+ * a line when it falls goes with it, but a king leaps clear. A few rounds
+ * after the last line falls, whoever has more material left wins.
+ */
 export class BattleRoyalePlugin implements ModePlugin {
   id = "battle-royale";
   name = "Battle Royale";
   description =
-    "The board shrinks over time. Pieces on removed squares are eliminated.";
+    "The board falls away a line at a time. Most material left at the end wins.";
 
+  private zone: Zone = { f0: 0, f1: 7, r0: 0, r1: 7 };
+  private steps: Step[] = [];
+  private roundsLeft = 0;
+  private countdownRounds = 1;
   private deadSquares = new Set<SquareIndex>();
-  private shrinkRing = 0;
-  private roundCount = 0;
-  private lastCollapse: RingCollapse | null = null;
-
-  get fullyShrunk(): boolean {
-    return this.shrinkRing >= MAX_SHRINK_RING;
-  }
+  private lastCollapse: Collapse | null = null;
+  private result: Color | "draw" | null = null;
 
   onGameStart(): void {
+    this.zone = { f0: 0, f1: 7, r0: 0, r1: 7 };
+    this.steps = planSteps();
+    this.countdown(STEP_ROUNDS[this.steps[0]] + FIRST_STEP_EXTRA);
     this.deadSquares.clear();
-    this.shrinkRing = 0;
-    this.roundCount = 0;
     this.lastCollapse = null;
+    this.result = null;
+  }
+
+  private countdown(rounds: number): void {
+    this.roundsLeft = rounds;
+    this.countdownRounds = rounds;
+  }
+
+  private next(): Zone | null {
+    return this.steps.length > 0 ? shrink(this.zone, this.steps[0]) : null;
+  }
+
+  private final(): Zone {
+    return this.steps.reduce(shrink, this.zone);
   }
 
   onTurnEnd(ctx: PluginContext, color: Color): void {
-    if (color !== Color.Black) return;
-    this.roundCount++;
-    if (
-      this.roundCount % SHRINK_EVERY_ROUNDS === 0 &&
-      this.shrinkRing < MAX_SHRINK_RING
-    ) {
-      this.shrinkRing++;
-      this.applyRing(ctx);
+    if (color !== Color.Black || this.result !== null) return;
+    this.roundsLeft--;
+    if (this.roundsLeft > 0) return;
+    const next = this.next();
+    if (!next) {
+      const white = material(ctx.board, Color.White);
+      const black = material(ctx.board, Color.Black);
+      this.result =
+        white > black ? Color.White : black > white ? Color.Black : "draw";
+      return;
     }
+    this.collapse(ctx, next);
+    this.zone = next;
+    this.steps.shift();
+    this.countdown(
+      this.steps.length > 0 ? STEP_ROUNDS[this.steps[0]] : FINAL_ROUNDS,
+    );
   }
 
   modifyLegalMoves(_ctx: PluginContext, moves: Move[]): Move[] {
     return moves.filter((m) => !this.deadSquares.has(m.to));
+  }
+
+  modifyGameStatus(_ctx: PluginContext, status: GameStatus): GameStatus {
+    if (this.result === null) return status;
+    return this.result === "draw" ? GameStatus.Stalemate : GameStatus.Checkmate;
+  }
+
+  getWinner(): Color | null {
+    return this.result === "draw" ? null : this.result;
   }
 
   getSquareModifiers(
@@ -89,35 +186,56 @@ export class BattleRoyalePlugin implements ModePlugin {
 
   getBoardOverlays(): BoardOverlay[] {
     const data: BattleRoyaleOverlay = {
-      shrinkRing: this.shrinkRing,
-      dangerProgress: this.fullyShrunk
-        ? 0
-        : (this.roundCount % SHRINK_EVERY_ROUNDS) / SHRINK_EVERY_ROUNDS,
+      zone: this.zone,
+      next: this.next(),
+      final: this.final(),
+      roundsLeft: this.roundsLeft,
+      countdownRounds: this.countdownRounds,
+      dangerProgress: this.next()
+        ? 1 - this.roundsLeft / this.countdownRounds
+        : 0,
       doomed: this.doomedSquares(),
       lastCollapse: this.lastCollapse,
     };
     return [{ type: "battle-royale", squares: [], data }];
   }
 
+  /**
+   * What a move is worth to the computer for the sake of the ground under
+   * it: getting a piece off a line before it falls, more so the sooner it
+   * falls, and a little for getting into the final zone
+   */
+  squareBonus(to: SquareIndex, piece: Piece, from: SquareIndex): number {
+    if (piece.type === PieceType.King) return 0;
+    const doomed = this.doomedSquares();
+    const final = this.final();
+    let bonus = 0;
+    if (doomed.includes(from) && !doomed.includes(to)) {
+      bonus +=
+        (PIECE_VALUE[piece.type] * ESCAPE_WORTH) / Math.max(1, this.roundsLeft);
+    }
+    if (inZone(to, final) && !inZone(from, final)) bonus += FINAL_ZONE_PULL;
+    return bonus;
+  }
+
   private doomedSquares(): SquareIndex[] {
-    if (this.fullyShrunk) return [];
+    const next = this.next();
+    if (!next) return [];
     return ALL_SQUARES.filter(
-      (sq) => isInRing(sq, this.shrinkRing + 1) && !this.deadSquares.has(sq),
+      (sq) => inZone(sq, this.zone) && !inZone(sq, next),
     );
   }
 
-  private applyRing(ctx: PluginContext): void {
-    const squaresToRemove = ALL_SQUARES.filter(
-      (sq) => isInRing(sq, this.shrinkRing) && !this.deadSquares.has(sq),
-    );
-    const kingLeaps: RingCollapse["kingLeaps"] = [];
-    const fallen: RingCollapse["fallen"] = [];
+  private collapse(ctx: PluginContext, next: Zone): void {
+    const squaresToRemove = this.doomedSquares();
+    const kingLeaps: Collapse["kingLeaps"] = [];
+    const fallen: Collapse["fallen"] = [];
 
     // Kings leap to the nearest safe square, sacrificing a friendly piece if needed
     for (const sq of squaresToRemove) {
       const piece = ctx.board.get(sq);
       if (piece?.type !== PieceType.King) continue;
-      const safeSq = this.findNearestSafe(ctx, sq);
+      const safeSq = this.findLanding(ctx.board, sq, piece.color, next);
       if (safeSq === null) continue;
       ctx.board.remove(sq);
       ctx.board.remove(safeSq);
@@ -139,30 +257,28 @@ export class BattleRoyalePlugin implements ModePlugin {
     };
   }
 
-  private findNearestSafe(
-    ctx: PluginContext,
+  /** The nearest empty square in what is left, out of the enemy's reach if there is one, or else a friend's square */
+  private findLanding(
+    board: Board,
     from: SquareIndex,
+    color: Color,
+    next: Zone,
   ): SquareIndex | null {
-    const kingColor = ctx.board.get(from)?.color;
+    const foe = color === Color.White ? Color.Black : Color.White;
     const distance = (sq: SquareIndex) =>
       Math.abs(fileOf(sq) - fileOf(from)) + Math.abs(rankOf(sq) - rankOf(from));
-
-    let bestEmpty: SquareIndex | null = null;
-    let bestSwap: SquareIndex | null = null;
-    for (const sq of ALL_SQUARES) {
-      if (sq === from || isInRing(sq, this.shrinkRing)) continue;
-      const occupant = ctx.board.get(sq);
-      if (!occupant) {
-        if (bestEmpty === null || distance(sq) < distance(bestEmpty))
-          bestEmpty = sq;
-      } else if (
-        occupant.color === kingColor &&
-        occupant.type !== PieceType.King &&
-        (bestSwap === null || distance(sq) < distance(bestSwap))
-      ) {
-        bestSwap = sq;
+    const cost = (sq: SquareIndex) => {
+      const occupant = board.get(sq);
+      if (occupant && (occupant.color !== color || occupant.type === PieceType.King)) {
+        return Infinity;
       }
-    }
-    return bestEmpty ?? bestSwap;
+      const tier = occupant ? 2 : isSquareAttacked(board, sq, foe) ? 1 : 0;
+      return tier * 100 + distance(sq);
+    };
+    const best = ALL_SQUARES.filter((sq) => inZone(sq, next))
+      .map((sq) => ({ sq, cost: cost(sq) }))
+      .filter((c) => c.cost < Infinity)
+      .sort((a, b) => a.cost - b.cost)[0];
+    return best?.sq ?? null;
   }
 }

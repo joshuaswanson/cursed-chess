@@ -55,8 +55,14 @@ import {
 import { PortalTravelPiece } from "./PortalTravelPiece";
 import { DraggedPiece, ReturningPiece } from "./FloatingPieces";
 import { BoardFog } from "../Fog/Fog";
-import { BrokenRim, CollapsingRing, DoomedTile, Fissure } from "./BattleRoyale";
-import { useRingCollapse } from "./useRingCollapse";
+import {
+  BrokenRim,
+  CollapsingGround,
+  DoomedTile,
+  FinalZone,
+  Fissure,
+} from "./BattleRoyale";
+import { useCollapse } from "./useCollapse";
 import { offsetBetween } from "./boardGeometry";
 import { readOverlays } from "./readOverlays";
 import { usePieceDrag } from "./usePieceDrag";
@@ -432,11 +438,12 @@ export function Board() {
       : "No clear shot!";
   const battleRoyale = overlays.battleRoyale;
   const dangerProgress = battleRoyale?.dangerProgress ?? 0;
-  const collapse = useRingCollapse(
+  const collapse = useCollapse(
     battleRoyale?.lastCollapse ?? null,
     dangerProgress,
   );
   const doomed = new Set(battleRoyale?.doomed ?? []);
+  const brBroken = (battleRoyale?.lastCollapse ?? null) !== null;
   const kingLeaps = new Map(
     (collapse?.kingLeaps ?? []).map((leap) => [
       leap.to,
@@ -817,7 +824,7 @@ export function Board() {
     (overlays.gravityDirection ? " gravity-active" : "") +
     (gravityShift ? " gravity-shifting" : "") +
     (battleRoyale ? " battle-royale" : "") +
-    (battleRoyale && battleRoyale.shrinkRing > 0 ? " br-broken" : "") +
+    (brBroken ? " br-broken" : "") +
     (collapse ? " br-quake" : "") +
     (minesBlasting.size > 0 ? " mine-quake" : "") +
     (bursts.length > 0 ? " capture-jolt" : "") +
@@ -830,9 +837,6 @@ export function Board() {
     "--flip": flipped ? -1 : 1,
     ...(deployPieceType && {
       "--deploy-preview": `url(${pieceImage({ type: deployPieceType, color: Color.White })})`,
-    }),
-    ...(battleRoyale && {
-      "--shrink-ring": battleRoyale.shrinkRing,
     }),
   } as React.CSSProperties;
   // Pieces stay at the angle gravity last settled at, so they tilt with the
@@ -847,7 +851,7 @@ export function Board() {
     <>
       <div
         ref={shellRef}
-        className={`board-shell${overlays.gravityDirection ? " gravity-active" : ""}${battleRoyale && battleRoyale.shrinkRing > 0 ? " br-broken" : ""}`}
+        className={`board-shell${overlays.gravityDirection ? " gravity-active" : ""}${brBroken ? " br-broken" : ""}`}
         style={shellStyle}
       >
         <div
@@ -1089,13 +1093,27 @@ export function Board() {
                 flipped={flipped}
               />
             )}
-          {battleRoyale &&
-            (battleRoyale.shrinkRing > 0 ? (
-              <BrokenRim ring={battleRoyale.shrinkRing} />
-            ) : (
-              <Fissure ring={1} progress={dangerProgress} />
-            ))}
-          {collapse && <CollapsingRing collapse={collapse} flipped={flipped} />}
+          {battleRoyale && brBroken && (
+            <BrokenRim zone={battleRoyale.zone} flipped={flipped} />
+          )}
+          {battleRoyale?.next && (
+            <Fissure
+              zone={battleRoyale.next}
+              flipped={flipped}
+              progress={dangerProgress}
+            />
+          )}
+          {battleRoyale && (
+            <FinalZone
+              zone={battleRoyale.final}
+              flipped={flipped}
+              roundsLeft={battleRoyale.roundsLeft}
+              closed={!battleRoyale.next}
+            />
+          )}
+          {collapse && (
+            <CollapsingGround collapse={collapse} flipped={flipped} />
+          )}
           {travel && (
             <PortalTravelPiece
               travel={travel}

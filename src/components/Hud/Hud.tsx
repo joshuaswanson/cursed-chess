@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { useGameStore, GAME_MODES, MODE_SECONDS } from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
+import type { BattleRoyaleOverlay } from "../../plugins/battleRoyale";
 import { useTheme } from "../../theme/useTheme";
 import { pieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
@@ -64,9 +65,24 @@ function NowPlaying() {
   const untimed =
     modeIndex >= 0 &&
     (GAME_MODES[modeIndex].kingsSitOut || GAME_MODES[modeIndex].untilWon);
-  const fraction = untimed ? 1 : Math.max(0, Math.min(1, remaining / duration));
+  // Battle Royale counts down in turns, to the next line falling and then to the end
+  const turns = useGameStore((s) => {
+    if (GAME_MODES[s.currentModeIndex]?.theme !== "royale") return null;
+    const view = s.pluginManager
+      .getAllOverlays()
+      .find((o) => o.type === "battle-royale")?.data as
+      | BattleRoyaleOverlay
+      | undefined;
+    return view ? `${view.roundsLeft}/${view.countdownRounds}` : null;
+  });
+  const [turnsLeft, turnsFrom] = (turns ?? "0/1").split("/").map(Number);
+  const fraction = turns
+    ? turnsLeft / turnsFrom
+    : untimed
+      ? 1
+      : Math.max(0, Math.min(1, remaining / duration));
   const tagline = theme.catchphrase;
-  const urgent = !untimed && remaining <= 5;
+  const urgent = turns ? turnsLeft <= 1 : !untimed && remaining <= 5;
 
   return (
     <section className="hud-card now-playing" aria-label="Now playing">
@@ -81,9 +97,11 @@ function NowPlaying() {
         className={`mode-ring${urgent ? " urgent" : ""}`}
         role="timer"
         aria-label={
-          untimed
-            ? "No time limit: play until someone wins"
-            : `${remaining} seconds left in this mode`
+          turns
+            ? `${turnsLeft} turns until the board shrinks or the round ends`
+            : untimed
+              ? "No time limit: play until someone wins"
+              : `${remaining} seconds left in this mode`
         }
       >
         <svg viewBox="0 0 64 64">
@@ -97,7 +115,18 @@ function NowPlaying() {
             strokeDashoffset={RING_LENGTH * (1 - fraction)}
           />
         </svg>
-        <span className="mode-ring-value">{untimed ? "∞" : remaining}</span>
+        <span className="mode-ring-value">
+          {turns ? (
+            <span className="mode-ring-turns">
+              {turnsLeft}
+              <small>{turnsLeft === 1 ? "turn" : "turns"}</small>
+            </span>
+          ) : untimed ? (
+            "∞"
+          ) : (
+            remaining
+          )}
+        </span>
       </div>
     </section>
   );

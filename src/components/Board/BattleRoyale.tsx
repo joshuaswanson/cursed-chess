@@ -1,10 +1,32 @@
 import type { SquareIndex } from "../../engine";
-import type { RingCollapse } from "../../plugins/battleRoyale";
+import type { Collapse, Zone } from "../../plugins/battleRoyale";
 import { pieceImage } from "../../utils/pieceImages";
 import { fileOf, rankOf } from "../../utils/squareUtils";
 import { visualCol, visualRow } from "./boardGeometry";
 
 const WAVE_SPREAD_MS = 650;
+
+/** Where a zone sits on screen, in squares from the top left */
+function zoneBox(z: Zone, flipped: boolean) {
+  const cols = [z.f0, z.f1].map((f) => (flipped ? 7 - f : f));
+  const rows = [z.r0, z.r1].map((r) => (flipped ? r : 7 - r));
+  return {
+    x0: Math.min(...cols),
+    x1: Math.max(...cols) + 1,
+    y0: Math.min(...rows),
+    y1: Math.max(...rows) + 1,
+  };
+}
+
+const boxStyle = (z: Zone, flipped: boolean): React.CSSProperties => {
+  const { x0, x1, y0, y1 } = zoneBox(z, flipped);
+  return {
+    left: `${x0 * 12.5}%`,
+    top: `${y0 * 12.5}%`,
+    width: `${(x1 - x0) * 12.5}%`,
+    height: `${(y1 - y0) * 12.5}%`,
+  };
+};
 const DUST_SPECKS = 7;
 
 function seededRandom(seed: number): () => number {
@@ -111,12 +133,14 @@ export function DoomedTile({
   );
 }
 
-/** Molten seam between the doomed ring and safe ground, glowing hotter as the collapse nears */
+/** Molten seam around the ground that survives the next collapse, glowing hotter as it nears */
 export function Fissure({
-  ring,
+  zone,
+  flipped,
   progress,
 }: {
-  ring: number;
+  zone: Zone;
+  flipped: boolean;
   progress: number;
 }) {
   return (
@@ -124,11 +148,40 @@ export function Fissure({
       className="br-fissure"
       style={
         {
-          inset: `${ring * 12.5}%`,
+          ...boxStyle(zone, flipped),
           "--heat": progress,
         } as React.CSSProperties
       }
     />
+  );
+}
+
+/** The ground that never falls, marked from the start so both sides can head for it */
+export function FinalZone({
+  zone,
+  flipped,
+  roundsLeft,
+  closed,
+}: {
+  zone: Zone;
+  flipped: boolean;
+  roundsLeft: number;
+  /** Whether nothing is left to fall, and the count is down to the end */
+  closed: boolean;
+}) {
+  return (
+    <div
+      className={`br-final-zone${closed ? " closed" : ""}`}
+      style={boxStyle(zone, flipped)}
+    >
+      <span className="br-final-label">
+        {closed
+          ? roundsLeft === 1
+            ? "Last turn! Most material wins"
+            : `${roundsLeft} turns left. Most material wins`
+          : "Final zone"}
+      </span>
+    </div>
   );
 }
 
@@ -163,40 +216,53 @@ const pathOf = (points: [number, number][]) =>
  * What is left after the ring falls: a slab with a jagged broken lip, its
  * cliff face showing below, and lava glowing along the break.
  */
-export function BrokenRim({ ring }: { ring: number }) {
-  const rand = seededRandom(ring * 31 + 7);
-  const a = ring * 100;
-  const b = 800 - ring * 100;
+export function BrokenRim({
+  zone,
+  flipped,
+}: {
+  zone: Zone;
+  flipped: boolean;
+}) {
+  const box = zoneBox(zone, flipped);
+  const [x0, x1, y0, y1] = [box.x0, box.x1, box.y0, box.y1].map((v) => v * 100);
+  const rand = seededRandom(x0 + x1 * 3 + y0 * 7 + y1 * 11);
   const lip = [
-    ...jaggedSide(rand, [a, a], [b, a], [0, -1], 18),
-    ...jaggedSide(rand, [b, a], [b, b], [1, 0], 18),
-    ...jaggedSide(rand, [b, b], [a, b], [0, 1], 18),
-    ...jaggedSide(rand, [a, b], [a, a], [-1, 0], 18),
+    ...jaggedSide(rand, [x0, y0], [x1, y0], [0, -1], 18),
+    ...jaggedSide(rand, [x1, y0], [x1, y1], [1, 0], 18),
+    ...jaggedSide(rand, [x1, y1], [x0, y1], [0, 1], 18),
+    ...jaggedSide(rand, [x0, y1], [x0, y0], [-1, 0], 18),
   ];
   // The break eats a few pixels into the edge squares, so the edge is never straight
   const bitten = [
-    ...jaggedSide(rand, [a, a], [a, b], [1, 0], 4),
-    ...jaggedSide(rand, [a, b], [b, b], [0, -1], 4),
-    ...jaggedSide(rand, [b, b], [b, a], [-1, 0], 4),
-    ...jaggedSide(rand, [b, a], [a, a], [0, 1], 4),
+    ...jaggedSide(rand, [x0, y0], [x0, y1], [1, 0], 4),
+    ...jaggedSide(rand, [x0, y1], [x1, y1], [0, -1], 4),
+    ...jaggedSide(rand, [x1, y1], [x1, y0], [-1, 0], 4),
+    ...jaggedSide(rand, [x1, y0], [x0, y0], [0, 1], 4),
   ];
   // The slab's thickness, seen below and to the right of the break
   const cliffBottom = [
-    ...jaggedSide(rand, [a - 10, b + 22], [b + 22, b + 22], [0, 1], 20),
-    [b + 22, b] as [number, number],
-    [a - 10, b] as [number, number],
+    ...jaggedSide(rand, [x0 - 10, y1 + 22], [x1 + 22, y1 + 22], [0, 1], 20),
+    [x1 + 22, y1] as [number, number],
+    [x0 - 10, y1] as [number, number],
   ];
   const cliffRight = [
-    ...jaggedSide(rand, [b + 16, a + 8], [b + 16, b + 30], [1, 0], 12),
-    [b, b] as [number, number],
-    [b, a] as [number, number],
+    ...jaggedSide(rand, [x1 + 16, y0 + 8], [x1 + 16, y1 + 30], [1, 0], 12),
+    [x1, y1] as [number, number],
+    [x1, y0] as [number, number],
   ];
   const cracks = Array.from({ length: 10 }, (_, i) => {
     const side = i % 4;
-    const t = a + 40 + rand() * (b - a - 80);
+    const along = side % 2 === 0 ? [x0, x1] : [y0, y1];
+    const t = along[0] + 40 + rand() * (along[1] - along[0] - 80);
     const depth = 25 + rand() * 45;
     const start: [number, number] =
-      side === 0 ? [t, a] : side === 1 ? [b, t] : side === 2 ? [t, b] : [a, t];
+      side === 0
+        ? [t, y0]
+        : side === 1
+          ? [x1, t]
+          : side === 2
+            ? [t, y1]
+            : [x0, t];
     const dir: [number, number] =
       side === 0
         ? [0, 1]
@@ -374,12 +440,12 @@ function FrameChunks({
   );
 }
 
-/** The ring tears loose in a wave: tiles, the frame, and any pieces on them fall into the abyss */
-export function CollapsingRing({
+/** A line tears loose in a wave: tiles, the frame the first time, and any pieces on them fall into the abyss */
+export function CollapsingGround({
   collapse,
   flipped,
 }: {
-  collapse: RingCollapse;
+  collapse: Collapse;
   flipped: boolean;
 }) {
   const rand = seededRandom(collapse.id * 101);
@@ -393,7 +459,7 @@ export function CollapsingRing({
 
   return (
     <div className="br-collapse" key={collapse.id}>
-      <FrameChunks rand={rand} waveDelay={waveDelay} />
+      {collapse.id === 1 && <FrameChunks rand={rand} waveDelay={waveDelay} />}
       {collapse.squares.map((sq) => {
         const col = visualCol(sq, flipped);
         const row = visualRow(sq, flipped);

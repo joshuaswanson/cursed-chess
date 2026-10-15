@@ -65,8 +65,6 @@ const PLAYER_MOVE_SECONDS = 10;
 const AI_MOVE_SECONDS = 1;
 /** Clock value for the opening normal-chess phase, which has no time limit */
 const UNLIMITED_SECONDS = 999;
-/** Battle Royale ends this many seconds after the board stops shrinking */
-const BATTLE_ROYALE_FINAL_SECONDS = 5;
 /** Plies of normal chess before Chessbot steps in (white, black, white) */
 const NORMAL_CHESS_PLIES = 3;
 /** How long the plain site glitches before the curse bursts through */
@@ -171,6 +169,7 @@ export const GAME_MODES: GameMode[] = [
     name: "BATTLE ROYALE",
     theme: "royale",
     create: () => [new BattleRoyalePlugin()],
+    untilWon: true,
   },
   {
     name: "CLASH ROYALE",
@@ -806,6 +805,7 @@ function modeSquareBonus(
   const zombies = pluginManager.find<ZombiesPlugin>("zombies");
   const heist = pluginManager.find<HeistPlugin>("heist");
   const hill = pluginManager.find<KingOfTheHillPlugin>("king-of-hill");
+  const royale = pluginManager.find<BattleRoyalePlugin>("battle-royale");
   return (square, piece, from) => {
     const classes = pluginManager
       .getSquareModifiers(square)
@@ -822,6 +822,7 @@ function modeSquareBonus(
     if (zombies) bonus += zombies.squareBonus(square, piece);
     if (heist) bonus += heist.squareBonus(square, piece, from);
     if (hill) bonus += hill.squareBonus(board, square, piece, from);
+    if (royale) bonus += royale.squareBonus(square, piece, from);
     return bonus;
   };
 }
@@ -1119,15 +1120,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       timeBlack: foeSeconds(),
       moveTimerActive: true,
     });
-
-    const battleRoyale =
-      pluginManager.find<BattleRoyalePlugin>("battle-royale");
-    if (
-      battleRoyale?.fullyShrunk &&
-      get().modeTimeRemaining > BATTLE_ROYALE_FINAL_SECONDS
-    ) {
-      set({ modeTimeRemaining: BATTLE_ROYALE_FINAL_SECONDS });
-    }
 
     if (isGameOver(status)) {
       const winner =
