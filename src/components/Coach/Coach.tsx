@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from "react";
+import { Fragment, useId, useLayoutEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import "./Coach.css";
@@ -28,19 +28,55 @@ export const centre = (box: Box) => ({
   y: box.top + box.height / 2,
 });
 
-const cut = (box: Box, { pad = 0, round }: Omit<Hole, "selector"> = {}) => {
-  const w = box.width + pad * 2;
-  const h = box.height + pad * 2;
-  if (!round) return `M${box.left - pad} ${box.top - pad}h${w}v${h}h${-w}z`;
-  const { x, y } = centre(box);
-  const r = Math.max(w, h) / 2;
-  return `M${x - r} ${y}a${r} ${r} 0 1 0 ${r * 2} 0a${r} ${r} 0 1 0 ${-r * 2} 0z`;
+const hole = (box: Box, { pad = 0, round }: Omit<Hole, "selector">) => {
+  if (round) {
+    const { x, y } = centre(box);
+    const r = Math.max(box.width, box.height) / 2 + pad;
+    return <circle cx={x} cy={y} r={r} />;
+  }
+  return (
+    <rect
+      x={box.left - pad}
+      y={box.top - pad}
+      width={box.width + pad * 2}
+      height={box.height + pad * 2}
+    />
+  );
 };
 
-const sheet = (around: Box, holes: Hole[]) =>
-  `path(evenodd, "${cut(around)}${holes
-    .flatMap((hole) => boxesOf(hole.selector).map((box) => cut(box, hole)))
-    .join("")}")`;
+/** A dark sheet over one box, with every hole cut through it. Holes may overlap. */
+function Sheet({
+  className,
+  over,
+  holes,
+}: {
+  className: string;
+  over: Box;
+  holes: Hole[];
+}) {
+  const id = useId();
+  return (
+    <svg className={className}>
+      <mask id={id} maskUnits="userSpaceOnUse">
+        <rect
+          x={over.left}
+          y={over.top}
+          width={over.width}
+          height={over.height}
+          fill="#fff"
+        />
+        <g fill="#000">
+          {holes.flatMap((h) =>
+            boxesOf(h.selector).map((box, i) => (
+              <Fragment key={`${h.selector}${i}`}>{hole(box, h)}</Fragment>
+            )),
+          )}
+        </g>
+      </mask>
+      <rect width="100%" height="100%" mask={`url(#${CSS.escape(id)})`} />
+    </svg>
+  );
+}
 
 /** How often the lit parts are found again, as they can move about */
 const MEASURE_MS = 250;
@@ -91,12 +127,9 @@ export function Coach({
   if (!under) return null;
   return createPortal(
     <div className="coach" aria-hidden>
-      <div className="coach-dark" style={{ clipPath: sheet(page, lit) }} />
+      <Sheet className="coach-dark" over={page} holes={lit} />
       {shade && shaded && (
-        <div
-          className="coach-shade"
-          style={{ clipPath: sheet(shaded, shade.lit) }}
-        />
+        <Sheet className="coach-shade" over={shaded} holes={shade.lit} />
       )}
       <p
         className="coach-tip"
