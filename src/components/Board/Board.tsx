@@ -1049,7 +1049,7 @@ export function Board() {
                   { selector: ".tug-win-line.win-white", pad: 6 },
                 ],
               }}
-              tip="Outnumber him on the rope to pull it your way"
+              tip="More pieces on the rope means more pull"
               tipOver=".board-shell"
               tipAt={0}
             />
