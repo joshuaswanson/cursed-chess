@@ -212,34 +212,35 @@
   outline-offset: 2px;
 }
 
-/* The squad's name, on a tag that appears above the card on hover */
-.card-label {
+/* The squad's mark, a badge pinned to the top of its card */
+.card-mark {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 10px);
-  translate: -50% 4px;
-  padding: 4px 10px;
-  font-family: var(--font-ui);
-  font-weight: 800;
-  font-size: 13px;
-  white-space: nowrap;
-  color: #fff4dc;
+  top: 0;
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  translate: -50% -45%;
+  color: #f2c94c;
   background: #2a2216;
   border: 2px solid var(--ink);
-  border-radius: 6px;
-  box-shadow: 2px 3px 0 var(--ink);
-  opacity: 0;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 2px #c9a44a,
+    2px 3px 0 var(--ink);
   pointer-events: none;
-  transition:
-    opacity 0.14s ease-out,
-    translate 0.14s ease-out;
-  z-index: 5;
 }
 
-.squad-card:hover .card-label,
-.squad-card:focus-visible .card-label {
-  opacity: 1;
-  translate: -50% 0;
+.card-mark svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.squad-card:disabled .card-mark {
+  filter: brightness(0.6);
 }
 
 /* --- Orders along each of your trench lines --- */

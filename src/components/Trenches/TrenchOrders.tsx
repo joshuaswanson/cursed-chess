@@ -2,7 +2,7 @@ import { memo, useEffect, useRef } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
 import { SQUADS } from "../../plugins/trenches";
-import type { TrenchesPlugin } from "../../plugins/trenches";
+import type { SquadId, TrenchesPlugin } from "../../plugins/trenches";
 import { Soldier } from "../Board/Battle";
 import { sfx } from "../../audio/sfx";
 import "./Trenches.css";
@@ -53,6 +53,48 @@ const CardArt = memo(function CardArt({ men }: { men: PieceType[] }) {
     </span>
   );
 });
+
+/** Each squad's mark, worn at the top of its card */
+const SQUAD_MARKS: Record<SquadId, React.ReactNode> = {
+  rifles: <path d="M3 17 L12 7 L21 17 L17.5 19.5 L12 13.5 L6.5 19.5 Z" />,
+  assault: (
+    <>
+      <ellipse cx="11" cy="14.5" rx="6" ry="7" />
+      <rect x="9" y="4" width="5" height="4" rx="1" />
+      <path d="M14 5 L19 3 L19.5 5 L15 7 Z" />
+      <path
+        d="M5.5 12.5 H16.5 M5.5 16.5 H16.5 M11 8 V21"
+        stroke="#2a2216"
+        strokeWidth="1.4"
+        fill="none"
+      />
+    </>
+  ),
+  guns: (
+    <>
+      {[3.5, 9.5, 15.5].map((x) => (
+        <path
+          key={x}
+          d={`M${x} 19 V10 Q${x} 4.5 ${x + 2.5} 3 Q${x + 5} 4.5 ${x + 5} 10 V19 Z`}
+        />
+      ))}
+      <rect x="2" y="13" width="20" height="3.5" rx="0.8" />
+      <path
+        d="M2.5 14.75 H21.5"
+        stroke="#2a2216"
+        strokeWidth="0.9"
+        strokeDasharray="1.5 1.5"
+      />
+    </>
+  ),
+  sniper: (
+    <g fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="7.5" />
+      <path d="M12 2 V8 M12 16 V22 M2 12 H8 M16 12 H22" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" />
+    </g>
+  ),
+};
 
 /**
  * Your squads in Trenches: click one that is ready and its men run up to
@@ -105,8 +147,8 @@ export function TrenchOrders() {
                 aria-hidden
               />
             </span>
-            <span className="card-label" aria-hidden>
-              {squad.name}
+            <span className="card-mark" aria-hidden>
+              <svg viewBox="0 0 24 24">{SQUAD_MARKS[squad.id]}</svg>
             </span>
           </button>
         );
