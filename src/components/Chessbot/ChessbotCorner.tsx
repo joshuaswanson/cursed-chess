@@ -258,6 +258,43 @@ function useSkipLine(): string | undefined {
   return line;
 }
 
+/** How long he takes over a line, and over a reaction, before he turns to working out his move */
+const sayingMs = (line: string) => Math.min(2400, 600 + line.length * 45);
+const REACTION_BEAT_MS = 1600;
+
+/**
+ * Whether he is still getting out what he has to say or reacting to what
+ * just happened. His move waits for him to finish, so his thinking comes
+ * after.
+ */
+function useTalking(line: string | undefined, reaction: number | undefined) {
+  const [seen, setSeen] = useState({ line, reaction });
+  const [hold, setHold] = useState<{ ms: number } | null>(null);
+  if (line !== seen.line || reaction !== seen.reaction) {
+    setSeen({ line, reaction });
+    const ms = Math.max(
+      line && line !== seen.line ? sayingMs(line) : 0,
+      reaction !== undefined && reaction !== seen.reaction
+        ? REACTION_BEAT_MS
+        : 0,
+    );
+    if (ms > 0) setHold({ ms });
+  }
+  useEffect(() => {
+    if (!hold) return;
+    const timer = window.setTimeout(() => setHold(null), hold.ms);
+    return () => window.clearTimeout(timer);
+  }, [hold]);
+  const talking = hold !== null;
+
+  const setChessbotTalking = useGameStore((s) => s.setChessbotTalking);
+  useEffect(() => {
+    setChessbotTalking(talking);
+  }, [talking, setChessbotTalking]);
+  useEffect(() => () => setChessbotTalking(false), [setChessbotTalking]);
+  return talking;
+}
+
 /**
  * Chessbot where he lives: docked at the top of the panel beside the board
  * during play, and in the corner of the screen while he is breaking the
@@ -290,8 +327,9 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
     return () => window.clearInterval(timer);
   }, [peeking]);
 
-  // His turn in a game played move by move: he is working one out
-  const thinking = useGameStore(
+  const talking = useTalking(skipLine ?? quip, bot.idle ? undefined : bot.id);
+  // His turn in a game played move by move: once he has had his say, he is working one out
+  const onTurn = useGameStore(
     (s) =>
       s.cursed &&
       s.introDone &&
@@ -300,6 +338,7 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
       s.turn === Color.Black &&
       !s.pluginManager.isAutonomous(),
   );
+  const thinking = onTurn && !talking;
   const line =
     entrance === "oops"
       ? ENTRANCE.oops

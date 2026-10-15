@@ -339,6 +339,9 @@ export interface GameStore {
   portalTravelling: boolean;
   /** The undead are rising, shambling, or biting, so the clocks wait for them to finish */
   zombiesActing: boolean;
+  /** Chessbot is reacting or saying something, so he starts on his move once he has finished */
+  chessbotTalking: boolean;
+  setChessbotTalking: (talking: boolean) => void;
   siteTab: SiteTab;
   setSiteTab: (tab: SiteTab) => void;
 
@@ -882,6 +885,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   skippedTurn: null,
   portalTravelling: false,
   zombiesActing: false,
+  chessbotTalking: false,
+  setChessbotTalking: (talking) => set({ chessbotTalking: talking }),
   siteTab: "Play",
   setSiteTab: (tab) => set({ siteTab: tab }),
 
@@ -1325,6 +1330,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     ) {
       return;
     }
+    if (turn === Color.Black && get().chessbotTalking && !get().net) return;
     // A mine going off holds the clock, so nobody moves until the blast has played out
     const minefield = pluginManager.find<MinefieldPlugin>("minefield");
     if (minefield && minefield.pendingExplosions.size > 0) return;
