@@ -53,6 +53,37 @@ function Piece({
   );
 }
 
+/**
+ * One belt and its pieces, two scene widths long, so the pieces carried off
+ * one edge come back round from the other. A full run moves it one scene
+ * width, which brings the same pieces back to where they started.
+ */
+function BeltLane({
+  pieces,
+  y,
+  way,
+}: {
+  pieces: string[];
+  y: number;
+  way: "right" | "left";
+}) {
+  const spacing = 100 / pieces.length;
+  return (
+    <span className={`pv-lane pv-lane-${way}`}>
+      <span className="pv-belt" style={{ top: `${y - 13}%` }} />
+      {[...pieces, ...pieces].map((is, i) => (
+        <Piece
+          key={i}
+          is={is}
+          x={(spacing / 2 + spacing * i) / 2}
+          y={y}
+          size={10}
+        />
+      ))}
+    </span>
+  );
+}
+
 /** How long the minefield scene runs before it starts over, and when in it the pawn reaches the mine */
 const MINE_LOOP_MS = 4000;
 const MINE_STEP_MS = 1900;
@@ -403,12 +434,8 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // Two belts run opposite ways, clunking their pieces along a place at a time
   conveyor: (
     <>
-      <span className="pv-belt pv-belt-top" />
-      <span className="pv-belt pv-belt-bottom" />
-      <Piece is="wR" x={18} y={30} size={20} className="pv-ride" />
-      <Piece is="bN" x={52} y={30} size={20} className="pv-ride" />
-      <Piece is="bP" x={48} y={70} size={20} className="pv-ride pv-ride-back" />
-      <Piece is="wQ" x={82} y={70} size={20} className="pv-ride pv-ride-back" />
+      <BeltLane pieces={["wR", "bN", "wP", "bB"]} y={30} way="right" />
+      <BeltLane pieces={["bP", "wQ", "bR", "wN"]} y={70} way="left" />
     </>
   ),
   // A pawn steps forward onto exactly the wrong square
