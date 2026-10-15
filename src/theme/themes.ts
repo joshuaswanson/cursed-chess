@@ -298,13 +298,13 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     title: "Thunderstorm",
     tagline:
       "The board is dark. Lightning lights it up for a moment every few seconds, and sometimes it kills a piece. It never hits a king.",
-    catchphrase: "Don't stand under anything tall.",
-    // The night and the frame match the dark over the squares, so the board only shows when the lightning lights it
-    sky: ["#05070d", "#05070d", "#05070d"],
+    catchphrase: "Lightning never strikes twice. It strikes a lot.",
+    // The night and the frame match the dark over the squares, so no edge of the board shows
+    sky: ["#04030a", "#04030a", "#04030a"],
     accent: "#9fd8ff",
     accent2: "#ffe45c",
-    ink: "#05070d",
-    frame: "#05070d",
+    ink: "#04030a",
+    frame: "#04030a",
     light: "#c7cfdc",
     dark: "#6c7890",
     text: "#e3ebff",

@@ -1,0 +1,123 @@
+/* --- Thunderstorm: a black sky, showing its clouds only when lightning lights it --- */
+
+.storm-clouds {
+  position: absolute;
+  left: -30%;
+  right: -30%;
+  top: -6%;
+  height: 58%;
+  animation: storm-clouds-roll 70s linear infinite alternate;
+}
+
+/* Dark against the lit sky behind them */
+.storm-clouds-far {
+  opacity: 0.75;
+  background:
+    radial-gradient(ellipse 18% 40% at 12% 30%, #2a3348 0 55%, transparent 72%),
+    radial-gradient(ellipse 22% 46% at 34% 22%, #263046 0 55%, transparent 72%),
+    radial-gradient(ellipse 20% 42% at 58% 32%, #2b3449 0 55%, transparent 72%),
+    radial-gradient(ellipse 24% 48% at 82% 24%, #252e43 0 55%, transparent 72%);
+}
+
+.storm-clouds-near {
+  top: -14%;
+  height: 50%;
+  animation-duration: 45s;
+  animation-direction: alternate-reverse;
+  background:
+    radial-gradient(ellipse 16% 44% at 22% 40%, #171d2b 0 50%, transparent 70%),
+    radial-gradient(ellipse 20% 50% at 48% 34%, #151b28 0 50%, transparent 70%),
+    radial-gradient(ellipse 17% 46% at 74% 42%, #181e2c 0 50%, transparent 70%),
+    radial-gradient(ellipse 14% 40% at 94% 30%, #141a27 0 50%, transparent 70%);
+}
+
+@keyframes storm-clouds-roll {
+  to {
+    translate: 14% 0;
+  }
+}
+
+/* Far-off lightning flickering inside the clouds */
+.storm-sheet {
+  position: absolute;
+  inset: 0 0 45%;
+  background: radial-gradient(
+    ellipse 30% 70% at var(--x) 30%,
+    rgba(170, 190, 240, 0.32),
+    transparent 70%
+  );
+  opacity: 0;
+  animation: storm-sheet 0.9s linear both;
+}
+
+@keyframes storm-sheet {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  16% {
+    opacity: 0.2;
+  }
+  26% {
+    opacity: 0.8;
+  }
+  45% {
+    opacity: 0.1;
+  }
+  55% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* A bolt lights the whole sky, the clouds brightest */
+.storm-sky-lit {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 70% 45% at 50% 18%,
+      rgba(200, 215, 255, 0.75),
+      transparent 75%
+    ),
+    linear-gradient(rgba(150, 170, 220, 0.35), rgba(40, 50, 80, 0.1));
+  opacity: 0;
+  animation: storm-sky-lit 1.6s linear both;
+}
+
+@keyframes storm-sky-lit {
+  0% {
+    opacity: 0.2;
+  }
+  5% {
+    opacity: 1;
+  }
+  8% {
+    opacity: 0.25;
+  }
+  12% {
+    opacity: 1;
+  }
+  17% {
+    opacity: 0.35;
+  }
+  24% {
+    opacity: 0.85;
+  }
+  60% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storm-clouds {
+    animation: none;
+  }
+}

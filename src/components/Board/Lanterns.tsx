@@ -3,6 +3,7 @@ import type { SquareIndex } from "../../engine";
 import { useGameStore } from "../../stores/gameStore";
 import type { Lantern } from "../../plugins/lanterns";
 import { visualCol, visualRow } from "./boardGeometry";
+import { lightningAt } from "./lightning";
 import "./Lanterns.css";
 
 /** How far a lantern's light reaches from its carrier's middle, in squares */
@@ -30,28 +31,6 @@ const KINDLE = 0.07;
 /** How quickly a light catches up with its carrier, as the share of the gap closed each frame */
 const FOLLOW = 0.22;
 const FRAME_MS = 40;
-/**
- * How much of the dark a bolt of lightning lifts as time passes after it
- * strikes, in ms: a blinding flash, a flicker, a moment of full light, then
- * the dark closes in again
- */
-const LIGHTNING: [ms: number, lifted: number][] = [
-  [0, 1],
-  [70, 1],
-  [110, 0.35],
-  [170, 1],
-  [1000, 1],
-  [1700, 0],
-];
-
-const lightningAt = (ms: number) => {
-  const after = LIGHTNING.findIndex(([at]) => at > ms);
-  if (after === -1) return 0;
-  if (after === 0) return LIGHTNING[0][1];
-  const [t0, v0] = LIGHTNING[after - 1];
-  const [t1, v1] = LIGHTNING[after];
-  return v0 + ((v1 - v0) * (ms - t0)) / (t1 - t0);
-};
 
 const BRASS = "#d9a441";
 const BRASS_DARK = "#8a5f1c";

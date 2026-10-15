@@ -1576,4 +1576,36 @@ export const sfx = {
     bang.stop(t + 0.55);
     for (let i = 0; i < 8; i++) crackle(c, out, 0.6);
   },
+
+  /** A piece electrocuted: a harsh buzzing hum, crackling, that cuts out */
+  zap(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    const length = 0.75;
+    const buzz = c.createOscillator();
+    buzz.type = "sawtooth";
+    buzz.frequency.setValueAtTime(110, t);
+    const warble = c.createOscillator();
+    warble.frequency.value = 33;
+    const warbleDepth = c.createGain();
+    warbleDepth.gain.value = 60;
+    warble.connect(warbleDepth).connect(buzz.frequency);
+    const band = c.createBiquadFilter();
+    band.type = "bandpass";
+    band.frequency.value = 1400;
+    band.Q.value = 1.2;
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.32, t + 0.02);
+    gain.gain.setValueAtTime(0.32, t + length - 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + length);
+    buzz.connect(band).connect(gain).connect(out);
+    for (const node of [buzz, warble]) {
+      node.start(t);
+      node.stop(t + length + 0.02);
+    }
+    for (let i = 0; i < 10; i++) crackle(c, out, 1.2);
+  },
 };
