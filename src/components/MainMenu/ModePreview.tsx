@@ -84,6 +84,40 @@ function BeltLane({
   );
 }
 
+/**
+ * A piece built to jump: it travels across on the outside, rises and falls
+ * inside that, and spins inside that again, so each can keep its own pace
+ * through a jump. Its shadow stays on the ground.
+ */
+function Flipper({
+  is,
+  x,
+  y,
+  size,
+  className,
+}: {
+  is: string;
+  x: number;
+  y: number;
+  size: number;
+  className: string;
+}) {
+  const theme = useContext(SceneTheme) ?? "opening";
+  return (
+    <span
+      className={`pv-piece pv-flipper ${className}`}
+      style={{ left: `${x}%`, top: `${y}%`, width: `${size}%` }}
+    >
+      <span className="pv-flip-shadow" />
+      <span className="pv-flip-rise">
+        <span className="pv-flip-spin">
+          <img src={themedPieceImage(is, theme)} alt="" draggable={false} />
+        </span>
+      </span>
+    </span>
+  );
+}
+
 /** How long the minefield scene runs before it starts over, and when in it the pawn reaches the mine */
 const MINE_LOOP_MS = 4000;
 const MINE_STEP_MS = 1900;
@@ -512,14 +546,20 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   hex: (
     <>
       <HexBoard />
-      <Piece
+      <Flipper
         is="bP"
         x={BISHOP_STOPS[2]}
         y={47}
         size={20}
         className="pv-bopped"
       />
-      <Piece is="wB" x={BISHOP_STOPS[0]} y={47} size={22} className="pv-hops" />
+      <Flipper
+        is="wB"
+        x={BISHOP_STOPS[0]}
+        y={47}
+        size={22}
+        className="pv-hops"
+      />
       <span
         className="pv-spark pv-bop"
         style={{ left: `${BISHOP_STOPS[2]}%`, top: "44%" }}
@@ -610,15 +650,6 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <span
         className="pv-muzzle pv-muzzle-near"
         style={{ left: "26%", top: "73%" }}
-      />
-      {/* The assault team goes over the top and across */}
-      <Piece is="wN" x={46} y={78} size={12} className="pv-assault" />
-      <Piece
-        is="wN"
-        x={58}
-        y={78}
-        size={12}
-        className="pv-assault pv-assault-b"
       />
       <Shell x={58} y={50} />
       <Shell x={24} y={44} late />

@@ -624,8 +624,7 @@
   right: 0;
   height: 26%;
   border-block: 4px solid #ffc21a;
-  background: linear-gradient(90deg, #2b3138 75%, #1a1e22 0) 0 0 / 3.125%
-    100%;
+  background: linear-gradient(90deg, #2b3138 75%, #1a1e22 0) 0 0 / 3.125% 100%;
 }
 
 /* Four clunks of one place each carry a lane one scene width along */
@@ -1225,11 +1224,11 @@
 }
 
 .pv-hexes .pv-hex-step-1 {
-  animation-delay: 1.44s;
+  animation-delay: 1.15s;
 }
 
 .pv-hexes .pv-hex-step-2 {
-  animation-delay: 3.07s;
+  animation-delay: 2.59s;
 }
 
 @keyframes pv-hex-lit {
@@ -1242,115 +1241,349 @@
   }
 }
 
-/* The pawn on the last cell, knocked off the board when he arrives */
+/* A jumping piece: across at a steady pace, up and down as thrown things
+   go, slowing to the top and speeding back down, and spinning evenly the
+   whole time it is in the air */
+.pv-flipper .pv-flip-rise,
+.pv-flipper .pv-flip-spin {
+  inset: 0;
+}
+
+.pv-flipper .pv-flip-rise {
+  transform-origin: 50% 100%;
+}
+
+.pv-flip-spin > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35));
+}
+
+.pv-flip-shadow {
+  left: 18%;
+  right: 18%;
+  bottom: -4%;
+  height: 14%;
+  border-radius: 50%;
+  background: radial-gradient(rgba(10, 4, 30, 0.45), transparent 70%);
+}
+
+.pv-hops,
+.pv-hops *,
+.pv-bopped,
+.pv-bopped * {
+  animation-duration: 4.8s;
+  animation-iteration-count: infinite;
+}
+
+/* Two jumps along the bishop's colour, a single backflip and then a double
+   onto the pawn, and a little victory bounce */
+.pv-hops {
+  animation-name: pv-hops-across;
+  animation-timing-function: linear;
+}
+
+.pv-hops .pv-flip-rise {
+  animation-name: pv-hops-rise;
+}
+
+.pv-hops .pv-flip-spin {
+  animation-name: pv-hops-spin;
+  animation-timing-function: linear;
+}
+
+.pv-hops .pv-flip-shadow {
+  animation-name: pv-hops-shadow;
+}
+
+@keyframes pv-hops-across {
+  0% {
+    left: 19.25%;
+    opacity: 0;
+  }
+  4%,
+  12% {
+    left: 19.25%;
+    opacity: 1;
+  }
+  24%,
+  38% {
+    left: 47.75%;
+  }
+  54%,
+  92% {
+    left: 76.25%;
+    opacity: 1;
+  }
+  98%,
+  100% {
+    left: 76.25%;
+    opacity: 0;
+  }
+}
+
+@keyframes pv-hops-rise {
+  0%,
+  6% {
+    translate: 0 0;
+    scale: 1;
+    animation-timing-function: ease-out;
+  }
+  12% {
+    translate: 0 0;
+    scale: 1.18 0.78;
+    animation-timing-function: cubic-bezier(0.33, 0.67, 0.67, 1);
+  }
+  18% {
+    translate: 0 -42%;
+    scale: 0.94 1.08;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0.33);
+  }
+  24% {
+    translate: 0 0;
+    scale: 1.22 0.8;
+    animation-timing-function: ease-out;
+  }
+  28% {
+    scale: 0.94 1.06;
+    animation-timing-function: ease-in-out;
+  }
+  31% {
+    scale: 1;
+    animation-timing-function: ease-in;
+  }
+  38% {
+    translate: 0 0;
+    scale: 1.26 0.72;
+    animation-timing-function: cubic-bezier(0.33, 0.67, 0.67, 1);
+  }
+  46% {
+    translate: 0 -56%;
+    scale: 0.92 1.1;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0.33);
+  }
+  54% {
+    translate: 0 0;
+    scale: 1.3 0.7;
+    animation-timing-function: ease-out;
+  }
+  58% {
+    scale: 0.9 1.12;
+    animation-timing-function: ease-in-out;
+  }
+  62%,
+  66% {
+    translate: 0 0;
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.33, 0.67, 0.67, 1);
+  }
+  70% {
+    translate: 0 -20%;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0.33);
+  }
+  74% {
+    translate: 0 0;
+    scale: 1.12 0.88;
+    animation-timing-function: cubic-bezier(0.33, 0.67, 0.67, 1);
+  }
+  78% {
+    translate: 0 -20%;
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0.33);
+  }
+  82% {
+    translate: 0 0;
+    scale: 1.12 0.88;
+    animation-timing-function: ease-out;
+  }
+  86%,
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+/* Backflips, since he jumps to the right: each one finishes just as he lands */
+@keyframes pv-hops-spin {
+  0%,
+  12% {
+    rotate: 0deg;
+  }
+  24%,
+  38% {
+    rotate: -360deg;
+  }
+  54%,
+  100% {
+    rotate: -1080deg;
+  }
+}
+
+/* The shadow shrinks and fades the higher he goes */
+@keyframes pv-hops-shadow {
+  0%,
+  12% {
+    scale: 1;
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.33, 0.67, 0.67, 1);
+  }
+  18% {
+    scale: 0.6;
+    opacity: 0.45;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0.33);
+  }
+  24%,
+  38% {
+    scale: 1;
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.33, 0.67, 0.67, 1);
+  }
+  46% {
+    scale: 0.45;
+    opacity: 0.3;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0.33);
+  }
+  54%,
+  66% {
+    scale: 1;
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.33, 0.67, 0.67, 1);
+  }
+  70% {
+    scale: 0.8;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0.33);
+  }
+  74% {
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.33, 0.67, 0.67, 1);
+  }
+  78% {
+    scale: 0.8;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0.33);
+  }
+  82%,
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+/* The pawn on the last cell pops up, shivers as the bishop comes for it,
+   and is knocked off the board in an arc when he lands */
 .pv-bopped {
-  animation: pv-bopped 4.8s infinite;
+  animation-name: pv-bopped-across;
+  animation-timing-function: linear;
+}
+
+.pv-bopped .pv-flip-rise {
+  animation-name: pv-bopped-rise;
+}
+
+.pv-bopped .pv-flip-spin {
+  animation-name: pv-bopped-spin;
+  animation-timing-function: linear;
+}
+
+.pv-bopped .pv-flip-shadow {
+  animation-name: pv-bopped-shadow;
+}
+
+@keyframes pv-bopped-across {
+  0% {
+    left: 76.25%;
+    scale: 0;
+    animation-timing-function: cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  8%,
+  54% {
+    left: 76.25%;
+    scale: 1;
+  }
+  80%,
+  100% {
+    left: 104%;
+    scale: 1;
+  }
+}
+
+@keyframes pv-bopped-rise {
+  0%,
+  54% {
+    translate: 0 0;
+    animation-timing-function: cubic-bezier(0.33, 0.67, 0.67, 1);
+  }
+  61% {
+    translate: 0 -55%;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0.33);
+  }
+  80%,
+  100% {
+    translate: 0 420%;
+  }
+}
+
+@keyframes pv-bopped-spin {
+  0%,
+  40% {
+    rotate: 0deg;
+  }
+  42% {
+    rotate: 9deg;
+  }
+  44% {
+    rotate: -9deg;
+  }
+  46% {
+    rotate: 9deg;
+  }
+  48% {
+    rotate: -9deg;
+  }
+  50% {
+    rotate: 6deg;
+  }
+  52%,
+  54% {
+    rotate: 0deg;
+  }
+  80%,
+  100% {
+    rotate: 900deg;
+  }
+}
+
+@keyframes pv-bopped-shadow {
+  0%,
+  54% {
+    opacity: 1;
+  }
+  58%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .pv-bop {
   animation: pv-bop 4.8s infinite;
 }
 
-@keyframes pv-bopped {
-  0% {
-    translate: -50% -50%;
-    rotate: 0deg;
-    scale: 0;
-  }
-  8%,
-  63% {
-    translate: -50% -50%;
-    rotate: 0deg;
-    scale: 1;
-    animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
-  }
-  82%,
-  100% {
-    translate: 190% -330%;
-    rotate: 600deg;
-    scale: 0.6;
-  }
-}
-
 @keyframes pv-bop {
   0%,
-  62% {
+  53% {
     scale: 0;
     opacity: 0;
   }
-  65% {
+  55% {
     scale: 1.8;
     opacity: 1;
     rotate: 30deg;
   }
-  72%,
+  62%,
   100% {
     scale: 0.4;
     opacity: 0;
     rotate: 80deg;
-  }
-}
-
-/* One cell at a time, with a little hop over each corner */
-.pv-hops {
-  animation: pv-hops 4.8s ease-in-out infinite;
-}
-
-@keyframes pv-hops {
-  0%,
-  12% {
-    left: 19.25%;
-    translate: -50% -50%;
-    rotate: 0deg;
-    scale: 1;
-  }
-  21% {
-    translate: -50% -95%;
-    rotate: 180deg;
-  }
-  30%,
-  46% {
-    left: 47.75%;
-    translate: -50% -50%;
-    rotate: 360deg;
-    scale: 1;
-  }
-  55% {
-    translate: -50% -110%;
-    rotate: 540deg;
-    scale: 1.15;
-  }
-  64% {
-    left: 76.25%;
-    translate: -50% -50%;
-    rotate: 720deg;
-    scale: 1.2 0.8;
-  }
-  /* A little dance on the cell he has won */
-  70% {
-    translate: -50% -64%;
-    rotate: 708deg;
-    scale: 1;
-  }
-  76% {
-    translate: -50% -50%;
-    rotate: 732deg;
-  }
-  82% {
-    translate: -50% -64%;
-    rotate: 708deg;
-  }
-  88%,
-  94% {
-    left: 76.25%;
-    translate: -50% -50%;
-    rotate: 720deg;
-    opacity: 1;
-  }
-  100% {
-    left: 76.25%;
-    rotate: 720deg;
-    opacity: 0;
   }
 }
 
@@ -1743,47 +1976,6 @@
   50% {
     opacity: 0.15;
     scale: 0.6;
-  }
-}
-
-/* Two of the assault team climb out, sprint for the far line, and are swallowed by the smoke */
-.scene-trenches .pv-assault {
-  animation: pv-assault 5.2s ease-in infinite;
-}
-
-.scene-trenches .pv-assault-b {
-  animation-delay: -0.35s;
-}
-
-@keyframes pv-assault {
-  0%,
-  18% {
-    top: 82%;
-    opacity: 0;
-    scale: 0.8;
-  }
-  26% {
-    top: 72%;
-    opacity: 1;
-    scale: 1;
-  }
-  44% {
-    top: 54%;
-    translate: -70% -50%;
-  }
-  58% {
-    top: 42%;
-    translate: -30% -50%;
-  }
-  74% {
-    top: 28%;
-    translate: -50% -50%;
-    opacity: 1;
-  }
-  82%,
-  100% {
-    top: 24%;
-    opacity: 0;
   }
 }
 
