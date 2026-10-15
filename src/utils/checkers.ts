@@ -1,7 +1,6 @@
 import { generatePseudoLegalMoves } from "../engine";
 import type { Board, Color, PawnRules, SquareIndex } from "../engine";
 import { opponent } from "../engine/moves";
-import { carried, fedFrom, runBelts } from "../plugins/conveyor";
 import type { Game } from "../engine/game";
 import type { PluginManager } from "../plugins/manager";
 import type { PortalChessPlugin } from "../plugins/portalChess";
@@ -31,8 +30,8 @@ function directAttackers(
 }
 
 /**
- * Every piece that could take `color`'s king on `king`: straight off the
- * board, through a portal, or once the factory belts have run
+ * Every piece that could take `color`'s king on `king`, straight off the
+ * board or through a portal
  */
 export function checkersOf(
   board: Board,
@@ -40,17 +39,10 @@ export function checkersOf(
   color: Color,
   enPassant: SquareIndex | null,
   pawnRules: PawnRules,
-  rules: { portals?: PortalChessPlugin; belts: boolean },
+  portals?: PortalChessPlugin,
 ): Checker[] {
-  if (rules.belts) {
-    const next = board.clone();
-    runBelts(next);
-    return directAttackers(next, carried(king), color, null, pawnRules).map(
-      (sq) => ({ sq: fedFrom(sq), straight: false }),
-    );
-  }
   const direct = directAttackers(board, king, color, enPassant, pawnRules);
-  const portal = (rules.portals?.portalAttackers(board, color) ?? []).filter(
+  const portal = (portals?.portalAttackers(board, color) ?? []).filter(
     (sq) => !direct.includes(sq),
   );
   return [
@@ -78,10 +70,7 @@ export function checkOnTurn(
       game.turn,
       game.enPassant,
       game.pawnRules,
-      {
-        portals: plugins.find<PortalChessPlugin>("portal-chess"),
-        belts: plugins.find("conveyor") !== undefined,
-      },
+      plugins.find<PortalChessPlugin>("portal-chess"),
     ),
   };
 }
