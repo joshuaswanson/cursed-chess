@@ -1915,6 +1915,21 @@
   --planks: 100%;
 }
 
+/* The far trench's sandbags again, laid over the men standing in it */
+.pv-trench-bags {
+  left: -2%;
+  right: -2%;
+  top: 20.12%;
+  height: 9.88%;
+  background: radial-gradient(
+      ellipse 58% 100% at 50% 50%,
+      #b3a172 0 62%,
+      #6f6140 64% 78%,
+      #2a2114 80%
+    )
+    0 0 / 9.5% 100% repeat-x;
+}
+
 /* The men in each line, bobbing up to fire and ducking back down */
 .scene-trenches .pv-trooper {
   animation: pv-trooper 3.4s ease-in-out infinite;
@@ -1922,6 +1937,25 @@
 
 .scene-trenches .pv-trooper > img {
   filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5));
+}
+
+/* The enemy duck right down behind the bags, and rise over them to fire */
+.scene-trenches .pv-trooper-far {
+  animation-name: pv-trooper-far;
+}
+
+@keyframes pv-trooper-far {
+  0%,
+  55%,
+  100% {
+    translate: -50% -22%;
+    filter: brightness(0.6);
+  }
+  65%,
+  85% {
+    translate: -50% -50%;
+    filter: brightness(1);
+  }
 }
 
 @keyframes pv-trooper {

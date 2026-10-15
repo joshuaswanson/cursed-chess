@@ -613,12 +613,14 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
           key={`far-${i}`}
           is={i === 3 ? "bR" : "bP"}
           x={x}
-          y={15}
+          y={16}
           size={11}
-          className="pv-trooper"
+          className="pv-trooper pv-trooper-far"
           style={{ animationDelay: `${-i * 0.7}s` }}
         />
       ))}
+      {/* The enemy keep down behind their sandbags */}
+      <span className="pv-trench-bags" />
       {TRENCH_LINE.map((x, i) => (
         <Piece
           key={`near-${i}`}
