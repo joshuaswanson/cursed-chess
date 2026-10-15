@@ -219,6 +219,57 @@
   }
 }
 
+/* The piece lit by the current running through it, over the dark, flickering with the arcs */
+.storm-lit-piece {
+  position: absolute;
+  inset: 5%;
+  width: 90%;
+  height: 90%;
+  opacity: 0;
+  filter: brightness(1.5) saturate(0.6) drop-shadow(0 0 4px #9fc8ff)
+    drop-shadow(0 0 10px #5a7dff);
+  animation: storm-lit-piece 1.6s 90ms linear both;
+}
+
+@keyframes storm-lit-piece {
+  0% {
+    opacity: 1;
+  }
+  10% {
+    opacity: 0.55;
+  }
+  16% {
+    opacity: 1;
+  }
+  24% {
+    opacity: 0.4;
+  }
+  31% {
+    opacity: 0.95;
+  }
+  40% {
+    opacity: 0.5;
+  }
+  48% {
+    opacity: 0.9;
+  }
+  58% {
+    opacity: 0.35;
+  }
+  66% {
+    opacity: 0.75;
+  }
+  78% {
+    opacity: 0.25;
+  }
+  86% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* --- The burn it leaves: a crater with a molten rim, and a scar branching out
    across the squares round it, glowing white-hot and cooling to black --- */
 

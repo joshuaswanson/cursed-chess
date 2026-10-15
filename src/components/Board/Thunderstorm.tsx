@@ -435,8 +435,14 @@ function Bolt({ strike, flipped }: { strike: Strike; flipped: boolean }) {
           <i key={i} className="storm-spark" style={style} />
         ))}
       </span>
-      {strike.shocked.map((sq) => (
+      {strike.shocked.map(({ sq, piece }) => (
         <span key={sq} className="storm-crackle" style={middleOf(sq, flipped)}>
+          <img
+            className="storm-lit-piece"
+            src={pieceImage(piece)}
+            draggable={false}
+            alt=""
+          />
           <svg className="storm-arcs" viewBox="0 0 100 100">
             {arcs(seededRandom(strike.id * 53 + sq)).map((d, i) => (
               <path

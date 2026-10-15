@@ -12,8 +12,8 @@ export interface Strike {
   id: number;
   sq: SquareIndex;
   killed: Piece | null;
-  /** The pieces standing next to it, which the current crackles over */
-  shocked: SquareIndex[];
+  /** The pieces standing next to it, which the current crackles through */
+  shocked: { sq: SquareIndex; piece: Piece }[];
 }
 
 let boltsEver = 0;
@@ -81,6 +81,8 @@ export class ThunderstormPlugin implements ModePlugin {
   private recent: Strike[] = [];
   /** Bolts still to come in the burst under way */
   private burstLeft = 0;
+  /** The squares the bolts of this burst have hit, which the rest of it keeps clear of */
+  private burstHit: SquareIndex[] = [];
   private seen = new DarkMemory();
 
   onGameStart(ctx: PluginContext): void {
@@ -89,6 +91,7 @@ export class ThunderstormPlugin implements ModePlugin {
     this.strike = null;
     this.recent = [];
     this.burstLeft = 0;
+    this.burstHit = [];
     this.seen.reset(ctx.board);
   }
 
@@ -137,30 +140,39 @@ export class ThunderstormPlugin implements ModePlugin {
     this.untilStrike -= ms;
     if (this.untilStrike > 0) return null;
     if (this.burstLeft > 0) this.burstLeft--;
-    else if (Math.random() < BURST_CHANCE) {
-      this.burstLeft = 1 + Math.floor(Math.random() * 2);
+    else {
+      this.burstHit = [];
+      if (Math.random() < BURST_CHANCE) {
+        this.burstLeft = 1 + Math.floor(Math.random() * 2);
+      }
     }
     this.untilStrike = between(
       this.burstLeft > 0 ? BURST_GAP_MS : STRIKE_GAP_MS,
     );
     this.sinceStrike = 0;
 
+    const fresh = (s: SquareIndex) => !this.burstHit.includes(s);
     const victim =
       Math.random() < KILL_CHANCE
-        ? pickNearMiddle(this.victims(ctx.board, ctx.game.turn))
+        ? pickNearMiddle(this.victims(ctx.board, ctx.game.turn).filter(fresh))
         : null;
     const sq =
       victim ??
-      pickNearMiddle(ALL_SQUARES.filter((s) => !ctx.board.get(s))) ??
+      pickNearMiddle(
+        ALL_SQUARES.filter((s) => !ctx.board.get(s) && fresh(s)),
+      ) ??
       0;
+    this.burstHit.push(sq);
     const killed = victim === null ? null : ctx.board.remove(victim);
-    const shocked = ALL_SQUARES.filter(
-      (s) =>
+    const shocked = ALL_SQUARES.flatMap((s) => {
+      const piece = ctx.board.get(s);
+      return piece &&
         s !== sq &&
-        ctx.board.get(s) &&
         Math.abs(fileOf(s) - fileOf(sq)) <= 1 &&
-        Math.abs(rankOf(s) - rankOf(sq)) <= 1,
-    );
+        Math.abs(rankOf(s) - rankOf(sq)) <= 1
+        ? [{ sq: s, piece: { ...piece } }]
+        : [];
+    });
     this.strike = { id: ++boltsEver, sq, killed, shocked };
     this.recent = [...this.recent, this.strike].slice(-RECENT);
     this.look(ctx.board);
