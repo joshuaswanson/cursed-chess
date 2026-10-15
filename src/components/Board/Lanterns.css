@@ -87,28 +87,4 @@
   box-shadow:
     0 0 10px rgba(255, 180, 80, 0.45),
     inset 0 0 8px rgba(255, 180, 80, 0.25);
-  animation: lantern-feel-in 0.22s ease-out both;
-}
-
-.lantern-feel-ring::after {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border: 2px solid rgba(255, 214, 140, 0.6);
-  border-radius: 50%;
-  animation: lantern-feel-ripple 0.7s ease-out both;
-}
-
-@keyframes lantern-feel-in {
-  from {
-    opacity: 0;
-    scale: 0.5;
-  }
-}
-
-@keyframes lantern-feel-ripple {
-  to {
-    opacity: 0;
-    scale: 1.55;
-  }
 }
