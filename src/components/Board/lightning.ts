@@ -2,8 +2,8 @@
  * How strongly a bolt of lightning lights everything, 0 to 1, as time
  * passes after it strikes, in ms: a dim glow as it reaches down, a blinding
  * flash as it hits, flickers as it strikes again down the same path, and
- * the dark closing in again as it dies away. The bolt, the flash over the
- * window, and the lit sky follow the same timeline, in their keyframes.
+ * the dark closing in again as it dies away. The flash over the window and
+ * the lit sky follow the same timeline in their keyframes.
  */
 const LIGHTNING: [ms: number, light: number][] = [
   [0, 0.3],

@@ -7,89 +7,6 @@
   pointer-events: none;
 }
 
-/* --- The bolt: a wide haze, a glow, and a white-hot core, revealed down
-   from the sky in a few jerks as the leader steps down, then flickering
-   as it strikes again down the same path --- */
-
-.storm-bolt {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  animation:
-    storm-bolt-leader 90ms steps(6, end) both,
-    storm-bolt-life 0.95s linear both;
-}
-
-.storm-bolt path {
-  fill: none;
-  stroke-linecap: round;
-  opacity: var(--bright);
-}
-
-.storm-bolt-haze {
-  filter: blur(14px);
-}
-
-.storm-bolt-haze path {
-  stroke: rgba(150, 170, 255, 0.5);
-  stroke-width: calc(var(--width) * 14px);
-}
-
-.storm-bolt-glow {
-  filter: blur(2.5px);
-}
-
-.storm-bolt-glow path {
-  stroke: rgba(190, 215, 255, 0.95);
-  stroke-width: calc(var(--width) * 4px);
-}
-
-.storm-bolt-core path {
-  stroke: #ffffff;
-  stroke-width: calc(var(--width) * 1px);
-}
-
-@keyframes storm-bolt-leader {
-  from {
-    clip-path: inset(-200% -60% 100% -60%);
-  }
-  to {
-    clip-path: inset(-200% -60% -10% -60%);
-  }
-}
-
-@keyframes storm-bolt-life {
-  0.0% {
-    opacity: 0.3;
-  }
-  7.9% {
-    opacity: 1;
-  }
-  11.6% {
-    opacity: 0.25;
-  }
-  16.8% {
-    opacity: 1;
-  }
-  22.1% {
-    opacity: 0.35;
-  }
-  28.4% {
-    opacity: 0.95;
-  }
-  44.2% {
-    opacity: 0.7;
-  }
-  68.4% {
-    opacity: 0.3;
-  }
-  100.0% {
-    opacity: 0;
-  }
-}
-
 /* --- Where it lands: a white bloom, two shock waves, and a spray of sparks --- */
 
 .storm-hit {
@@ -285,114 +202,19 @@
   stroke-linecap: butt;
   stroke-linejoin: miter;
   stroke-miterlimit: 3;
-  filter: drop-shadow(0 0 1.5px #9fc8ff) drop-shadow(0 0 4px #5a7dff);
   opacity: 0;
   animation: storm-arc 45ms steps(2, jump-none) 4 alternate;
 }
 
-/* --- The burn it leaves: a crater with a molten rim, and a scar branching out
-   across the squares round it, glowing white-hot and cooling to black --- */
+/* --- The burn it leaves, drawn on a canvas on the board under the pieces --- */
 
-/* On the board, under the pieces standing on it, and never past its edge */
-.storm-scars {
+.storm-scar-canvas {
   position: absolute;
   inset: 0;
   z-index: 1;
-  overflow: hidden;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  isolation: isolate;
-}
-
-/* Scorching takes the darker of two burns, and glow the brighter, so burns
-   that overlap run together without doubling up */
-.storm-scorch {
-  mix-blend-mode: darken;
-}
-
-.storm-glow {
-  mix-blend-mode: lighten;
-}
-
-.storm-scar {
-  position: absolute;
-  width: 50%;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  overflow: visible;
-}
-
-/* Soft, so the burn darkens the ground along the channels without outlining them */
-.storm-scar-char {
-  fill: none;
-  stroke: rgba(22, 13, 7, 0.7);
-  stroke-linecap: round;
-  filter: blur(2.5px);
-  animation: storm-char-fade 1.05s 70ms linear both;
-}
-
-/* Soot blown out over the ground, its edge roughened by the filter */
-.storm-soot {
-  animation: storm-char-fade 1.05s 70ms linear both;
-}
-
-.storm-crater {
-  fill: #070403;
-  filter: blur(1.5px);
-  animation: storm-char-fade 1.05s 70ms linear both;
-}
-
-@keyframes storm-char-fade {
-  0% {
-    opacity: 0;
-  }
-  2% {
-    opacity: 1;
-  }
-  70% {
-    opacity: 0.85;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-/* Only the thinnest seams of it glow, and cool from white-hot to nothing */
-.storm-scar-ember,
-.storm-crater-rim {
-  fill: none;
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 1.5px #ff6a00) drop-shadow(0 0 4px #ff3d00);
-  animation: storm-ember-cool 1s 70ms linear both;
-}
-
-.storm-crater-rim {
-  stroke-width: 1.6;
-}
-
-@keyframes storm-ember-cool {
-  0% {
-    opacity: 0;
-    stroke: #ffffff;
-  }
-  2% {
-    opacity: 1;
-    stroke: #fff6cf;
-  }
-  10% {
-    stroke: #ffc35a;
-  }
-  30% {
-    opacity: 0.95;
-    stroke: #ff6a1a;
-  }
-  65% {
-    opacity: 0.6;
-    stroke: #b01e00;
-  }
-  100% {
-    opacity: 0;
-    stroke: #3a0800;
-  }
 }
 
 /* Smoke rising off the burn */
@@ -788,7 +610,7 @@
 .storm-flash {
   position: absolute;
   inset: 0;
-  background: rgba(210, 225, 255, 0.55);
+  background: rgba(200, 215, 255, 0.32);
   opacity: 0;
   animation: storm-flash 0.95s linear both;
 }
@@ -825,7 +647,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .storm-flash,
-  .storm-bolt,
   .storm-victim {
     animation-duration: 0.01s;
   }

@@ -44,7 +44,7 @@ const RECENT = 4;
 /** How tightly the bolts gather round the middle of the board, in squares */
 const SPREAD = 1.4;
 /** How long the current runs through the pieces next to a bolt */
-const SHOCK_MS = 1700;
+const SHOCK_MS = 2000;
 /** How long a flash lights the board well enough for Chessbot to take it in */
 export const FLASH_MS = 1000;
 

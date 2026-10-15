@@ -3,6 +3,8 @@ import { useGameStore } from "../../stores/gameStore";
 import type { ThunderstormPlugin } from "../../plugins/thunderstorm";
 import { sfx } from "../../audio/sfx";
 import { lightningAt } from "./lightning";
+import { boltStrokes, seededRandom } from "./lightningShapes";
+import type { Point, Stroke } from "./lightningShapes";
 import "./Thunderstorm.css";
 
 /** How long after a bolt starts down it hits */
@@ -20,6 +22,86 @@ interface Drop {
   y: number;
   /** 0 far off, 1 close: nearer drops are longer, faster, thicker, and brighter */
   near: number;
+}
+
+/** A bolt on its way down, or flickering where it struck */
+interface Bolt {
+  strokes: Stroke[];
+  target: Point;
+  born: number;
+}
+
+/** How long the bolt takes to step down from the sky before it strikes */
+const LEADER_MS = 70;
+/** How long a bolt lasts, flickers and all */
+const BOLT_MS = 950;
+
+/**
+ * Draws a bolt as a photograph shows one: a hair-thin white-hot core, a
+ * glow round it, and a wide soft bloom, all added onto what is behind so
+ * the brightest parts burn out to white
+ */
+function drawBolt(
+  ctx: CanvasRenderingContext2D,
+  bolt: Bolt,
+  now: number,
+  scale: number,
+) {
+  const t = now - bolt.born;
+  const light = t < LEADER_MS + 5 ? 0.45 : lightningAt(t);
+  if (light <= 0) return;
+  // As the leader steps down, only what it has reached so far shows
+  const reached = t < LEADER_MS ? Math.ceil((t / LEADER_MS) * 6) / 6 : 1;
+  // The branches die away before the main channel does
+  const branchFade = t < 260 ? 1 : Math.max(0, 1 - (t - 260) / 380);
+  const trace = (stroke: Stroke) => {
+    let points = stroke.points;
+    if (stroke.main && reached < 1) {
+      points = points.slice(0, Math.max(2, Math.ceil(points.length * reached)));
+    }
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i][0], points[i][1]);
+    }
+  };
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const stroke of bolt.strokes) {
+    if (!stroke.main && stroke.at > reached) continue;
+    const a = light * stroke.bright * (stroke.main ? 1 : branchFade);
+    if (a <= 0.01) continue;
+    const w = stroke.width;
+    trace(stroke);
+    // A wide soft bloom, a bright halo hugging the channel, then the core
+    ctx.shadowColor = `rgba(120, 140, 255, ${0.9 * a})`;
+    ctx.shadowBlur = 48 * scale;
+    ctx.lineWidth = w * 2.6;
+    ctx.strokeStyle = `rgba(130, 150, 255, ${0.25 * a})`;
+    ctx.stroke();
+    ctx.shadowColor = `rgba(190, 210, 255, ${a})`;
+    ctx.shadowBlur = 16 * scale;
+    ctx.lineWidth = w * 1.5;
+    ctx.strokeStyle = `rgba(215, 228, 255, ${0.85 * a})`;
+    ctx.stroke();
+    ctx.shadowColor = `rgba(255, 255, 255, ${a})`;
+    ctx.shadowBlur = 5 * scale;
+    ctx.lineWidth = w * 0.8;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${a})`;
+    ctx.stroke();
+  }
+  // The ground where it lands lights up round it
+  if (reached === 1) {
+    const [x, y] = bolt.target;
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, 130);
+    glow.addColorStop(0, `rgba(200, 215, 255, ${0.5 * light})`);
+    glow.addColorStop(1, "rgba(120, 140, 255, 0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 130, y - 130, 260, 260);
+  }
+  ctx.restore();
 }
 
 interface Splash {
@@ -52,9 +134,13 @@ function shake(strength: number, delayMs: number) {
 
 /**
  * Rain driving down over the whole window, at every depth, blown about by
- * the wind and splashing where it lands, and lit up by each bolt
+ * the wind and splashing where it lands, lit up by each bolt, and the bolts
+ * themselves
  */
-function useRain(struckAt: React.RefObject<number>) {
+function useRain(
+  struckAt: React.RefObject<number>,
+  bolts: React.RefObject<Bolt[]>,
+) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const el = canvas.current;
@@ -171,13 +257,16 @@ function useRain(struckAt: React.RefObject<number>) {
           ctx.fillRect(s.x + dx, s.y + dy, 1.4, 1.4);
         }
       }
+
+      bolts.current = bolts.current.filter((b) => now - b.born < BOLT_MS);
+      for (const bolt of bolts.current) drawBolt(ctx, bolt, now, scale);
     };
     frame = requestAnimationFrame(draw);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", resize);
     };
-  }, [struckAt]);
+  }, [struckAt, bolts]);
   return canvas;
 }
 
@@ -190,7 +279,8 @@ export function StormWeather() {
   const strike = useGameStore((s) => s.stormStrike);
   const [first] = useState(strike);
   const struckAt = useRef(-Infinity);
-  const canvas = useRain(struckAt);
+  const bolts = useRef<Bolt[]>([]);
+  const canvas = useRain(struckAt, bolts);
 
   useEffect(() => {
     sfx.rain(true);
@@ -204,6 +294,31 @@ export function StormWeather() {
       .getState()
       .pluginManager.find<ThunderstormPlugin>("thunderstorm")
       ?.lastStrike();
+    const square = bolt
+      ? document
+          .querySelector(`[data-sq="${bolt.sq}"]`)
+          ?.getBoundingClientRect()
+      : null;
+    if (bolt && square) {
+      const rand = seededRandom(bolt.id * 131 + bolt.sq);
+      const target: Point = [
+        square.left + square.width / 2,
+        square.top + square.height / 2,
+      ];
+      const sway = Math.min(window.innerWidth * 0.3, 420);
+      bolts.current = [
+        ...bolts.current,
+        {
+          strokes: boltStrokes(
+            rand,
+            [target[0] + (rand() - 0.5) * sway, -30],
+            target,
+          ),
+          target,
+          born: struckAt.current,
+        },
+      ];
+    }
     const timers = [window.setTimeout(() => sfx.thunder(true), HIT_MS)];
     if (bolt?.killed) {
       shake(16, HIT_MS);
@@ -218,8 +333,8 @@ export function StormWeather() {
 
   return (
     <div className="storm-weather" aria-hidden>
-      <canvas ref={canvas} className="storm-rain" />
       {strike !== first && <div key={strike} className="storm-flash" />}
+      <canvas ref={canvas} className="storm-rain" />
     </div>
   );
 }
