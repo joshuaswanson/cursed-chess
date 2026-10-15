@@ -361,40 +361,40 @@
 
   /* Dealt in from the side its column is on */
   .menu-mode:nth-child(3n + 1) {
-    --deal-x: -70px;
-    --deal-tilt: -10deg;
+    --deal-x: -30px;
+    --deal-tilt: -4deg;
   }
 
   .menu-mode:nth-child(3n) {
-    --deal-x: 70px;
-    --deal-tilt: 10deg;
+    --deal-x: 30px;
+    --deal-tilt: 4deg;
   }
 
   .menu-featured .menu-mode:nth-child(2) {
-    --deal-x: 70px;
-    --deal-tilt: 10deg;
+    --deal-x: 30px;
+    --deal-tilt: 4deg;
   }
 
   @media (max-width: 860px) {
     .menu-mode:nth-child(n) {
-      --deal-x: 50px;
-      --deal-tilt: 8deg;
+      --deal-x: 22px;
+      --deal-tilt: 3deg;
     }
 
     .menu-mode:nth-child(odd) {
-      --deal-x: -50px;
-      --deal-tilt: -8deg;
+      --deal-x: -22px;
+      --deal-tilt: -3deg;
     }
   }
 
   @media (max-width: 540px) {
     .menu-mode:nth-child(n) {
       --deal-x: 0px;
-      --deal-tilt: 5deg;
+      --deal-tilt: 2deg;
     }
 
     .menu-mode:nth-child(odd) {
-      --deal-tilt: -5deg;
+      --deal-tilt: -2deg;
     }
   }
 }
@@ -408,9 +408,9 @@
 
 @keyframes menu-deal {
   entry 0% {
-    opacity: 0.2;
-    transform: translate(var(--deal-x), 90px) rotate(var(--deal-tilt))
-      scale(0.8);
+    opacity: 0.45;
+    transform: translate(var(--deal-x), 40px) rotate(var(--deal-tilt))
+      scale(0.92);
   }
 
   entry 100% {
@@ -424,7 +424,7 @@
   }
 
   exit 100% {
-    opacity: 0;
-    transform: translateY(70px) scale(0.78);
+    opacity: 0.3;
+    transform: translateY(30px) scale(0.92);
   }
 }
