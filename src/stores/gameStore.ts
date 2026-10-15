@@ -237,18 +237,16 @@ export const GAME_MODES: GameMode[] = [
     create: () => [new StrategoPlugin()],
   },
   {
+    name: "THUNDERSTORM",
+    theme: "storm",
+    create: () => [new ThunderstormPlugin()],
+  },
+  {
     name: "TRENCHES",
     theme: "trenches",
     create: () => [new TrenchesPlugin()],
     noReinforcements: true,
     untilWon: true,
-    singleOnly: true,
-    beta: true,
-  },
-  {
-    name: "THUNDERSTORM",
-    theme: "storm",
-    create: () => [new ThunderstormPlugin()],
     singleOnly: true,
     beta: true,
   },
