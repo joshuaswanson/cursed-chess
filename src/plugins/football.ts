@@ -463,7 +463,7 @@ export class FootballPlugin implements ModePlugin {
         best = pass;
       }
     }
-    if (best && (underPressure || bestScore >= 2.5) && Math.random() < 0.75) {
+    if (best && (underPressure || bestScore >= 1) && Math.random() < 0.75) {
       return best.to;
     }
     return null;
@@ -484,6 +484,18 @@ export class FootballPlugin implements ModePlugin {
     }
     if (to === this.ball && holder?.color !== piece.color) return 3.5;
     if (piece.type === PieceType.King) return 0;
+    // With the ball on their side, the rest get out of the carrier's way and push up
+    if (holder?.color === piece.color) {
+      const trial = board.clone();
+      trial.remove(from);
+      trial.put(to, piece);
+      const opened =
+        (this.shotOption(trial, this.ball)?.chance ?? 0) -
+        (this.shotOption(board, this.ball)?.chance ?? 0);
+      const progress =
+        (rankOf(to) - rankOf(from)) * attackDirection(piece.color);
+      return opened * 4 + progress * 0.15;
+    }
     return 0.12 * (7 - reach(to, this.ball));
   }
 
