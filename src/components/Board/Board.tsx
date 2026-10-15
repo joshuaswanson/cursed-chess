@@ -406,6 +406,9 @@ export function Board() {
   const arrivals = new Map(reinforcements.map((r) => [r.sq, r]));
   const football = overlays.football;
   const heistLit = new Set(overlays.heist?.shown ?? []);
+  // The fog lies over the enemy half of the board
+  const fogged = (sq: SquareIndex) =>
+    overlays.hasFog && (seat === Color.White ? rankOf(sq) >= 4 : rankOf(sq) < 4);
   // A king in check, and every piece that could take it, except those the player cannot see
   const checked =
     gravityFalls.size === 0 &&
@@ -415,6 +418,7 @@ export function Board() {
   const checkers = (checked?.checkers ?? []).filter(
     ({ sq }) =>
       !overlays.strategoHidden.has(sq) &&
+      !fogged(sq) &&
       !(
         overlays.heist != null &&
         game.board.get(sq)?.color === Color.Black &&
