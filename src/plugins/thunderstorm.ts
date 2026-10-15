@@ -2,7 +2,12 @@ import { Color, PieceType } from "../engine/types";
 import type { Move, Piece, SquareIndex } from "../engine/types";
 import type { Board } from "../engine/board";
 import { isSquareAttacked } from "../engine/moves";
-import type { BoardOverlay, ModePlugin, PluginContext } from "./types";
+import type {
+  BoardOverlay,
+  ModePlugin,
+  PluginContext,
+  SquareModifier,
+} from "./types";
 import { ALL_SQUARES, fileOf, rankOf } from "../utils/squareUtils";
 import { DarkMemory } from "./darkMemory";
 
@@ -38,6 +43,8 @@ const BURST_GAP_MS: [number, number] = [380, 750];
 const RECENT = 4;
 /** How tightly the bolts gather round the middle of the board, in squares */
 const SPREAD = 1.4;
+/** How long the current runs through the pieces next to a bolt */
+const SHOCK_MS = 1700;
 /** How long a flash lights the board well enough for Chessbot to take it in */
 export const FLASH_MS = 1000;
 
@@ -83,6 +90,9 @@ export class ThunderstormPlugin implements ModePlugin {
   private burstLeft = 0;
   /** The squares the bolts of this burst have hit, which the rest of it keeps clear of */
   private burstHit: SquareIndex[] = [];
+  /** How long the storm has run, which the pieces' shocks are timed by */
+  private clock = 0;
+  private shockedUntil = new Map<SquareIndex, number>();
   private seen = new DarkMemory();
 
   onGameStart(ctx: PluginContext): void {
@@ -92,6 +102,8 @@ export class ThunderstormPlugin implements ModePlugin {
     this.recent = [];
     this.burstLeft = 0;
     this.burstHit = [];
+    this.clock = 0;
+    this.shockedUntil.clear();
     this.seen.reset(ctx.board);
   }
 
@@ -136,6 +148,7 @@ export class ThunderstormPlugin implements ModePlugin {
 
   /** Moves the storm on by `ms`, and brings the next bolt down once it is due */
   advance(ctx: PluginContext, ms: number): Strike | null {
+    this.clock += ms;
     this.sinceStrike += ms;
     this.untilStrike -= ms;
     if (this.untilStrike > 0) return null;
@@ -174,9 +187,19 @@ export class ThunderstormPlugin implements ModePlugin {
         : [];
     });
     this.strike = { id: ++boltsEver, sq, killed, shocked };
+    for (const { sq: at } of shocked) {
+      this.shockedUntil.set(at, this.clock + SHOCK_MS);
+    }
     this.recent = [...this.recent, this.strike].slice(-RECENT);
     this.look(ctx.board);
     return this.strike;
+  }
+
+  /** A piece the current is running through stands in for itself above the dark, shaking */
+  getSquareModifiers(_ctx: PluginContext, sq: SquareIndex): SquareModifier[] {
+    return (this.shockedUntil.get(sq) ?? 0) > this.clock
+      ? [{ className: "storm-shocked" }]
+      : [];
   }
 
   getBoardOverlays(): BoardOverlay[] {

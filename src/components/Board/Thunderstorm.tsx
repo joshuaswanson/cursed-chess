@@ -222,26 +222,51 @@ function crater(rand: () => number): string {
   return `${pathOf(points)} Z`;
 }
 
-/** Arcs of electricity crawling over a piece as it is struck, a fresh set every few frames */
+/** Arcs of electricity crawling over a piece's body, from one part of it to another */
 function arcs(rand: () => number): string[] {
-  return Array.from({ length: 12 }, () => {
-    const a = rand() * Math.PI * 2;
-    const b = a + 0.8 + rand() * 2.2;
-    const r = 24 + rand() * 22;
-    return pathOf(
+  return Array.from({ length: 12 }, () =>
+    pathOf(
       kinked(
         rand,
         crooked(
           rand,
-          [50 + Math.cos(a) * r, 50 + Math.sin(a) * r],
-          [50 + Math.cos(b) * (r + 8), 50 + Math.sin(b) * (r + 8)],
-          55,
+          [20 + rand() * 60, 8 + rand() * 40],
+          [20 + rand() * 60, 50 + rand() * 45],
+          45,
           5,
         ),
         5,
       ),
-    );
-  });
+    ),
+  );
+}
+
+/** The image of a piece as a mask, for drawing on it and nowhere else */
+const shapeOf = (image: string) =>
+  ({
+    maskImage: `url("${image}")`,
+    WebkitMaskImage: `url("${image}")`,
+  }) as CSSProperties;
+
+/** The current crawling over a piece, kept to its own shape */
+function Current({
+  image,
+  seed,
+  delayOf,
+}: {
+  image: string;
+  seed: number;
+  delayOf: (i: number) => number;
+}) {
+  return (
+    <span className="storm-current" style={shapeOf(image)}>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        {arcs(seededRandom(seed)).map((d, i) => (
+          <path key={i} d={d} style={{ animationDelay: `${delayOf(i)}ms` }} />
+        ))}
+      </svg>
+    </span>
+  );
 }
 
 /** The wedges a piece bursts into, each cut from its middle out to its edge */
@@ -480,21 +505,19 @@ function Bolt({ strike, flipped }: { strike: Strike; flipped: boolean }) {
       </span>
       {strike.shocked.map(({ sq, piece }) => (
         <span key={sq} className="storm-crackle" style={middleOf(sq, flipped)}>
-          <img
-            className="storm-lit-piece"
-            src={pieceImage(piece)}
-            draggable={false}
-            alt=""
-          />
-          <svg className="storm-arcs" viewBox="0 0 100 100">
-            {arcs(seededRandom(strike.id * 53 + sq)).map((d, i) => (
-              <path
-                key={i}
-                d={d}
-                style={{ animationDelay: `${110 + i * 115}ms` }}
-              />
-            ))}
-          </svg>
+          <span className="storm-jolt">
+            <img
+              className="storm-lit-piece"
+              src={pieceImage(piece)}
+              draggable={false}
+              alt=""
+            />
+            <Current
+              image={pieceImage(piece)}
+              seed={strike.id * 53 + sq}
+              delayOf={(i) => 110 + i * 115}
+            />
+          </span>
         </span>
       ))}
       {strike.killed && <Annihilation strike={strike} flipped={flipped} />}
@@ -516,10 +539,7 @@ function Annihilation({
   if (!strike.killed) return null;
   const rand = seededRandom(strike.id * 977 + strike.sq * 7);
   const image = pieceImage(strike.killed);
-  const silhouette = {
-    maskImage: `url("${image}")`,
-    WebkitMaskImage: `url("${image}")`,
-  } as CSSProperties;
+  const silhouette = shapeOf(image);
   const cracks = Array.from({ length: 6 }, () =>
     pathOf(
       crooked(
@@ -547,17 +567,11 @@ function Annihilation({
             ))}
           </svg>
         </span>
-        <svg className="storm-arcs" viewBox="0 0 100 100">
-          {arcs(rand).map((d, i) => (
-            <path
-              key={i}
-              d={d}
-              style={{
-                animationDelay: `${70 + (i % 4) * 35 + Math.floor(i / 4) * 140}ms`,
-              }}
-            />
-          ))}
-        </svg>
+        <Current
+          image={image}
+          seed={strike.id * 61}
+          delayOf={(i) => 70 + (i % 4) * 35 + Math.floor(i / 4) * 140}
+        />
       </span>
       {shards(rand).map(({ clip, style }, i) => (
         <img
