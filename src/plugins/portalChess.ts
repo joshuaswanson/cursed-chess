@@ -233,20 +233,25 @@ export class PortalChessPlugin implements ModePlugin {
   kingCapturable(board: Board, color: Color): boolean {
     const kingSq = board.findKing(color);
     if (kingSq === null) return false;
+    if (isSquareAttacked(board, kingSq, opponent(color))) return true;
+    return this.portalAttackers(board, color).length > 0;
+  }
+
+  /** The foe's pieces that could take this side's king through a portal */
+  portalAttackers(board: Board, color: Color): SquareIndex[] {
+    const kingSq = board.findKing(color);
+    if (kingSq === null) return [];
     const foe = opponent(color);
-    if (isSquareAttacked(board, kingSq, foe)) return true;
-    for (const sq of ALL_SQUARES) {
+    return ALL_SQUARES.filter((sq) => {
       const piece = board.get(sq);
-      if (!piece || piece.color !== foe) continue;
+      if (!piece || piece.color !== foe) return false;
       if (piece.type === PieceType.King) {
-        if (this.kingReachesThroughPortal(board, sq, kingSq)) return true;
-        continue;
+        return this.kingReachesThroughPortal(board, sq, kingSq);
       }
-      for (const dir of SLIDING_DIRECTIONS[piece.type] ?? []) {
-        if (this.slideHitsThroughPortal(board, sq, dir) === kingSq) return true;
-      }
-    }
-    return false;
+      return (SLIDING_DIRECTIONS[piece.type] ?? []).some(
+        (dir) => this.slideHitsThroughPortal(board, sq, dir) === kingSq,
+      );
+    });
   }
 
   /** The first piece a slider meets after passing through a portal along a line, if any */

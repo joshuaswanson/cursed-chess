@@ -11,7 +11,6 @@ import {
 import {
   Color,
   GameStatus,
-  PieceType,
   generatePseudoLegalMoves,
   isGameOver,
 } from "../../engine";
@@ -65,6 +64,8 @@ import {
 import { useCollapse } from "./useCollapse";
 import { BeltRails, useBeltRun } from "./Conveyor";
 import { BELT_RUN_MS, carried, fedFrom } from "../../plugins/conveyor";
+import { checkOnTurn } from "../../utils/checkers";
+import { CheckLines } from "./CheckLines";
 import { offsetBetween } from "./boardGeometry";
 import { readOverlays } from "./readOverlays";
 import { usePieceDrag } from "./usePieceDrag";
@@ -403,6 +404,28 @@ export function Board() {
   const arrivals = new Map(reinforcements.map((r) => [r.sq, r]));
   const football = overlays.football;
   const heistLit = new Set(overlays.heist?.shown ?? []);
+  // A king in check, and every piece that could take it, except those the player cannot see
+  const checked =
+    gravityFalls.size === 0 &&
+    (status === GameStatus.Check || status === GameStatus.Checkmate)
+      ? checkOnTurn(game, pluginManager)
+      : null;
+  const checkers = (checked?.checkers ?? []).filter(
+    ({ sq }) =>
+      !overlays.strategoHidden.has(sq) &&
+      !(
+        overlays.heist != null &&
+        game.board.get(sq)?.color === Color.Black &&
+        !heistLit.has(sq) &&
+        overlays.heist.sq !== sq
+      ),
+  );
+  // A game won some other way also ends as mate; only a king that could be taken is in it
+  const checkedKing =
+    checked !== null && (status === GameStatus.Check || checkers.length > 0)
+      ? checked.king
+      : null;
+  const checkerSquares = new Set(checkers.map(({ sq }) => sq));
   // In the dark, a check on you shows your king and whatever is giving it
   const kingInCheck =
     overlays.lanterns && status === GameStatus.Check && game.turn === seat
@@ -518,11 +541,7 @@ export function Board() {
         piece?.color === Color.Black &&
         !heistLit.has(sq) &&
         overlays.heist.sq !== sq;
-      const isCheck =
-        gravityFalls.size === 0 &&
-        piece?.type === PieceType.King &&
-        piece.color === game.turn &&
-        (status === GameStatus.Check || status === GameStatus.Checkmate);
+      const isCheck = sq === checkedKing;
       const isDeployTarget =
         overlays.hasRally && deployPieceType && !piece && !isDead && rank <= 3;
       // Floating copies of the piece are drawn above the board instead
@@ -823,9 +842,14 @@ export function Board() {
                 </span>
               </div>
             ))}
+          {checkedKing !== null && checkerSquares.has(sq) && (
+            <span className="check-ring" aria-hidden />
+          )}
           {isCheck && cursed && (
             <span className="square-anchor">
-              <span className="check-sticker">Check!</span>
+              <span className="check-sticker">
+                {status === GameStatus.Checkmate ? "Checkmate!" : "Check!"}
+              </span>
             </span>
           )}
 
@@ -1122,6 +1146,14 @@ export function Board() {
                 flipped={flipped}
               />
             )}
+          {checkedKing !== null && checkers.length > 0 && (
+            <CheckLines
+              king={checkedKing}
+              checkers={checkers}
+              flipped={flipped}
+              mate={status === GameStatus.Checkmate}
+            />
+          )}
           {battleRoyale && brBroken && (
             <BrokenRim zone={battleRoyale.zone} flipped={flipped} />
           )}

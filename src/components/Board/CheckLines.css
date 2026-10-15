@@ -1,0 +1,102 @@
+/* --- What is giving check: a ring on each attacker and an arrow to the king --- */
+
+.check-ring {
+  position: absolute;
+  inset: 4%;
+  z-index: 1;
+  border: calc(var(--square-size, 72px) * 0.06) solid #ff3b3b;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px var(--ink),
+    inset 0 0 0 2px var(--ink),
+    0 0 14px rgba(255, 59, 59, 0.7);
+  pointer-events: none;
+  animation: check-attacker-pulse 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes check-attacker-pulse {
+  to {
+    scale: 1.08;
+    box-shadow:
+      0 0 0 2px var(--ink),
+      inset 0 0 0 2px var(--ink),
+      0 0 24px rgba(255, 59, 59, 0.95);
+  }
+}
+
+.check-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.check-line-ink,
+.check-line-red {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  animation: check-line-draw 0.35s ease-out both;
+}
+
+.check-line-ink {
+  stroke: var(--ink);
+  stroke-width: 17;
+}
+
+.check-line-red {
+  stroke: #ff3b3b;
+  stroke-width: 9;
+}
+
+.check-line-head {
+  fill: #ff3b3b;
+  stroke: var(--ink);
+  stroke-width: 4;
+  stroke-linejoin: round;
+  animation: check-line-head 0.2s 0.3s ease-out both;
+}
+
+/* At mate the arrows come in one at a time, so each attacker can be seen */
+.check-lines.mate .check-line-ink,
+.check-lines.mate .check-line-red {
+  animation-duration: 0.45s;
+  animation-delay: calc(var(--i) * 0.4s);
+}
+
+.check-lines.mate .check-line-head {
+  animation-delay: calc(var(--i) * 0.4s + 0.4s);
+}
+
+@keyframes check-line-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes check-line-head {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+
+.check-line-head {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .check-ring,
+  .check-line-ink,
+  .check-line-red,
+  .check-line-head {
+    animation: none;
+  }
+}

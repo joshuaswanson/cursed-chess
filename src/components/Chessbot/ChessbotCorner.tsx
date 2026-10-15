@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { GAME_MODES, useGameStore } from "../../stores/gameStore";
 import { Chessbot } from "./Chessbot";
 import type { ChessbotMood } from "./Chessbot";
-import { Color, GameStatus, MoveFlag } from "../../engine";
+import { Color, GameStatus, MoveFlag, isGameOver } from "../../engine";
 import type { MinefieldPlugin } from "../../plugins/minefield";
 import {
   ENTRANCE,
@@ -336,6 +336,7 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
       !s.paused &&
       !s.announcement &&
       s.turn === Color.Black &&
+      !isGameOver(s.status) &&
       !s.pluginManager.isAutonomous(),
   );
   const thinking = onTurn && !talking;

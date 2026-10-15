@@ -27,6 +27,7 @@ import { BattleRoyalePlugin } from "../plugins/battleRoyale";
 import { BELT_RUN_MS, ConveyorPlugin, runBelts } from "../plugins/conveyor";
 import { RallyPlugin } from "../plugins/clashRoyale";
 import { MinefieldPlugin } from "../plugins/minefield";
+import { checkOnTurn } from "../utils/checkers";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { LanternsPlugin } from "../plugins/lanterns";
@@ -600,10 +601,20 @@ let lastTrenchDraw = 0;
 /** How often, at most, the Trenches board redraws: each redraw of a crowded front costs the page dearly */
 const TRENCH_REDRAW_MS = 200;
 
+/** How long a mate stays up, with every piece that could take the king pointed out in turn, before the result comes up */
+const mateShowMs = (attackers: number) => 1400 + 400 * attackers;
+
 function endGameSoon(
   winner: Color | null,
   delayMs: number = GAME_END_DELAY_MS,
 ): void {
+  const state = useGameStore.getState();
+  const mate =
+    state.status === GameStatus.Checkmate && !state.isHexMode
+      ? checkOnTurn(state.game, state.pluginManager)
+      : null;
+  const attackers = mate?.checkers.length ?? 0;
+  if (attackers > 0) delayMs = Math.max(delayMs, mateShowMs(attackers));
   // A king mated by zombies is bitten first, so the player sees how they lost
   const zombies = useGameStore
     .getState()
