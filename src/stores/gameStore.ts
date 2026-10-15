@@ -1673,6 +1673,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           isHexMode: true,
           hexTransition: "morph-in",
           turn: Color.White,
+          status: hexGame.getStatus(),
         });
       }, HEX_MORPH_IN_MS);
       schedule(

@@ -3,6 +3,8 @@ import { generatePseudoLegalMoves, isHexAttacked } from "./moves";
 import { opponent, Color, PieceType, GameStatus, PAWN_FORWARD } from "./types";
 import type { HexCoord, HexMove, Piece } from "./types";
 
+const PLACEMENT_TRIES = 200;
+
 export class HexGame {
   board: HexBoard;
   turn: Color = Color.White;
@@ -16,7 +18,13 @@ export class HexGame {
   constructor(whitePieces?: Piece[], blackPieces?: Piece[]) {
     this.board = new HexBoard();
     if (whitePieces && blackPieces) {
-      this.placements = this.board.setupFromPieces(whitePieces, blackPieces);
+      // Placement is random, so lay the pieces out again until neither king starts in check
+      for (let tries = 0; tries < PLACEMENT_TRIES; tries++) {
+        this.placements = this.board.setupFromPieces(whitePieces, blackPieces);
+        if (!this.isInCheck(Color.White) && !this.isInCheck(Color.Black)) {
+          break;
+        }
+      }
     } else {
       this.board.setupInitial();
     }
