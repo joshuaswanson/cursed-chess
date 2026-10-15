@@ -293,17 +293,17 @@
   fill: none;
   stroke: rgba(12, 7, 4, 0.9);
   stroke-linecap: round;
-  animation: storm-char-fade 10s 70ms ease-in both;
+  animation: storm-char-fade 1.05s 70ms linear both;
 }
 
 /* Soot blown out over the ground, its edge roughened by the filter */
 .storm-soot {
-  animation: storm-char-fade 11s 70ms ease-in both;
+  animation: storm-char-fade 1.05s 70ms linear both;
 }
 
 .storm-crater {
   fill: #050302;
-  animation: storm-char-fade 12s 70ms ease-in both;
+  animation: storm-char-fade 1.05s 70ms linear both;
 }
 
 @keyframes storm-char-fade {
@@ -327,12 +327,11 @@
   fill: none;
   stroke-linecap: round;
   filter: drop-shadow(0 0 1.5px #ff6a00) drop-shadow(0 0 4px #ff3d00);
-  animation: storm-ember-cool 4s 70ms ease-out both;
+  animation: storm-ember-cool 1s 70ms linear both;
 }
 
 .storm-crater-rim {
   stroke-width: 1.6;
-  animation-duration: 5s;
 }
 
 @keyframes storm-ember-cool {
