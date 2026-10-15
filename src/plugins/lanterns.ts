@@ -3,6 +3,7 @@ import type { Move, Piece, SquareIndex } from "../engine/types";
 import type { Board } from "../engine/board";
 import type { BoardOverlay, ModePlugin, PluginContext } from "./types";
 import { ALL_SQUARES, fileOf, rankOf, toIndex } from "../utils/squareUtils";
+import { DarkMemory } from "./darkMemory";
 
 /** One of the lanterns on the board, and the square of whoever carries it */
 export interface Lantern {
@@ -31,77 +32,23 @@ export class LanternsPlugin implements ModePlugin {
     "The board is dark. Each lantern lights the squares round its carrier. Take a piece carrying one to carry it yourself.";
 
   private lanterns: Lantern[] = [];
-  /**
-   * Where Chessbot believes your pieces are: wherever he last saw them,
-   * until the light shows him otherwise
-   */
-  private recalled = new Map<SquareIndex, Piece>();
+  private seen = new DarkMemory();
 
   onGameStart(ctx: PluginContext): void {
     this.lanterns = [Color.White, Color.Black]
       .flatMap((color) => this.firstCarriers(ctx.board, color))
       .map((sq, id) => ({ id, sq }));
-    // He saw the whole board before the lights went out
-    this.recalled = new Map(
-      ALL_SQUARES.flatMap((sq) => {
-        const piece = ctx.board.get(sq);
-        return piece?.color === Color.White
-          ? [[sq, { ...piece }] as const]
-          : [];
-      }),
-    );
+    this.seen.reset(ctx.board);
   }
 
   /** Your pieces as Chessbot remembers them */
   memory(): ReadonlyMap<SquareIndex, Piece> {
-    return this.recalled;
-  }
-
-  /** A piece of yours turning up somewhere means it is no longer where he last saw it */
-  private forgetNearest(piece: Piece, sq: SquareIndex, lit: Set<SquareIndex>) {
-    const stale = [...this.recalled]
-      .filter(([at, p]) => !lit.has(at) && at !== sq && p.type === piece.type)
-      .sort(
-        ([a], [b]) =>
-          Math.max(
-            Math.abs(fileOf(a) - fileOf(sq)),
-            Math.abs(rankOf(a) - rankOf(sq)),
-          ) -
-          Math.max(
-            Math.abs(fileOf(b) - fileOf(sq)),
-            Math.abs(rankOf(b) - rankOf(sq)),
-          ),
-      )[0];
-    if (stale) this.recalled.delete(stale[0]);
-  }
-
-  /** Updates what he remembers from what the lanterns show, and from what has just happened to his own pieces */
-  private notice(board: Board, move: Move): void {
-    const lit = this.litSquares();
-    // A square he has just moved onto was empty, and one of his pieces taken
-    // in the dark tells him something of yours stands there
-    if (move.piece.color === Color.Black) this.recalled.delete(move.to);
-    else if (move.captured && !this.recalled.has(move.to)) {
-      this.forgetNearest(move.piece, move.to, lit);
-      this.recalled.set(move.to, { ...move.piece });
-    }
-    this.look(board);
+    return this.seen.pieces();
   }
 
   /** Brings what he remembers up to date with whatever the lanterns light now */
   look(board: Board): void {
-    const lit = this.litSquares();
-    for (const sq of lit) {
-      const piece = board.get(sq);
-      if (piece?.color !== Color.White) {
-        this.recalled.delete(sq);
-        continue;
-      }
-      if (this.recalled.get(sq)?.type !== piece.type) {
-        this.forgetNearest(piece, sq, lit);
-        this.recalled.set(sq, { ...piece });
-      }
-    }
+    this.seen.look(board, this.litSquares());
   }
 
   /** The pieces that start with a lantern: pawns where there are any, anyone but the king where there are not */
@@ -140,7 +87,7 @@ export class LanternsPlugin implements ModePlugin {
       else if (lantern.sq === move.from) lantern.sq = move.to;
       else if (rookHop && lantern.sq === rookHop.from) lantern.sq = rookHop.to;
     }
-    this.notice(ctx.board, move);
+    this.seen.notice(ctx.board, move, this.litSquares());
   }
 
   /** The squares the lanterns light: each carrier's and the eight round it */
