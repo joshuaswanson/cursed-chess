@@ -273,26 +273,40 @@
 /* --- The burn it leaves: a crater with a molten rim, and a scar branching out
    across the squares round it, glowing white-hot and cooling to black --- */
 
-/* On the board, under the pieces standing on it */
+/* On the board, under the pieces standing on it, and never past its edge */
 .storm-scars {
   position: absolute;
   inset: 0;
   z-index: 1;
+  overflow: hidden;
   pointer-events: none;
+  isolation: isolate;
+}
+
+/* Scorching takes the darker of two burns, and glow the brighter, so burns
+   that overlap run together without doubling up */
+.storm-scorch {
+  mix-blend-mode: darken;
+}
+
+.storm-glow {
+  mix-blend-mode: lighten;
 }
 
 .storm-scar {
   position: absolute;
-  width: 40%;
+  width: 50%;
   aspect-ratio: 1;
   translate: -50% -50%;
   overflow: visible;
 }
 
+/* Soft, so the burn darkens the ground along the channels without outlining them */
 .storm-scar-char {
   fill: none;
-  stroke: rgba(12, 7, 4, 0.9);
+  stroke: rgba(22, 13, 7, 0.7);
   stroke-linecap: round;
+  filter: blur(2.5px);
   animation: storm-char-fade 1.05s 70ms linear both;
 }
 
@@ -302,7 +316,8 @@
 }
 
 .storm-crater {
-  fill: #050302;
+  fill: #070403;
+  filter: blur(1.5px);
   animation: storm-char-fade 1.05s 70ms linear both;
 }
 

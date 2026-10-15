@@ -199,7 +199,7 @@ function burn(rand: () => number) {
       {
         from: [0, 0],
         heading: (i / arms) * Math.PI * 2 + wobble(rand) * 0.4,
-        length: UNIT * (0.7 + rand() * 0.8),
+        length: UNIT * (0.8 + rand() * 1.05),
         width: 3.6,
         forks: 3,
       },
@@ -294,7 +294,11 @@ function useFreshStrikes(strikes: Strike[]): Strike[] {
   return strikes.filter((strike) => strike.id > before);
 }
 
-/** The burns the bolts leave, drawn on the board under the pieces standing on it */
+/**
+ * The burns the bolts leave, drawn on the board under the pieces standing
+ * on it. The scorching of every burn is drawn first and the glow of every
+ * burn after, each blended so that burns side by side run together into one.
+ */
 export function StormScars({
   strikes,
   flipped,
@@ -306,24 +310,53 @@ export function StormScars({
   return (
     <div className="storm-scars" aria-hidden>
       {fresh.map((strike) => (
-        <Scar key={strike.id} strike={strike} flipped={flipped} />
+        <Scorch key={strike.id} strike={strike} flipped={flipped} />
+      ))}
+      {fresh.map((strike) => (
+        <Embers key={strike.id} strike={strike} flipped={flipped} />
       ))}
     </div>
   );
 }
 
-/** A crater with a molten rim, soot blown out round it, and a burn forking out over the squares nearby, glowing and cooling to black */
-function Scar({ strike, flipped }: { strike: Strike; flipped: boolean }) {
+/** How far a burn can reach from where the bolt hit, in squares */
+const BURN_REACH = 2;
+
+/** The shape of one burn, the same each time it is drawn */
+function burnShape(strike: Strike) {
   const rand = seededRandom(strike.id * 313 + strike.sq);
-  const scar = burn(rand);
-  const pit = crater(rand);
-  const soot = `storm-soot-${strike.id}`;
+  return { veins: burn(rand), pit: crater(rand) };
+}
+
+function BurnSvg({
+  strike,
+  flipped,
+  className,
+  children,
+}: {
+  strike: Strike;
+  flipped: boolean;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const r = UNIT * BURN_REACH;
   return (
     <svg
-      className="storm-scar"
-      viewBox={`-${UNIT * 1.6} -${UNIT * 1.6} ${UNIT * 3.2} ${UNIT * 3.2}`}
+      className={`storm-scar ${className}`}
+      viewBox={`-${r} -${r} ${r * 2} ${r * 2}`}
       style={middleOf(strike.sq, flipped)}
     >
+      {children}
+    </svg>
+  );
+}
+
+/** Where it burnt: soot blown out over the ground, scorched along the channels it forked through, round a charred pit */
+function Scorch({ strike, flipped }: { strike: Strike; flipped: boolean }) {
+  const { veins, pit } = burnShape(strike);
+  const soot = `storm-soot-${strike.id}`;
+  return (
+    <BurnSvg strike={strike} flipped={flipped} className="storm-scorch">
       <defs>
         <filter id={soot} x="-50%" y="-50%" width="200%" height="200%">
           <feTurbulence
@@ -333,11 +366,12 @@ function Scar({ strike, flipped }: { strike: Strike; flipped: boolean }) {
             seed={strike.id}
           />
           <feDisplacementMap in="SourceGraphic" scale="46" />
+          <feGaussianBlur stdDeviation="2" />
         </filter>
         <radialGradient id={`${soot}-fill`}>
-          <stop offset="0" stopColor="#060403" stopOpacity="0.95" />
-          <stop offset="0.55" stopColor="#140c07" stopOpacity="0.75" />
-          <stop offset="1" stopColor="#1c120a" stopOpacity="0" />
+          <stop offset="0" stopColor="#0a0604" stopOpacity="0.9" />
+          <stop offset="0.5" stopColor="#1a0f08" stopOpacity="0.6" />
+          <stop offset="1" stopColor="#24160c" stopOpacity="0" />
         </radialGradient>
       </defs>
       <circle
@@ -346,25 +380,34 @@ function Scar({ strike, flipped }: { strike: Strike; flipped: boolean }) {
         fill={`url(#${soot}-fill)`}
         filter={`url(#${soot})`}
       />
-      {scar.map(({ width, d }, i) => (
+      {veins.map(({ width, d }, i) => (
         <path
-          key={`c${i}`}
+          key={i}
           className="storm-scar-char"
           d={d}
-          style={{ strokeWidth: width * 2.2 }}
+          style={{ strokeWidth: width * 3 }}
         />
       ))}
       <path className="storm-crater" d={pit} />
-      {scar.map(({ width, bright, d }, i) => (
+    </BurnSvg>
+  );
+}
+
+/** The thinnest seams of the burn, glowing white-hot and cooling */
+function Embers({ strike, flipped }: { strike: Strike; flipped: boolean }) {
+  const { veins, pit } = burnShape(strike);
+  return (
+    <BurnSvg strike={strike} flipped={flipped} className="storm-glow">
+      {veins.map(({ width, bright, d }, i) => (
         <path
-          key={`e${i}`}
+          key={i}
           className="storm-scar-ember"
           d={d}
           style={{ strokeWidth: width * 0.45, opacity: bright }}
         />
       ))}
       <path className="storm-crater-rim" d={pit} />
-    </svg>
+    </BurnSvg>
   );
 }
 
