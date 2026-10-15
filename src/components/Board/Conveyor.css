@@ -80,14 +80,15 @@
   animation: belt-tile-ride 1100ms both;
 }
 
-/* Chevrons printed on each tile, pointing the way its belt runs */
+/* Chevron stripes across the whole tile, pointing the way its belt runs.
+   Two to a square, so they run on unbroken from one square to the next. */
 .belt-chevrons {
   position: absolute;
   inset: 0;
   rotate: var(--belt-turn);
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M22 24 L44 50 L22 76 M56 24 L78 50 L56 76' fill='none' stroke='%2314181c' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-    center / 70% no-repeat;
-  opacity: 0.17;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 100' preserveAspectRatio='none'%3E%3Cpolygon points='0,0 22,0 47,50 22,100 0,100 25,50' fill='%2314181c'/%3E%3C/svg%3E")
+    0 0 / 50% 100% repeat;
+  opacity: 0.13;
 }
 
 @keyframes belt-tile-ride {
