@@ -978,7 +978,6 @@ export function Board() {
             />
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
-          {conveyor && <BeltRails />}
           {overlays.tug && (
             <TugLayer
               view={overlays.tug}
@@ -998,6 +997,7 @@ export function Board() {
             />
           )}
           {rows}
+          {conveyor && <BeltRails />}
           {sidelineKings.length > 0 && (
             <Sideline
               coaching={football !== null}

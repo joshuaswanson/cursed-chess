@@ -76,7 +76,9 @@
   pointer-events: none;
 }
 
+/* Over the squares it rides across, which are drawn after it, and still under the pieces */
 .belt-tile.riding {
+  z-index: 1;
   animation: belt-tile-ride 1100ms both;
 }
 
