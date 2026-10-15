@@ -6,7 +6,7 @@ import { visualCol, visualRow } from "./boardGeometry";
 import "./Lanterns.css";
 
 /** How far a lantern's light reaches from its carrier's middle, in squares */
-const REACH_SQUARES = 1.9;
+const REACH_SQUARES = 2.2;
 /**
  * How much of the dark the light clears at each distance, in squares: only
  * the carrier stands in real light, and it falls away fast, so the pieces
@@ -14,13 +14,13 @@ const REACH_SQUARES = 1.9;
  */
 const FALLOFF: [squares: number, cleared: number][] = [
   [0, 1],
-  [0.25, 0.95],
-  [0.45, 0.7],
-  [0.65, 0.42],
-  [0.85, 0.25],
-  [1.05, 0.15],
-  [1.3, 0.08],
-  [1.6, 0.03],
+  [0.3, 0.95],
+  [0.52, 0.7],
+  [0.75, 0.42],
+  [0.98, 0.25],
+  [1.2, 0.15],
+  [1.5, 0.08],
+  [1.85, 0.03],
   [REACH_SQUARES, 0],
 ];
 /** The rest of the board is pitch black */
