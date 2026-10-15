@@ -41,7 +41,7 @@ function startPlaying(): void {
   // Browsers refuse to play before the first click or key press; the next one starts it
   line.el.play().catch(() => {
     const retry = () => {
-      if (wanted && sfx.isEnabled()) void line.el.play().catch(() => {});
+      if (audible()) void line.el.play().catch(() => {});
     };
     window.addEventListener("pointerdown", retry, { once: true });
     window.addEventListener("keydown", retry, { once: true });
@@ -60,17 +60,26 @@ function stopPlaying(): void {
   pauseTimer = setTimeout(() => el.pause(), PAUSE_AFTER_MS);
 }
 
+/** Whether the music should be heard: wanted, sound on, and the game's tab the one in front */
+const audible = () => wanted && sfx.isEnabled() && !document.hidden;
+
 // The music follows the sound button
 sfx.subscribe(() => {
   if (!sfx.isEnabled()) track?.pause();
-  else if (wanted) startPlaying();
+  else if (audible()) startPlaying();
+});
+
+// It goes quiet while another tab is in front, and comes back with this one
+document.addEventListener("visibilitychange", () => {
+  if (audible()) startPlaying();
+  else if (document.hidden) stopPlaying();
 });
 
 export const music = {
-  /** Plays while `on`, and only while sound is turned on */
+  /** Plays while `on`, only while sound is turned on and this tab is in front */
   set(on: boolean): void {
     wanted = on;
-    if (on && sfx.isEnabled()) startPlaying();
+    if (audible()) startPlaying();
     if (!on) stopPlaying();
   },
 };
