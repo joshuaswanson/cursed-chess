@@ -63,7 +63,7 @@ import {
 } from "./BattleRoyale";
 import { useCollapse } from "./useCollapse";
 import { BeltRails } from "./Conveyor";
-import { useBeltRun } from "./useBeltRun";
+import { beltTurn, useBeltRun } from "./useBeltRun";
 import { BELT_RUN_MS, carried, fedFrom } from "../../plugins/conveyor";
 import { checkOnTurn } from "../../utils/checkers";
 import { CheckLines } from "./CheckLines";
@@ -690,14 +690,28 @@ export function Board() {
             if (!drag) selectSquare(sq);
           }}
         >
-          {conveyor && rides.size > 0 && (
+          {conveyor && (
             <span
-              className="belt-tile"
-              style={offsetVars(
-                "--tile-from",
-                offsetBetween(fedFrom(sq), sq, flipped, squareSize),
-              )}
-            />
+              key={rides.size > 0 ? conveyor.run : "still"}
+              className={`belt-tile${rides.size > 0 ? " riding" : ""}`}
+              style={
+                rides.size > 0
+                  ? offsetVars(
+                      "--tile-from",
+                      offsetBetween(fedFrom(sq), sq, flipped, squareSize),
+                    )
+                  : undefined
+              }
+            >
+              <span
+                className="belt-chevrons"
+                style={
+                  {
+                    "--belt-turn": `${beltTurn(sq, flipped)}deg`,
+                  } as React.CSSProperties
+                }
+              />
+            </span>
           )}
           {portalColor && (
             <Portal
@@ -964,7 +978,7 @@ export function Board() {
             />
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
-          {conveyor && <BeltRails run={conveyor.run} />}
+          {conveyor && <BeltRails />}
           {overlays.tug && (
             <TugLayer
               view={overlays.tug}

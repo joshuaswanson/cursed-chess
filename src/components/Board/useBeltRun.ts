@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { SquareIndex } from "../../engine";
-import { BELT_RUN_MS } from "../../plugins/conveyor";
+import { BELT_RUN_MS, carried } from "../../plugins/conveyor";
 import type { ConveyorView } from "../../plugins/conveyor";
-import { offsetBetween } from "./boardGeometry";
+import { offsetBetween, visualCol, visualRow } from "./boardGeometry";
 import type { DroppedMove } from "./usePieceDrag";
 
 type Offset = { x: number; y: number };
@@ -57,4 +57,17 @@ export function useBeltRun(
     return () => clearTimeout(done);
   }, [rides]);
   return rides;
+}
+
+/** Which way the belt under a square runs on screen, as an angle clockwise from pointing right */
+export function beltTurn(sq: SquareIndex, flipped: boolean): number {
+  const next = carried(sq);
+  return (
+    (Math.atan2(
+      visualRow(next, flipped) - visualRow(sq, flipped),
+      visualCol(next, flipped) - visualCol(sq, flipped),
+    ) *
+      180) /
+    Math.PI
+  );
 }
