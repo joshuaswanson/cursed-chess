@@ -267,7 +267,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     title: "Factory floor",
     tagline:
       "The board is four looping conveyor belts. After every move each belt carries everything on it one place along, the opposite way to the belt next to it. A pawn carried onto its last rank becomes a queen.",
-    catchphrase: "Keep it moving!",
+    catchphrase: "Not approved by OSHA",
     sky: ["#0e1114", "#1c2228", "#3b2a14"],
     accent: "#ffc21a",
     accent2: "#ff6a1a",
