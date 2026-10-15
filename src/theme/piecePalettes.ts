@@ -64,6 +64,11 @@ export const PIECE_PALETTES: Partial<
     light: ["#fff6dc", "#f0d79a", "#b98f4a"],
     dark: ["#8f86c9", "#3b3378", "#141033"],
   },
+  // Rain-washed silver against storm-cloud slate
+  storm: {
+    light: ["#f6f9ff", "#cdd8ea", "#8295b5"],
+    dark: ["#8f9bb8", "#3a4560", "#10141f"],
+  },
   // Hard-hat yellow against steel blue
   conveyor: {
     light: ["#fffbe8", "#ffd84d", "#c08a00"],

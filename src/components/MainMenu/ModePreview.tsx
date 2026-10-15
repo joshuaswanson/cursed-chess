@@ -425,6 +425,34 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       </span>
     </>
   ),
+  // In the dark and the rain, lightning lights the board, burns up a knight, and then strikes an empty square
+  storm: (
+    <>
+      <Piece is="bR" x={19} y={62} size={17} />
+      <span className="pv-scorch pv-scorch-a" />
+      <span className="pv-scorch pv-scorch-b" />
+      <Piece is="bN" x={52} y={52} size={21} className="pv-zapped">
+        <span className="pv-zap-smoke" />
+      </Piece>
+      <Piece is="wP" x={83} y={66} size={17} />
+      <span className="pv-storm-dark" />
+      <span className="pv-rain" />
+      <svg
+        className="pv-bolt pv-bolt-a"
+        viewBox="0 0 200 100"
+        preserveAspectRatio="none"
+      >
+        <path d="M88 -6 L97 9 L90 17 L102 29 L95 37 L106 45 L104 52 M97 9 L82 21 L85 27 M95 37 L86 44" />
+      </svg>
+      <svg
+        className="pv-bolt pv-bolt-b"
+        viewBox="0 0 200 100"
+        preserveAspectRatio="none"
+      >
+        <path d="M72 -6 L63 6 L68 12 L58 21 L61 26 L54 32 M63 6 L74 15" />
+      </svg>
+    </>
+  ),
   // Searchlights cross a dark hall while a pawn creeps up on the jewel
   heist: (
     <>

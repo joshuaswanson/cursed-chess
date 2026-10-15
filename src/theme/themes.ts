@@ -15,7 +15,8 @@ export type ThemeId =
   | "trenches"
   | "lanterns"
   | "conveyor"
-  | "heist";
+  | "heist"
+  | "storm";
 
 /** Which animated scene sits behind the board */
 export type BackdropKind = ThemeId;
@@ -291,6 +292,22 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#e8e2d2",
     dark: "#7f8b9b",
     text: "#f1ead6",
+  },
+  storm: {
+    id: "storm",
+    title: "Thunderstorm",
+    tagline:
+      "The board is dark. Lightning lights it up for a moment every few seconds, and sometimes it kills a piece. It never hits a king.",
+    catchphrase: "Don't stand under anything tall.",
+    // The night and the frame match the dark over the squares, so the board only shows when the lightning lights it
+    sky: ["#05070d", "#05070d", "#05070d"],
+    accent: "#9fd8ff",
+    accent2: "#ffe45c",
+    ink: "#05070d",
+    frame: "#05070d",
+    light: "#c7cfdc",
+    dark: "#6c7890",
+    text: "#e3ebff",
   },
 };
 

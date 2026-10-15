@@ -31,6 +31,7 @@ import { checkOnTurn } from "../utils/checkers";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { LanternsPlugin } from "../plugins/lanterns";
+import { ThunderstormPlugin } from "../plugins/thunderstorm";
 import { HEIST_FILES, HEIST_RANKS, HeistPlugin } from "../plugins/heist";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
@@ -62,6 +63,8 @@ import type { ChessbotMood } from "../components/Chessbot/Chessbot";
 export type { PortalMoveInfo };
 
 export const MODE_SECONDS = 45;
+/** How often the thunderstorm is moved on */
+export const STORM_TICK_MS = 100;
 export const AUTONOMOUS_TICK_MS = 100;
 const PLAYER_MOVE_SECONDS = 10;
 const AI_MOVE_SECONDS = 1;
@@ -241,6 +244,13 @@ export const GAME_MODES: GameMode[] = [
     singleOnly: true,
     beta: true,
   },
+  {
+    name: "THUNDERSTORM",
+    theme: "storm",
+    create: () => [new ThunderstormPlugin()],
+    singleOnly: true,
+    beta: true,
+  },
 ];
 
 /** The next mode of the adventure after this one, or -1 once the last has been played */
@@ -334,6 +344,8 @@ export interface GameStore {
   introDone: boolean;
   /** Pieces are falling after gravity shifted, so nobody may move */
   gravityFalling: boolean;
+  /** Counts every bolt of lightning in Thunderstorm, so each one is seen to land */
+  stormStrike: number;
   /** The last side to miss a turn, because none of its pieces could move or its time ran out */
   skippedTurn: { id: number; color: Color; reason: "stuck" | "time" } | null;
   /** A piece is on its way through a portal, so the clock waits for it to arrive */
@@ -408,6 +420,8 @@ export interface GameStore {
   tickAutonomous: () => void;
   /** Turns the gravity board and lets everything fall when it passes the next step */
   tickGravity: () => void;
+  /** Moves the thunderstorm on, bringing lightning down when it is due */
+  tickStorm: () => void;
   resolveExplosion: (square: SquareIndex) => void;
   /** Moves the portals if a reshuffle is due, once the board has finished animating */
   settlePortals: () => void;
@@ -773,7 +787,7 @@ function skipStuckTurn(): void {
 }
 
 /**
- * Chessbot's move in Lanterns, weighed on the board as he remembers it: your
+ * Chessbot's move on a dark board, weighed on the board as he remembers it: your
  * pieces where he last saw them, which may have moved on in the dark
  */
 function chooseInTheDark(
@@ -893,6 +907,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   autonomousTick: 0,
   introDone: true,
   gravityFalling: false,
+  stormStrike: 0,
   skippedTurn: null,
   portalTravelling: false,
   zombiesActing: false,
@@ -1455,15 +1470,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
           (pool) => pool.length > 0,
         ) ?? moves);
 
-    const lanterns = get().pluginManager.find<LanternsPlugin>("lanterns");
+    const dark =
+      get().pluginManager.find<LanternsPlugin>("lanterns") ??
+      get().pluginManager.find<ThunderstormPlugin>("thunderstorm");
     const bonus = modeSquareBonus(get().pluginManager, game.board);
     const conveyor = get().pluginManager.find<ConveyorPlugin>("conveyor");
-    if (game.turn === Color.Black) lanterns?.look(game.board);
+    if (game.turn === Color.Black) dark?.look(game.board);
     const pick =
       game.turn !== Color.Black
         ? moves[Math.floor(Math.random() * moves.length)]
-        : lanterns
-          ? chooseInTheDark(game, allowed, lanterns.memory(), bonus)
+        : dark
+          ? chooseInTheDark(game, allowed, dark.memory(), bonus)
           : conveyor
             ? chooseMove(
                 game,
@@ -1499,6 +1516,38 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (winner === null) return;
     set({ status: GameStatus.Checkmate });
     endGameSoon(winner);
+  },
+
+  tickStorm: () => {
+    if (isGuest()) return;
+    const { pluginManager, game, paused, status, introDone } = get();
+    const storm = pluginManager.find<ThunderstormPlugin>("thunderstorm");
+    if (!storm || paused || !introDone || isGameOver(status)) return;
+    const strike = storm.advance({ game, board: game.board }, STORM_TICK_MS);
+    if (!strike) return;
+    if (!strike.killed) {
+      set({ stormStrike: get().stormStrike + 1 });
+      return;
+    }
+    // A piece picked up keeps its place in your hand, unless it was the one killed
+    const selected = get().selectedSquare;
+    const keep =
+      selected !== null && game.board.get(selected)?.color === game.turn;
+    const next = pluginManager.invokeModifyGameStatus(game.getStatus());
+    set({
+      ...(keep
+        ? {
+            legalMoveSquares: get()
+              .legalMovesFrom(selected)
+              .map((m) => m.to),
+          }
+        : { ...CLEARED_SELECTION, promotionPending: null }),
+      stormStrike: get().stormStrike + 1,
+      status: next,
+    });
+    if (isGameOver(next)) {
+      endGameSoon(next === GameStatus.Checkmate ? opponent(game.turn) : null);
+    }
   },
 
   tickGravity: () => {

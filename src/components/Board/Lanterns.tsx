@@ -30,6 +30,28 @@ const KINDLE = 0.07;
 /** How quickly a light catches up with its carrier, as the share of the gap closed each frame */
 const FOLLOW = 0.22;
 const FRAME_MS = 40;
+/**
+ * How much of the dark a bolt of lightning lifts as time passes after it
+ * strikes, in ms: a blinding flash, a flicker, a moment of full light, then
+ * the dark closes in again
+ */
+const LIGHTNING: [ms: number, lifted: number][] = [
+  [0, 1],
+  [70, 1],
+  [110, 0.35],
+  [170, 1],
+  [1000, 1],
+  [1700, 0],
+];
+
+const lightningAt = (ms: number) => {
+  const after = LIGHTNING.findIndex(([at]) => at > ms);
+  if (after === -1) return 0;
+  if (after === 0) return LIGHTNING[0][1];
+  const [t0, v0] = LIGHTNING[after - 1];
+  const [t1, v1] = LIGHTNING[after];
+  return v0 + ((v1 - v0) * (ms - t0)) / (t1 - t0);
+};
 
 const BRASS = "#d9a441";
 const BRASS_DARK = "#8a5f1c";
@@ -195,7 +217,8 @@ export function LanternFeel({
  * The dark that lies over the whole board, with a pool of light worn
  * through it round each lantern. Each square the piece you have picked up
  * could go to shows as a faint glimmer, so you can still find your way
- * about in the dark. The piece itself stays unlit.
+ * about in the dark. The piece itself stays unlit. A bolt of lightning
+ * lifts the whole dark for a moment.
  */
 export function LanternDark({
   lanterns,
@@ -203,6 +226,7 @@ export function LanternDark({
   targets,
   flipped,
   squareSize,
+  lightning = null,
 }: {
   lanterns: Lantern[];
   /** Squares lit with no lantern near: your king in check, and the piece checking it */
@@ -210,6 +234,8 @@ export function LanternDark({
   targets: SquareIndex[];
   flipped: boolean;
   squareSize: number;
+  /** The bolt of lightning that struck last, counted up with each one */
+  lightning?: number | null;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // The lanterns stay out while the mode's title cards are up, and are lit as play begins
@@ -219,6 +245,14 @@ export function LanternDark({
   useEffect(() => {
     scene.current = { lanterns, shown, targets, flipped, squareSize, lit };
   });
+  const struckAt = useRef(-Infinity);
+  // A bolt that struck before the board was drawn has already been and gone
+  const struckBefore = useRef(lightning);
+  useEffect(() => {
+    if (lightning !== null && lightning !== struckBefore.current) {
+      struckAt.current = performance.now();
+    }
+  }, [lightning]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -279,7 +313,9 @@ export function LanternDark({
       ctx.globalCompositeOperation = "source-over";
       ctx.clearRect(0, 0, size, size);
       ctx.fillStyle = DARKNESS;
+      ctx.globalAlpha = 1 - lightningAt(now - struckAt.current);
       ctx.fillRect(0, 0, size, size);
+      ctx.globalAlpha = 1;
 
       ctx.globalCompositeOperation = "destination-out";
       const lights = lanterns.map((lantern) => {

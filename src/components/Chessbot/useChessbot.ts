@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Color, GameStatus, PieceType } from "../../engine";
 import { useGameStore } from "../../stores/gameStore";
 import type { MinefieldPlugin } from "../../plugins/minefield";
+import type { ThunderstormPlugin } from "../../plugins/thunderstorm";
 import type { ChessbotMood } from "./Chessbot";
 
 interface Reaction {
@@ -70,6 +71,17 @@ export function useChessbot(): Reaction {
       // Gravity turns, and he is thrown about with everything else
       if (now.gravityFalling && !before.gravityFalling) {
         return react("dizzy", 2600);
+      }
+      // Lightning killing one of yours is the funniest thing he has seen, and one of his is a scandal
+      if (now.stormStrike !== before.stormStrike) {
+        const burnt = now.pluginManager
+          .find<ThunderstormPlugin>("thunderstorm")
+          ?.lastStrike()?.killed;
+        if (burnt) {
+          return burnt.color === Color.White
+            ? react("laugh", 1900)
+            : react("angry", 2100);
+        }
       }
       const skipped = now.skippedTurn;
       if (

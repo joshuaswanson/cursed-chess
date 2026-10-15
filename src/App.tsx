@@ -13,6 +13,7 @@ import { Backdrop } from "./components/Backdrop/Backdrop";
 import { SpaceTraffic } from "./components/Backdrop/SpaceTraffic";
 import { TrenchOrders } from "./components/Trenches/TrenchOrders";
 import { TrenchWeather } from "./components/Trenches/TrenchWeather";
+import { StormWeather } from "./components/Board/StormWeather";
 import { BoringPage } from "./components/BoringSite/BoringPages";
 import { PageFog } from "./components/Fog/Fog";
 import { Logo } from "./components/Logo/Logo";
@@ -139,6 +140,7 @@ function App() {
       <PageFog active={theme.id === "fog" && introDone} />
       {cursed && theme.id === "portals" && <SpaceTraffic />}
       {cursed && theme.id === "trenches" && <TrenchWeather />}
+      {cursed && theme.id === "storm" && <StormWeather />}
       <PromotionDialog />
       <ShowCards />
       <CurseIntro />

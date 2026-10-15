@@ -146,6 +146,17 @@ function Flair({ theme }: { theme: ThemeId }) {
       );
     case "conveyor":
       return <span className="card-belt" />;
+    case "storm":
+      return (
+        <>
+          <span className="card-rain" />
+          <svg className="card-bolt" viewBox="0 0 60 300">
+            <path d="M34 0 L22 90 L36 96 L14 190 L30 196 L8 300 L40 180 L26 174 L46 86 L32 80 L44 0 Z" />
+          </svg>
+          <span className="card-flash" />
+          <span className="card-flash card-flash-late" />
+        </>
+      );
     case "lanterns":
       return (
         <>

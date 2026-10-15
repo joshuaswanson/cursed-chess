@@ -1,0 +1,267 @@
+/* --- Thunderstorm: lightning coming down on the dark board --- */
+
+.storm-strike {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.storm-bolt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  animation: storm-bolt 0.45s linear both;
+}
+
+.storm-bolt path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.storm-bolt-glow {
+  stroke: rgba(150, 200, 255, 0.55);
+  stroke-width: 22;
+  filter: blur(6px);
+}
+
+.storm-bolt-core {
+  stroke: #f7fbff;
+  stroke-width: 6;
+}
+
+/* It cracks down, flickers once, and is gone */
+@keyframes storm-bolt {
+  0% {
+    opacity: 1;
+  }
+  20% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.15;
+  }
+  42% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* A white burst where it lands */
+.storm-impact {
+  position: absolute;
+  width: 12.5%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #fff 0 18%,
+    rgba(190, 225, 255, 0.85) 34%,
+    rgba(120, 180, 255, 0) 70%
+  );
+  animation: storm-impact 0.6s ease-out both;
+}
+
+@keyframes storm-impact {
+  from {
+    scale: 0.3;
+    opacity: 1;
+  }
+  to {
+    scale: 2.6;
+    opacity: 0;
+  }
+}
+
+.storm-ground {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.storm-scorch,
+.storm-fried {
+  position: absolute;
+  width: 12.5%;
+  aspect-ratio: 1;
+}
+
+.storm-scorch {
+  background: radial-gradient(
+    circle,
+    rgba(12, 9, 6, 0.85) 0 20%,
+    rgba(34, 26, 18, 0.55) 38%,
+    rgba(34, 26, 18, 0) 66%
+  );
+  animation: storm-scorch 7s ease-in both;
+}
+
+@keyframes storm-scorch {
+  0% {
+    opacity: 0;
+    scale: 0.4;
+  }
+  3% {
+    opacity: 1;
+    scale: 1.15;
+  }
+  8% {
+    scale: 1;
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    scale: 1;
+  }
+}
+
+.storm-fried img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: storm-fry 1.5s ease-in both;
+}
+
+/* Lit white by the bolt, burnt black, shaking, then crumbling away */
+@keyframes storm-fry {
+  0% {
+    filter: brightness(1) blur(0);
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+  6% {
+    filter: brightness(6) blur(0);
+    scale: 1.12;
+  }
+  16% {
+    filter: brightness(0.12) blur(0);
+    scale: 1;
+    translate: 0 0;
+  }
+  22% {
+    translate: -5% 0;
+  }
+  28% {
+    translate: 5% 0;
+  }
+  34% {
+    translate: -3% 0;
+  }
+  40% {
+    translate: 2% 0;
+  }
+  48% {
+    filter: brightness(0.12) blur(0);
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+  100% {
+    filter: brightness(0.1) blur(3px);
+    opacity: 0;
+    scale: 0.6 0.15;
+    translate: 0 40%;
+  }
+}
+
+.storm-smoke {
+  position: absolute;
+  left: 25%;
+  top: 25%;
+  width: 50%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(70, 72, 80, 0.75),
+    rgba(70, 72, 80, 0) 70%
+  );
+  animation: storm-smoke 1.6s 0.25s ease-out both;
+}
+
+.storm-smoke-late {
+  left: 35%;
+  animation-delay: 0.6s;
+}
+
+@keyframes storm-smoke {
+  from {
+    opacity: 0;
+    scale: 0.4;
+    translate: 0 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 1.8;
+    translate: 10% -110%;
+  }
+}
+
+/* --- The storm over the whole window: rain, and the sky lit white by each bolt --- */
+
+.storm-weather {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.storm-weather .rain-far {
+  opacity: 0.28;
+}
+
+.storm-weather .rain-near {
+  opacity: 0.42;
+}
+
+.storm-flash {
+  position: absolute;
+  inset: 0;
+  background: rgba(214, 228, 255, 0.5);
+  opacity: 0;
+  animation: storm-flash 1.7s ease-out both;
+}
+
+@keyframes storm-flash {
+  0% {
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  6% {
+    opacity: 0.15;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  30% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storm-flash {
+    animation-duration: 0.01s;
+  }
+  .storm-weather .rain {
+    animation: none;
+  }
+}

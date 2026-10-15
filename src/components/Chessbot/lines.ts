@@ -18,6 +18,7 @@ export const PITCHES: Partial<Record<ThemeId, string>> = {
   stratego: "you don't need to know what my pieces are.",
   zombies: "captured pieces were going to waste.",
   trenches: "after 1,400 simulations i conclude chess needed mud.",
+  storm: "i've been controlling the weather. it's going well.",
 };
 
 /** What he has to say about how each game ended, a different one each time */

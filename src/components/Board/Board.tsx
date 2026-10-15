@@ -24,6 +24,7 @@ import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
 import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
 import { LanternDark, LanternFeel, LanternIcon } from "./Lanterns";
+import { StormBolt, StormGround } from "./Thunderstorm";
 import { HeistLights, HeistLoot } from "./Heist";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
@@ -226,6 +227,7 @@ export function Board() {
     sidelineBench,
     arrivalStyle,
     introDone,
+    stormStrike,
   } = useGameStore();
 
   const boardRef = useRef<HTMLDivElement>(null);
@@ -432,9 +434,10 @@ export function Board() {
       ? checked.king
       : null;
   const checkerSquares = new Set(checkers.map(({ sq }) => sq));
+  const dark = overlays.lanterns !== null || overlays.storm !== null;
   // In the dark, a check on you shows your king and whatever is giving it
   const kingInCheck =
-    overlays.lanterns && status === GameStatus.Check && game.turn === seat
+    dark && status === GameStatus.Check && game.turn === seat
       ? game.board.findKing(seat)
       : null;
   const shownByCheck =
@@ -452,7 +455,7 @@ export function Board() {
             .map((move) => move.from),
         ];
   // In the dark, a piece you could take is marked but stays unseen
-  const lanternCaptures = legalMoveSquares.filter((sq) => {
+  const unseenCaptures = legalMoveSquares.filter((sq) => {
     const piece = game.board.get(sq);
     return piece !== null && piece !== undefined && piece.color !== seat;
   });
@@ -1041,7 +1044,10 @@ export function Board() {
               tipAt={0}
             />
           )}
-          {overlays.lanterns && (
+          {overlays.storm && (
+            <StormGround strike={overlays.storm.strike} flipped={flipped} />
+          )}
+          {dark && (
             <LanternFeel
               mine={
                 game.turn === seat
@@ -1051,20 +1057,24 @@ export function Board() {
                   : []
               }
               picked={selectedSquare}
-              captures={lanternCaptures}
+              captures={unseenCaptures}
               flipped={flipped}
             />
           )}
-          {overlays.lanterns && (
+          {dark && (
             <LanternDark
-              lanterns={overlays.lanterns}
+              lanterns={overlays.lanterns ?? []}
               shown={shownByCheck}
               targets={legalMoveSquares.filter(
-                (sq) => !lanternCaptures.includes(sq),
+                (sq) => !unseenCaptures.includes(sq),
               )}
               flipped={flipped}
               squareSize={squareSize}
+              lightning={overlays.storm ? stormStrike : null}
             />
+          )}
+          {overlays.storm && (
+            <StormBolt strike={overlays.storm.strike} flipped={flipped} />
           )}
           {football &&
             [Color.Black, Color.White].map((defender) => (

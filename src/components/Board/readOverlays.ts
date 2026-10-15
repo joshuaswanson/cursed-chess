@@ -10,6 +10,7 @@ import type { ZombieView } from "../../plugins/zombies";
 import type { TrenchView } from "../../plugins/trenches";
 import type { Lantern, LanternView } from "../../plugins/lanterns";
 import type { HeistView } from "../../plugins/heist";
+import type { StormView } from "../../plugins/thunderstorm";
 
 export interface PortalPair {
   a: SquareIndex;
@@ -29,6 +30,8 @@ export interface BoardOverlays {
   trenches: TrenchView | null;
   /** The lanterns alight on a dark board, or nothing when the board is lit */
   lanterns: Lantern[] | null;
+  /** The thunderstorm over a dark board, or nothing when there is none */
+  storm: StormView | null;
   heist: HeistView | null;
   hillSquares: SquareIndex[];
   /** Rounds each side has held the hill in a row, and how many it takes to win */
@@ -56,6 +59,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     zombies: null,
     trenches: null,
     lanterns: null,
+    storm: null,
     heist: null,
     hillSquares: [],
     hillStreak: { white: 0, black: 0, needed: 3 },
@@ -89,6 +93,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
         break;
       case "lanterns":
         result.lanterns = (overlay.data as LanternView).lanterns;
+        break;
+      case "thunderstorm":
+        result.storm = overlay.data as StormView;
         break;
       case "rally-resources":
         result.hasRally = true;
