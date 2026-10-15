@@ -33,7 +33,9 @@
   margin: 0;
   padding: 8px 16px;
   translate: -50% -50%;
-  white-space: nowrap;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  text-align: center;
   font-weight: 800;
   font-size: clamp(14px, 1.6vw, 19px);
   color: var(--ink);
