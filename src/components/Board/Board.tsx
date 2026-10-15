@@ -997,11 +997,10 @@ export function Board() {
                 over: ".board-shell",
                 lit: [
                   { selector: ".square.rope-square" },
-                  { selector: ".tug-score", pad: 4 },
                   { selector: ".tug-win-line.win-white", pad: 6 },
                 ],
               }}
-              tip="Get more pieces on the rope than him and the flag comes your way"
+              tip="Get more pieces on the rope than him"
               tipOver=".board-shell"
               tipAt={0}
             />
