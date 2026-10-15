@@ -1,15 +1,9 @@
 import { useEffect, useState } from "react";
 import type { RefObject } from "react";
-import type { Piece, SquareIndex } from "../../engine";
-import {
-  BELTS,
-  BELT_RUN_MS,
-  beltDirection,
-  carried,
-} from "../../plugins/conveyor";
+import type { SquareIndex } from "../../engine";
+import { BELTS, BELT_RUN_MS, beltDirection } from "../../plugins/conveyor";
 import type { ConveyorView } from "../../plugins/conveyor";
-import { pieceImage } from "../../utils/pieceImages";
-import { offsetBetween, visualCol, visualRow } from "./boardGeometry";
+import { offsetBetween } from "./boardGeometry";
 import "./Conveyor.css";
 
 type Offset = { x: number; y: number };
@@ -112,68 +106,5 @@ export function BeltRails({ run }: { run: number }) {
         {arrows}
       </g>
     </svg>
-  );
-}
-
-/** The square under the pointer on the board, while it is over one */
-export function useHoveredSquare(
-  boardRef: RefObject<HTMLElement | null>,
-  active: boolean,
-): SquareIndex | null {
-  const [hovered, setHovered] = useState<SquareIndex | null>(null);
-  useEffect(() => {
-    const board = boardRef.current;
-    if (!board || !active) return;
-    const move = (e: PointerEvent) => {
-      const el = document
-        .elementFromPoint(e.clientX, e.clientY)
-        ?.closest<HTMLElement>("[data-sq]");
-      setHovered(el && board.contains(el) ? Number(el.dataset.sq) : null);
-    };
-    const leave = () => setHovered(null);
-    board.addEventListener("pointermove", move);
-    board.addEventListener("pointerleave", leave);
-    return () => {
-      board.removeEventListener("pointermove", move);
-      board.removeEventListener("pointerleave", leave);
-      setHovered(null);
-    };
-  }, [boardRef, active]);
-  return hovered;
-}
-
-/** Where a move to the hovered square would leave the piece once the belts have run */
-export function BeltLanding({
-  piece,
-  target,
-  flipped,
-}: {
-  piece: Piece;
-  target: SquareIndex;
-  flipped: boolean;
-}) {
-  const landing = carried(target);
-  const at = (sq: SquareIndex) => ({
-    x: (visualCol(sq, flipped) + 0.5) * 100,
-    y: (visualRow(sq, flipped) + 0.5) * 100,
-  });
-  const a = at(target);
-  const b = at(landing);
-  return (
-    <>
-      <svg className="belt-landing-path" viewBox="0 0 800 800" aria-hidden>
-        <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
-      </svg>
-      <div
-        className="belt-landing"
-        style={{
-          left: `${visualCol(landing, flipped) * 12.5}%`,
-          top: `${visualRow(landing, flipped) * 12.5}%`,
-        }}
-        aria-hidden
-      >
-        <img src={pieceImage(piece)} alt="" draggable={false} />
-      </div>
-    </>
   );
 }

@@ -45,6 +45,14 @@ export function carried(sq: SquareIndex): SquareIndex {
   return path[(i + beltDirection(belt) + path.length) % path.length];
 }
 
+/** The square whose tile the belts' last run carried onto this one */
+export function fedFrom(sq: SquareIndex): SquareIndex {
+  const belt = beltOf(sq);
+  const path = PATHS[belt];
+  const i = path.indexOf(sq);
+  return path[(i - beltDirection(belt) + path.length) % path.length];
+}
+
 /** A piece carried along by its belt */
 export interface BeltRide {
   from: SquareIndex;
@@ -99,7 +107,7 @@ const NO_CASTLING = { kingSide: false, queenSide: false };
  */
 export class ConveyorPlugin implements ModePlugin {
   id = "conveyor";
-  name = "Conveyor";
+  name = "Factory Floor";
   description =
     "After every move each belt carries its pieces one place along, the opposite way to the next belt.";
 

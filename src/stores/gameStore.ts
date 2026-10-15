@@ -204,7 +204,7 @@ export const GAME_MODES: GameMode[] = [
     create: () => [new LanternsPlugin()],
   },
   {
-    name: "CONVEYOR",
+    name: "FACTORY FLOOR",
     theme: "conveyor",
     create: () => [new ConveyorPlugin()],
   },

@@ -264,7 +264,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   },
   conveyor: {
     id: "conveyor",
-    title: "Conveyor",
+    title: "Factory floor",
     tagline:
       "The board is four looping conveyor belts. After every move each belt carries everything on it one place along, the opposite way to the belt next to it. A pawn carried onto its last rank becomes a queen.",
     catchphrase: "Keep it moving!",

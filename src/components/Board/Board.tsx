@@ -63,13 +63,8 @@ import {
   Fissure,
 } from "./BattleRoyale";
 import { useCollapse } from "./useCollapse";
-import {
-  BeltLanding,
-  BeltRails,
-  useBeltRun,
-  useHoveredSquare,
-} from "./Conveyor";
-import { BELT_RUN_MS, carried } from "../../plugins/conveyor";
+import { BeltRails, useBeltRun } from "./Conveyor";
+import { BELT_RUN_MS, carried, fedFrom } from "../../plugins/conveyor";
 import { offsetBetween } from "./boardGeometry";
 import { readOverlays } from "./readOverlays";
 import { usePieceDrag } from "./usePieceDrag";
@@ -298,9 +293,6 @@ export function Board() {
 
   const conveyor = overlays.conveyor;
   const rides = useBeltRun(conveyor, flipped, squareSize, wasDropRef);
-  const hovered = useHoveredSquare(boardRef, conveyor !== null);
-  const selectedPiece =
-    selectedSquare !== null ? game.board.get(selectedSquare) : null;
   const slides = useSlideAnimation({
     lastMove,
     isPortalMove: lastPortalMove !== null,
@@ -540,7 +532,9 @@ export function Board() {
         travel?.info.landing === sq ||
         minesBlasting.has(sq);
 
-      let className = `square ${(rank + file) % 2 !== 0 ? "light" : "dark"}`;
+      // The belts carry the floor tiles too, which swaps light and dark with every run
+      const tileShift = conveyor ? conveyor.run % 2 : 0;
+      let className = `square ${(rank + file + tileShift) % 2 !== 0 ? "light" : "dark"}`;
       for (const mod of squareMods) {
         if (mod.className) className += ` ${mod.className}`;
       }
@@ -666,6 +660,15 @@ export function Board() {
             if (!drag) selectSquare(sq);
           }}
         >
+          {conveyor && rides.size > 0 && (
+            <span
+              className="belt-tile"
+              style={offsetVars(
+                "--tile-from",
+                offsetBetween(fedFrom(sq), sq, flipped, squareSize),
+              )}
+            />
+          )}
           {portalColor && (
             <Portal
               color={portalColor}
@@ -927,16 +930,6 @@ export function Board() {
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
           {conveyor && <BeltRails run={conveyor.run} />}
-          {conveyor &&
-            selectedPiece &&
-            hovered !== null &&
-            legalMoveSquares.includes(hovered) && (
-              <BeltLanding
-                piece={selectedPiece}
-                target={hovered}
-                flipped={flipped}
-              />
-            )}
           {overlays.tug && (
             <TugLayer
               view={overlays.tug}
