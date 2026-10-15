@@ -207,6 +207,8 @@ export const GAME_MODES: GameMode[] = [
     name: "FACTORY FLOOR",
     theme: "conveyor",
     create: () => [new ConveyorPlugin()],
+    singleOnly: true,
+    beta: true,
   },
   {
     name: "HEIST",
