@@ -337,13 +337,7 @@
    position, so it runs backward when you scroll back --- */
 
 @supports (animation-timeline: view()) {
-  .main-menu {
-    scroll-snap-type: y proximity;
-  }
-
   .menu-head {
-    scroll-snap-align: start;
-    scroll-margin-top: 72px;
     animation: menu-head-sink linear both;
     animation-timeline: scroll(nearest);
     animation-range: 0 420px;
@@ -353,7 +347,6 @@
   .menu-mode {
     --deal-x: 0px;
     --deal-tilt: 0deg;
-    scroll-snap-align: center;
     animation: menu-deal linear both;
     animation-timeline: view();
     will-change: transform, opacity;
