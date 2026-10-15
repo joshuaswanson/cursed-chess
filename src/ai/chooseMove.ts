@@ -29,6 +29,9 @@ export const PIECE_VALUE: Record<PieceType, number> = {
 /** A mode's own change to the board once a move is played, like the belts of Conveyor running */
 export type Settle = (board: Board) => void;
 
+/** A mode's own reading of check and mate, where the engine's would be wrong */
+export type Judge = (game: Game) => GameStatus;
+
 /** Extra score (or penalty, if negative) the current mode gives a piece for moving from one square to another */
 export type SquareBonus = (
   square: SquareIndex,
@@ -53,12 +56,14 @@ export function chooseMove(
   moves: Move[],
   squareBonus: SquareBonus,
   settle?: Settle,
+  judge?: Judge,
 ): Move {
   let best = moves[0];
   let bestScore = -Infinity;
   for (const move of moves) {
     const score =
-      scoreMove(game, move, squareBonus, settle) + Math.random() * NOISE;
+      scoreMove(game, move, squareBonus, settle, judge) +
+      Math.random() * NOISE;
     if (score > bestScore) {
       bestScore = score;
       best = move;
@@ -72,6 +77,7 @@ function scoreMove(
   move: Move,
   squareBonus: SquareBonus,
   settle?: Settle,
+  judge?: Judge,
 ): number {
   const captured = move.captured ? PIECE_VALUE[move.captured.type] : 0;
 
@@ -88,7 +94,7 @@ function scoreMove(
     after.enPassant = null;
   }
 
-  const status = after.getStatus();
+  const status = judge ? judge(after) : after.getStatus();
   if (status === GameStatus.Checkmate) return CHECKMATE_SCORE;
 
   const landed: Piece = move.promotion

@@ -1440,19 +1440,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const lanterns = get().pluginManager.find<LanternsPlugin>("lanterns");
     const bonus = modeSquareBonus(get().pluginManager, game.board);
+    const conveyor = get().pluginManager.find<ConveyorPlugin>("conveyor");
     if (game.turn === Color.Black) lanterns?.look(game.board);
     const pick =
       game.turn !== Color.Black
         ? moves[Math.floor(Math.random() * moves.length)]
         : lanterns
           ? chooseInTheDark(game, allowed, lanterns.memory(), bonus)
-          : chooseMove(
-              game,
-              allowed,
-              bonus,
-              get().pluginManager.find<ConveyorPlugin>("conveyor") &&
-                ((board) => void runBelts(board)),
-            );
+          : conveyor
+            ? chooseMove(
+                game,
+                allowed,
+                bonus,
+                (board) => void runBelts(board),
+                (after) =>
+                  conveyor.modifyGameStatus(
+                    { game: after, board: after.board },
+                    after.getStatus(),
+                  ),
+              )
+            : chooseMove(game, allowed, bonus);
     get().makeMove(pick.from, pick.to, pick.promotion);
   },
 

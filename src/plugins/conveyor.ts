@@ -1,6 +1,12 @@
-import { Color, PieceType } from "../engine/types";
+import { Color, GameStatus, MoveFlag, PieceType } from "../engine/types";
 import type { Move, SquareIndex } from "../engine/types";
 import type { Board } from "../engine/board";
+import type { Game } from "../engine/game";
+import {
+  generatePseudoLegalMoves,
+  isSquareAttacked,
+  opponent,
+} from "../engine/moves";
 import type {
   ModePlugin,
   PluginContext,
@@ -89,6 +95,33 @@ export function runBelts(board: Board): {
   return { rides, crowned };
 }
 
+/** Whether a side's king stands where the other side could take it */
+function kingAttacked(board: Board, color: Color): boolean {
+  const king = board.findKing(color);
+  return king !== null && isSquareAttacked(board, king, opponent(color));
+}
+
+/** The board as it will be once a move is played and the belts have run */
+function afterRun(board: Board, move: Move): Board {
+  const next = board.clone();
+  next.remove(move.from);
+  next.put(
+    move.to,
+    move.promotion
+      ? { type: move.promotion, color: move.piece.color }
+      : move.piece,
+  );
+  runBelts(next);
+  return next;
+}
+
+/** Whether, with no move at all, the belts' next run would leave a side's king open to capture */
+export function threatened(board: Board, color: Color): boolean {
+  const next = board.clone();
+  runBelts(next);
+  return kingAttacked(next, color);
+}
+
 export interface ConveyorView {
   /** Counts up with every run of the belts, so each one can be animated */
   run: number;
@@ -117,6 +150,59 @@ export class ConveyorPlugin implements ModePlugin {
   private move: ConveyorView["move"] = null;
   /** The move of the turn being played, until the turn ends; a skipped turn has none */
   private played: ConveyorView["move"] = null;
+
+  /** The moves found safe for the last position asked about, which is asked about once per square */
+  private safe: { fen: string; moves: Move[] } | null = null;
+
+  /**
+   * Every move that leaves the mover's king safe once the belts have run,
+   * which is what counts here: the belts run before the other side can
+   * reply. A move the engine would refuse, because the king is attacked
+   * before the belts run, is played as given.
+   */
+  safeMoves(game: Game): Move[] {
+    const fen = game.toFen();
+    if (this.safe?.fen === fen) return this.safe.moves;
+    const color = game.turn;
+    const moves = generatePseudoLegalMoves(
+      game.board,
+      color,
+      game.enPassant,
+      game.pawnRules,
+    ).flatMap((move) => {
+      if (kingAttacked(afterRun(game.board, move), color)) return [];
+      const before = game.board.clone();
+      before.remove(move.from);
+      before.put(move.to, move.piece);
+      return kingAttacked(before, color)
+        ? [{ ...move, flags: move.flags | MoveFlag.ModeMove }]
+        : [move];
+    });
+    this.safe = { fen, moves };
+    return moves;
+  }
+
+  modifyLegalMoves(ctx: PluginContext): Move[] {
+    return this.safeMoves(ctx.game);
+  }
+
+  /**
+   * Check is a king the belts' next run would leave open to capture. With
+   * no safe move left, that is checkmate, and otherwise stalemate.
+   */
+  modifyGameStatus(ctx: PluginContext, status: GameStatus): GameStatus {
+    if (
+      status === GameStatus.DrawFiftyMove ||
+      status === GameStatus.DrawInsufficientMaterial
+    ) {
+      return status;
+    }
+    const inCheck = threatened(ctx.board, ctx.game.turn);
+    if (this.safeMoves(ctx.game).length === 0) {
+      return inCheck ? GameStatus.Checkmate : GameStatus.Stalemate;
+    }
+    return inCheck ? GameStatus.Check : GameStatus.Active;
+  }
 
   /** The belts carry the kings and rooks off their squares at once, so nobody castles */
   private noCastling(ctx: PluginContext): void {
