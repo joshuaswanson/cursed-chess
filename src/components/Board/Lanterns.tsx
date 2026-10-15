@@ -134,16 +134,20 @@ export function LanternIcon({ count }: { count: number }) {
 
 /**
  * A ring under the cursor wherever one of your own pieces stands in the
- * dark, so you can feel out where they are without seeing them
+ * dark, so you can feel out where they are without seeing them, and a mark
+ * on each piece the one you have picked up could take
  */
 export function LanternFeel({
   mine,
   picked,
+  captures,
   flipped,
 }: {
   mine: SquareIndex[];
   /** The piece you have picked up, which keeps its ring while you hold it */
   picked: SquareIndex | null;
+  /** Squares the piece you have picked up could take on, marked without lighting what stands there */
+  captures: SquareIndex[];
   flipped: boolean;
 }) {
   const layer = useRef<HTMLDivElement>(null);
@@ -168,10 +172,10 @@ export function LanternFeel({
   const held = picked !== null && mine.includes(picked) ? picked : null;
   const felt =
     under !== null && under !== held && mine.includes(under) ? under : null;
-  const ring = (square: SquareIndex) => (
+  const ring = (square: SquareIndex, className = "lantern-feel-ring") => (
     <span
       key={square}
-      className="lantern-feel-ring"
+      className={className}
       style={{
         left: `${(visualCol(square, flipped) + 0.5) * 12.5}%`,
         top: `${(visualRow(square, flipped) + 0.5) * 12.5}%`,
@@ -182,6 +186,7 @@ export function LanternFeel({
     <div ref={layer} className="lantern-feel" aria-hidden>
       {held !== null && ring(held)}
       {felt !== null && ring(felt)}
+      {captures.map((square) => ring(square, "lantern-capture"))}
     </div>
   );
 }

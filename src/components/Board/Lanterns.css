@@ -77,6 +77,19 @@
   pointer-events: none;
 }
 
+.lantern-capture {
+  position: absolute;
+  width: 11%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border: 4px dashed var(--accent);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 3px var(--ink),
+    inset 0 0 0 3px var(--ink);
+  animation: capture-spin 4s linear infinite;
+}
+
 .lantern-feel-ring {
   position: absolute;
   width: 8.6%;

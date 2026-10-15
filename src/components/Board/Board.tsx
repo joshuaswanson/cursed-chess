@@ -451,6 +451,11 @@ export function Board() {
             .filter((move) => move.to === kingInCheck)
             .map((move) => move.from),
         ];
+  // In the dark, a piece you could take is marked but stays unseen
+  const lanternCaptures = legalMoveSquares.filter((sq) => {
+    const piece = game.board.get(sq);
+    return piece !== null && piece !== undefined && piece.color !== seat;
+  });
   const footballRules = pluginManager.find<FootballPlugin>("football");
   const ourBall =
     football !== null && game.board.get(football.ball)?.color === seat;
@@ -1045,6 +1050,7 @@ export function Board() {
                   : []
               }
               picked={selectedSquare}
+              captures={lanternCaptures}
               flipped={flipped}
             />
           )}
@@ -1052,7 +1058,9 @@ export function Board() {
             <LanternDark
               lanterns={overlays.lanterns}
               shown={shownByCheck}
-              targets={legalMoveSquares}
+              targets={legalMoveSquares.filter(
+                (sq) => !lanternCaptures.includes(sq),
+              )}
               flipped={flipped}
               squareSize={squareSize}
             />
