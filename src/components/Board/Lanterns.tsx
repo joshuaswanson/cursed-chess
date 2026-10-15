@@ -31,6 +31,11 @@ const KINDLE = 0.07;
 /** How quickly a light catches up with its carrier, as the share of the gap closed each frame */
 const FOLLOW = 0.22;
 const FRAME_MS = 40;
+/**
+ * How far the dark reaches past the board on every side, in CSS pixels, so
+ * no sliver of the board shows where the canvas rounds to a whole pixel
+ */
+const EDGE_BLEED = 2;
 
 const BRASS = "#d9a441";
 const BRASS_DARK = "#8a5f1c";
@@ -252,12 +257,14 @@ export function LanternDark({
         scene.current;
       glow += ((lit ? 1 : 0) - glow) * KINDLE;
       const scale = Math.min(2, window.devicePixelRatio || 1);
-      const size = Math.round(squareSize * 8 * scale);
+      const board = Math.round(squareSize * 8 * scale);
+      const bleed = EDGE_BLEED * scale;
+      const size = board + bleed * 2;
       if (canvas.width !== size) {
         canvas.width = size;
         canvas.height = size;
       }
-      const sq = size / 8;
+      const sq = board / 8;
       const centre = (square: SquareIndex) => ({
         x: visualCol(square, flipped) + 0.5,
         y: visualRow(square, flipped) + 0.5,
@@ -289,12 +296,15 @@ export function LanternDark({
         );
       };
 
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalCompositeOperation = "source-over";
       ctx.clearRect(0, 0, size, size);
       ctx.fillStyle = DARKNESS;
       ctx.globalAlpha = 1 - lightningAt(now - struckAt.current);
       ctx.fillRect(0, 0, size, size);
       ctx.globalAlpha = 1;
+      // Everything after is placed by the board's squares, inside the bleed
+      ctx.setTransform(1, 0, 0, 1, bleed, bleed);
 
       ctx.globalCompositeOperation = "destination-out";
       const lights = lanterns.map((lantern) => {
