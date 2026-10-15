@@ -138,6 +138,8 @@ export function usePieceDrag({
   const wasDropRef = useRef(false);
   /** The last move made by dropping a piece, for the portal animation */
   const droppedMoveRef = useRef<DroppedMove | null>(null);
+  /** The same, for drawing: cleared as soon as a piece is picked up again */
+  const [lastDrop, setLastDrop] = useState<DroppedMove | null>(null);
 
   useEffect(() => {
     onFrameRef.current = onFrame;
@@ -247,6 +249,7 @@ export function usePieceDrag({
     (e: React.PointerEvent, sq: SquareIndex, piece: Piece) => {
       if (piece.color !== turn) return;
       e.preventDefault();
+      setLastDrop(null);
       const rect = e.currentTarget.getBoundingClientRect();
       setDrag({
         sq,
@@ -320,6 +323,7 @@ export function usePieceDrag({
         droppedMoveRef.current = { from: drag.sq, to: targetSq };
         const result = requestMove(drag.sq, targetSq);
         if (result !== "moved") wasDropRef.current = false;
+        if (result === "moved") setLastDrop({ from: drag.sq, to: targetSq });
         moveMade = result === "moved" || result === "promotion";
       }
 
@@ -367,6 +371,7 @@ export function usePieceDrag({
     dragImgRef,
     wasDropRef,
     droppedMoveRef,
+    lastDrop,
     onPiecePointerDown,
     onPointerMove,
     onPointerUp,

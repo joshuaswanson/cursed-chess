@@ -5,8 +5,9 @@ import type { SquareIndex } from "../../engine";
 import { PIECE_COST } from "../../plugins/clashRoyale";
 import type { RallyPlugin } from "../../plugins/clashRoyale";
 import { pieceImage } from "../../utils/pieceImages";
-import { Coach, centre } from "../Coach/Coach";
-import type { Box } from "../Coach/Coach";
+import { Coach } from "../Coach/Coach";
+import { centre } from "../Coach/box";
+import type { Box } from "../Coach/box";
 import "./RallyPanel.css";
 
 const MAX_ELIXIR = 10;

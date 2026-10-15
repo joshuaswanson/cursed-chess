@@ -62,7 +62,8 @@ import {
   Fissure,
 } from "./BattleRoyale";
 import { useCollapse } from "./useCollapse";
-import { BeltRails, useBeltRun } from "./Conveyor";
+import { BeltRails } from "./Conveyor";
+import { useBeltRun } from "./useBeltRun";
 import { BELT_RUN_MS, carried, fedFrom } from "../../plugins/conveyor";
 import { checkOnTurn } from "../../utils/checkers";
 import { CheckLines } from "./CheckLines";
@@ -248,6 +249,7 @@ export function Board() {
     dragImgRef,
     wasDropRef,
     droppedMoveRef,
+    lastDrop,
     onPiecePointerDown,
     onPointerMove,
     onPointerUp,
@@ -293,7 +295,7 @@ export function Board() {
   const lesson = useGameStore(lessonFor);
 
   const conveyor = overlays.conveyor;
-  const rides = useBeltRun(conveyor, flipped, squareSize, wasDropRef);
+  const rides = useBeltRun(conveyor, flipped, squareSize, lastDrop);
   const slides = useSlideAnimation({
     lastMove,
     isPortalMove: lastPortalMove !== null,

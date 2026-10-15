@@ -1,14 +1,9 @@
 import { Fragment, useId, useLayoutEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { centre } from "./box";
+import type { Box } from "./box";
 import "./Coach.css";
-
-export interface Box {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
 
 interface Hole {
   selector: string;
@@ -22,11 +17,6 @@ const boxesOf = (selector: string): Box[] =>
     const { left, top, width, height } = el.getBoundingClientRect();
     return { left, top, width, height };
   });
-
-export const centre = (box: Box) => ({
-  x: box.left + box.width / 2,
-  y: box.top + box.height / 2,
-});
 
 const hole = (box: Box, { pad = 0, round }: Omit<Hole, "selector">) => {
   if (round) {
