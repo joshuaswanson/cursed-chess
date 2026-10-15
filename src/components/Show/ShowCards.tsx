@@ -146,6 +146,14 @@ function Flair({ theme }: { theme: ThemeId }) {
       );
     case "conveyor":
       return <span className="card-belt" />;
+    case "pacman":
+      return (
+        <>
+          <span className="card-pac-dots" />
+          <span className="card-pac-eaten" />
+          <span className="card-pac" />
+        </>
+      );
     case "storm":
       return (
         <>

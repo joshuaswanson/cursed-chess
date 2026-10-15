@@ -64,6 +64,11 @@ export const PIECE_PALETTES: Partial<
     light: ["#fff6dc", "#f0d79a", "#b98f4a"],
     dark: ["#8f86c9", "#3b3378", "#141033"],
   },
+  // Pac-Man yellow against the red of the ghost who chases hardest
+  pacman: {
+    light: ["#fffbd0", "#ffe600", "#b38f00"],
+    dark: ["#ffb0b0", "#ff2020", "#7a0000"],
+  },
   // Rain-washed silver against storm-cloud slate
   storm: {
     light: ["#f6f9ff", "#cdd8ea", "#8295b5"],

@@ -25,6 +25,8 @@ import { Crater } from "./Crater";
 import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
 import { LanternDark, LanternFeel, LanternIcon } from "./Lanterns";
 import { StormBolt, StormScars } from "./Thunderstorm";
+import { PacMaze, PacPellet } from "./PacMan";
+import { TUNNEL_MS, eatTimes, tunnelWay, usePacSounds } from "./pacMotion";
 import { HeistLights, HeistLoot } from "./Heist";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
@@ -435,6 +437,15 @@ export function Board() {
       : null;
   const checkerSquares = new Set(checkers.map(({ sq }) => sq));
   const dark = overlays.lanterns !== null || overlays.storm !== null;
+  const pac = overlays.pac;
+  usePacSounds(pac);
+  const pacRun = pac?.run ?? null;
+  // A move through a tunnel goes out at one side and comes in at the other
+  const pacTunnel =
+    pacRun && pacRun.from === lastMove?.from && pacRun.to === lastMove?.to
+      ? tunnelWay(pacRun, flipped, squareSize)
+      : null;
+  const pacEats = pacRun ? eatTimes(pacRun, pacTunnel !== null) : null;
   // In the dark, a check on you shows your king and whatever is giving it
   const kingInCheck =
     dark && status === GameStatus.Check && game.turn === seat
@@ -581,6 +592,7 @@ export function Board() {
       className += riverClasses(file, rank, sq);
 
       const slide = slides.get(sq);
+      const tunnel = slide && sq === pacRun?.to ? pacTunnel : null;
       const fall = gravityFalls.get(sq);
       const dive = shotDives.get(sq);
       const hauled = tugDrags.get(sq);
@@ -619,6 +631,16 @@ export function Board() {
                 "--ride-via-x": `${ride.via.x}px`,
                 "--ride-via-y": `${ride.via.y}px`,
                 animation: `belt-ride ${BELT_RUN_MS}ms both`,
+              } as React.CSSProperties)
+            : tunnel
+            ? ({
+                "--from-x": `${tunnel.from.x}px`,
+                "--from-y": `${tunnel.from.y}px`,
+                "--exit-x": `${tunnel.exit.x}px`,
+                "--exit-y": `${tunnel.exit.y}px`,
+                "--entry-x": `${tunnel.entry.x}px`,
+                "--entry-y": `${tunnel.entry.y}px`,
+                animation: `pac-tunnel ${TUNNEL_MS}ms linear both`,
               } as React.CSSProperties)
             : slide
             ? ({
@@ -680,6 +702,18 @@ export function Board() {
             if (!drag) selectSquare(sq);
           }}
         >
+          {pac &&
+            (pac.pellets.includes(sq) ||
+              pac.power.includes(sq) ||
+              pacEats?.has(sq)) && (
+              <PacPellet
+                power={
+                  pac.power.includes(sq) ||
+                  !!pacRun?.powerEaten.includes(sq)
+                }
+                eatenAfterMs={pacEats?.get(sq)}
+              />
+            )}
           {conveyor && (
             <span
               key={rides.size > 0 ? conveyor.run : "still"}
@@ -1044,6 +1078,7 @@ export function Board() {
               tipAt={0}
             />
           )}
+          {pac && <PacMaze />}
           {overlays.storm && (
             <StormScars strikes={overlays.storm.recent} flipped={flipped} />
           )}

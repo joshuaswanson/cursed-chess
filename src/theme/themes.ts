@@ -16,7 +16,8 @@ export type ThemeId =
   | "lanterns"
   | "conveyor"
   | "heist"
-  | "storm";
+  | "storm"
+  | "pacman";
 
 /** Which animated scene sits behind the board */
 export type BackdropKind = ThemeId;
@@ -308,6 +309,21 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#c7cfdc",
     dark: "#6c7890",
     text: "#e3ebff",
+  },
+  pacman: {
+    id: "pacman",
+    title: "Pac-Man",
+    tagline:
+      "Nobody can take a piece. Eat the pellets instead: a piece eats every pellet it passes over. Eat a power pellet and you can take their pieces for your next three moves. The middle two rows lead into a tunnel at each side. Most points when the last pellet is eaten wins.",
+    catchphrase: "Waka waka.",
+    sky: ["#000000", "#000000", "#000000"],
+    accent: "#ffe600",
+    accent2: "#2121ff",
+    ink: "#000000",
+    frame: "#000000",
+    light: "#0b0b26",
+    dark: "#000000",
+    text: "#ffe600",
   },
 };
 

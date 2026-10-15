@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { useGameStore, GAME_MODES, MODE_SECONDS } from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
 import type { BattleRoyaleOverlay } from "../../plugins/battleRoyale";
+import type { PacView } from "../../plugins/pacman";
 import { useTheme } from "../../theme/useTheme";
 import { pieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
@@ -13,6 +14,13 @@ import { leaveGame } from "../../net/multiplayer";
 const MOVE_SECONDS = 10;
 const RING_RADIUS = 26;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
+
+/** What Pac-Man has to show, when it is the mode being played */
+const pacView = (s: ReturnType<typeof useGameStore.getState>) =>
+  GAME_MODES[s.currentModeIndex]?.theme === "pacman"
+    ? (s.pluginManager.getAllOverlays().find((o) => o.type === "pacman")
+        ?.data as PacView | undefined)
+    : undefined;
 
 function Scoreboard() {
   const scoreWhite = useGameStore((s) => s.scoreWhite);
@@ -75,8 +83,16 @@ function NowPlaying() {
       | undefined;
     return view ? `${view.roundsLeft}/${view.countdownRounds}` : null;
   });
-  const [turnsLeft, turnsFrom] = (turns ?? "0/1").split("/").map(Number);
-  const fraction = turns
+  // Pac-Man counts down the pellets still to be eaten
+  const pellets = useGameStore((s) => {
+    const view = pacView(s);
+    return view
+      ? `${view.pellets.length + view.power.length}/${view.total}`
+      : null;
+  });
+  const counted = turns ?? pellets;
+  const [turnsLeft, turnsFrom] = (counted ?? "0/1").split("/").map(Number);
+  const fraction = counted
     ? turnsLeft / turnsFrom
     : untimed
       ? 1
@@ -99,9 +115,11 @@ function NowPlaying() {
         aria-label={
           turns
             ? `${turnsLeft} turns until the board shrinks or the round ends`
-            : untimed
-              ? "No time limit: play until someone wins"
-              : `${remaining} seconds left in this mode`
+            : pellets
+              ? `${turnsLeft} pellets left`
+              : untimed
+                ? "No time limit: play until someone wins"
+                : `${remaining} seconds left in this mode`
         }
       >
         <svg viewBox="0 0 64 64">
@@ -116,10 +134,12 @@ function NowPlaying() {
           />
         </svg>
         <span className="mode-ring-value">
-          {turns ? (
+          {counted ? (
             <span className="mode-ring-turns">
               {turnsLeft}
-              <small>{turnsLeft === 1 ? "turn" : "turns"}</small>
+              <small>
+                {pellets ? "left" : turnsLeft === 1 ? "turn" : "turns"}
+              </small>
             </span>
           ) : untimed ? (
             "∞"
@@ -128,6 +148,43 @@ function NowPlaying() {
           )}
         </span>
       </div>
+    </section>
+  );
+}
+
+/** The points each side has eaten in Pac-Man, arcade style, and how long a power pellet lasts */
+function PacScore() {
+  const seat = useGameStore((s) => s.seat);
+  const online = useGameStore((s) => s.net !== null);
+  const tally = useGameStore((s) => {
+    const view = pacView(s);
+    return view
+      ? [view.score.w, view.score.b, view.powerLeft.w, view.powerLeft.b].join(
+          " ",
+        )
+      : null;
+  });
+  if (!tally) return null;
+  const [scoreW, scoreB, powerW, powerB] = tally.split(" ").map(Number);
+  const sides = [
+    { color: Color.White, score: scoreW, power: powerW },
+    { color: Color.Black, score: scoreB, power: powerB },
+  ].sort((a) => (a.color === seat ? -1 : 1));
+  return (
+    <section className="hud-card pac-score" aria-label="Points">
+      {sides.map(({ color, score, power }) => (
+        <div key={color} className={`pac-score-row pac-score-${color}`}>
+          <span className="pac-score-name">
+            {color === seat ? "You" : online ? "Friend" : "Chessbot"}
+          </span>
+          {power > 0 && (
+            <span className="pac-score-power">
+              Power {power} {power === 1 ? "move" : "moves"}
+            </span>
+          )}
+          <span className="pac-score-points">{score}</span>
+        </div>
+      ))}
     </section>
   );
 }
@@ -275,6 +332,7 @@ export function Hud() {
       {adventure && <ChessbotCorner docked />}
       <Scoreboard />
       <NowPlaying />
+      <PacScore />
       <MoveClock />
       <Toolbar />
     </aside>

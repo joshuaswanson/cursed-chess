@@ -32,6 +32,7 @@ import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { LanternsPlugin } from "../plugins/lanterns";
 import { ThunderstormPlugin } from "../plugins/thunderstorm";
+import { PacManPlugin } from "../plugins/pacman";
 import { HEIST_FILES, HEIST_RANKS, HeistPlugin } from "../plugins/heist";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
@@ -248,6 +249,14 @@ export const GAME_MODES: GameMode[] = [
     name: "THUNDERSTORM",
     theme: "storm",
     create: () => [new ThunderstormPlugin()],
+    singleOnly: true,
+    beta: true,
+  },
+  {
+    name: "PAC-MAN",
+    theme: "pacman",
+    create: () => [new PacManPlugin()],
+    kingsSitOut: true,
     singleOnly: true,
     beta: true,
   },
@@ -1475,25 +1484,28 @@ export const useGameStore = create<GameStore>((set, get) => ({
       get().pluginManager.find<ThunderstormPlugin>("thunderstorm");
     const bonus = modeSquareBonus(get().pluginManager, game.board);
     const conveyor = get().pluginManager.find<ConveyorPlugin>("conveyor");
+    const pacman = get().pluginManager.find<PacManPlugin>("pacman");
     if (game.turn === Color.Black) dark?.look(game.board);
     const pick =
       game.turn !== Color.Black
         ? moves[Math.floor(Math.random() * moves.length)]
         : dark
           ? chooseInTheDark(game, allowed, dark.memory(), bonus)
-          : conveyor
-            ? chooseMove(
-                game,
-                allowed,
-                bonus,
-                (board) => void runBelts(board),
-                (after) =>
-                  conveyor.modifyGameStatus(
-                    { game: after, board: after.board },
-                    after.getStatus(),
-                  ),
-              )
-            : chooseMove(game, allowed, bonus);
+          : pacman
+            ? pacman.choose(game, allowed)
+            : conveyor
+              ? chooseMove(
+                  game,
+                  allowed,
+                  bonus,
+                  (board) => void runBelts(board),
+                  (after) =>
+                    conveyor.modifyGameStatus(
+                      { game: after, board: after.board },
+                      after.getStatus(),
+                    ),
+                )
+              : chooseMove(game, allowed, bonus);
     get().makeMove(pick.from, pick.to, pick.promotion);
   },
 

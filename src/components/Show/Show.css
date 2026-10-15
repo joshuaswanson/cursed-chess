@@ -2101,3 +2101,89 @@
     opacity: 0;
   }
 }
+
+/* --- Pac-Man: a black band walled in maze blue, with Pac-Man eating the dots along it --- */
+
+[data-card-theme="pacman"] .card-band {
+  background: #000;
+  border-top: 4px double #2121ff;
+  border-bottom: 4px double #2121ff;
+}
+
+[data-card-theme="pacman"] .card-letter {
+  color: #ffe600;
+}
+
+.card-pac-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12%;
+  height: 8px;
+  background: radial-gradient(circle, #ffb8ae 0 3px, transparent 3.5px) 0 0 /
+    32px 8px repeat-x;
+  pointer-events: none;
+}
+
+/* The dots behind Pac-Man, eaten */
+.card-pac-eaten {
+  position: absolute;
+  left: 0;
+  bottom: 10%;
+  height: 12px;
+  background: #000;
+  animation: card-pac-run 1.6s 0.2s linear both;
+  pointer-events: none;
+}
+
+.card-pac {
+  position: absolute;
+  bottom: 12%;
+  width: 34px;
+  aspect-ratio: 1;
+  translate: -50% 13px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 90deg,
+    #ffe600 0 calc(180deg - var(--mouth)),
+    transparent 0 calc(180deg + var(--mouth)),
+    #ffe600 0
+  );
+  animation:
+    card-pac-move 1.6s 0.2s linear both,
+    card-pac-chomp 0.18s linear infinite alternate;
+  pointer-events: none;
+}
+
+@property --mouth {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 35deg;
+}
+
+@keyframes card-pac-chomp {
+  from {
+    --mouth: 35deg;
+  }
+  to {
+    --mouth: 2deg;
+  }
+}
+
+@keyframes card-pac-move {
+  from {
+    left: -5%;
+  }
+  to {
+    left: 105%;
+  }
+}
+
+@keyframes card-pac-run {
+  from {
+    width: 0;
+  }
+  to {
+    width: 105%;
+  }
+}

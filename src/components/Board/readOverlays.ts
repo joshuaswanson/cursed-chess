@@ -11,6 +11,7 @@ import type { TrenchView } from "../../plugins/trenches";
 import type { Lantern, LanternView } from "../../plugins/lanterns";
 import type { HeistView } from "../../plugins/heist";
 import type { StormView } from "../../plugins/thunderstorm";
+import type { PacView } from "../../plugins/pacman";
 
 export interface PortalPair {
   a: SquareIndex;
@@ -32,6 +33,8 @@ export interface BoardOverlays {
   lanterns: Lantern[] | null;
   /** The thunderstorm over a dark board, or nothing when there is none */
   storm: StormView | null;
+  /** The pellets and points of Pac-Man, or nothing in any other mode */
+  pac: PacView | null;
   heist: HeistView | null;
   hillSquares: SquareIndex[];
   /** Rounds each side has held the hill in a row, and how many it takes to win */
@@ -60,6 +63,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     trenches: null,
     lanterns: null,
     storm: null,
+    pac: null,
     heist: null,
     hillSquares: [],
     hillStreak: { white: 0, black: 0, needed: 3 },
@@ -96,6 +100,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
         break;
       case "thunderstorm":
         result.storm = overlay.data as StormView;
+        break;
+      case "pacman":
+        result.pac = overlay.data as PacView;
         break;
       case "rally-resources":
         result.hasRally = true;

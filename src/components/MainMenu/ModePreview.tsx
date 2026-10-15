@@ -453,6 +453,21 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       </svg>
     </>
   ),
+  // A rook eats its way along a corridor of the maze, takes a power pellet, eats the ghost that turns blue, and goes out through the tunnel
+  pacman: (
+    <>
+      <span className="pv-pac-wall pv-pac-wall-top" />
+      <span className="pv-pac-wall pv-pac-wall-bottom" />
+      {[10, 20, 30, 40, 66, 74, 88].map((x) => (
+        <span key={x} className="pv-pac-dot" style={{ left: `${x}%` }} />
+      ))}
+      <span className="pv-pac-power" style={{ left: "52%" }} />
+      <span className="pv-pac-eaten" />
+      <Piece is="bN" x={80} y={52} size={20} className="pv-pac-ghost" />
+      <span className="pv-pac-points">200</span>
+      <Piece is="wR" x={0} y={52} size={20} className="pv-pac-runner" />
+    </>
+  ),
   // Searchlights cross a dark hall while a pawn creeps up on the jewel
   heist: (
     <>

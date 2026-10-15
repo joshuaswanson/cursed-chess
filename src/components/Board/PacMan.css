@@ -1,0 +1,138 @@
+/* --- Pac-Man: the board as the arcade maze --- */
+
+.app[data-theme="pacman"] .board-shell {
+  background: #000;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.app[data-theme="pacman"] .board {
+  outline: none;
+}
+
+.app[data-theme="pacman"] .square.light,
+.app[data-theme="pacman"] .square.dark {
+  background-image: none;
+}
+
+.app[data-theme="pacman"] .backdrop-halftone {
+  display: none;
+}
+
+.pac-maze {
+  position: absolute;
+  left: -17.5%;
+  top: -5%;
+  width: 135%;
+  height: 110%;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.pac-maze path {
+  fill: none;
+  stroke: #2121ff;
+  stroke-width: 0.055;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 0.06px #5a5aff);
+}
+
+/* A small dot on each square, and a big blinking one for each power pellet */
+.pac-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 2px;
+  background: #ffb8ae;
+  pointer-events: none;
+}
+
+.pac-power {
+  width: 36%;
+  border-radius: 50%;
+  animation: pac-power 0.5s steps(2) infinite;
+}
+
+@keyframes pac-power {
+  to {
+    opacity: 0.15;
+  }
+}
+
+.pac-dot.pac-eating {
+  animation: pac-eaten 0.08s steps(1) both;
+}
+
+@keyframes pac-eaten {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* A piece going out through one tunnel and in at the other */
+@keyframes pac-tunnel {
+  0% {
+    translate: var(--from-x) var(--from-y);
+    opacity: 1;
+  }
+  44% {
+    translate: var(--exit-x) var(--exit-y);
+    opacity: 1;
+  }
+  48% {
+    translate: var(--exit-x) var(--exit-y);
+    opacity: 0;
+  }
+  52% {
+    translate: var(--entry-x) var(--entry-y);
+    opacity: 0;
+  }
+  56% {
+    translate: var(--entry-x) var(--entry-y);
+    opacity: 1;
+  }
+  100% {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+/* While the other side is powered up, these pieces turn blue and shiver */
+.square.pac-scared .piece-img {
+  filter: grayscale(1) sepia(1) hue-rotate(185deg) saturate(6) brightness(0.9);
+  animation: pac-scared 0.3s ease-in-out infinite alternate;
+}
+
+/* And flash white on its last move */
+.square.pac-scared.pac-ending .piece-img {
+  animation:
+    pac-scared 0.3s ease-in-out infinite alternate,
+    pac-ending 0.4s steps(2) infinite;
+}
+
+@keyframes pac-scared {
+  from {
+    translate: -2% 0;
+  }
+  to {
+    translate: 2% 0;
+  }
+}
+
+@keyframes pac-ending {
+  to {
+    filter: saturate(0) brightness(2.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pac-power,
+  .square.pac-scared .piece-img {
+    animation: none;
+  }
+}

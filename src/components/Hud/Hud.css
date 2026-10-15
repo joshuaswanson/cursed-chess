@@ -404,3 +404,54 @@
   pointer-events: none;
   opacity: 0.8;
 }
+
+/* --- Pac-Man: each side's points, in arcade lettering --- */
+
+.pac-score {
+  display: grid;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pac-score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pac-score-w {
+  color: #ffe600;
+}
+
+.pac-score-b {
+  color: #ff4040;
+}
+
+.pac-score-name {
+  font-size: 15px;
+}
+
+.pac-score-points {
+  margin-left: auto;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pac-score-power {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #2121ff;
+  color: #fff;
+  font-size: 11px;
+  animation: pac-power-blink 0.5s steps(2) infinite;
+}
+
+@keyframes pac-power-blink {
+  to {
+    background: #4f4fff;
+  }
+}

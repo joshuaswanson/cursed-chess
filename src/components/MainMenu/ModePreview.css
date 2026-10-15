@@ -2792,3 +2792,170 @@
     opacity: 0;
   }
 }
+
+/* --- Pac-Man --- */
+
+.scene-pacman {
+  background: #000;
+}
+
+/* The corridor's double blue walls */
+.pv-pac-wall {
+  left: -2%;
+  right: -2%;
+  height: 9%;
+  border: 2px solid #2121ff;
+  border-radius: 6px;
+  box-shadow: 0 0 6px rgba(80, 80, 255, 0.6);
+}
+
+.pv-pac-wall-top {
+  top: 14%;
+}
+
+.pv-pac-wall-bottom {
+  bottom: 14%;
+}
+
+.pv-pac-dot,
+.pv-pac-power {
+  top: 52%;
+  translate: -50% -50%;
+  background: #ffb8ae;
+}
+
+.pv-pac-dot {
+  width: 2.4%;
+  aspect-ratio: 1;
+  border-radius: 1px;
+}
+
+.pv-pac-power {
+  width: 6%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  animation: pv-pac-blink 0.5s steps(2) infinite;
+}
+
+@keyframes pv-pac-blink {
+  to {
+    opacity: 0.15;
+  }
+}
+
+/* The corridor behind the rook, swept clean of what it ate */
+.pv-pac-eaten {
+  left: 0;
+  top: 40%;
+  height: 24%;
+  background: #000;
+  animation: pv-pac-eaten 4.4s linear infinite;
+}
+
+@keyframes pv-pac-eaten {
+  0% {
+    width: 0;
+    opacity: 1;
+  }
+  80% {
+    width: 100%;
+    opacity: 1;
+  }
+  92% {
+    width: 100%;
+    opacity: 1;
+  }
+  93%,
+  100% {
+    width: 100%;
+    opacity: 0;
+  }
+}
+
+.pv-pac-runner {
+  animation: pv-pac-run 4.4s linear infinite;
+}
+
+@keyframes pv-pac-run {
+  0% {
+    left: -10%;
+  }
+  80% {
+    left: 110%;
+  }
+  100% {
+    left: 110%;
+  }
+}
+
+/* The ghost turns blue and shivers once the power pellet is eaten, and is eaten in turn */
+.pv-pac-ghost > img {
+  animation: pv-pac-ghost 4.4s linear infinite;
+}
+
+@keyframes pv-pac-ghost {
+  0%,
+  41% {
+    filter: none;
+    translate: 0 0;
+    opacity: 1;
+  }
+  42% {
+    filter: grayscale(1) sepia(1) hue-rotate(185deg) saturate(6) brightness(0.9);
+    translate: -3% 0;
+  }
+  46% {
+    translate: 3% 0;
+  }
+  50% {
+    translate: -3% 0;
+  }
+  54% {
+    translate: 3% 0;
+  }
+  58% {
+    filter: grayscale(1) sepia(1) hue-rotate(185deg) saturate(6) brightness(0.9);
+    translate: 0 0;
+    opacity: 1;
+  }
+  59%,
+  94% {
+    opacity: 0;
+  }
+  95%,
+  100% {
+    filter: none;
+    opacity: 1;
+  }
+}
+
+.pv-pac-points {
+  left: 80%;
+  top: 34%;
+  translate: -50% -50%;
+  font-family: var(--font-display);
+  font-size: 6cqw;
+  color: #00e5ff;
+  opacity: 0;
+  animation: pv-pac-points 4.4s linear infinite;
+}
+
+@keyframes pv-pac-points {
+  0%,
+  58% {
+    opacity: 0;
+    translate: -50% -50%;
+  }
+  60% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 1;
+    translate: -50% -110%;
+  }
+  76%,
+  100% {
+    opacity: 0;
+    translate: -50% -110%;
+  }
+}
