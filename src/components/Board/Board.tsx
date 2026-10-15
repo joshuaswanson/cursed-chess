@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { inPortalLesson, useGameStore } from "../../stores/gameStore";
+import { lessonFor, useGameStore } from "../../stores/gameStore";
 import { Coach } from "../Coach/Coach";
 import {
   ALL_SQUARES,
@@ -281,7 +281,7 @@ export function Board() {
     pluginManager.find<PortalChessPlugin>("portal-chess")?.respawnDue ?? false;
   const trenchPicked = useGameStore((s) => s.trenchPicked);
   const settlePortals = useGameStore((s) => s.settlePortals);
-  const portalLesson = useGameStore(inPortalLesson);
+  const lesson = useGameStore(lessonFor);
 
   const slides = useSlideAnimation({
     lastMove,
@@ -941,7 +941,7 @@ export function Board() {
               squareSize={squareSize}
             />
           )}
-          {portalLesson && (
+          {lesson === "portals" && (
             <Coach
               lit={[{ selector: ".board-shell" }]}
               shade={{
@@ -949,6 +949,25 @@ export function Board() {
                 lit: [{ selector: ".portal-overlay", pad: 4, round: true }],
               }}
               tip="Move a piece onto a portal and it comes out of the other one"
+              tipOver=".board-shell"
+              tipAt={0}
+            />
+          )}
+          {lesson === "tug" && (
+            <Coach
+              lit={[
+                { selector: ".board-shell" },
+                { selector: ".tug-rope-wrap" },
+              ]}
+              shade={{
+                over: ".board-shell",
+                lit: [
+                  { selector: ".square.rope-square" },
+                  { selector: ".tug-score", pad: 4 },
+                  { selector: ".tug-win-line.win-white", pad: 6 },
+                ],
+              }}
+              tip="Get more pieces on the rope than him and the flag comes your way"
               tipOver=".board-shell"
               tipAt={0}
             />

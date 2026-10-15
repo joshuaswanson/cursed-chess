@@ -465,14 +465,25 @@ export function connectGuestLine(
   sendToHost = send;
 }
 
-/** How fast the clocks run while you look over your first turn of Portals */
-const PORTAL_LESSON_PACE = 0.04;
+/** How fast the clocks run while you look over your first turn of a mode with a lesson */
+const LESSON_PACE = 0.04;
+
+/** Modes whose first turn against Chessbot comes with a lesson */
+type LessonTheme = "portals" | "tug";
+const LESSON_THEMES: readonly string[] = ["portals", "tug"];
 
 /**
- * Your first turn of Portals against Chessbot, before you have moved: the
- * game all but stops while you are shown what the portals are for
+ * Your first turn of Portals or Tug of War against Chessbot, before you have
+ * moved: the game all but stops while you are shown how the mode works
  */
-export const inPortalLesson = (s: GameStore): boolean =>
+export const lessonFor = (s: GameStore): LessonTheme | null => {
+  const theme = GAME_MODES[s.currentModeIndex]?.theme;
+  return theme && LESSON_THEMES.includes(theme) && inFirstTurn(s)
+    ? (theme as LessonTheme)
+    : null;
+};
+
+const inFirstTurn = (s: GameStore): boolean =>
   s.cursed &&
   s.net === null &&
   s.introDone &&
@@ -481,7 +492,6 @@ export const inPortalLesson = (s: GameStore): boolean =>
   !s.portalTravelling &&
   s.status === GameStatus.Active &&
   s.turn === Color.White &&
-  GAME_MODES[s.currentModeIndex]?.theme === "portals" &&
   !s.moveHistory
     .slice(modeStartPly)
     .some((m) => m.move.piece.color === Color.White);
@@ -1315,7 +1325,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const minefield = pluginManager.find<MinefieldPlugin>("minefield");
     if (minefield && minefield.pendingExplosions.size > 0) return;
     const key = turn === Color.White ? "timeWhite" : "timeBlack";
-    const pace = inPortalLesson(get()) ? PORTAL_LESSON_PACE : 1;
+    const pace = lessonFor(get()) ? LESSON_PACE : 1;
     const next = Math.max(0, get()[key] - 0.1 * pace);
     set({ [key]: next });
     if (next <= 0) get().expireTimer();
@@ -1495,7 +1505,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Modes the kings sit out run until one side wins them, with no clock
     const mode = GAME_MODES[get().currentModeIndex];
     if (mode?.kingsSitOut || mode?.untilWon) return;
-    if (inPortalLesson(get())) return;
+    if (lessonFor(get())) return;
     const next = Math.max(0, modeTimeRemaining - 1);
     set({ modeTimeRemaining: next });
     if (next > 0) return;
