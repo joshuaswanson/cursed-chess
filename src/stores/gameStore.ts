@@ -1587,6 +1587,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       deployPieceType: null,
       clashHand: dealClashHand(),
       reinforcements: [],
+      gravityFalling: false,
+      skippedTurn: null,
+      portalTravelling: false,
+      zombiesActing: false,
       ...FRESH_CLOCKS,
     });
 
@@ -1696,10 +1700,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       sidelineKings,
       arrivalStyle: Math.random() < 0.5 ? "parachute" : "sprint",
       introDone: false,
-      gravityFalling: false,
-      skippedTurn: null,
-      portalTravelling: false,
-      zombiesActing: false,
       pluginManager: freshPluginManager(nextGame, mode.create()),
       turn: nextGame.turn,
       moveHistory: [...nextGame.history],
