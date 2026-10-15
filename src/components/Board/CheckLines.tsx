@@ -52,6 +52,7 @@ export function CheckLines({
               style={{ "--i": i } as React.CSSProperties}
             >
               <path className="check-line-ink" d={shaft} pathLength={1} />
+              <path className="check-line-head-ink" d={head} />
               <path className="check-line-red" d={shaft} pathLength={1} />
               <path className="check-line-head" d={head} />
             </g>
