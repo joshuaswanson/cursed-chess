@@ -248,6 +248,8 @@ export function LanternDark({
     let last = 0;
     /** How far up the lanterns are, from out to fully alight */
     let glow = 0;
+    /** What was last drawn, when nothing in it moves, so an unchanged dark is not drawn again */
+    let drawnStill = "";
 
     const draw = (now: number) => {
       frame = requestAnimationFrame(draw);
@@ -256,6 +258,21 @@ export function LanternDark({
       const { lanterns, shown, targets, flipped, squareSize, lit } =
         scene.current;
       glow += ((lit ? 1 : 0) - glow) * KINDLE;
+      const lifted = lightningAt(now - struckAt.current);
+      // Lanterns flicker and a check pulses, but otherwise the dark only changes with what it shows
+      if (lanterns.length === 0 && shown.length === 0) {
+        const still = [
+          targets.join(","),
+          flipped,
+          squareSize,
+          Math.round(glow * 50),
+          Math.round(lifted * 100),
+        ].join("|");
+        if (still === drawnStill) return;
+        drawnStill = still;
+      } else {
+        drawnStill = "";
+      }
       const scale = Math.min(2, window.devicePixelRatio || 1);
       const board = Math.round(squareSize * 8 * scale);
       const bleed = EDGE_BLEED * scale;
@@ -300,7 +317,7 @@ export function LanternDark({
       ctx.globalCompositeOperation = "source-over";
       ctx.clearRect(0, 0, size, size);
       ctx.fillStyle = DARKNESS;
-      ctx.globalAlpha = 1 - lightningAt(now - struckAt.current);
+      ctx.globalAlpha = 1 - lifted;
       ctx.fillRect(0, 0, size, size);
       ctx.globalAlpha = 1;
       // Everything after is placed by the board's squares, inside the bleed

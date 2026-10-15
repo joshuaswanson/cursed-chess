@@ -27,7 +27,6 @@
     rgba(130, 170, 255, 0.4) 34%,
     rgba(90, 120, 255, 0) 64%
   );
-  mix-blend-mode: screen;
   animation: storm-bloom 0.8s 70ms ease-out both;
 }
 
@@ -142,37 +141,52 @@
   }
 }
 
+/* The piece, lit by the current, with a copy lit white-hot over it that
+   flickers on and off; only opacity changes, which is cheap to animate */
 .storm-lit-piece {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  animation: storm-lit-piece 1.6s 90ms linear both;
+  filter: brightness(1.15) drop-shadow(0 0 3px #9fc8ff)
+    drop-shadow(0 0 8px #5a7dff);
+}
+
+.storm-lit-flash {
+  filter: brightness(1.7) saturate(0.8) drop-shadow(0 0 5px #c4dcff)
+    drop-shadow(0 0 14px #5a7dff);
 }
 
 @keyframes storm-lit-piece {
   0%,
-  20%,
-  42%,
-  64% {
-    opacity: 1;
-    filter: brightness(1.7) saturate(0.8) drop-shadow(0 0 5px #c4dcff)
-      drop-shadow(0 0 14px #5a7dff);
-  }
-  10%,
-  31%,
-  53%,
-  76% {
-    filter: brightness(1.2) drop-shadow(0 0 3px #9fc8ff)
-      drop-shadow(0 0 8px #5a7dff);
-  }
   88% {
     opacity: 1;
-    filter: brightness(1.05) drop-shadow(0 0 2px #9fc8ff);
   }
   100% {
     opacity: 0;
-    filter: none;
+  }
+}
+
+@keyframes storm-lit-flash {
+  0%,
+  8%,
+  20%,
+  28%,
+  42%,
+  50%,
+  64%,
+  72% {
+    opacity: 1;
+  }
+  9%,
+  19%,
+  29%,
+  41%,
+  51%,
+  63%,
+  73%,
+  100% {
+    opacity: 0;
   }
 }
 
@@ -195,18 +209,30 @@
   height: 100%;
 }
 
-.storm-current path {
-  fill: none;
-  stroke: #f4f9ff;
-  stroke-width: 2.4;
-  stroke-linecap: butt;
-  stroke-linejoin: miter;
-  stroke-miterlimit: 3;
+.storm-current g {
   opacity: 0;
   animation: storm-arc 45ms steps(2, jump-none) 4 alternate;
 }
 
-/* --- The burn it leaves, drawn on a canvas on the board under the pieces --- */
+.storm-current path {
+  fill: none;
+  stroke: #f4f9ff;
+  stroke-width: 2.2;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+  stroke-miterlimit: 3;
+}
+
+/* A wide faint stroke under each arc stands in for its glow */
+.storm-current .storm-arc-glow {
+  stroke: rgba(140, 180, 255, 0.5);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* --- The burn it leaves, drawn on a canvas on the board under the pieces,
+   on a layer of its own so redrawing it leaves the board and its pieces alone --- */
 
 .storm-scar-canvas {
   position: absolute;
@@ -215,6 +241,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  will-change: transform;
 }
 
 /* Smoke rising off the burn */
@@ -473,7 +500,6 @@
     rgba(160, 30, 0, 0.55) 46%,
     rgba(80, 10, 0, 0) 66%
   );
-  mix-blend-mode: screen;
   opacity: 0;
   animation: storm-blast 0.7s 870ms ease-out both;
 }
@@ -605,6 +631,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  will-change: transform;
 }
 
 .storm-flash {

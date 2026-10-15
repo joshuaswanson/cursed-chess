@@ -9,7 +9,7 @@ import {
   seededRandom,
   sootSpecks,
 } from "./lightningShapes";
-import type { Point, Stroke } from "./lightningShapes";
+import type { Point } from "./lightningShapes";
 import "./Thunderstorm.css";
 
 /**
@@ -85,27 +85,14 @@ function Current({
   seed: number;
   delayOf: (i: number) => number;
 }) {
-  const glow = `storm-arc-glow-${seed}`;
   return (
     <span className="storm-current" style={shapeOf(image)}>
       <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-        <defs>
-          <filter id={glow} x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="1.6" result="soft" />
-            <feMerge>
-              <feMergeNode in="soft" />
-              <feMergeNode in="soft" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
         {arcs(seededRandom(seed)).map((d, i) => (
-          <path
-            key={i}
-            d={d}
-            filter={`url(#${glow})`}
-            style={{ animationDelay: `${delayOf(i)}ms` }}
-          />
+          <g key={i} style={{ animationDelay: `${delayOf(i)}ms` }}>
+            <path className="storm-arc-glow" d={d} />
+            <path d={d} />
+          </g>
         ))}
       </svg>
     </span>
@@ -164,14 +151,20 @@ function useFreshStrikes(strikes: Strike[]): Strike[] {
 
 /** How long a burn shows: it fades out as the dark comes back */
 const BURN_MS = 1150;
+/** How far a burn reaches from where the bolt hit, in squares */
+const BURN_REACH = 2.1;
 
-/** The shape of one burn, the same each time it is drawn */
+/**
+ * One burn, drawn once when it strikes into images of its own: the
+ * scorching, and its seams glowing white-hot and glowing red. Each frame only
+ * fades these in and out.
+ */
 interface Burn {
   strike: Strike;
   born: number;
-  veins: Stroke[];
-  pit: Point[];
-  soot: [number, number, number][];
+  scorch: HTMLCanvasElement;
+  hot: HTMLCanvasElement;
+  cooled: HTMLCanvasElement;
 }
 
 /** How dark the scorching is as time passes, as the flash shows it and the dark takes it back */
@@ -182,37 +175,87 @@ const scorchAt = (t: number) =>
       ? 1 - (0.15 * (t - 25)) / 735
       : Math.max(0, 0.85 * (1 - (t - 760) / 330));
 
-/** The glow of the hottest seams as they cool: white, yellow, orange, red, gone */
-const COOLING: [number, [number, number, number]][] = [
-  [0, [255, 250, 235]],
-  [0.1, [255, 200, 90]],
-  [0.3, [255, 110, 30]],
-  [0.65, [176, 30, 0]],
-  [1, [58, 8, 0]],
-];
-function emberColor(k: number): [number, number, number] {
-  const i = Math.max(
-    1,
-    COOLING.findIndex(([at]) => at >= k),
-  );
-  const [k0, c0] = COOLING[i - 1];
-  const [k1, c1] = COOLING[Math.min(i, COOLING.length - 1)];
-  const f = k1 === k0 ? 0 : Math.min(1, Math.max(0, (k - k0) / (k1 - k0)));
-  return [0, 1, 2].map((j) => Math.round(c0[j] + (c1[j] - c0[j]) * f)) as [
-    number,
-    number,
-    number,
-  ];
+/** A canvas `size` CSS pixels across, drawn at `res` pixels to each, centred on the origin */
+function sheet(size: number, res: number) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = Math.ceil(size * res);
+  const ctx = canvas.getContext("2d")!;
+  ctx.setTransform(res, 0, 0, res, (size * res) / 2, (size * res) / 2);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  return { canvas, ctx };
 }
 
-/** Far enough off the canvas that a shape drawn there shows only by its blurred shadow */
-const OFFSTAGE = 10000;
+function drawBurn(strike: Strike, square: number): Omit<Burn, "born"> {
+  const rand = seededRandom(strike.id * 313 + strike.sq);
+  const veins = burnStrokes(rand, square);
+  const pit = craterEdge(rand, square);
+  const soot = sootSpecks(rand);
+  const size = square * BURN_REACH * 2;
+
+  // Scorching is soft, so it is drawn at half resolution and blurs as it is scaled up
+  const dark = sheet(size, 0.5);
+  for (const [x, y, r] of soot) {
+    const blot = dark.ctx.createRadialGradient(
+      x * square,
+      y * square,
+      0,
+      x * square,
+      y * square,
+      r * square * 1.6,
+    );
+    blot.addColorStop(0, "rgba(14, 8, 4, 0.3)");
+    blot.addColorStop(1, "rgba(14, 8, 4, 0)");
+    dark.ctx.fillStyle = blot;
+    dark.ctx.fillRect(
+      (x - r * 1.6) * square,
+      (y - r * 1.6) * square,
+      r * 3.2 * square,
+      r * 3.2 * square,
+    );
+  }
+  dark.ctx.strokeStyle = "rgba(22, 13, 7, 0.55)";
+  for (const vein of veins) {
+    dark.ctx.lineWidth = vein.width * 2.6;
+    trace(dark.ctx, vein.points, 0);
+    dark.ctx.stroke();
+  }
+  dark.ctx.fillStyle = "rgba(6, 4, 3, 0.95)";
+  trace(dark.ctx, pit, 0);
+  dark.ctx.closePath();
+  dark.ctx.fill();
+
+  const seams = (color: string, glow: string) => {
+    const { canvas, ctx } = sheet(size, 1);
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = 5;
+    ctx.strokeStyle = color;
+    for (const vein of veins) {
+      ctx.globalAlpha = vein.bright;
+      ctx.lineWidth = Math.max(0.5, vein.width * 0.45);
+      trace(ctx, vein.points, 0);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 1.2;
+    trace(ctx, pit, 0);
+    ctx.closePath();
+    ctx.stroke();
+    return canvas;
+  };
+  return {
+    strike,
+    scorch: dark.canvas,
+    hot: seams("rgb(255, 236, 170)", "rgba(255, 140, 20, 1)"),
+    cooled: seams("rgb(225, 70, 10)", "rgba(200, 30, 0, 1)"),
+  };
+}
 
 /**
  * The burns the bolts leave, drawn on the board under the pieces standing
  * on it and never past its edge: soot blown out round a charred pit, the
  * ground scorched along the channels the strike forked through, and the
- * thinnest seams glowing white-hot and cooling
+ * thinnest seams glowing white-hot and cooling to red
  */
 export function StormScars({
   strikes,
@@ -224,6 +267,8 @@ export function StormScars({
   const fresh = useFreshStrikes(strikes);
   const canvas = useRef<HTMLCanvasElement>(null);
   const burns = useRef<Burn[]>([]);
+  /** Every strike drawn so far, so one that has faded out is not drawn again */
+  const drawnIds = useRef(new Set<number>());
   const view = useRef({ flipped });
   useEffect(() => {
     view.current = { flipped };
@@ -232,17 +277,13 @@ export function StormScars({
   useEffect(() => {
     const el = canvas.current;
     if (!el) return;
-    const known = new Set(burns.current.map((b) => b.strike.id));
     const square = el.clientWidth / 8;
     for (const strike of fresh) {
-      if (known.has(strike.id)) continue;
-      const rand = seededRandom(strike.id * 313 + strike.sq);
+      if (drawnIds.current.has(strike.id)) continue;
+      drawnIds.current.add(strike.id);
       burns.current.push({
-        strike,
+        ...drawBurn(strike, square),
         born: performance.now(),
-        veins: burnStrokes(rand, square),
-        pit: craterEdge(rand, square),
-        soot: sootSpecks(rand),
       });
     }
   }, [fresh]);
@@ -257,7 +298,7 @@ export function StormScars({
       frame = requestAnimationFrame(draw);
       burns.current = burns.current.filter((b) => now - b.born < BURN_MS);
       if (burns.current.length === 0 && !drawn) return;
-      const scale = Math.min(2, window.devicePixelRatio || 1);
+      const scale = Math.min(1.5, window.devicePixelRatio || 1);
       const size = Math.round(el.clientWidth * scale);
       if (el.width !== size) {
         el.width = size;
@@ -266,70 +307,26 @@ export function StormScars({
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, size, size);
       drawn = burns.current.length > 0;
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
       const square = el.clientWidth / 8;
+      const reach = square * BURN_REACH;
       const { flipped } = view.current;
       for (const burn of burns.current) {
         const t = now - burn.born;
-        const dark = scorchAt(t);
         const cool = Math.min(1, t / 1000);
         const heat = Math.max(0, 1 - cool) ** 1.2;
-        const cx = (visualCol(burn.strike.sq, flipped) + 0.5) * square;
-        const cy = (visualRow(burn.strike.sq, flipped) + 0.5) * square;
-        ctx.setTransform(scale, 0, 0, scale, cx * scale, cy * scale);
-
-        // Scorching, drawn off the canvas so only its soft shadow lands on it
-        ctx.shadowOffsetX = OFFSTAGE * scale;
-        ctx.shadowOffsetY = 0;
-        ctx.fillStyle = "#000";
-        ctx.strokeStyle = "#000";
-        ctx.shadowColor = `rgba(14, 8, 4, ${0.24 * dark})`;
-        ctx.shadowBlur = 9 * scale;
-        for (const [x, y, r] of burn.soot) {
-          ctx.beginPath();
-          ctx.arc(
-            x * square - OFFSTAGE,
-            y * square,
-            r * square,
-            0,
-            Math.PI * 2,
-          );
-          ctx.fill();
-        }
-        ctx.shadowColor = `rgba(22, 13, 7, ${0.6 * dark})`;
-        ctx.shadowBlur = 3 * scale;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        for (const vein of burn.veins) {
-          ctx.lineWidth = vein.width * 2.4;
-          trace(ctx, vein.points, -OFFSTAGE);
-          ctx.stroke();
-        }
-        ctx.shadowColor = `rgba(6, 4, 3, ${0.95 * dark})`;
-        ctx.shadowBlur = 2 * scale;
-        trace(ctx, burn.pit, -OFFSTAGE);
-        ctx.closePath();
-        ctx.fill();
-
-        // The seams glowing as they cool
-        ctx.shadowOffsetX = 0;
-        if (heat > 0.01) {
-          const [r, g, b] = emberColor(cool);
-          ctx.shadowColor = `rgba(255, 90, 0, ${heat})`;
-          ctx.shadowBlur = 5 * scale;
-          for (const vein of burn.veins) {
-            ctx.lineWidth = Math.max(0.5, vein.width * 0.45);
-            ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${heat * vein.bright})`;
-            trace(ctx, vein.points, 0);
-            ctx.stroke();
-          }
-          ctx.lineWidth = 1.2;
-          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${heat})`;
-          trace(ctx, burn.pit, 0);
-          ctx.closePath();
-          ctx.stroke();
-        }
-        ctx.shadowBlur = 0;
+        const x = (visualCol(burn.strike.sq, flipped) + 0.5) * square - reach;
+        const y = (visualRow(burn.strike.sq, flipped) + 0.5) * square - reach;
+        ctx.globalAlpha = scorchAt(t);
+        ctx.drawImage(burn.scorch, x, y, reach * 2, reach * 2);
+        // White-hot giving way to red as the seams cool
+        const red = Math.min(1, cool * 2.5);
+        ctx.globalAlpha = heat * (1 - red);
+        ctx.drawImage(burn.hot, x, y, reach * 2, reach * 2);
+        ctx.globalAlpha = heat * red;
+        ctx.drawImage(burn.cooled, x, y, reach * 2, reach * 2);
       }
+      ctx.globalAlpha = 1;
     };
     frame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(frame);
@@ -414,6 +411,15 @@ function Bolt({ strike, flipped }: { strike: Strike; flipped: boolean }) {
                 alt=""
                 style={{
                   animation: `storm-lit-piece ${lasts.toFixed(2)}s ${start}ms linear both`,
+                }}
+              />
+              <img
+                className="storm-lit-piece storm-lit-flash"
+                src={pieceImage(piece)}
+                draggable={false}
+                alt=""
+                style={{
+                  animation: `storm-lit-flash ${lasts.toFixed(2)}s ${start}ms linear both`,
                 }}
               />
               <Current

@@ -9,6 +9,8 @@
   width: calc(100% + 4px);
   height: calc(100% + 4px);
   pointer-events: none;
+  /* On a layer of its own, so redrawing it leaves the board and its pieces alone */
+  will-change: transform;
 }
 
 /* Hung at the carrier's shoulder */
