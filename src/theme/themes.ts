@@ -89,7 +89,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     id: "royale",
     title: "Battle royale",
     tagline: "The board falls away a line at a time. Most material left wins.",
-    catchphrase: "Get to the final zone!",
+    catchphrase: "Get to the safe zone!",
     sky: ["#140303", "#5c0d06", "#d9480f"],
     accent: "#ff7a1a",
     accent2: "#ffd23f",

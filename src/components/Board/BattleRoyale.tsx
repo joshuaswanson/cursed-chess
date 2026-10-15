@@ -179,7 +179,7 @@ export function FinalZone({
           ? roundsLeft === 1
             ? "Last turn! Most material wins"
             : `${roundsLeft} turns left. Most material wins`
-          : "Final zone"}
+          : "Safe zone"}
       </span>
     </div>
   );
