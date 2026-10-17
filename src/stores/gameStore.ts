@@ -219,16 +219,9 @@ export const GAME_MODES: GameMode[] = [
     isHex: true,
   },
   {
-    name: "LANTERNS",
-    theme: "lanterns",
-    create: () => [new LanternsPlugin()],
-  },
-  {
-    name: "FACTORY FLOOR",
-    theme: "conveyor",
-    create: () => [new ConveyorPlugin()],
-    singleOnly: true,
-    beta: true,
+    name: "THUNDERSTORM",
+    theme: "storm",
+    create: () => [new ThunderstormPlugin()],
   },
   {
     name: "HEIST",
@@ -252,9 +245,14 @@ export const GAME_MODES: GameMode[] = [
     create: () => [new StrategoPlugin()],
   },
   {
-    name: "THUNDERSTORM",
-    theme: "storm",
-    create: () => [new ThunderstormPlugin()],
+    name: "FACTORY FLOOR",
+    theme: "conveyor",
+    create: () => [new ConveyorPlugin()],
+  },
+  {
+    name: "LANTERNS",
+    theme: "lanterns",
+    create: () => [new LanternsPlugin()],
   },
   {
     name: "TRENCHES",
