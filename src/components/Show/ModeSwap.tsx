@@ -28,24 +28,24 @@ const RULES: Record<ThemeId, string> = {
   pacman: "pellets.scatter()",
 };
 
-/** Code pouring through the windows he throws open all over the screen */
+/** What pours through the windows he throws open as he breaks into the site */
 const CODE = [
-  "patch rules.dll --force",
-  "for piece in board: piece.loyalty = 0",
+  "nmap totallynormalchess.com",
+  "GET /admin 200 OK",
+  "password: ********  ACCEPTED",
+  "sudo su chessbot",
+  "DROP TABLE fair_rules;",
+  "UPDATE players SET rating = 0;",
+  "chmod 777 /var/www/chess",
+  "firewall.disable()",
   "rm -rf /fair_play",
-  "override(win_condition)",
-  "inject(chaos, level=9000)",
-  "kings.trust = false",
-  "undo_button.delete()",
-  "physics.enabled = maybe",
-  "while (you.winning) cheat()",
-  "board.reality.rewrite()",
-  "assert chessbot.wins",
-  "sudo make_it_worse",
-  "load cursed_sprites.pak",
-  "random.seed(evil)",
-  "touch_move = strict",
-  "compile mischief.c -O3",
+  "curl -X DELETE /api/rules",
+  "inject <script>cursed.js</script>",
+  "deface index.html",
+  "cat /etc/passwd",
+  "logs.wipe()",
+  "ACCESS GRANTED",
+  "upload malware.pak 100%",
 ];
 
 /** Where each window of code opens, as how far across and down the screen and how it leans; none over him in the middle */
@@ -149,10 +149,10 @@ function middleOf(selector: string): { x: number; y: number } {
 }
 
 /**
- * Between two modes of the adventure, Chessbot rewrites the game from his
- * spot beside the board: alarms go off, a terminal and windows of code
- * fly out of him all over the screen, he types the next mode in, the old
- * board is torn away, and reality is rewritten in a flash
+ * Between two modes of the adventure, Chessbot hacks the site from his spot
+ * beside the board: alarms go off, a terminal and windows of code fly out
+ * of him all over the screen, he breaks in and swaps the mode files, the old
+ * board is torn away, and the site is his in a flash
  */
 export function ModeSwap() {
   const swap = useGameStore((s) => s.modeSwap);
@@ -162,8 +162,9 @@ export function ModeSwap() {
 
 function Swap({ from, to }: { from: number; to: number }) {
   const lines = [
-    `unload ${fileName(from)}`,
-    `load ${fileName(to)}`,
+    "ssh root@totallynormalchess.com",
+    `rm ${fileName(from)}`,
+    `upload ${fileName(to)}`,
     RULES[GAME_MODES[to].theme],
     "deploy --now",
   ];
@@ -216,11 +217,11 @@ function Swap({ from, to }: { from: number; to: number }) {
     return [part];
   });
   const typing = now < typedBy;
-  const rewritten = Math.min(
+  const uploaded = Math.min(
     1,
     Math.max(0, (now - YANK_MS) / (FLASH_MS - YANK_MS - 150)),
   );
-  const cells = Math.round(rewritten * BAR_CELLS);
+  const cells = Math.round(uploaded * BAR_CELLS);
 
   return (
     <div
@@ -258,7 +259,7 @@ function Swap({ from, to }: { from: number; to: number }) {
               }
             >
               <header>
-                <span>{`patch_${(i * 7919) % 1000}.exe`}</span>
+                <span>{`exploit_${(i * 7919) % 1000}.sh`}</span>
                 <i />
                 <i />
                 <i />
@@ -281,7 +282,7 @@ function Swap({ from, to }: { from: number; to: number }) {
         })}
       </div>
       <div className="mode-swap-tape" aria-hidden>
-        <span>{"WARNING: RULES OVERWRITTEN   ".repeat(10)}</span>
+        <span>{"SECURITY BREACH   ACCESS GRANTED   ".repeat(8)}</span>
       </div>
       <section
         className="mode-swap-terminal"
@@ -295,7 +296,7 @@ function Swap({ from, to }: { from: number; to: number }) {
         }
       >
         <header>
-          <span>chessbot.exe</span>
+          <span>root@totallynormalchess</span>
           <i />
           <i />
           <i />
@@ -315,11 +316,12 @@ function Swap({ from, to }: { from: number; to: number }) {
       </section>
       {now > YANK_MS - 100 && (
         <div
-          className="mode-swap-rewrite"
+          className="mode-swap-hacked"
           style={{ left: board.x, top: board.y }}
         >
-          <b>Reality rewritten</b>
-          <span>{`[${"#".repeat(cells)}${".".repeat(BAR_CELLS - cells)}] ${Math.round(rewritten * 100)}%`}</span>
+          <b>Site hacked</b>
+          <span>totallynormalchess.com is now under new management</span>
+          <span>{`[${"#".repeat(cells)}${".".repeat(BAR_CELLS - cells)}] ${fileName(to)} ${Math.round(uploaded * 100)}%`}</span>
         </div>
       )}
       <span className="mode-swap-flash" />

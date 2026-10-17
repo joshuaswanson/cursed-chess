@@ -148,6 +148,12 @@
   border-bottom: 1px solid #1f3a2c;
 }
 
+/* The code scrolls up under the title bar, never over it */
+.mode-swap-window header {
+  position: relative;
+  z-index: 1;
+}
+
 .mode-swap-window header span,
 .mode-swap-terminal header span {
   flex: 1;
@@ -248,35 +254,66 @@
   }
 }
 
-/* Reality rewritten, in letters as big as the board */
-.mode-swap-rewrite {
+/* The site's new owner announces himself, in letters as big as the board */
+.mode-swap-hacked {
   position: absolute;
   z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  width: max-content;
+  max-width: 94vw;
+  padding: 18px 26px 20px;
+  text-align: center;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.04) 0 1px,
+      transparent 1px 3px
+    ),
+    #07040a;
+  border: 3px solid #ff2e4d;
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 3px #000,
+    0 0 50px rgba(255, 46, 77, 0.5),
+    0 20px 50px rgba(0, 0, 0, 0.7);
   translate: -50% -50%;
   animation: mode-swap-slam 0.3s cubic-bezier(0.3, 1.6, 0.5, 1) both;
 }
 
-.mode-swap-rewrite b {
-  font: normal clamp(30px, 6vw, 68px) / 1 var(--font-display);
+.mode-swap-hacked b {
+  font: normal clamp(34px, 7vw, 80px) / 1 var(--font-display);
   white-space: nowrap;
-  color: #7dffab;
+  color: #ff2e4d;
   text-transform: uppercase;
   text-shadow:
-    4px 4px 0 #05090a,
-    0 0 24px rgba(80, 255, 150, 0.8);
+    4px 0 #21e6ff,
+    -4px 0 #ff2e88,
+    5px 6px 0 #05090a;
+  animation: mode-swap-hacked-flicker 0.24s steps(1) infinite;
 }
 
-.mode-swap-rewrite span {
+@keyframes mode-swap-hacked-flicker {
+  50% {
+    translate: 3px 0;
+    text-shadow:
+      -4px 0 #21e6ff,
+      4px 0 #ff2e88,
+      5px 6px 0 #05090a;
+  }
+}
+
+.mode-swap-hacked span {
   font:
-    bold clamp(15px, 2vw, 22px) "Courier New",
+    bold clamp(13px, 1.8vw, 20px) "Courier New",
     Courier,
     monospace;
   color: #c8ffd9;
-  text-shadow: 0 0 8px rgba(80, 255, 150, 0.8);
+  text-shadow:
+    0 0 8px rgba(80, 255, 150, 0.8),
+    2px 2px 0 #05090a;
 }
 
 @keyframes mode-swap-slam {
@@ -389,7 +426,8 @@
   .mode-swap-window,
   .mode-swap-window pre,
   .mode-swap-terminal,
-  .mode-swap-rewrite,
+  .mode-swap-hacked,
+  .mode-swap-hacked b,
   .app.mode-swapping .chessbot-dock .chessbot-head,
   .app.mode-swapping .board-container {
     animation: none;
