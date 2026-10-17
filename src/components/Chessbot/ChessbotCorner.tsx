@@ -11,6 +11,7 @@ import {
   PITCHES,
   PORTAL_CAPTURE,
   QUIPS,
+  REWRITES,
   SKIPS,
   VERDICTS,
   spoken,
@@ -309,6 +310,8 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
   const announcement = useGameStore((s) => s.announcement);
   const kind = useGameStore((s) => s.announcementType);
   const entrance = useGameStore((s) => s.curseStage);
+  // Rewriting the game between two modes of the adventure, from where he sits
+  const rewriting = useGameStore((s) => s.modeSwap !== null);
   const skipLine = useSkipLine();
   // How many games have been settled, so he works through his verdicts in turn
   const played = useGameStore((s) => s.scoreWhite + s.scoreBlack);
@@ -343,30 +346,34 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
   const line =
     entrance === "oops"
       ? ENTRANCE.oops
-      : announcement
-        ? kind === "mode"
-          ? undefined
-          : VERDICTS[kind][played % VERDICTS[kind].length]
-        : (skipLine ?? (thinking ? undefined : pitch) ?? quip);
+      : rewriting
+        ? REWRITES[played % REWRITES.length]
+        : announcement
+          ? kind === "mode"
+            ? undefined
+            : VERDICTS[kind][played % VERDICTS[kind].length]
+          : (skipLine ?? (thinking ? undefined : pitch) ?? quip);
   // Over a card, or making his entrance, he wears the look that goes with
   // it, unless the game has just rattled him
   const staged: ChessbotMood | undefined = peeking
     ? glance
       ? "lookleft"
       : "sly"
-    : entrance === "glitch"
+    : rewriting
       ? "laugh"
-      : entrance === "oops"
-        ? "smug"
-        : !announcement
-          ? undefined
-          : kind === "mode"
-            ? "proud"
-            : kind === "win"
-              ? "sulk"
-              : kind === "lose"
-                ? "proud"
-                : "smug";
+      : entrance === "glitch"
+        ? "laugh"
+        : entrance === "oops"
+          ? "smug"
+          : !announcement
+            ? undefined
+            : kind === "mode"
+              ? "proud"
+              : kind === "win"
+                ? "sulk"
+                : kind === "lose"
+                  ? "proud"
+                  : "smug";
   // Making excuses for walking onto his own mine, he cannot look at you
   const sheepish =
     quip !== undefined && (OWN_MINE as readonly string[]).includes(quip);

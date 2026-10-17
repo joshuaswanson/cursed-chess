@@ -22,6 +22,15 @@ export const PITCHES: Partial<Record<ThemeId, string>> = {
   pacman: "chess is an arcade game now. insert coin.",
 };
 
+/** What he says as he rewrites the game into the next mode, a different one each time */
+export const REWRITES = [
+  "hold still. rewriting the rules.",
+  "let me just... improve things.",
+  "new rules. you won't like them.",
+  "patching reality. one moment.",
+  "deleting fairness. installing fun.",
+];
+
 /** What he has to say about how each game ended, a different one each time */
 export const VERDICTS = {
   win: [
