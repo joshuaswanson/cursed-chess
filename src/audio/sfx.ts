@@ -7,6 +7,8 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let noiseBuffer: AudioBuffer | null = null;
 let enabled = localStorage.getItem(STORAGE_KEY) !== "off";
+/** While the game is paused, every sound stands still where it is */
+let held = false;
 const listeners = new Set<() => void>();
 
 interface Hum {
@@ -25,13 +27,15 @@ export function audio(): { ctx: AudioContext; out: GainNode } | null {
     master.gain.value = MASTER_VOLUME;
     master.connect(ctx.destination);
   }
-  if (ctx.state === "suspended") void ctx.resume();
+  if (ctx.state === "suspended" && !held) void ctx.resume();
   return { ctx, out: master };
 }
 
 // Browsers keep audio suspended until the page receives a user gesture
 for (const event of ["pointerdown", "keydown"]) {
-  window.addEventListener(event, () => void ctx?.resume(), { capture: true });
+  window.addEventListener(event, () => void (held || ctx?.resume()), {
+    capture: true,
+  });
 }
 
 function noise(c: AudioContext): AudioBuffer {
@@ -174,6 +178,14 @@ export const sfx = {
       stopRain();
     }
     for (const listener of listeners) listener();
+  },
+
+  /** Freezes every sound where it is, the loops included, until let go */
+  hold(on: boolean): void {
+    held = on;
+    if (!ctx) return;
+    if (on) void ctx.suspend();
+    else if (enabled) void ctx.resume();
   },
 
   subscribe(listener: () => void): () => void {

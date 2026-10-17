@@ -1280,9 +1280,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   clearSelection: () => set({ ...CLEARED_SELECTION, promotionPending: null }),
 
   togglePause: () => {
-    if (isGuest()) return;
     set((s) => ({ userPaused: !s.userPaused }));
-    syncPaused();
+    // A guest's pause screen is their own: their friend's game plays on
+    if (!isGuest()) syncPaused();
   },
 
   handleGameEnd: (winner) => {

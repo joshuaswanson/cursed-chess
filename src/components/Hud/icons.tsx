@@ -51,3 +51,10 @@ export const MuteIcon = (p: IconProps) => (
     <path d="M16.5 9.5l5 5M21.5 9.5l-5 5" />
   </Icon>
 );
+
+export const RestartIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 12a8 8 0 1 0 2.5-5.8" />
+    <path d="M4 4v5h5" />
+  </Icon>
+);

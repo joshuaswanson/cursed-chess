@@ -25,11 +25,13 @@ import {
 import { useGameStore } from "./stores/gameStore";
 import { useGameLoop } from "./hooks/useGameLoop";
 import { music } from "./audio/music";
+import { sfx } from "./audio/sfx";
 import { useTheme } from "./theme/useTheme";
 import { themeVars } from "./theme/themes";
 import "./styles/global.css";
 import { ChessbotCorner } from "./components/Chessbot/ChessbotCorner";
 import { MainMenu } from "./components/MainMenu/MainMenu";
+import { PauseMenu } from "./components/PauseMenu/PauseMenu";
 import { BotWindows } from "./components/BoringSite/BotWindows";
 
 function App() {
@@ -45,6 +47,8 @@ function App() {
   const hexTransition = useGameStore((s) => s.hexTransition);
   const introDone = useGameStore((s) => s.introDone);
   const siteTab = useGameStore((s) => s.siteTab);
+  const userPaused = useGameStore((s) => s.userPaused);
+  const pauseShown = cursed && userPaused && !menuOpen;
   const onFakePage = !cursed && siteTab !== "Play";
 
   useEffect(() => {
@@ -53,10 +57,23 @@ function App() {
 
   // The soundtrack kicks in once the curse takes hold. It stays off in the
   // trenches, where there is only the guns and the rain.
-  const musicOn = cursed && theme.id !== "trenches";
+  const musicOn = cursed && theme.id !== "trenches" && !pauseShown;
   useEffect(() => {
     music.set(musicOn);
   }, [musicOn]);
+
+  useEffect(() => {
+    sfx.hold(pauseShown);
+  }, [pauseShown]);
+
+  // In FIFA the top goal reaches up under the logo, and a click there is a shot
+  const pauseFromLogo = (e: React.MouseEvent) => {
+    const goal = document
+      .elementsFromPoint(e.clientX, e.clientY)
+      .find((el) => el.matches(".goal.attacked"));
+    if (goal instanceof HTMLElement) goal.click();
+    else useGameStore.getState().togglePause();
+  };
 
   const board = isHexMode ? (
     <div className={hexTransition === "morph-in" ? "hex-morph-in" : ""}>
@@ -110,7 +127,14 @@ function App() {
       )}
       {cursed ? (
         <header className="topbar">
-          <Logo />
+          <button
+            type="button"
+            className="logo-button"
+            aria-label="Pause"
+            onClick={pauseFromLogo}
+          >
+            <Logo />
+          </button>
         </header>
       ) : (
         <BoringHeader />
@@ -141,6 +165,7 @@ function App() {
       {cursed && theme.id === "portals" && <SpaceTraffic />}
       {cursed && theme.id === "trenches" && <TrenchWeather />}
       {cursed && theme.id === "storm" && <StormWeather />}
+      {pauseShown && <PauseMenu />}
       <PromotionDialog />
       <ShowCards />
       <CurseIntro />

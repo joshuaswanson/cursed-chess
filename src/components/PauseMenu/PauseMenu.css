@@ -1,0 +1,157 @@
+/* --- The pause screen: the game dimmed and held under a card of options --- */
+
+.pause-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 4, 24, 0.62);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  animation: pause-dim 0.2s ease-out both;
+}
+
+@keyframes pause-dim {
+  from {
+    opacity: 0;
+  }
+}
+
+.pause-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(420px, 100%);
+  padding: 22px 24px 18px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 8px 10px 0 var(--ink);
+  rotate: -1.5deg;
+  animation: pause-in 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+@keyframes pause-in {
+  from {
+    scale: 0.6;
+    rotate: 6deg;
+    opacity: 0;
+  }
+}
+
+.pause-title {
+  margin: 0;
+  font: normal clamp(34px, 6vw, 46px) / 1 var(--font-display);
+  color: var(--accent);
+  text-shadow:
+    3px 3px 0 var(--ink),
+    -1px -1px 0 var(--ink),
+    1px -1px 0 var(--ink),
+    -1px 1px 0 var(--ink);
+}
+
+.pause-mode {
+  margin: 4px 0 0;
+  font: normal 18px / 1.1 var(--font-display);
+}
+
+.pause-rules {
+  margin: 0 0 6px;
+  max-width: 34ch;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: center;
+  opacity: 0.85;
+}
+
+.pause-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.pause-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 50px;
+  font: normal 17px var(--font-display);
+  color: var(--ink);
+  background: #ffffff;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 5px 0 var(--ink);
+  cursor: pointer;
+  transition:
+    translate 0.1s ease-out,
+    box-shadow 0.1s ease-out;
+}
+
+.pause-btn .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.pause-btn:hover {
+  translate: 0 -2px;
+  box-shadow: 0 7px 0 var(--ink);
+}
+
+.pause-btn:active {
+  translate: 0 4px;
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.pause-btn:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.pause-resume {
+  height: 58px;
+  font-size: 21px;
+  background: var(--accent);
+}
+
+.pause-hint {
+  margin: 2px 0 0;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+/* No keys to press on a touch screen */
+@media (hover: none) {
+  .pause-hint {
+    display: none;
+  }
+}
+
+/* The logo above the game is the pause button too */
+.logo-button {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.logo-button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 6px;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pause-overlay,
+  .pause-card {
+    animation: none;
+  }
+}

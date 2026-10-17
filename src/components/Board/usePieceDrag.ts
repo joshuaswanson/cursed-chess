@@ -313,9 +313,10 @@ export function usePieceDrag({
 
       let moveMade = false;
       const targetSq = squareAt(e.clientX, e.clientY);
+      // Looking under the logo too, which reaches down over the top goal
       const overGoal = document
-        .elementFromPoint(e.clientX, e.clientY)
-        ?.closest(".goal.shootable");
+        .elementsFromPoint(e.clientX, e.clientY)
+        .some((el) => el.closest(".goal.shootable"));
       if (overGoal) {
         kick("goal");
       } else if (targetSq !== null && targetSq !== drag.sq) {
