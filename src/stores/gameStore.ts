@@ -1274,7 +1274,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
-
   clearSelection: () => set({ ...CLEARED_SELECTION, promotionPending: null }),
 
   togglePause: () => {
