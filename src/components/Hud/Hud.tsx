@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 import {
   useGameStore,
   GAME_MODES,
@@ -12,10 +12,8 @@ import type { PacView } from "../../plugins/pacman";
 import { useTheme } from "../../theme/useTheme";
 import { pieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
-import { MenuIcon, MuteIcon, PauseIcon, PlayIcon, SoundIcon } from "./icons";
 import "./Hud.css";
 import { ChessbotCorner } from "../Chessbot/ChessbotCorner";
-import { leaveGame } from "../../net/multiplayer";
 
 const MOVE_SECONDS = 10;
 const RING_RADIUS = 26;
@@ -267,33 +265,6 @@ function MoveClock() {
   );
 }
 
-function ToolButton({
-  label,
-  shortcut,
-  onClick,
-  active,
-  children,
-}: {
-  label: string;
-  shortcut?: string;
-  onClick: () => void;
-  active?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      className={`tool-btn${active ? " active" : ""}`}
-      onClick={onClick}
-      aria-label={label}
-      aria-pressed={active}
-      data-tip={shortcut ? `${label} (${shortcut})` : label}
-    >
-      {children}
-    </button>
-  );
-}
-
 function useShortcuts() {
   const { togglePause } = useGameStore.getState();
   useEffect(() => {
@@ -304,6 +275,7 @@ function useShortcuts() {
       }
       switch (e.key.toLowerCase()) {
         case " ":
+        case "escape":
           e.preventDefault();
           togglePause();
           break;
@@ -317,44 +289,10 @@ function useShortcuts() {
   }, [togglePause]);
 }
 
-function Toolbar() {
-  const userPaused = useGameStore((s) => s.userPaused);
-  const soundOn = useSyncExternalStore(sfx.subscribe, sfx.isEnabled);
-  const { togglePause, openMenu } = useGameStore.getState();
-  const guest = useGameStore((s) => s.net?.role === "guest");
-  useShortcuts();
-
-  return (
-    <nav className="toolbar" aria-label="Game controls">
-      {/* A guest has no game of their own to go back to the menu from: they leave their friend's */}
-      <ToolButton
-        label={guest ? "Leave game" : "Main menu"}
-        onClick={guest ? leaveGame : openMenu}
-      >
-        <MenuIcon />
-      </ToolButton>
-      <ToolButton
-        label={userPaused ? "Resume" : "Pause"}
-        shortcut="Space"
-        onClick={togglePause}
-        active={userPaused}
-      >
-        {userPaused ? <PlayIcon /> : <PauseIcon />}
-      </ToolButton>
-      <ToolButton
-        label={soundOn ? "Mute sound" : "Turn sound on"}
-        shortcut="M"
-        onClick={() => sfx.setEnabled(!soundOn)}
-      >
-        {soundOn ? <SoundIcon /> : <MuteIcon />}
-      </ToolButton>
-    </nav>
-  );
-}
-
 /** The broadcast panel beside the board */
 export function Hud() {
   const adventure = useGameStore((s) => s.playMode === "adventure");
+  useShortcuts();
   return (
     <aside className="hud">
       {/* He runs the adventure; a mode picked from the menu is played without him */}
@@ -363,7 +301,6 @@ export function Hud() {
       <NowPlaying />
       <PacScore />
       <MoveClock />
-      <Toolbar />
     </aside>
   );
 }
