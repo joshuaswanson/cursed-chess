@@ -186,17 +186,19 @@ const reducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /**
- * Shakes the whole game: slammed down and punched in by the hit, then
- * thrown about, hardest at first and settling
+ * Shakes the game: slammed down by the hit, then thrown about, hardest at
+ * first and settling. The board and panels shake with the rain and the
+ * bolts drawn over them, in front of a sky that holds still, so no edge of
+ * the window ever shows.
  */
 function shake(strength: number, delayMs: number) {
   if (reducedMotion()) return;
-  const app = document.querySelector<HTMLElement>(".app");
-  if (!app) return;
+  const shaken = document.querySelectorAll<HTMLElement>(
+    ".app > .topbar, .app > .stage, .storm-rain",
+  );
+  if (shaken.length === 0) return;
   const steps = 22;
-  const still = { translate: "0px 0px", rotate: "0deg", scale: "1" };
-  // Zoomed in as far as it is thrown, so the window is always covered
-  const cover = 2.6 / Math.min(window.innerWidth, window.innerHeight);
+  const still = { translate: "0px 0px", rotate: "0deg" };
   const frames = Array.from({ length: steps + 1 }, (_, i) => {
     if (i === 0 || i === steps) return still;
     const left = strength * (1 - i / steps) ** 1.8;
@@ -206,10 +208,11 @@ function shake(strength: number, delayMs: number) {
     return {
       translate: `${x.toFixed(1)}px ${y.toFixed(1)}px`,
       rotate: `${((Math.random() - 0.5) * left * 0.14).toFixed(2)}deg`,
-      scale: (1 + Math.max(left, i === 1 ? strength : 0) * cover).toFixed(4),
     };
   });
-  app.animate(frames, { duration: 900, delay: delayMs, easing: "linear" });
+  for (const el of shaken) {
+    el.animate(frames, { duration: 900, delay: delayMs, easing: "linear" });
+  }
 }
 
 /**
