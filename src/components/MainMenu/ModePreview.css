@@ -2751,43 +2751,381 @@
 /* --- Thunderstorm --- */
 
 .scene-storm {
-  background: #04030a;
-}
-
-.pv-storm {
-  inset: 0;
-}
-
-/* The game's board at the width of the card, showing its middle four ranks */
-.pv-storm-board {
-  left: 0;
-  top: -50%;
-  width: 100%;
-  aspect-ratio: 1;
   background: repeating-conic-gradient(#c7cfdc 0 25%, #6c7890 0 50%) 0 0 / 25%
-    25%;
+    50%;
 }
 
-.pv-storm-board .pv-piece {
-  z-index: 1;
+/* The whole card shakes as the bolt lands */
+.pv-storm-scene {
+  inset: 0;
+  animation: pv-storm-shake 3.6s linear infinite;
 }
 
-.pv-storm-board .pv-storm-gone {
-  visibility: hidden;
+@keyframes pv-storm-shake {
+  0%,
+  30% {
+    translate: 0 0;
+  }
+  31% {
+    translate: -2.5% 1.5%;
+  }
+  32% {
+    translate: 2% -2%;
+  }
+  33% {
+    translate: -1.5% 1%;
+  }
+  34% {
+    translate: 1% 0;
+  }
+  35%,
+  100% {
+    translate: 0 0;
+  }
 }
 
+/* Dark over the board, gone in the flash and flickering back */
 .pv-storm-dark {
   inset: 0;
-  z-index: 2;
-  background: #04030a;
+  background: #0a0b1c;
+  animation: pv-storm-dark 3.6s linear infinite;
 }
 
-.pv-storm-sky {
-  position: absolute;
+@keyframes pv-storm-dark {
+  0%,
+  29.5% {
+    opacity: 0.86;
+  }
+  30% {
+    opacity: 0;
+  }
+  32% {
+    opacity: 0.5;
+  }
+  33.5% {
+    opacity: 0;
+  }
+  44% {
+    opacity: 0.1;
+  }
+  56%,
+  100% {
+    opacity: 0.86;
+  }
+}
+
+.pv-storm-flash {
   inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+  background: #eef3ff;
+  opacity: 0;
+  animation: pv-storm-flash 3.6s linear infinite;
+}
+
+@keyframes pv-storm-flash {
+  0%,
+  29.5% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.85;
+  }
+  31.5% {
+    opacity: 0;
+  }
+  32.5% {
+    opacity: 0.5;
+  }
+  34%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Streaks of rain driving down at a slant */
+.pv-storm-rain {
+  inset: -30%;
+  rotate: 14deg;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(200, 214, 245, 0.55) 0 0.35cqw,
+    transparent 0.35cqw 4.6cqw
+  );
+  mask-image: repeating-linear-gradient(
+    180deg,
+    #000 0 5cqw,
+    transparent 5cqw 13cqw
+  );
+  -webkit-mask-image: repeating-linear-gradient(
+    180deg,
+    #000 0 5cqw,
+    transparent 5cqw 13cqw
+  );
+  animation: pv-storm-rain 0.35s linear infinite;
+}
+
+@keyframes pv-storm-rain {
+  from {
+    mask-position: 0 0;
+    -webkit-mask-position: 0 0;
+  }
+  to {
+    mask-position: 0 13cqw;
+    -webkit-mask-position: 0 13cqw;
+  }
+}
+
+/* The bolt: a fat zigzag from the sky onto the knight's head */
+.pv-storm-bolt {
+  position: absolute;
+  left: 50%;
+  top: -8%;
+  height: 62%;
+  aspect-ratio: 50 / 100;
+  translate: -50% 0;
+  overflow: visible;
+  filter: drop-shadow(0 0 1.5cqw #fff3a8) drop-shadow(0 0 4cqw #9fd8ff);
+  opacity: 0;
+  animation: pv-storm-bolt 3.6s linear infinite;
+}
+
+.pv-storm-bolt path {
+  fill: #ffe45c;
+  stroke: var(--plum-ink);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+@keyframes pv-storm-bolt {
+  0%,
+  29.5% {
+    opacity: 0;
+    scale: 1 0;
+    transform-origin: top;
+  }
+  30% {
+    opacity: 1;
+    scale: 1 1;
+  }
+  31.5% {
+    opacity: 0.2;
+  }
+  32.5% {
+    opacity: 1;
+  }
+  37% {
+    opacity: 1;
+  }
+  39%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The knight it hits: flickering white and black as the current goes
+   through it, then burnt, swelling, and gone */
+.pv-storm-victim > img {
+  animation: pv-storm-victim 3.6s linear infinite;
+}
+
+@keyframes pv-storm-victim {
+  0%,
+  29.5% {
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35));
+    translate: 0 0;
+    scale: 1;
+    opacity: 1;
+  }
+  30.5%,
+  33.5%,
+  36.5% {
+    filter: brightness(0) invert(1) drop-shadow(0 0 1.5cqw #9fd8ff);
+    translate: -3% 0;
+  }
+  32%,
+  35%,
+  38% {
+    filter: brightness(0.2) drop-shadow(0 0 1cqw #ffe45c);
+    translate: 3% -2%;
+  }
+  42% {
+    filter: brightness(0.12) sepia(1) drop-shadow(0 0 1cqw #ff7a1a);
+    translate: 0 0;
+    scale: 1.15;
+    opacity: 1;
+  }
+  44%,
+  92% {
+    filter: brightness(0.12) sepia(1);
+    scale: 1.4;
+    opacity: 0;
+  }
+  96%,
+  100% {
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35));
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+/* Sparks crackling round it, each blinking in its own time */
+.pv-storm-zap {
+  position: absolute;
+  width: 9%;
+  translate: -50% -50%;
+  overflow: visible;
+  opacity: 0;
+  animation: pv-storm-zap 3.6s steps(1) infinite;
+  animation-delay: calc(var(--i) * 70ms);
+}
+
+.pv-storm-zap path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pv-storm-zap path:first-child {
+  stroke: var(--plum-ink);
+  stroke-width: 5;
+}
+
+.pv-storm-zap path:last-child {
+  stroke: #ffe45c;
+  stroke-width: 2.4;
+}
+
+@keyframes pv-storm-zap {
+  0%,
+  30% {
+    opacity: 0;
+  }
+  31%,
+  33%,
+  35%,
+  37.5%,
+  40% {
+    opacity: 1;
+  }
+  32%,
+  34%,
+  36.5%,
+  39%,
+  41.5%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* A cartoon puff of smoke where the knight was */
+.pv-storm-puff {
+  left: 50%;
+  top: 60%;
+  width: 26%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+}
+
+.pv-storm-puff i {
+  position: absolute;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #8b90a6;
+  box-shadow: 0 0 0 0.6cqw var(--plum-ink);
+  opacity: 0;
+  animation: pv-storm-puff 3.6s ease-out infinite;
+}
+
+.pv-storm-puff i:nth-child(1) {
+  left: 4%;
+  top: 34%;
+}
+
+.pv-storm-puff i:nth-child(2) {
+  left: 50%;
+  top: 30%;
+  animation-delay: 60ms;
+}
+
+.pv-storm-puff i:nth-child(3) {
+  left: 27%;
+  top: 4%;
+  animation-delay: 120ms;
+}
+
+@keyframes pv-storm-puff {
+  0%,
+  42% {
+    opacity: 0;
+    scale: 0.2;
+    translate: 0 0;
+  }
+  45% {
+    opacity: 1;
+    scale: 1.1;
+  }
+  62%,
+  100% {
+    opacity: 0;
+    scale: 1.5;
+    translate: 0 -40%;
+  }
+}
+
+/* The black splat it leaves on the square, fading as the dark comes back */
+.pv-storm-scorch {
+  left: 50%;
+  top: 80%;
+  width: 28%;
+  aspect-ratio: 2 / 1;
+  translate: -50% -50%;
+  background: radial-gradient(
+    ellipse,
+    rgba(20, 12, 8, 0.9) 0 35%,
+    rgba(20, 12, 8, 0) 70%
+  );
+  clip-path: polygon(
+    50% 0,
+    58% 30%,
+    80% 8%,
+    70% 40%,
+    100% 50%,
+    70% 60%,
+    82% 95%,
+    56% 70%,
+    46% 100%,
+    40% 70%,
+    16% 92%,
+    28% 58%,
+    0 46%,
+    30% 38%,
+    20% 6%,
+    42% 30%
+  );
+  opacity: 0;
+  animation: pv-storm-scorch 3.6s linear infinite;
+}
+
+@keyframes pv-storm-scorch {
+  0%,
+  30% {
+    opacity: 0;
+  }
+  31%,
+  70% {
+    opacity: 1;
+  }
+  85%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-storm-rain,
+  .pv-storm-scene {
+    animation: none;
+  }
 }
 
 /* --- Pac-Man --- */

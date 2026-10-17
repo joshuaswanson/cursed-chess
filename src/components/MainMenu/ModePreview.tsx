@@ -2,8 +2,6 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { ThemeId } from "../../theme/themes";
 import { PieceType } from "../../engine";
-import type { Color, Piece as ChessPiece } from "../../engine";
-import type { Strike } from "../../plugins/thunderstorm";
 import {
   artworkLoaded,
   themedPieceImage,
@@ -16,12 +14,6 @@ import { Chessbot } from "../Chessbot/Chessbot";
 import { MineBlast } from "../Board/MineBlast";
 import { Portal } from "../Board/Portal";
 import { Tombstone } from "../Board/Zombies";
-import { StormBolt, StormScars } from "../Board/Thunderstorm";
-import { BOLT_MS, drawBolt, renderBolt } from "../Board/boltCanvas";
-import type { Bolt } from "../Board/boltCanvas";
-import { lightningAt } from "../Board/lightning";
-import { boltStrokes, seededRandom } from "../Board/lightningShapes";
-import { toIndex } from "../../utils/squareUtils";
 import "./ModePreview.css";
 
 /** The mode a scene belongs to, so its pieces come in that mode's colours */
@@ -207,241 +199,13 @@ function MineScene() {
   );
 }
 
-/** How long the storm scene runs before it starts over */
-const STORM_LOOP_MS = 5600;
-/** Where each run's bolts come down, and when: two in quick succession onto empty squares, then one onto the knight */
-const STORM_BOLTS = [
-  { at: 600, file: 3, rank: 3 },
-  { at: 1100, file: 6, rank: 3 },
-  { at: 3000, file: 4, rank: 4 },
+/** Where the sparks crackle round the knight as the current goes through it */
+const STORM_ZAPS = [
+  { x: 34, y: 50, turn: -30 },
+  { x: 66, y: 46, turn: 25 },
+  { x: 33, y: 78, turn: 20 },
+  { x: 67, y: 80, turn: -20 },
 ];
-/** The pieces on the four ranks of the board the scene shows, by file and rank */
-const STORM_PIECES: [is: string, file: number, rank: number][] = [
-  ["bR", 1, 3],
-  ["wB", 2, 4],
-  ["bP", 3, 2],
-  ["bN", 4, 4],
-  ["wP", 5, 3],
-  ["bP", 5, 5],
-  ["wQ", 6, 2],
-];
-/** How long the current runs through the pieces next to a bolt */
-const STORM_SHOCK_MS = 2000;
-/** About how wide the game's board is, which the bolts are drawn to and then shrunk from */
-const GAME_BOARD_PX = 560;
-
-const pieceOf = (is: string): ChessPiece => ({
-  color: is[0] as Color,
-  type: is[1].toLowerCase() as ChessPiece["type"],
-});
-const stormImage = (piece: ChessPiece) =>
-  themedPieceImage(`${piece.color}${piece.type.toUpperCase()}`, "storm");
-const placeKey = (file: number, rank: number) => `${file},${rank}`;
-
-/**
- * The game's own storm, on the middle four ranks of its board: dark and
- * rain, then a bolt onto an empty square and another straight after, each
- * lighting the board, scorching it, and running its current through the
- * pieces beside it, and then a bolt that hits the knight and blows it apart
- */
-function StormScene() {
-  const scene = useRef<HTMLSpanElement>(null);
-  const dark = useRef<HTMLSpanElement>(null);
-  const sky = useRef<HTMLCanvasElement>(null);
-  const [strikes, setStrikes] = useState<Strike[]>([]);
-  /** The pieces shown by the current running through them, or gone */
-  const [hidden, setHidden] = useState<string[]>([]);
-
-  useEffect(() => {
-    const canvas = sky.current;
-    const ctx = canvas?.getContext("2d");
-    const el = scene.current;
-    if (!canvas || !ctx || !el) return;
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const timers: number[] = [];
-    const later = (fn: () => void, ms: number) =>
-      timers.push(window.setTimeout(fn, ms));
-    let bolts: Bolt[] = [];
-    let struckAt = -Infinity;
-    let ids = 0;
-    let drops: { x: number; y: number; near: number }[] = [];
-
-    const shake = (strength: number) => {
-      if (still) return;
-      el.animate(
-        Array.from({ length: 11 }, (_, i) => {
-          const left = i === 10 ? 0 : strength * (1 - i / 10) ** 1.6;
-          return {
-            translate: `${(Math.random() - 0.5) * 2 * left}px ${(Math.random() - 0.5) * 2 * left}px`,
-          };
-        }),
-        { duration: 520, easing: "linear" },
-      );
-    };
-
-    const strike = (file: number, rank: number) => {
-      const sq = toIndex(file, rank);
-      const victim = STORM_PIECES.find(([, f, r]) => f === file && r === rank);
-      const beside = STORM_PIECES.filter(
-        ([, f, r]) =>
-          (f !== file || r !== rank) &&
-          Math.abs(f - file) <= 1 &&
-          Math.abs(r - rank) <= 1,
-      );
-      const hit: Strike = {
-        id: ++ids,
-        sq,
-        killed: victim ? pieceOf(victim[0]) : null,
-        shocked: beside.map(([is, f, r]) => ({
-          sq: toIndex(f, r),
-          piece: pieceOf(is),
-        })),
-      };
-      const shockedKeys = beside.map(([, f, r]) => placeKey(f, r));
-      setStrikes((s) => [...s, hit].slice(-4));
-      setHidden((h) => [
-        ...h,
-        ...shockedKeys,
-        ...(victim ? [placeKey(file, rank)] : []),
-      ]);
-      later(
-        () => setHidden((h) => h.filter((key) => !shockedKeys.includes(key))),
-        STORM_SHOCK_MS,
-      );
-
-      // Laid out as on the game's board, and shrunk to the card
-      const width = canvas.clientWidth;
-      const k = GAME_BOARD_PX / width;
-      const target: [number, number] = [
-        ((file + 0.5) / 8) * width * k,
-        ((7 - rank + 0.5) / 8 - 0.25) * width * k,
-      ];
-      const rand = seededRandom(ids * 131 + sq);
-      struckAt = performance.now();
-      bolts.push(
-        renderBolt(
-          boltStrokes(rand, [target[0] + (rand() - 0.5) * 420, -30], target),
-          target,
-          struckAt,
-          Math.min(2, window.devicePixelRatio || 1) / k,
-        ),
-      );
-      shake(victim ? 6 : 3);
-      if (victim) later(() => shake(5), 880);
-    };
-
-    const run = () => {
-      // Off screen nobody is watching, so it waits to come into view
-      if (!el.closest(".in-view")) {
-        later(run, 400);
-        return;
-      }
-      setHidden([]);
-      for (const { at, file, rank } of STORM_BOLTS) {
-        later(() => strike(file, rank), at);
-      }
-      later(run, STORM_LOOP_MS);
-    };
-    later(run, 300);
-
-    let frame = 0;
-    let last = performance.now();
-    const draw = (now: number) => {
-      frame = requestAnimationFrame(draw);
-      const dt = Math.min(50, now - last) / 1000;
-      last = now;
-      if (!el.closest(".in-view")) return;
-      const scale = Math.min(2, window.devicePixelRatio || 1);
-      const width = canvas.clientWidth;
-      const height = canvas.clientHeight;
-      if (canvas.width !== Math.round(width * scale)) {
-        canvas.width = Math.round(width * scale);
-        canvas.height = Math.round(height * scale);
-        drops = Array.from(
-          { length: Math.round((width * height) / 260) },
-          () => ({
-            x: Math.random() * width * 1.3 - width * 0.15,
-            y: Math.random() * height,
-            near: Math.random() ** 1.8,
-          }),
-        );
-      }
-      const light = lightningAt(now - struckAt);
-      if (dark.current) dark.current.style.opacity = String(1 - light);
-
-      ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      ctx.clearRect(0, 0, width, height);
-      ctx.lineCap = "round";
-      const wind = 0.22 + 0.06 * Math.sin(now / 1700);
-      for (const [lo, hi] of [
-        [0, 0.35],
-        [0.35, 0.7],
-        [0.7, 1.01],
-      ]) {
-        const near = (lo + hi) / 2;
-        const alpha = Math.min(0.9, (0.07 + near * 0.18) * (1 + light * 4));
-        const shade = Math.round(175 + light * 80);
-        ctx.strokeStyle = `rgba(${shade}, ${shade}, ${Math.min(255, shade + 30)}, ${alpha})`;
-        ctx.lineWidth = 0.5 + near * 0.9;
-        ctx.beginPath();
-        for (const drop of drops) {
-          if (drop.near < lo || drop.near >= hi) continue;
-          const length = 6 + drop.near * 12;
-          if (!still) {
-            const speed = 420 + drop.near * 620;
-            drop.y += speed * dt;
-            drop.x += speed * wind * dt;
-          }
-          if (drop.y > height + length) {
-            drop.y = -length - Math.random() * 30;
-            drop.x = Math.random() * width * 1.3 - width * 0.15;
-          }
-          ctx.moveTo(drop.x, drop.y);
-          ctx.lineTo(drop.x - length * wind, drop.y - length);
-        }
-        ctx.stroke();
-      }
-
-      bolts = bolts.filter((b) => now - b.born < BOLT_MS);
-      const k = GAME_BOARD_PX / width;
-      ctx.setTransform(scale / k, 0, 0, scale / k, 0, 0);
-      for (const bolt of bolts) drawBolt(ctx, bolt, now);
-      if (light > 0) {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.fillStyle = `rgba(225, 233, 255, ${0.22 * light})`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-    };
-    frame = requestAnimationFrame(draw);
-    return () => {
-      cancelAnimationFrame(frame);
-      timers.forEach((t) => window.clearTimeout(t));
-    };
-  }, []);
-
-  return (
-    <span ref={scene} className="pv-storm">
-      <span className="pv-storm-board">
-        <StormScars strikes={strikes} flipped={false} />
-        {STORM_PIECES.map(([is, file, rank]) => (
-          <Piece
-            key={placeKey(file, rank)}
-            is={is}
-            x={(file + 0.5) * 12.5}
-            y={(7 - rank + 0.5) * 12.5}
-            size={11}
-            className={
-              hidden.includes(placeKey(file, rank)) ? "pv-storm-gone" : ""
-            }
-          />
-        ))}
-        <span ref={dark} className="pv-storm-dark" />
-        <StormBolt strikes={strikes} flipped={false} imageOf={stormImage} />
-      </span>
-      <canvas ref={sky} className="pv-storm-sky" />
-    </span>
-  );
-}
 
 /** The dead pawn coming up out of its grave, in the rotten look it has in the game */
 function Undead() {
@@ -669,7 +433,45 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       </span>
     </>
   ),
-  storm: <StormScene />,
+  // Lightning comes down out of the rain onto the knight, fries it, and leaves a puff of smoke
+  storm: (
+    <span className="pv-storm-scene">
+      <span className="pv-storm-scorch" />
+      <Piece is="bR" x={18} y={66} size={22} />
+      <Piece is="bN" x={50} y={64} size={26} className="pv-storm-victim" />
+      <Piece is="wP" x={82} y={68} size={20} />
+      <span className="pv-storm-dark" />
+      <span className="pv-storm-rain" />
+      <span className="pv-storm-flash" />
+      <svg className="pv-storm-bolt" viewBox="0 0 50 100" aria-hidden>
+        <path d="M33 2 L7 56 L24 56 L13 98 L47 37 L29 37 L42 2 Z" />
+      </svg>
+      {STORM_ZAPS.map(({ x, y, turn }, i) => (
+        <svg
+          key={i}
+          className="pv-storm-zap"
+          viewBox="0 0 24 14"
+          style={
+            {
+              left: `${x}%`,
+              top: `${y}%`,
+              rotate: `${turn}deg`,
+              "--i": i,
+            } as CSSProperties
+          }
+          aria-hidden
+        >
+          <path d="M2 10 L9 3 L13 11 L22 4" />
+          <path d="M2 10 L9 3 L13 11 L22 4" />
+        </svg>
+      ))}
+      <span className="pv-storm-puff">
+        <i />
+        <i />
+        <i />
+      </span>
+    </span>
+  ),
   // A rook eats its way along a corridor of the maze, takes a power pellet, eats the ghost that turns blue, and goes out through the tunnel
   pacman: (
     <>
