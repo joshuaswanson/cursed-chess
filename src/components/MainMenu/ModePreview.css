@@ -686,12 +686,15 @@
   background: linear-gradient(180deg, #2a0c06, #120403);
 }
 
+/* Tiles big enough for the king to stand in, the top and bottom rows running off the card */
 .pv-tiles {
-  inset: 8% 10%;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 3px;
+  grid-template-columns: repeat(5, 18cqw);
+  grid-template-rows: repeat(3, 18cqw);
+  gap: 0.8cqw;
 }
 
 .pv-tiles i {

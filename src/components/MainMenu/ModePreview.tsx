@@ -751,7 +751,7 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
           );
         })}
       </span>
-      <Piece is="wK" x={50} y={50} size={24} className="pv-nervous" />
+      <Piece is="wK" x={50} y={50} size={14} className="pv-nervous" />
     </>
   ),
   // Two pieces go at each other with swords, on their own, health bars draining
