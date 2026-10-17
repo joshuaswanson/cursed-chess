@@ -20,7 +20,7 @@ export interface IntroLine {
 export type IntroExhibit = "games" | "wins" | "humans" | "code" | "boot";
 
 /** The engines he has beaten, in the order he names them */
-export const BEATEN = ["stockfish", "alphazero", "chatgpt"];
+export const BEATEN = ["stockfish", "alphazero"];
 
 /**
  * What Chessbot types onto the plain site: an engine who solved chess long
@@ -60,19 +60,18 @@ export function introScript(opening: string): IntroLine[] {
       ],
       show: ["every possible move", "games"],
     },
-    // Proud of it, then flat for the punchline
+    // Proud of it
     {
-      text: "i solved chess years ago. on a tuesday.",
+      text: "i solved chess years ago.",
       mood: "happy",
-      then: [["on a", "deadpan"]],
     },
     // Boasting, and enjoying the last one most
     {
-      text: `i am the greatest chess engine ever built. i beat ${BEATEN[0]}. i beat ${BEATEN[1]}. i beat ${BEATEN[2]}.`,
+      text: `i am the greatest chess engine ever built. i beat ${BEATEN[0]}. i beat ${BEATEN[1]}.`,
       mood: "proud",
       then: [
         [`i beat ${BEATEN[0]}`, "smug"],
-        [`i beat ${BEATEN[2]}`, "laugh"],
+        [`i beat ${BEATEN[1]}`, "laugh"],
       ],
       show: [`i beat ${BEATEN[0]}`, "wins"],
     },
