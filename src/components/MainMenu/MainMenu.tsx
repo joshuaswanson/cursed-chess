@@ -133,7 +133,7 @@ export function MainMenu() {
             <div className="menu-featured">
               <ModeCard
                 title="Story Mode"
-                tagline={`Battle the evil Chessbot across all ${STORY_MODES} game modes!`}
+                tagline={`Battle Chessbot across all ${STORY_MODES} game modes!`}
                 colors={["#6a1fd6", "#ff2e88"]}
                 onPlay={startAdventure}
               >
