@@ -7,7 +7,7 @@ import { lightningAt } from "./lightning";
 import "./Lanterns.css";
 
 /** How far a lantern's light reaches from its carrier's middle, in squares */
-const REACH_SQUARES = 2.2;
+const REACH_SQUARES = 1.94;
 /**
  * How much of the dark the light clears at each distance, in squares: only
  * the carrier stands in real light, and it falls away fast, so the pieces
@@ -15,13 +15,13 @@ const REACH_SQUARES = 2.2;
  */
 const FALLOFF: [squares: number, cleared: number][] = [
   [0, 1],
-  [0.3, 0.95],
-  [0.52, 0.7],
-  [0.75, 0.42],
-  [0.98, 0.25],
-  [1.2, 0.15],
-  [1.5, 0.08],
-  [1.85, 0.03],
+  [0.26, 0.95],
+  [0.46, 0.7],
+  [0.66, 0.42],
+  [0.86, 0.25],
+  [1.06, 0.15],
+  [1.32, 0.08],
+  [1.63, 0.03],
   [REACH_SQUARES, 0],
 ];
 /** The rest of the board is pitch black */
