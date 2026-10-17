@@ -76,6 +76,8 @@ const YANK_MS = 6200;
 const TEARS_MS = 7050;
 const SWITCH_OFF_MS = 7600;
 const BAR_CELLS = 16;
+/** By when his speech bubble has come up beside him */
+const BUBBLE_SETTLES_MS = 1000;
 /** Bands of the screen that tear loose as the old board goes, as how far down they are and how tall, in percent, and how far they jump, in pixels */
 const TEARS: [top: number, height: number, shift: number][] = [
   [9, 2, 40],
@@ -145,9 +147,10 @@ function zoneOfBot(): Box | null {
 function spotlight(zone: Box): CSSProperties {
   const x = (zone.left + zone.right) / 2;
   const y = (zone.top + zone.bottom) / 2;
-  const rx = ((zone.right - zone.left) / 2) * 1.35;
-  const ry = ((zone.bottom - zone.top) / 2) * 1.35;
-  const mask = `radial-gradient(${rx}px ${ry}px at ${x}px ${y}px, transparent 70%, #000 100%)`;
+  // Wide enough that the corners of his bubble sit in full light
+  const rx = ((zone.right - zone.left) / 2) * 1.75;
+  const ry = ((zone.bottom - zone.top) / 2) * 1.75;
+  const mask = `radial-gradient(${rx}px ${ry}px at ${x}px ${y}px, transparent 85%, #000 100%)`;
   return { maskImage: mask, WebkitMaskImage: mask };
 }
 
@@ -195,6 +198,8 @@ function Swap({ from, to }: { from: number; to: number }) {
     const start = performance.now();
     let frame = requestAnimationFrame(function tick(t) {
       setNow(t - start);
+      // His line comes up a moment after he starts, so the light keeps growing to take it in
+      if (t - start < BUBBLE_SETTLES_MS) setZone(zoneOfBot());
       if (t - start < MODE_SWAP_MS) frame = requestAnimationFrame(tick);
     });
     const at = (ms: number, fn: () => void) => window.setTimeout(fn, ms);
