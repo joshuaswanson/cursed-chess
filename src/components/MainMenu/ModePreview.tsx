@@ -860,7 +860,6 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <Piece is="wP" x={80} y={64} size={22} className="pv-shivers" />
     </>
   ),
-  // Rifle fire pours across no man's land in the rain, and a shell lands short
   // Two lines of men firing across the wire, a machine gun hammering away,
   // shells coming down, and an assault team going over the top
   trenches: (
