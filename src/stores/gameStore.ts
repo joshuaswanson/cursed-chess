@@ -102,6 +102,8 @@ export const KICKOFF_WALK_MS = 900;
 const SINGLE_FIFA_GOALS = 3;
 const RESULT_MS = 2500;
 const RESULT_HOLD_MS = 2800;
+/** How long Chessbot takes to rewire the game between two modes of the adventure */
+export const MODE_SWAP_MS = 3600;
 
 /** The square board shatters right after the hex title card leaves */
 const HEX_MORPH_OUT_MS = 4600;
@@ -278,6 +280,33 @@ function nextAdventureMode(after: number): number {
   return GAME_MODES.findIndex((mode, i) => i > after && !mode.singleOnly);
 }
 
+/**
+ * Moves on from the mode just played: in the adventure, Chessbot first
+ * rewires the game into the next mode where everyone can see him do it.
+ * `prepare` runs just before the next mode is set up.
+ */
+function moveOn(prepare?: () => void): void {
+  const { playMode, currentModeIndex } = useGameStore.getState();
+  const next = nextAdventureMode(currentModeIndex);
+  const goOn = () => {
+    prepare?.();
+    useGameStore.getState().switchMode();
+  };
+  if (playMode !== "adventure" || currentModeIndex < 0 || next < 0) {
+    goOn();
+    return;
+  }
+  useGameStore.setState((s) => ({
+    modeSwap: {
+      id: (s.modeSwap?.id ?? 0) + 1,
+      from: currentModeIndex,
+      to: next,
+    },
+  }));
+  holdPause(MODE_SWAP_MS);
+  schedule(goOn, MODE_SWAP_MS);
+}
+
 export type AnnouncementType = "mode" | "win" | "lose" | "draw";
 
 /** Pages of the plain chess site that shows before the curse */
@@ -342,6 +371,8 @@ export interface GameStore {
   curseStage: "hello" | "peek" | "glitch" | "oops" | "boom" | null;
   /** The main menu is up, between games */
   menuOpen: boolean;
+  /** Between two modes of the adventure, Chessbot rewiring the game from the one to the other */
+  modeSwap: { id: number; from: number; to: number } | null;
   /** Adventure runs every mode once in order; a single mode is played alone. Either ends at the main menu. */
   playMode: "adventure" | "single";
   /**
@@ -935,6 +966,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   corruption: 0,
   aside: null,
   menuOpen: false,
+  modeSwap: null,
   playMode: "adventure",
   autonomousTick: 0,
   introDone: true,
@@ -1302,11 +1334,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       winner === Color.White ? "win" : winner === Color.Black ? "lose" : "draw",
     );
 
-    schedule(() => {
-      setBoardSize();
-      set({ game: new Game(), ...FRESH_BOARD });
-      get().switchMode();
-    }, RESULT_HOLD_MS);
+    schedule(
+      () =>
+        moveOn(() => {
+          setBoardSize();
+          set({ game: new Game(), ...FRESH_BOARD });
+        }),
+      RESULT_HOLD_MS,
+    );
   },
 
   setDeployPieceType: (type) => set({ deployPieceType: type }),
@@ -1637,7 +1672,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const next = Math.max(0, modeTimeRemaining - 1);
     set({ modeTimeRemaining: next });
     if (next > 0) return;
-    get().switchMode();
+    moveOn();
   },
 
   settlePortals: () => {
@@ -1674,6 +1709,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       cursed: true,
       curseStage: null,
       menuOpen: true,
+      modeSwap: null,
       // The menu wears the first mode's colours if no mode has been played yet
       currentModeIndex: Math.max(0, s.currentModeIndex),
     }));
@@ -1711,6 +1747,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       currentModeIndex: nextIndex,
+      modeSwap: null,
       cursed: true,
       curseStage: null,
       introMood: "happy",

@@ -32,6 +32,7 @@ import "./styles/global.css";
 import { ChessbotCorner } from "./components/Chessbot/ChessbotCorner";
 import { MainMenu } from "./components/MainMenu/MainMenu";
 import { PauseMenu } from "./components/PauseMenu/PauseMenu";
+import { ModeSwap } from "./components/Show/ModeSwap";
 import { BotWindows } from "./components/BoringSite/BotWindows";
 
 function App() {
@@ -49,6 +50,7 @@ function App() {
   const siteTab = useGameStore((s) => s.siteTab);
   const userPaused = useGameStore((s) => s.userPaused);
   const pauseShown = cursed && userPaused && !menuOpen;
+  const modeSwapping = useGameStore((s) => s.modeSwap !== null);
   const onFakePage = !cursed && siteTab !== "Play";
 
   useEffect(() => {
@@ -88,6 +90,7 @@ function App() {
   const appClass =
     "app" +
     (cursed ? " is-cursed" : " is-boring") +
+    (modeSwapping ? " mode-swapping" : "") +
     (curseStage ? ` curse-${curseStage}` : "") +
     // Still glitching while he gloats
     (curseStage === "oops" ? " curse-glitch" : "") +
@@ -165,6 +168,7 @@ function App() {
       {cursed && theme.id === "portals" && <SpaceTraffic />}
       {cursed && theme.id === "trenches" && <TrenchWeather />}
       {cursed && theme.id === "storm" && <StormWeather />}
+      {cursed && <ModeSwap />}
       {pauseShown && <PauseMenu />}
       <PromotionDialog />
       <ShowCards />

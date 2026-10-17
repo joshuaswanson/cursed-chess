@@ -1,0 +1,260 @@
+/* --- Between modes of the adventure: Chessbot rewriting the game --- */
+
+.mode-swap {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  pointer-events: none;
+  background: rgba(6, 3, 16, 0.66);
+  animation: mode-swap-in 0.3s ease-out both;
+}
+
+@keyframes mode-swap-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.mode-swap-stage {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 3vw, 36px);
+}
+
+/* He bobs up from below and leans in over his keyboard */
+.mode-swap-bot {
+  width: clamp(120px, 18vw, 220px);
+  aspect-ratio: 1;
+  animation:
+    mode-swap-rise 0.5s cubic-bezier(0.3, 1.5, 0.5, 1) both,
+    mode-swap-type 0.28s 0.5s ease-in-out infinite alternate;
+}
+
+.mode-swap-bot > * {
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes mode-swap-rise {
+  from {
+    translate: 0 60%;
+    opacity: 0;
+  }
+}
+
+@keyframes mode-swap-type {
+  from {
+    rotate: -3deg;
+  }
+  to {
+    rotate: 3deg;
+    translate: 0 3%;
+  }
+}
+
+.mode-swap-terminal {
+  width: min(420px, 62vw);
+  min-height: 170px;
+  overflow: hidden;
+  font-family: "Courier New", Courier, monospace;
+  color: #7dffab;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.045) 0 1px,
+      transparent 1px 3px
+    ),
+    radial-gradient(120% 140% at 50% 0%, #10231a, #05090a 70%);
+  border: 1px solid #2c5a41;
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px #000,
+    0 16px 40px rgba(0, 0, 0, 0.6),
+    inset 0 0 18px rgba(60, 255, 150, 0.08);
+  rotate: 1.5deg;
+  animation: mode-swap-open 0.35s 0.15s steps(1) both;
+}
+
+@keyframes mode-swap-open {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+    translate: 6px 0;
+  }
+  60% {
+    translate: -4px 2px;
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+.mode-swap-terminal header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  color: #6fd39a;
+  background: #0b1711;
+  border-bottom: 1px solid #1f3a2c;
+}
+
+.mode-swap-terminal header span {
+  flex: 1;
+}
+
+.mode-swap-terminal header i {
+  width: 8px;
+  height: 8px;
+  border: 1px solid #3f7d5c;
+  border-radius: 2px;
+}
+
+.mode-swap-terminal pre {
+  margin: 0;
+  padding: 14px 16px 16px;
+  font: inherit;
+  font-size: clamp(12px, 1.6vw, 15px);
+  font-weight: bold;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  text-shadow: 0 0 6px rgba(80, 255, 150, 0.55);
+}
+
+.mode-swap-caret {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background: #7dffab;
+  animation: mode-swap-blink 0.5s steps(1) infinite;
+}
+
+@keyframes mode-swap-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.mode-swap-build {
+  color: #c8ffd9;
+}
+
+/* The screen breaks up as the new mode goes live */
+.mode-swap.is-glitching {
+  animation: mode-swap-glitch 0.38s steps(1) both;
+}
+
+@keyframes mode-swap-glitch {
+  0% {
+    translate: 8px 0;
+    filter: hue-rotate(90deg) saturate(3);
+    clip-path: inset(10% 0 55% 0);
+  }
+  20% {
+    translate: -10px 3px;
+    filter: hue-rotate(-60deg);
+    clip-path: inset(40% 0 20% 0);
+  }
+  40% {
+    translate: 6px -4px;
+    filter: invert(1);
+    clip-path: inset(0 0 70% 0);
+  }
+  60% {
+    translate: -4px 0;
+    filter: hue-rotate(180deg) saturate(4);
+    clip-path: inset(60% 0 5% 0);
+  }
+  80% {
+    translate: 3px 2px;
+    filter: none;
+    clip-path: inset(20% 0 40% 0);
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    clip-path: inset(50% 0 50% 0);
+  }
+}
+
+/* The old board breaks up and is gone as he builds the new mode */
+.app.mode-swapping .board-container {
+  animation: mode-swap-derez 3.6s linear both;
+}
+
+@keyframes mode-swap-derez {
+  0%,
+  62% {
+    translate: 0 0;
+    filter: none;
+    clip-path: inset(0);
+    opacity: 1;
+  }
+  66% {
+    translate: 4px 0;
+    filter: hue-rotate(70deg) saturate(2);
+    clip-path: inset(0 0 40% 0);
+  }
+  70% {
+    translate: -6px 2px;
+    filter: none;
+    clip-path: inset(30% 0 0 0);
+  }
+  74% {
+    translate: 3px -2px;
+    filter: invert(1) hue-rotate(180deg);
+    clip-path: inset(0 0 0 0);
+  }
+  78% {
+    translate: -8px 0;
+    filter: hue-rotate(-90deg) saturate(3);
+    clip-path: inset(15% 0 45% 0);
+  }
+  82% {
+    translate: 6px 3px;
+    filter: none;
+    clip-path: inset(55% 0 10% 0);
+    opacity: 0.8;
+  }
+  86% {
+    translate: -3px 0;
+    filter: brightness(2.5);
+    clip-path: inset(45% 0 45% 0);
+    opacity: 0.6;
+  }
+  90%,
+  100% {
+    clip-path: inset(50% 0 50% 0);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .mode-swap-stage {
+    flex-direction: column;
+  }
+
+  .mode-swap-terminal {
+    width: min(420px, 92vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app.mode-swapping .board-container,
+  .mode-swap,
+  .mode-swap-bot,
+  .mode-swap-terminal,
+  .mode-swap.is-glitching {
+    animation: none;
+  }
+}
