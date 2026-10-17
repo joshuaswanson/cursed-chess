@@ -2790,36 +2790,43 @@
   }
 }
 
-/* Streaks of rain driving down at a slant */
+/* Each layer of rain is a tile of streaks driven down at a slant */
 .pv-storm-rain {
   inset: -30%;
   rotate: 14deg;
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(200, 214, 245, 0.55) 0 0.35cqw,
-    transparent 0.35cqw 4.6cqw
-  );
-  mask-image: repeating-linear-gradient(
-    180deg,
-    #000 0 5cqw,
-    transparent 5cqw 13cqw
-  );
-  -webkit-mask-image: repeating-linear-gradient(
-    180deg,
-    #000 0 5cqw,
-    transparent 5cqw 13cqw
-  );
-  animation: pv-storm-rain 0.35s linear infinite;
+  background: var(--rain) 0 0 / var(--tile) var(--tile);
+  animation: pv-storm-rain var(--fall) linear infinite;
 }
 
 @keyframes pv-storm-rain {
-  from {
-    mask-position: 0 0;
-    -webkit-mask-position: 0 0;
-  }
   to {
-    mask-position: 0 13cqw;
-    -webkit-mask-position: 0 13cqw;
+    background-position: 0 var(--tile);
+  }
+}
+
+/* A drop splashing on the board: a ring thrown out and gone */
+.pv-storm-splash {
+  width: 4.6cqw;
+  aspect-ratio: 2.4;
+  translate: -50% -50%;
+  border-radius: 50%;
+  border: 0.35cqw solid rgba(214, 226, 255, 0.8);
+  opacity: 0;
+  animation: pv-storm-splash 1s ease-out infinite;
+}
+
+@keyframes pv-storm-splash {
+  0% {
+    opacity: 0;
+    scale: 0.2;
+  }
+  6% {
+    opacity: 0.9;
+  }
+  35%,
+  100% {
+    opacity: 0;
+    scale: 1.3;
   }
 }
 
@@ -3072,6 +3079,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .pv-storm-rain,
+  .pv-storm-splash,
   .pv-storm-scene {
     animation: none;
   }

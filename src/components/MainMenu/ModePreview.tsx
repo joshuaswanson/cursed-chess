@@ -14,6 +14,7 @@ import { Chessbot } from "../Chessbot/Chessbot";
 import { MineBlast } from "../Board/MineBlast";
 import { Portal } from "../Board/Portal";
 import { Tombstone } from "../Board/Zombies";
+import { seededRandom } from "../Board/lightningShapes";
 import "./ModePreview.css";
 
 /** The mode a scene belongs to, so its pieces come in that mode's colours */
@@ -198,6 +199,53 @@ function MineScene() {
     </span>
   );
 }
+
+/**
+ * A square of rain for a layer to be tiled with: streaks at random, each
+ * drawn a second time a tile higher, so one running off the bottom carries
+ * on at the top of the tile below
+ */
+function rainTile(
+  seed: number,
+  streaks: number,
+  length: number,
+  width: number,
+  alpha: number,
+): string {
+  const rand = seededRandom(seed);
+  const lines = Array.from({ length: streaks }, () => {
+    const x = (5 + rand() * 90).toFixed(1);
+    const y = rand() * 100;
+    const long = length * (0.7 + rand() * 0.6);
+    return [0, -100]
+      .map(
+        (up) =>
+          `<line x1="${x}" y1="${(y + up).toFixed(1)}" x2="${x}" y2="${(y + up + long).toFixed(1)}"/>`,
+      )
+      .join("");
+  }).join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g stroke="rgba(214,226,255,${alpha})" stroke-width="${width}" stroke-linecap="round">${lines}</g></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
+/** Rain far off, nearer, and close by: the nearer, the longer, brighter, and faster it falls */
+const RAIN_LAYERS = [
+  { tile: rainTile(3, 12, 9, 0.9, 0.3), size: 14, fall: 0.62 },
+  { tile: rainTile(7, 8, 13, 1.1, 0.5), size: 22, fall: 0.46 },
+  { tile: rainTile(11, 5, 17, 1.3, 0.75), size: 34, fall: 0.38 },
+];
+
+/** Where drops splash on the board, and how often, in seconds */
+const RAIN_SPLASHES: [x: number, y: number, every: number][] = [
+  [10, 90, 0.9],
+  [30, 80, 1.3],
+  [41, 96, 1.1],
+  [63, 88, 0.8],
+  [74, 76, 1.4],
+  [90, 84, 1],
+  [22, 45, 1.2],
+  [80, 40, 0.95],
+];
 
 /** Where the sparks crackle round the knight as the current goes through it */
 const STORM_ZAPS = [
@@ -441,7 +489,31 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <Piece is="bN" x={50} y={64} size={26} className="pv-storm-victim" />
       <Piece is="wP" x={82} y={68} size={20} />
       <span className="pv-storm-dark" />
-      <span className="pv-storm-rain" />
+      {RAIN_LAYERS.map(({ tile, size, fall }) => (
+        <span
+          key={size}
+          className="pv-storm-rain"
+          style={
+            {
+              "--rain": tile,
+              "--tile": `${size}cqw`,
+              "--fall": `${fall}s`,
+            } as CSSProperties
+          }
+        />
+      ))}
+      {RAIN_SPLASHES.map(([x, y, every], i) => (
+        <span
+          key={i}
+          className="pv-storm-splash"
+          style={{
+            left: `${x}%`,
+            top: `${y}%`,
+            animationDuration: `${every}s`,
+            animationDelay: `${(i * 0.23).toFixed(2)}s`,
+          }}
+        />
+      ))}
       <span className="pv-storm-flash" />
       <svg className="pv-storm-bolt" viewBox="0 0 50 100" aria-hidden>
         <path d="M33 2 L7 56 L24 56 L13 98 L47 37 L29 37 L42 2 Z" />
