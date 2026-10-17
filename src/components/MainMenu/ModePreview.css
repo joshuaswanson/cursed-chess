@@ -2733,9 +2733,10 @@
   }
 }
 
-/* Dark over the board, gone in the flash and flickering back */
+/* Dark over the board, gone in the flash and flickering back. It reaches
+   past the card on every side, further than the card shakes it. */
 .pv-storm-dark {
-  inset: 0;
+  inset: -6%;
   background: #0a0b1c;
   animation: pv-storm-dark 3.6s linear infinite;
 }
@@ -2764,7 +2765,7 @@
 }
 
 .pv-storm-flash {
-  inset: 0;
+  inset: -6%;
   background: #eef3ff;
   opacity: 0;
   animation: pv-storm-flash 3.6s linear infinite;
