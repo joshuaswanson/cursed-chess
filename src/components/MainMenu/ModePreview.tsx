@@ -830,16 +830,20 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // and the mask comes off the queen
   stratego: (
     <>
-      <Piece is="bP" x={24} y={34} className="pv-hidden pv-shell-1">
+      <Piece is="bP" x={24} y={34} className="pv-shell-1">
         <span className="pv-mask">?</span>
       </Piece>
-      <Piece is="bP" x={52} y={34} className="pv-hidden pv-shell-2">
+      <Piece is="bP" x={52} y={34} className="pv-shell-2">
         <span className="pv-mask">?</span>
       </Piece>
-      <Piece is="bQ" x={80} y={34} className="pv-hidden pv-shell-3">
+      <Piece is="bQ" x={80} y={34} className="pv-shell-3">
+        <span className="pv-reveal-rays" />
+        <span className="pv-reveal-ring" />
+        <span className="pv-reveal-flash" />
         <span className="pv-mask pv-unmasks">?</span>
       </Piece>
       <Piece is="wP" x={52} y={80} size={22} className="pv-picks" />
+      <span className="pv-clash" />
       <span className="pv-shout pv-uh-oh">!</span>
     </>
   ),

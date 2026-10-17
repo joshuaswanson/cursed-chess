@@ -1618,8 +1618,81 @@
   animation: pv-shell-3 8s ease-in-out infinite;
 }
 
+/* The queen's card flips over to show her, and back again after */
+.pv-shell-3 {
+  perspective: 30cqw;
+}
+
 .pv-unmasks {
   animation: pv-unmask 8s infinite;
+}
+
+.pv-shell-3 > img {
+  animation: pv-queen-shown 8s infinite;
+}
+
+/* Behind her as she is found out: a flash, a ring thrown out, and rays of light turning */
+.pv-reveal-rays {
+  inset: -80%;
+  z-index: -1;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    rgba(255, 214, 80, 0.85) 0 8deg,
+    rgba(255, 214, 80, 0) 8deg 24deg
+  );
+  mask-image: radial-gradient(circle, #000 18%, transparent 68%);
+  -webkit-mask-image: radial-gradient(circle, #000 18%, transparent 68%);
+  opacity: 0;
+  animation: pv-reveal-rays 8s linear infinite;
+}
+
+.pv-reveal-ring {
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  border: 0.8cqw solid #fff3c4;
+  opacity: 0;
+  animation: pv-reveal-ring 8s ease-out infinite;
+}
+
+.pv-reveal-flash {
+  inset: -60%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #fff 0 12%,
+    rgba(255, 236, 160, 0.8) 26%,
+    rgba(255, 120, 60, 0) 62%
+  );
+  opacity: 0;
+  animation: pv-reveal-flash 8s ease-out infinite;
+}
+
+/* Where the pawn runs into her */
+.pv-clash {
+  left: 52%;
+  top: 50%;
+  width: 14cqw;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: radial-gradient(circle, #fff 0 22%, #ffd23f 40%, #ff6a2a 70%);
+  clip-path: polygon(
+    50% 0,
+    61% 33%,
+    96% 22%,
+    70% 50%,
+    96% 78%,
+    61% 67%,
+    50% 100%,
+    39% 67%,
+    4% 78%,
+    30% 50%,
+    4% 22%,
+    39% 33%
+  );
+  opacity: 0;
+  animation: pv-clash 8s infinite;
 }
 
 .pv-picks {
@@ -1673,55 +1746,189 @@
   }
 }
 
-/* The queen, who ends up in the middle and jumps when she is found out */
+/* The queen, who ends up in the middle and looms over the pawn when she is found out */
 @keyframes pv-shell-3 {
   0%,
   20% {
     left: 80%;
     top: 34%;
     scale: 1;
+    rotate: 0deg;
   }
   26% {
     top: 50%;
   }
   32%,
-  43% {
+  45% {
     left: 52%;
     top: 34%;
     scale: 1;
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.2, 1.6, 0.4, 1);
   }
-  47% {
+  50% {
     left: 52%;
     top: 30%;
-    scale: 1.3;
+    scale: 1.45;
+    rotate: 0deg;
   }
-  52%,
+  53% {
+    rotate: -6deg;
+  }
+  56% {
+    rotate: 5deg;
+  }
+  59% {
+    rotate: -3deg;
+  }
+  62% {
+    left: 52%;
+    top: 30%;
+    scale: 1.45;
+    rotate: 0deg;
+  }
+  68%,
   100% {
     left: 52%;
     top: 34%;
     scale: 1;
+    rotate: 0deg;
   }
 }
 
 @keyframes pv-unmask {
   0%,
-  42% {
-    scale: 1 1;
+  43% {
+    transform: rotateY(0deg);
     opacity: 1;
   }
-  45%,
-  64% {
-    scale: 0 1;
+  45% {
+    transform: rotateY(90deg);
+    opacity: 1;
+  }
+  45.5%,
+  66% {
+    transform: rotateY(90deg);
     opacity: 0;
   }
-  68%,
+  66.5% {
+    transform: rotateY(-90deg);
+    opacity: 1;
+  }
+  68.5%,
   100% {
-    scale: 1 1;
+    transform: rotateY(0deg);
     opacity: 1;
   }
 }
 
-/* The pawn dithers between them, picks the middle one, and regrets it */
+@keyframes pv-queen-shown {
+  0%,
+  45% {
+    transform: rotateY(-90deg);
+    opacity: 0;
+  }
+  45.5% {
+    transform: rotateY(-90deg);
+    opacity: 1;
+  }
+  47.5% {
+    transform: rotateY(0deg);
+    filter: brightness(2.2) drop-shadow(0 0 1.5cqw #fff);
+  }
+  52%,
+  60% {
+    filter: brightness(1.1) drop-shadow(0 0 1.2cqw #ffd23f)
+      drop-shadow(0 0 3cqw #ff3b1f);
+  }
+  64% {
+    transform: rotateY(0deg);
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35));
+    opacity: 1;
+  }
+  66%,
+  100% {
+    transform: rotateY(90deg);
+    opacity: 0;
+  }
+}
+
+@keyframes pv-reveal-rays {
+  0%,
+  45% {
+    opacity: 0;
+    scale: 0.3;
+    rotate: 0deg;
+  }
+  48% {
+    opacity: 1;
+    scale: 1;
+  }
+  58% {
+    opacity: 0.8;
+  }
+  64%,
+  100% {
+    opacity: 0;
+    scale: 1.3;
+    rotate: 70deg;
+  }
+}
+
+@keyframes pv-reveal-ring {
+  0%,
+  45% {
+    opacity: 0;
+    scale: 0.4;
+  }
+  46% {
+    opacity: 1;
+    scale: 0.6;
+  }
+  56%,
+  100% {
+    opacity: 0;
+    scale: 3.2;
+  }
+}
+
+@keyframes pv-reveal-flash {
+  0%,
+  45% {
+    opacity: 0;
+    scale: 0.5;
+  }
+  46.5% {
+    opacity: 1;
+    scale: 1;
+  }
+  54%,
+  100% {
+    opacity: 0;
+    scale: 1.4;
+  }
+}
+
+@keyframes pv-clash {
+  0%,
+  42.5% {
+    opacity: 0;
+    scale: 0.2;
+    rotate: 0deg;
+  }
+  43.5% {
+    opacity: 1;
+    scale: 1.3;
+  }
+  46.5%,
+  100% {
+    opacity: 0;
+    scale: 0.6;
+    rotate: 40deg;
+  }
+}
+
+/* The pawn dithers between them, picks the middle one, runs at it, and is sent flying */
 @keyframes pv-picks {
   0% {
     left: 52%;
@@ -1740,41 +1947,56 @@
     top: 80%;
   }
   36% {
-    left: 60%;
+    left: 52%;
     top: 80%;
   }
   38% {
-    left: 52%;
+    left: 60%;
     top: 80%;
   }
-  42%,
-  46% {
+  40% {
     left: 52%;
-    top: 58%;
+    top: 84%;
     rotate: 0deg;
     animation-timing-function: ease-in;
   }
-  58%,
+  43% {
+    left: 52%;
+    top: 60%;
+    rotate: 0deg;
+  }
+  45% {
+    left: 52%;
+    top: 64%;
+    rotate: -8deg;
+  }
+  48% {
+    left: 52%;
+    top: 66%;
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.8, 0.4);
+  }
+  60%,
   100% {
-    left: 96%;
-    top: 130%;
-    rotate: 320deg;
+    left: 104%;
+    top: 132%;
+    rotate: 520deg;
     opacity: 1;
   }
 }
 
 @keyframes pv-uh-oh {
   0%,
-  44% {
+  46% {
     scale: 0;
     opacity: 0;
   }
-  47%,
-  52% {
+  48%,
+  53% {
     scale: 1;
     opacity: 1;
   }
-  56%,
+  57%,
   100% {
     scale: 1.3;
     opacity: 0;
