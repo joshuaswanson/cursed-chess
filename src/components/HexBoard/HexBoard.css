@@ -101,9 +101,10 @@
 }
 
 /* Legal move indicator */
+/* Sized by the cell's height and kept square, since a hexagon is wider than it is tall */
 .hex-move-dot {
-  width: 28%;
-  height: 28%;
+  height: 32%;
+  aspect-ratio: 1;
   border-radius: 50%;
   background: #21e6ff;
   border: 2px solid #0d0221;
