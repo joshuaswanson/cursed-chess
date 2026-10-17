@@ -86,6 +86,8 @@ export interface ShotOption {
 export interface Kickoff {
   id: number;
   walks: { from: SquareIndex; to: SquareIndex }[];
+  /** Where the players taken earlier come back on, running in from the touchline */
+  enters: SquareIndex[];
 }
 
 export interface FootballView {
@@ -151,8 +153,8 @@ function shotAccuracy(distance: number): number {
  * dribbles by moving. Instead of moving, the carrier can pass along a clear
  * line to a teammate or shoot through the enemy goal mouth. Taking the
  * carrier, or landing on a loose ball, wins it. The first side to score
- * `goalsToWin` goals wins the game; until then, every goal sends the players
- * back to their places for a kickoff.
+ * `goalsToWin` goals wins the game; until then, every goal brings both full
+ * sides back to their places for a kickoff, players taken earlier included.
  */
 export class FootballPlugin implements ModePlugin {
   id = "football";
@@ -167,8 +169,11 @@ export class FootballPlugin implements ModePlugin {
   goalsToWin = 1;
   goals: Record<Color, number> = { [Color.White]: 0, [Color.Black]: 0 };
   kickoff: Kickoff | null = null;
-  /** Where each player lined up at the start, by color and shirt number */
-  private places = new Map<string, SquareIndex>();
+  /** Each player in the starting lineup and where they lined up, by color and shirt number */
+  private places = new Map<
+    string,
+    { sq: SquareIndex; piece: Piece; number: number }
+  >();
 
   /** The shirt number of whoever stands on a square */
   shirtOn(sq: SquareIndex): number | undefined {
@@ -183,29 +188,37 @@ export class FootballPlugin implements ModePlugin {
     this.handOutShirts(ctx.board);
     this.places.clear();
     for (const [sq, number] of this.shirts) {
-      this.places.set(placeKey(ctx.board.get(sq)!.color, number), sq);
+      const piece = { ...ctx.board.get(sq)! };
+      this.places.set(placeKey(piece.color, number), { sq, piece, number });
     }
     this.lastKick = null;
     this.ball = this.kickoffSpot(ctx.board);
   }
 
-  /** Every player still on the pitch walks back to where they started, and the ball goes back to the middle */
+  /**
+   * The starting lineups take the pitch again: everyone still on it walks
+   * back to their place, everyone taken comes back on, and the ball goes
+   * back to the middle
+   */
   kickOff(board: Board): void {
-    const players = [...this.shirts].map(([sq, number]) => ({
-      sq,
-      number,
-      piece: board.get(sq)!,
-    }));
-    for (const { sq } of players) board.remove(sq);
+    const onPitch = new Map(
+      [...this.shirts].flatMap(([sq, number]) => {
+        const piece = board.get(sq);
+        return piece ? [[placeKey(piece.color, number), sq] as const] : [];
+      }),
+    );
+    for (const sq of this.shirts.keys()) board.remove(sq);
     this.shirts.clear();
     const walks: Kickoff["walks"] = [];
-    for (const { sq, number, piece } of players) {
-      const place = this.places.get(placeKey(piece.color, number)) ?? sq;
-      board.put(place, piece);
+    const enters: SquareIndex[] = [];
+    for (const [key, { sq: place, piece, number }] of this.places) {
+      board.put(place, { ...piece });
       this.shirts.set(place, number);
-      if (place !== sq) walks.push({ from: sq, to: place });
+      const from = onPitch.get(key);
+      if (from === undefined) enters.push(place);
+      else if (from !== place) walks.push({ from, to: place });
     }
-    this.kickoff = { id: (this.kickoff?.id ?? 0) + 1, walks };
+    this.kickoff = { id: (this.kickoff?.id ?? 0) + 1, walks, enters };
     this.lastKick = null;
     this.ball = this.kickoffSpot(board);
   }

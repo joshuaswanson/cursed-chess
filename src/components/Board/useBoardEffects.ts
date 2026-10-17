@@ -4,7 +4,7 @@ import { isGameOver } from "../../engine";
 import type { Piece, SquareIndex } from "../../engine";
 import { useGameStore } from "../../stores/gameStore";
 import type { ZombieBounce, ZombieView } from "../../plugins/zombies";
-import { offsetBetween, visualRow } from "./boardGeometry";
+import { offsetBetween, visualCol, visualRow } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
 import { GRAVITY_SHIFT_MS } from "../../plugins/gravity";
 import type { Kick, Kickoff } from "../../plugins/football";
@@ -64,7 +64,7 @@ export function useSlideAnimation({
   return slides;
 }
 
-/** Players walking back from where they stood to their places for a kickoff */
+/** Players walking back from where they stood to their places for a kickoff, and those taken earlier running back on */
 export function useKickoffWalk(
   kickoff: Kickoff | null,
   flipped: boolean,
@@ -78,12 +78,18 @@ export function useKickoffWalk(
   if (kickoff && kickoff.id !== shown.id) {
     setShown({
       id: kickoff.id,
-      walks: new Map(
-        kickoff.walks.map(({ from, to }) => [
-          to,
-          offsetBetween(from, to, flipped, squareSize),
-        ]),
-      ),
+      walks: new Map([
+        ...kickoff.walks.map(
+          ({ from, to }) =>
+            [to, offsetBetween(from, to, flipped, squareSize)] as const,
+        ),
+        // Back on from whichever touchline is nearer
+        ...kickoff.enters.map((to) => {
+          const col = visualCol(to, flipped);
+          const run = col < 4 ? -(col + 1) : 8 - col;
+          return [to, { x: run * squareSize, y: 0 }] as const;
+        }),
+      ]),
     });
   }
 
