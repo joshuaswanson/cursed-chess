@@ -247,6 +247,16 @@ const RAIN_SPLASHES: [x: number, y: number, every: number][] = [
   [80, 40, 0.95],
 ];
 
+/** Chips of the board thrown out where the bolt lands, as how far across and down each lands, in cqw, and how far it spins */
+const STORM_CHIPS: [x: number, y: number, spin: number][] = [
+  [-16, 4, -400],
+  [-9, -6, 300],
+  [-4, 10, -250],
+  [7, 9, 350],
+  [11, -7, -300],
+  [17, 3, 420],
+];
+
 /** Where the sparks crackle round the knight as the current goes through it */
 const STORM_ZAPS = [
   { x: 34, y: 50, turn: -30 },
@@ -515,6 +525,28 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
         />
       ))}
       <span className="pv-storm-flash" />
+      <span className="pv-storm-burst">
+        {Array.from({ length: 10 }, (_, i) => (
+          <i
+            key={i}
+            className="pv-storm-spark"
+            style={{ "--a": `${i * 36 + (i % 3) * 9}deg` } as CSSProperties}
+          />
+        ))}
+        {STORM_CHIPS.map(([x, y, spin], i) => (
+          <i
+            key={`c${i}`}
+            className="pv-storm-chip"
+            style={
+              {
+                "--x": `${x}cqw`,
+                "--y": `${y}cqw`,
+                "--spin": `${spin}deg`,
+              } as CSSProperties
+            }
+          />
+        ))}
+      </span>
       <svg className="pv-storm-bolt" viewBox="0 0 50 100" aria-hidden>
         <path d="M33 2 L7 56 L24 56 L13 98 L47 37 L29 37 L42 2 Z" />
       </svg>

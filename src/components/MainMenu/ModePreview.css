@@ -2877,6 +2877,90 @@
   }
 }
 
+/* Where the bolt lands: sparks shooting out and chips of the board flung clear */
+.pv-storm-burst {
+  left: 50%;
+  top: 52%;
+  width: 0;
+  height: 0;
+}
+
+.pv-storm-spark {
+  position: absolute;
+  left: -0.45cqw;
+  top: -2.5cqw;
+  width: 0.9cqw;
+  height: 5cqw;
+  border-radius: 1cqw;
+  background: #ffe45c;
+  box-shadow: 0 0 0 0.35cqw var(--plum-ink);
+  opacity: 0;
+  animation: pv-storm-spark 3.6s ease-out infinite;
+}
+
+@keyframes pv-storm-spark {
+  0%,
+  29.8% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(-2cqw) scaleY(1.2);
+  }
+  30% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(-3cqw) scaleY(1.2);
+  }
+  37%,
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(-15cqw) scaleY(0.3);
+  }
+}
+
+.pv-storm-chip {
+  position: absolute;
+  left: -1.2cqw;
+  top: -1.2cqw;
+  width: 2.4cqw;
+  aspect-ratio: 1;
+  border-radius: 0.5cqw;
+  background: linear-gradient(135deg, #e3e8f2, #7d89a3);
+  box-shadow: 0 0 0 0.35cqw var(--plum-ink);
+  opacity: 0;
+  animation: pv-storm-chip 3.6s infinite;
+}
+
+.pv-storm-chip:nth-child(3n) {
+  background: #ffb23a;
+}
+
+@keyframes pv-storm-chip {
+  0%,
+  29.8% {
+    opacity: 0;
+    translate: 0 0;
+    rotate: 0deg;
+    animation-timing-function: ease-out;
+  }
+  30% {
+    opacity: 1;
+  }
+  34% {
+    translate: calc(var(--x) * 0.6) calc(var(--y) * 0.5 - 9cqw);
+    rotate: calc(var(--spin) * 0.6);
+    animation-timing-function: ease-in;
+  }
+  40% {
+    opacity: 1;
+    translate: var(--x) var(--y);
+    rotate: var(--spin);
+  }
+  46%,
+  100% {
+    opacity: 0;
+    translate: var(--x) var(--y);
+    rotate: var(--spin);
+  }
+}
+
 /* The knight it hits: flickering white and black as the current goes
    through it, then burnt, swelling, and gone */
 .pv-storm-victim > img {
