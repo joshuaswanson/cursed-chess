@@ -744,10 +744,11 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
         <i />
         <i />
       </span>
-      <Piece is="wP" x={50} y={80} size={18} className="pv-crosser" />
       <Piece is="bN" x={50} y={22} size={21} className="pv-lurker-knight">
         <span className="pv-mask">?</span>
       </Piece>
+      {/* Nearer, so in front */}
+      <Piece is="wP" x={50} y={80} size={18} className="pv-crosser" />
       <span className="pv-clash" />
     </>
   ),
