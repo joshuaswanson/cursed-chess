@@ -12,6 +12,9 @@ import { Lobby } from "./Lobby";
 import { onlineModeIndexes } from "../../net/onlineModes";
 import "./MainMenu.css";
 
+/** How many modes the story runs through */
+const STORY_MODES = GAME_MODES.filter((mode) => !mode.singleOnly).length;
+
 /** One thing to play on the menu: its scene playing while it is on screen, its name, and its tagline */
 function ModeCard({
   title,
@@ -130,7 +133,7 @@ export function MainMenu() {
             <div className="menu-featured">
               <ModeCard
                 title="Story Mode"
-                tagline="One mode after another!"
+                tagline={`Battle the evil Chessbot across all ${STORY_MODES} game modes!`}
                 colors={["#6a1fd6", "#ff2e88"]}
                 onPlay={startAdventure}
               >
