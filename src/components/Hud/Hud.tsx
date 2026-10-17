@@ -7,6 +7,7 @@ import {
 } from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
 import type { BattleRoyaleOverlay } from "../../plugins/battleRoyale";
+import type { FootballView } from "../../plugins/football";
 import type { PacView } from "../../plugins/pacman";
 import { useTheme } from "../../theme/useTheme";
 import { pieceImage } from "../../utils/pieceImages";
@@ -27,9 +28,23 @@ const pacView = (s: ReturnType<typeof useGameStore.getState>) =>
         ?.data as PacView | undefined)
     : undefined;
 
+/** The match FIFA is playing, when it is played to more than one goal */
+const footballMatch = (s: ReturnType<typeof useGameStore.getState>) => {
+  if (GAME_MODES[s.currentModeIndex]?.theme !== "fifa") return undefined;
+  const view = s.pluginManager
+    .getAllOverlays()
+    .find((o) => o.type === "football")?.data as FootballView | undefined;
+  return view && view.goalsToWin > 1 ? view : undefined;
+};
+
 function Scoreboard() {
-  const scoreWhite = useGameStore((s) => s.scoreWhite);
-  const scoreBlack = useGameStore((s) => s.scoreBlack);
+  // A FIFA match keeps the score in goals
+  const scoreWhite = useGameStore(
+    (s) => footballMatch(s)?.goals[Color.White] ?? s.scoreWhite,
+  );
+  const scoreBlack = useGameStore(
+    (s) => footballMatch(s)?.goals[Color.Black] ?? s.scoreBlack,
+  );
   // Online, each side of the score is whoever is playing it
   const online = useGameStore((s) => s.net !== null);
   const seat = useGameStore((s) => s.seat);
@@ -77,6 +92,7 @@ function NowPlaying() {
   const untimed = useGameStore(
     (s) => s.currentModeIndex >= 0 && !modeIsTimed(s),
   );
+  const goalsToWin = useGameStore((s) => footballMatch(s)?.goalsToWin ?? null);
   // Battle Royale counts down in turns, to the next line falling and then to the end
   const turns = useGameStore((s) => {
     if (GAME_MODES[s.currentModeIndex]?.theme !== "royale") return null;
@@ -94,7 +110,8 @@ function NowPlaying() {
       ? `${view.pellets.length + view.power.length}/${view.total}`
       : null;
   });
-  const counted = turns ?? pellets;
+  const goals = goalsToWin ? `${goalsToWin}/${goalsToWin}` : null;
+  const counted = turns ?? pellets ?? goals;
   const [turnsLeft, turnsFrom] = (counted ?? "0/1").split("/").map(Number);
   const fraction = counted
     ? turnsLeft / turnsFrom
@@ -121,9 +138,11 @@ function NowPlaying() {
             ? `${turnsLeft} turns until the board shrinks or the round ends`
             : pellets
               ? `${turnsLeft} pellets left`
-              : untimed
-                ? "No time limit: play until someone wins"
-                : `${remaining} seconds left in this mode`
+              : goalsToWin
+                ? `First to ${goalsToWin} goals wins`
+                : untimed
+                  ? "No time limit: play until someone wins"
+                  : `${remaining} seconds left in this mode`
         }
       >
         <svg viewBox="0 0 64 64">
@@ -142,7 +161,13 @@ function NowPlaying() {
             <span className="mode-ring-turns">
               {turnsLeft}
               <small>
-                {pellets ? "left" : turnsLeft === 1 ? "turn" : "turns"}
+                {pellets
+                  ? "left"
+                  : goalsToWin
+                    ? "to win"
+                    : turnsLeft === 1
+                      ? "turn"
+                      : "turns"}
               </small>
             </span>
           ) : untimed ? (

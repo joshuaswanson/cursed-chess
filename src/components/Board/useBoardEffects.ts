@@ -7,7 +7,8 @@ import type { ZombieBounce, ZombieView } from "../../plugins/zombies";
 import { offsetBetween, visualRow } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
 import { GRAVITY_SHIFT_MS } from "../../plugins/gravity";
-import type { Kick } from "../../plugins/football";
+import type { Kick, Kickoff } from "../../plugins/football";
+import { KICKOFF_WALK_MS } from "../../stores/gameStore";
 
 type Move = { from: SquareIndex; to: SquareIndex };
 type Offsets = Map<SquareIndex, { x: number; y: number }>;
@@ -61,6 +62,40 @@ export function useSlideAnimation({
   }, [lastMove, isPortalMove, wasDropRef, flipped, squareSize]);
 
   return slides;
+}
+
+/** Players walking back from where they stood to their places for a kickoff */
+export function useKickoffWalk(
+  kickoff: Kickoff | null,
+  flipped: boolean,
+  squareSize: number,
+): Offsets {
+  const [shown, setShown] = useState<{ id: number; walks: Offsets }>({
+    id: kickoff?.id ?? 0,
+    walks: new Map(),
+  });
+  // Taken up as it renders, so no one is seen in their place before they walk to it
+  if (kickoff && kickoff.id !== shown.id) {
+    setShown({
+      id: kickoff.id,
+      walks: new Map(
+        kickoff.walks.map(({ from, to }) => [
+          to,
+          offsetBetween(from, to, flipped, squareSize),
+        ]),
+      ),
+    });
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setShown((s) => ({ ...s, walks: new Map() })),
+      KICKOFF_WALK_MS + 100,
+    );
+    return () => clearTimeout(timer);
+  }, [shown.id]);
+
+  return shown.walks;
 }
 
 export interface GravityFall {

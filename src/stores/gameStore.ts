@@ -96,6 +96,10 @@ const PORTAL_END_DELAY_MS = 2400;
 const TUG_FINISH_MS = 2600;
 /** A goal gets its celebration before the result banner */
 const GOAL_CELEBRATION_MS = 3600;
+/** How long the players take to walk back to their places for the kickoff */
+export const KICKOFF_WALK_MS = 900;
+/** How many goals win FIFA played on its own; in the adventure the first goal does */
+const SINGLE_FIFA_GOALS = 3;
 const RESULT_MS = 2500;
 const RESULT_HOLD_MS = 2800;
 
@@ -1216,6 +1220,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
     passTurnWithoutMoving(
       kick.outcome === "goal" ? GOAL_CELEBRATION_MS : GAME_END_DELAY_MS,
     );
+    if (kick.outcome === "goal" && !isGameOver(get().status)) {
+      holdPause(GOAL_CELEBRATION_MS + KICKOFF_WALK_MS);
+      schedule(() => {
+        const { game, pluginManager } = get();
+        pluginManager.find<FootballPlugin>("football")?.kickOff(game.board);
+        game.halfMoveClock = 0;
+        set({
+          ...CLEARED_SELECTION,
+          lastMove: null,
+          timeWhite: PLAYER_MOVE_SECONDS,
+          timeBlack: foeSeconds(),
+        });
+      }, GOAL_CELEBRATION_MS);
+    }
     return true;
   },
 
@@ -1804,6 +1822,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       schedule(() => set({ reinforcements: [] }), settledMs + 250);
     }
 
+    const plugins = mode.create();
+    for (const plugin of plugins) {
+      if (plugin instanceof FootballPlugin && get().playMode === "single") {
+        plugin.goalsToWin = SINGLE_FIFA_GOALS;
+      }
+    }
     set({
       ...CLEARED_HEX,
       game: nextGame,
@@ -1811,7 +1835,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       sidelineKings,
       arrivalStyle: Math.random() < 0.5 ? "parachute" : "sprint",
       introDone: false,
-      pluginManager: freshPluginManager(nextGame, mode.create()),
+      pluginManager: freshPluginManager(nextGame, plugins),
       turn: nextGame.turn,
       moveHistory: [...nextGame.history],
       ...(isHexMode || resized ? { lastMove: null } : {}),

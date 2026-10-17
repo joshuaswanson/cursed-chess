@@ -82,11 +82,20 @@ export interface ShotOption {
   accuracy: number;
 }
 
+/** Players walking back to their places for the kickoff after a goal */
+export interface Kickoff {
+  id: number;
+  walks: { from: SquareIndex; to: SquareIndex }[];
+}
+
 export interface FootballView {
   ball: SquareIndex;
   lastKick: Kick | null;
   /** The shirt number worn by the piece on each square */
   shirts: Record<number, number>;
+  goals: Record<Color, number>;
+  goalsToWin: number;
+  kickoff: Kickoff | null;
 }
 
 /** Shirt numbers handed out by position, the way a team sheet would */
@@ -108,6 +117,7 @@ const reach = (a: SquareIndex, b: SquareIndex) =>
   Math.max(Math.abs(fileOf(a) - fileOf(b)), Math.abs(rankOf(a) - rankOf(b)));
 /** Which way a color's shots travel up the ranks */
 const attackDirection = (color: Color) => (color === Color.White ? 1 : -1);
+const placeKey = (color: Color, number: number) => `${color}${number}`;
 /** Just over the goal line, where the goal takes over the ball's flight */
 const goalRank = (color: Color) => (color === Color.White ? 7.6 : -0.6);
 
@@ -140,7 +150,9 @@ function shotAccuracy(distance: number): number {
  * Football on a chessboard. One ball: the piece standing on it carries it and
  * dribbles by moving. Instead of moving, the carrier can pass along a clear
  * line to a teammate or shoot through the enemy goal mouth. Taking the
- * carrier, or landing on a loose ball, wins it. A goal wins the game.
+ * carrier, or landing on a loose ball, wins it. The first side to score
+ * `goalsToWin` goals wins the game; until then, every goal sends the players
+ * back to their places for a kickoff.
  */
 export class FootballPlugin implements ModePlugin {
   id = "football";
@@ -152,6 +164,11 @@ export class FootballPlugin implements ModePlugin {
   lastKick: Kick | null = null;
   private scorer: Color | null = null;
   private shirts = new Map<SquareIndex, number>();
+  goalsToWin = 1;
+  goals: Record<Color, number> = { [Color.White]: 0, [Color.Black]: 0 };
+  kickoff: Kickoff | null = null;
+  /** Where each player lined up at the start, by color and shirt number */
+  private places = new Map<string, SquareIndex>();
 
   /** The shirt number of whoever stands on a square */
   shirtOn(sq: SquareIndex): number | undefined {
@@ -161,9 +178,36 @@ export class FootballPlugin implements ModePlugin {
 
   onGameStart(ctx: PluginContext): void {
     this.scorer = null;
+    this.goals = { [Color.White]: 0, [Color.Black]: 0 };
+    this.kickoff = null;
     this.handOutShirts(ctx.board);
+    this.places.clear();
+    for (const [sq, number] of this.shirts) {
+      this.places.set(placeKey(ctx.board.get(sq)!.color, number), sq);
+    }
     this.lastKick = null;
     this.ball = this.kickoffSpot(ctx.board);
+  }
+
+  /** Every player still on the pitch walks back to where they started, and the ball goes back to the middle */
+  kickOff(board: Board): void {
+    const players = [...this.shirts].map(([sq, number]) => ({
+      sq,
+      number,
+      piece: board.get(sq)!,
+    }));
+    for (const { sq } of players) board.remove(sq);
+    this.shirts.clear();
+    const walks: Kickoff["walks"] = [];
+    for (const { sq, number, piece } of players) {
+      const place = this.places.get(placeKey(piece.color, number)) ?? sq;
+      board.put(place, piece);
+      this.shirts.set(place, number);
+      if (place !== sq) walks.push({ from: sq, to: place });
+    }
+    this.kickoff = { id: (this.kickoff?.id ?? 0) + 1, walks };
+    this.lastKick = null;
+    this.ball = this.kickoffSpot(board);
   }
 
   onAfterMove(_ctx: PluginContext, move: Move): void {
@@ -207,6 +251,9 @@ export class FootballPlugin implements ModePlugin {
       ball: this.ball,
       lastKick: this.lastKick,
       shirts: Object.fromEntries(this.shirts),
+      goals: { ...this.goals },
+      goalsToWin: this.goalsToWin,
+      kickoff: this.kickoff,
     };
     return [{ type: "football", squares: [this.ball], data: view }];
   }
@@ -410,7 +457,10 @@ export class FootballPlugin implements ModePlugin {
           waypoints: [start, { ...exit, file: out }],
         });
       }
-      this.scorer = kicker.color;
+      this.goals[kicker.color]++;
+      if (this.goals[kicker.color] >= this.goalsToWin) {
+        this.scorer = kicker.color;
+      }
       return finish({
         kind: "shot",
         outcome: "goal",

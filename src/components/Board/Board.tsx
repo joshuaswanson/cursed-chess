@@ -1,5 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { lessonFor, useGameStore } from "../../stores/gameStore";
+import {
+  KICKOFF_WALK_MS,
+  lessonFor,
+  useGameStore,
+} from "../../stores/gameStore";
 import { Coach } from "../Coach/Coach";
 import {
   ALL_SQUARES,
@@ -82,6 +86,7 @@ import {
   useCaptureBurst,
   useSlideAnimation,
   useShotDives,
+  useKickoffWalk,
   useHeave,
   useTugDrags,
   useZombieActs,
@@ -334,6 +339,11 @@ export function Board() {
   );
   const shotDives = useShotDives(
     overlays.football?.lastKick ?? null,
+    flipped,
+    squareSize,
+  );
+  const kickoffWalks = useKickoffWalk(
+    overlays.football?.kickoff ?? null,
     flipped,
     squareSize,
   );
@@ -595,6 +605,7 @@ export function Board() {
       const tunnel = slide && sq === pacRun?.to ? pacTunnel : null;
       const fall = gravityFalls.get(sq);
       const dive = shotDives.get(sq);
+      const walk = kickoffWalks.get(sq);
       const hauled = tugDrags.get(sq);
       const ride = rides.get(sq);
       const bounceFrom = graveBounce?.to === sq ? graveBounce : null;
@@ -661,13 +672,19 @@ export function Board() {
                     "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
                     animation: `${dive.x === 0 && dive.y === 0 ? "fifa-jump" : "fifa-dive"} ${DIVE_MS}ms ${dive.delayMs}ms both`,
                   } as React.CSSProperties)
-                : piece
-                  ? goalReaction(
-                      overlays.football?.lastKick ?? null,
-                      sq,
-                      piece.color,
-                    )
-                  : undefined;
+                : walk
+                  ? ({
+                      "--slide-from-x": `${walk.x}px`,
+                      "--slide-from-y": `${walk.y}px`,
+                      animation: `slide-in ${KICKOFF_WALK_MS}ms ease-in-out both`,
+                    } as React.CSSProperties)
+                  : piece
+                    ? goalReaction(
+                        overlays.football?.lastKick ?? null,
+                        sq,
+                        piece.color,
+                      )
+                    : undefined;
 
       // Pieces next to a detonating mine are shoved away from it
       const blastFrom = [...minesBlasting].find(
