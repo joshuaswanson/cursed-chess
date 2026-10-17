@@ -496,7 +496,7 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
     <span className="pv-storm-scene">
       <span className="pv-storm-scorch" />
       <Piece is="bR" x={18} y={66} size={22} />
-      <Piece is="bN" x={50} y={64} size={26} className="pv-storm-victim" />
+      <Piece is="wN" x={50} y={64} size={26} className="pv-storm-victim" />
       <Piece is="wP" x={82} y={68} size={20} />
       <span className="pv-storm-dark" />
       {RAIN_LAYERS.map(({ tile, size, fall }) => (
