@@ -76,9 +76,9 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 3px;
+  width: var(--w, 3px);
   height: 22%;
-  margin: -11% 0 0 -1.5px;
+  margin: -11% 0 0 calc(var(--w, 3px) / -2);
   border-radius: 2px;
   background: linear-gradient(#ffffff, #ffd27a 60%, rgba(255, 120, 30, 0));
   opacity: 0;
@@ -93,6 +93,91 @@
   }
   to {
     transform: rotate(var(--a)) translateY(calc(var(--d) * -2.4)) scaleY(0.3);
+    opacity: 0;
+  }
+}
+
+/* Chips of the board blown up out of the hit: they grow as they rise toward
+   you, tumbling, and shrink as they fall back and land */
+.storm-debris {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--size);
+  aspect-ratio: 1;
+  margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2);
+  background: linear-gradient(135deg, #eef2fa, #7d89a3);
+  filter: drop-shadow(0 0 2px #cfe0ff);
+  opacity: 0;
+  animation: storm-debris 0.95s cubic-bezier(0.15, 0.7, 0.35, 1) both;
+  animation-delay: calc(70ms + var(--late));
+}
+
+.storm-debris-charred {
+  background: linear-gradient(135deg, #6a6470, #18151c);
+  filter: drop-shadow(0 0 2px #ff7a1a);
+}
+
+.storm-debris-hot {
+  background: radial-gradient(circle, #fff6d0, #ffb23a 55%, #e2470e);
+  filter: drop-shadow(0 0 3px #ff8a1a) drop-shadow(0 0 6px #ff5a00);
+}
+
+@keyframes storm-debris {
+  0% {
+    transform: rotate(var(--a)) translateY(0) rotate(0deg) scale(0.5);
+    opacity: 1;
+  }
+  45% {
+    transform: rotate(var(--a)) translateY(calc(var(--d) * -0.7))
+      rotate(calc(var(--spin) * 0.6)) scale(1.6);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--a)) translateY(calc(var(--d) * -1))
+      rotate(var(--spin)) scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Specks of fire flickering where it hit, after the sparks have flown */
+.storm-glint {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4%;
+  aspect-ratio: 1;
+  margin: -2% 0 0 -2%;
+  border-radius: 50%;
+  background: #fff3c4;
+  box-shadow:
+    0 0 3px #ffb347,
+    0 0 7px #ff6a1a;
+  transform: rotate(var(--a)) translateY(calc(var(--d) * -1));
+  opacity: 0;
+  animation:
+    storm-glint-flicker var(--flicker) steps(2) infinite,
+    storm-glint 1.2s linear both;
+  animation-delay: var(--late);
+}
+
+@keyframes storm-glint-flicker {
+  50% {
+    background: #ff9a3a;
+  }
+}
+
+@keyframes storm-glint {
+  0% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.8;
+  }
+  100% {
     opacity: 0;
   }
 }

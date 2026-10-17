@@ -130,6 +130,55 @@ function sparks(rand: () => number, count: number) {
         "--a": `${(i / count) * 360 + rand() * 30}deg`,
         "--d": `${80 + rand() * 170}%`,
         "--late": `${Math.round(rand() * 120)}ms`,
+        "--w": `${(1.5 + rand() * 2.5).toFixed(1)}px`,
+      }) as CSSProperties,
+  );
+}
+
+/** A ragged chip of a shape, as a clip path */
+function chip(rand: () => number): string {
+  const corners = 5 + Math.floor(rand() * 3);
+  return `polygon(${Array.from({ length: corners }, (_, i) => {
+    const angle = (i / corners + rand() * 0.12) * Math.PI * 2;
+    const r = 30 + rand() * 20;
+    return `${(50 + Math.cos(angle) * r).toFixed(0)}% ${(50 + Math.sin(angle) * r).toFixed(0)}%`;
+  }).join(", ")})`;
+}
+
+/**
+ * Chips of the board blasted up out of where it hit, some still glowing,
+ * tumbling as they fly out and fall back. Sizes are in squares, and each
+ * flies as far as the square across or more.
+ */
+function debris(rand: () => number, count: number) {
+  return Array.from({ length: count }, (_, i) => {
+    const size = 0.09 + rand() * 0.09;
+    const reach = 0.5 + rand() * 1.1;
+    const kind = rand();
+    return {
+      className: `storm-debris${kind < 0.6 ? " storm-debris-hot" : kind < 0.75 ? " storm-debris-charred" : ""}`,
+      style: {
+        "--a": `${(i / count) * 360 + rand() * 40}deg`,
+        "--d": `${((reach / size) * 100).toFixed(0)}%`,
+        "--size": `${(size * 100).toFixed(1)}%`,
+        "--spin": `${Math.round((rand() - 0.5) * 1100)}deg`,
+        "--late": `${Math.round(rand() * 90)}ms`,
+        clipPath: chip(rand),
+      } as CSSProperties,
+    };
+  });
+}
+
+/** Specks of fire left flickering round where it hit, as far out as half a square */
+function glints(rand: () => number, count: number) {
+  return Array.from(
+    { length: count },
+    () =>
+      ({
+        "--a": `${Math.round(rand() * 360)}deg`,
+        "--d": `${Math.round((0.08 + rand() * 0.42) * 100 * 25)}%`,
+        "--late": `${Math.round(120 + rand() * 260)}ms`,
+        "--flicker": `${Math.round(70 + rand() * 90)}ms`,
       }) as CSSProperties,
   );
 }
@@ -382,8 +431,14 @@ function Bolt({ strike, flipped }: { strike: Strike; flipped: boolean }) {
             style={{ "--i": i } as CSSProperties}
           />
         ))}
-        {sparks(rand, 18).map((style, i) => (
+        {sparks(rand, 36).map((style, i) => (
           <i key={i} className="storm-spark" style={style} />
+        ))}
+        {debris(rand, 14).map(({ className, style }, i) => (
+          <i key={`d${i}`} className={className} style={style} />
+        ))}
+        {glints(rand, 16).map((style, i) => (
+          <i key={`g${i}`} className="storm-glint" style={style} />
         ))}
       </span>
       {strike.shocked.map(({ sq, piece }) => {
