@@ -1223,14 +1223,15 @@ export function Board() {
                 flipped={flipped}
               />
             )}
-          {checkedKing !== null && checkers.length > 0 && (
-            <CheckLines
-              king={checkedKing}
-              checkers={checkers}
-              flipped={flipped}
-              mate={status === GameStatus.Checkmate}
-            />
-          )}
+          {checkedKing !== null &&
+            checkers.length > 0 &&
+            status === GameStatus.Checkmate && (
+              <CheckLines
+                king={checkedKing}
+                checkers={checkers}
+                flipped={flipped}
+              />
+            )}
           {battleRoyale && brBroken && (
             <BrokenRim zone={battleRoyale.zone} flipped={flipped} />
           )}

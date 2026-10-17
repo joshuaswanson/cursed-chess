@@ -9,17 +9,15 @@ const UNIT = 100;
 const HEAD_LENGTH = 30;
 const HEAD_WIDTH = 26;
 
-/** Arrows from each piece giving check to the king, drawn one after another when it is mate */
+/** At mate, arrows from each piece giving check to the king, drawn one after another */
 export function CheckLines({
   king,
   checkers,
   flipped,
-  mate,
 }: {
   king: SquareIndex;
   checkers: Checker[];
   flipped: boolean;
-  mate: boolean;
 }) {
   const center = (sq: SquareIndex) => [
     (visualCol(sq, flipped) + 0.5) * UNIT,
@@ -28,7 +26,7 @@ export function CheckLines({
   const [kx, ky] = center(king);
   return (
     <svg
-      className={`check-lines${mate ? " mate" : ""}`}
+      className="check-lines"
       viewBox={`0 0 ${boardFiles() * UNIT} ${boardRanks() * UNIT}`}
       aria-hidden
     >

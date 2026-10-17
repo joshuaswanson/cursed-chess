@@ -1,4 +1,4 @@
-/* --- What is giving check: a ring on each attacker and an arrow to the king --- */
+/* --- What is giving check: a ring on each attacker, and at mate an arrow to the king --- */
 
 .check-ring {
   position: absolute;
@@ -34,12 +34,14 @@
   overflow: visible;
 }
 
+/* The arrows come in one at a time, so each attacker can be seen */
 .check-line-ink,
 .check-line-red {
   fill: none;
   stroke-linecap: round;
   stroke-dasharray: 1;
-  animation: check-line-draw 0.35s ease-out both;
+  animation: check-line-draw 0.45s ease-out both;
+  animation-delay: calc(var(--i) * 0.4s);
 }
 
 .check-line-ink {
@@ -54,7 +56,8 @@
 
 .check-line-head-ink,
 .check-line-head {
-  animation: check-line-head 0.2s 0.3s ease-out both;
+  animation: check-line-head 0.2s ease-out both;
+  animation-delay: calc(var(--i) * 0.4s + 0.4s);
 }
 
 .check-line-head-ink {
@@ -66,18 +69,6 @@
 
 .check-line-head {
   fill: #ff3b3b;
-}
-
-/* At mate the arrows come in one at a time, so each attacker can be seen */
-.check-lines.mate .check-line-ink,
-.check-lines.mate .check-line-red {
-  animation-duration: 0.45s;
-  animation-delay: calc(var(--i) * 0.4s);
-}
-
-.check-lines.mate .check-line-head-ink,
-.check-lines.mate .check-line-head {
-  animation-delay: calc(var(--i) * 0.4s + 0.4s);
 }
 
 @keyframes check-line-draw {
