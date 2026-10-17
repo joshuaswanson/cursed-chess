@@ -628,25 +628,23 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       />
     </>
   ),
-  // A shell game: three masked pieces swap places, a pawn takes its pick,
-  // and the mask comes off the queen
+  // A pawn crosses the bridge, and the masked piece waiting on the far bank
+  // pounces, losing its mask to show a knight, and knocks it into the river
   stratego: (
     <>
-      <Piece is="bP" x={24} y={34} className="pv-shell-1">
+      <span className="pv-river" />
+      <span className="pv-bridge" />
+      <span className="pv-splash">
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+      <Piece is="wP" x={50} y={80} size={18} className="pv-crosser" />
+      <Piece is="bN" x={50} y={22} size={21} className="pv-lurker-knight">
         <span className="pv-mask">?</span>
       </Piece>
-      <Piece is="bP" x={52} y={34} className="pv-shell-2">
-        <span className="pv-mask">?</span>
-      </Piece>
-      <Piece is="bQ" x={80} y={34} className="pv-shell-3">
-        <span className="pv-reveal-rays" />
-        <span className="pv-reveal-ring" />
-        <span className="pv-reveal-flash" />
-        <span className="pv-mask pv-unmasks">?</span>
-      </Piece>
-      <Piece is="wP" x={52} y={80} size={22} className="pv-picks" />
       <span className="pv-clash" />
-      <span className="pv-shout pv-uh-oh">!</span>
     </>
   ),
   // A captured pawn claws its way back out of its grave
