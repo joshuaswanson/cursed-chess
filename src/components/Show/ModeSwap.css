@@ -44,55 +44,6 @@
   }
 }
 
-/* Caution tape across the top of the screen, running */
-.mode-swap-tape {
-  position: absolute;
-  left: -5%;
-  right: -5%;
-  top: 9%;
-  z-index: 1;
-  padding: 8px 0;
-  overflow: hidden;
-  white-space: nowrap;
-  font: normal clamp(16px, 2.4vw, 26px) / 1 var(--font-display);
-  color: #120a00;
-  background: repeating-linear-gradient(
-    -45deg,
-    #ffd23f 0 22px,
-    #1a1200 22px 44px
-  );
-  border-block: 4px solid #120a00;
-  rotate: -4deg;
-  animation: mode-swap-tape-in 0.35s 0.25s cubic-bezier(0.3, 1.4, 0.5, 1) both;
-}
-
-/* Down at the bottom when he sits up top, so it never runs across him */
-.mode-swap.tape-low .mode-swap-tape {
-  top: auto;
-  bottom: 9%;
-}
-
-.mode-swap-tape span {
-  display: inline-block;
-  padding: 2px 0;
-  background: #ffd23f;
-  box-shadow: 0 0 0 4px #ffd23f;
-  animation: mode-swap-tape-run 6s linear infinite;
-}
-
-@keyframes mode-swap-tape-in {
-  from {
-    scale: 1.6 0;
-    opacity: 0;
-  }
-}
-
-@keyframes mode-swap-tape-run {
-  to {
-    translate: -50% 0;
-  }
-}
-
 /* Windows of code thrown open all over the screen, each flying out of him */
 .mode-swap-window {
   --w: min(250px, 40vw);
@@ -254,95 +205,153 @@
   }
 }
 
-/* The site's new owner announces himself, in letters as big as the board */
-.mode-swap-hacked {
-  position: absolute;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: max-content;
-  max-width: 94vw;
-  padding: 18px 26px 20px;
-  text-align: center;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.04) 0 1px,
-      transparent 1px 3px
-    ),
-    #07040a;
-  border: 3px solid #ff2e4d;
-  border-radius: 8px;
-  box-shadow:
-    0 0 0 3px #000,
-    0 0 50px rgba(255, 46, 77, 0.5),
-    0 20px 50px rgba(0, 0, 0, 0.7);
-  translate: -50% -50%;
-  animation: mode-swap-slam 0.3s cubic-bezier(0.3, 1.6, 0.5, 1) both;
-}
-
-.mode-swap-hacked b {
-  font: normal clamp(34px, 7vw, 80px) / 1 var(--font-display);
-  white-space: nowrap;
-  color: #ff2e4d;
-  text-transform: uppercase;
-  text-shadow:
-    4px 0 #21e6ff,
-    -4px 0 #ff2e88,
-    5px 6px 0 #05090a;
-  animation: mode-swap-hacked-flicker 0.24s steps(1) infinite;
-}
-
-@keyframes mode-swap-hacked-flicker {
-  50% {
-    translate: 3px 0;
-    text-shadow:
-      -4px 0 #21e6ff,
-      4px 0 #ff2e88,
-      5px 6px 0 #05090a;
-  }
-}
-
-.mode-swap-hacked span {
-  font:
-    bold clamp(13px, 1.8vw, 20px) "Courier New",
-    Courier,
-    monospace;
+.mode-swap-build {
   color: #c8ffd9;
-  text-shadow:
-    0 0 8px rgba(80, 255, 150, 0.8),
-    2px 2px 0 #05090a;
 }
 
-@keyframes mode-swap-slam {
-  from {
-    scale: 2.4;
+/* Bands of the screen tear loose, jumping and flickering inverted */
+.mode-swap-tears i {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  z-index: 3;
+  -webkit-backdrop-filter: invert(1) hue-rotate(90deg) saturate(3);
+  backdrop-filter: invert(1) hue-rotate(90deg) saturate(3);
+  opacity: 0;
+  animation: mode-swap-tear 1s var(--late) steps(1) both;
+}
+
+.mode-swap-tears i:nth-child(3n) {
+  -webkit-backdrop-filter: hue-rotate(-120deg) saturate(4) brightness(1.4);
+  backdrop-filter: hue-rotate(-120deg) saturate(4) brightness(1.4);
+}
+
+.mode-swap-tears i:nth-child(4n) {
+  background: rgba(33, 230, 255, 0.35);
+  mix-blend-mode: screen;
+}
+
+@keyframes mode-swap-tear {
+  0% {
+    opacity: 1;
+    translate: var(--shift) 0;
+  }
+  12% {
+    translate: calc(var(--shift) * -1) 0;
+  }
+  24% {
+    opacity: 0;
+  }
+  36% {
+    opacity: 1;
+    translate: calc(var(--shift) * 0.5) 0;
+  }
+  50% {
+    translate: calc(var(--shift) * -1.5) 0;
+  }
+  62% {
+    opacity: 0;
+  }
+  74% {
+    opacity: 1;
+    translate: calc(var(--shift) * 2) 0;
+  }
+  88%,
+  100% {
     opacity: 0;
   }
 }
 
-/* The flash as the new mode goes live */
-.mode-swap-flash {
+/* Static over everything as the screen breaks up */
+.mode-swap-static {
+  position: absolute;
+  inset: -20px;
+  z-index: 3;
+  background:
+    repeating-radial-gradient(
+      circle at 13% 27%,
+      rgba(255, 255, 255, 0.14) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.07) 0 1px,
+      transparent 1px 2px
+    );
+  opacity: 0;
+  animation:
+    mode-swap-static-show var(--swap-ms) linear both,
+    mode-swap-static-jitter 0.12s steps(3) infinite;
+}
+
+@keyframes mode-swap-static-show {
+  0%,
+  66% {
+    opacity: 0;
+  }
+  68%,
+  87% {
+    opacity: 0.8;
+  }
+  88%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes mode-swap-static-jitter {
+  to {
+    translate: 20px 14px;
+  }
+}
+
+/* He switches the screen off like an old set: the picture squashes to a
+   line, the line to a dot, and the dot goes out */
+.mode-swap-crt {
   position: absolute;
   inset: 0;
   z-index: 4;
-  background: #ffffff;
+  display: grid;
+  place-items: center;
+  background: #000;
   opacity: 0;
-  animation: mode-swap-flash var(--swap-ms) linear both;
+  animation: mode-swap-crt-dark var(--swap-ms) steps(1) both;
 }
 
-@keyframes mode-swap-flash {
-  0%,
-  87% {
+.mode-swap-crt i {
+  width: 100%;
+  height: 100%;
+  background: #f4faff;
+  box-shadow: 0 0 40px 10px rgba(200, 230, 255, 0.8);
+  animation: mode-swap-crt-off var(--swap-ms) linear both;
+}
+
+@keyframes mode-swap-crt-dark {
+  0% {
     opacity: 0;
   }
-  88% {
+  87.5%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes mode-swap-crt-off {
+  0%,
+  87.5% {
+    scale: 1 1;
+    opacity: 1;
+  }
+  92% {
+    scale: 1 0.006;
+  }
+  96% {
+    scale: 0.004 0.006;
     opacity: 1;
   }
   100% {
-    opacity: 0.9;
+    scale: 0 0;
+    opacity: 0;
   }
 }
 
@@ -421,13 +430,11 @@
 @media (prefers-reduced-motion: reduce) {
   .mode-swap,
   .mode-swap-alert,
-  .mode-swap-tape,
-  .mode-swap-tape span,
+  .mode-swap-tears i,
+  .mode-swap-static,
   .mode-swap-window,
   .mode-swap-window pre,
   .mode-swap-terminal,
-  .mode-swap-hacked,
-  .mode-swap-hacked b,
   .app.mode-swapping .chessbot-dock .chessbot-head,
   .app.mode-swapping .board-container {
     animation: none;

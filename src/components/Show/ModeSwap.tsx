@@ -28,24 +28,24 @@ const RULES: Record<ThemeId, string> = {
   pacman: "pellets.scatter()",
 };
 
-/** What pours through the windows he throws open as he breaks into the site */
+/** Code pouring through the windows he throws open all over the screen */
 const CODE = [
-  "nmap totallynormalchess.com",
-  "GET /admin 200 OK",
-  "password: ********  ACCEPTED",
-  "sudo su chessbot",
-  "DROP TABLE fair_rules;",
-  "UPDATE players SET rating = 0;",
-  "chmod 777 /var/www/chess",
-  "firewall.disable()",
+  "patch rules.dll --force",
+  "for piece in board: piece.loyalty = 0",
   "rm -rf /fair_play",
-  "curl -X DELETE /api/rules",
-  "inject <script>cursed.js</script>",
-  "deface index.html",
-  "cat /etc/passwd",
-  "logs.wipe()",
-  "ACCESS GRANTED",
-  "upload malware.pak 100%",
+  "override(win_condition)",
+  "inject(chaos, level=9000)",
+  "kings.trust = false",
+  "undo_button.delete()",
+  "physics.enabled = maybe",
+  "while (you.winning) cheat()",
+  "board.reality.rewrite()",
+  "assert chessbot.wins",
+  "sudo make_it_worse",
+  "load cursed_sprites.pak",
+  "random.seed(evil)",
+  "touch_move = strict",
+  "compile mischief.c -O3",
 ];
 
 /** Where each window of code opens, as how far across and down the screen and how it leans; none over him in the middle */
@@ -72,8 +72,20 @@ const TYPE_FROM_MS = 700;
 const CHAR_MS = 22;
 const RUMBLE_MS = 900;
 const YANK_MS = 3500;
-const FLASH_MS = 4550;
+const SWITCH_OFF_MS = 4550;
 const BAR_CELLS = 16;
+/** Bands of the screen that tear loose as the old board goes, as how far down they are and how tall, in percent, and how far they jump, in pixels */
+const TEARS: [top: number, height: number, shift: number][] = [
+  [5, 4, 40],
+  [13, 2, -70],
+  [22, 6, 25],
+  [34, 3, -45],
+  [43, 7, 60],
+  [56, 2, -30],
+  [62, 5, 80],
+  [74, 3, -55],
+  [85, 6, 35],
+];
 
 const fileName = (index: number) =>
   `${GAME_MODES[index].name.toLowerCase().replace(/[^a-z]+/g, "_")}.mode`;
@@ -149,10 +161,11 @@ function middleOf(selector: string): { x: number; y: number } {
 }
 
 /**
- * Between two modes of the adventure, Chessbot hacks the site from his spot
- * beside the board: alarms go off, a terminal and windows of code fly out
- * of him all over the screen, he breaks in and swaps the mode files, the old
- * board is torn away, and the site is his in a flash
+ * Between two modes of the adventure, Chessbot rewrites the game from his
+ * spot beside the board: alarms go off, a terminal and windows of code
+ * fly out of him all over the screen, he types the next mode in and builds
+ * it, the old board is torn away, the screen tears up, and he switches it
+ * off and on again into the new mode
  */
 export function ModeSwap() {
   const swap = useGameStore((s) => s.modeSwap);
@@ -162,9 +175,8 @@ export function ModeSwap() {
 
 function Swap({ from, to }: { from: number; to: number }) {
   const lines = [
-    "ssh root@totallynormalchess.com",
-    `rm ${fileName(from)}`,
-    `upload ${fileName(to)}`,
+    `unload ${fileName(from)}`,
+    `load ${fileName(to)}`,
     RULES[GAME_MODES[to].theme],
     "deploy --now",
   ];
@@ -198,7 +210,7 @@ function Swap({ from, to }: { from: number; to: number }) {
         sfx.collapse();
         shake(10);
       }),
-      at(FLASH_MS, () => {
+      at(SWITCH_OFF_MS, () => {
         sfx.boom();
         shake(22);
       }),
@@ -217,15 +229,12 @@ function Swap({ from, to }: { from: number; to: number }) {
     return [part];
   });
   const typing = now < typedBy;
-  const uploaded = Math.min(
-    1,
-    Math.max(0, (now - YANK_MS) / (FLASH_MS - YANK_MS - 150)),
-  );
-  const cells = Math.round(uploaded * BAR_CELLS);
+  const built = Math.min(1, Math.max(0, (now - typedBy) / (YANK_MS - typedBy)));
+  const cells = Math.round(built * BAR_CELLS);
 
   return (
     <div
-      className={`mode-swap${zone && (zone.top + zone.bottom) / 2 < window.innerHeight / 2 ? " tape-low" : ""}`}
+      className="mode-swap"
       style={
         {
           "--swap-ms": `${MODE_SWAP_MS}ms`,
@@ -259,7 +268,7 @@ function Swap({ from, to }: { from: number; to: number }) {
               }
             >
               <header>
-                <span>{`exploit_${(i * 7919) % 1000}.sh`}</span>
+                <span>{`patch_${(i * 7919) % 1000}.exe`}</span>
                 <i />
                 <i />
                 <i />
@@ -281,9 +290,6 @@ function Swap({ from, to }: { from: number; to: number }) {
           );
         })}
       </div>
-      <div className="mode-swap-tape" aria-hidden>
-        <span>{"SECURITY BREACH   ACCESS GRANTED   ".repeat(8)}</span>
-      </div>
       <section
         className="mode-swap-terminal"
         style={
@@ -296,7 +302,7 @@ function Swap({ from, to }: { from: number; to: number }) {
         }
       >
         <header>
-          <span>root@totallynormalchess</span>
+          <span>chessbot.exe</span>
           <i />
           <i />
           <i />
@@ -312,19 +318,32 @@ function Swap({ from, to }: { from: number; to: number }) {
               {"\n"}
             </span>
           ))}
+          {!typing && (
+            <span className="mode-swap-build">
+              {`[${"#".repeat(cells)}${".".repeat(BAR_CELLS - cells)}] ${Math.round(built * 100)}%`}
+            </span>
+          )}
         </pre>
       </section>
-      {now > YANK_MS - 100 && (
-        <div
-          className="mode-swap-hacked"
-          style={{ left: board.x, top: board.y }}
-        >
-          <b>Site hacked</b>
-          <span>totallynormalchess.com is now under new management</span>
-          <span>{`[${"#".repeat(cells)}${".".repeat(BAR_CELLS - cells)}] ${fileName(to)} ${Math.round(uploaded * 100)}%`}</span>
-        </div>
-      )}
-      <span className="mode-swap-flash" />
+      <div className="mode-swap-tears" aria-hidden>
+        {TEARS.map(([top, height, shift], i) => (
+          <i
+            key={i}
+            style={
+              {
+                top: `${top}%`,
+                height: `${height}%`,
+                "--shift": `${shift}px`,
+                "--late": `${YANK_MS + i * 45}ms`,
+              } as CSSProperties
+            }
+          />
+        ))}
+      </div>
+      <span className="mode-swap-static" />
+      <div className="mode-swap-crt" aria-hidden>
+        <i />
+      </div>
     </div>
   );
 }
