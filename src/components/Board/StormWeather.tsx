@@ -185,22 +185,31 @@ interface Splash {
 const reducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** Shakes the whole game, hardest at first and settling */
+/**
+ * Shakes the whole game: slammed down and punched in by the hit, then
+ * thrown about, hardest at first and settling
+ */
 function shake(strength: number, delayMs: number) {
   if (reducedMotion()) return;
   const app = document.querySelector<HTMLElement>(".app");
   if (!app) return;
-  const steps = 14;
+  const steps = 22;
+  const still = { translate: "0px 0px", rotate: "0deg", scale: "1" };
+  // Zoomed in as far as it is thrown, so the window is always covered
+  const cover = 2.6 / Math.min(window.innerWidth, window.innerHeight);
   const frames = Array.from({ length: steps + 1 }, (_, i) => {
-    const left = i === steps ? 0 : strength * (1 - i / steps) ** 1.6;
-    const x = (Math.random() - 0.5) * 2 * left;
-    const y = (Math.random() - 0.5) * 2 * left;
+    if (i === 0 || i === steps) return still;
+    const left = strength * (1 - i / steps) ** 1.8;
+    // The first beat drives straight down, as the bolt hits
+    const x = i === 1 ? 0 : (Math.random() - 0.5) * 2 * left;
+    const y = i === 1 ? strength * 0.9 : (Math.random() - 0.5) * 2 * left;
     return {
       translate: `${x.toFixed(1)}px ${y.toFixed(1)}px`,
-      rotate: `${((Math.random() - 0.5) * left * 0.08).toFixed(2)}deg`,
+      rotate: `${((Math.random() - 0.5) * left * 0.14).toFixed(2)}deg`,
+      scale: (1 + Math.max(left, i === 1 ? strength : 0) * cover).toFixed(4),
     };
   });
-  app.animate(frames, { duration: 620, delay: delayMs, easing: "linear" });
+  app.animate(frames, { duration: 900, delay: delayMs, easing: "linear" });
 }
 
 /**
@@ -387,12 +396,12 @@ export function StormWeather() {
     }
     const timers = [window.setTimeout(() => sfx.thunder(true), HIT_MS)];
     if (bolt?.killed) {
-      shake(16, HIT_MS);
+      shake(38, HIT_MS);
       sfx.zap();
-      shake(12, BURST_MS);
+      shake(32, BURST_MS);
       timers.push(window.setTimeout(() => sfx.boom(), BURST_MS));
     } else {
-      shake(8, HIT_MS);
+      shake(26, HIT_MS);
     }
     return () => timers.forEach((t) => window.clearTimeout(t));
   }, [strike, first]);

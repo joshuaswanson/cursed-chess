@@ -766,6 +766,11 @@
 
 /* No edge of the board shows in the dark: the frame loses its rim and
    shadow, the board its outline, and the backdrop its dot pattern */
+/* Behind the game, in case the shaking ever shows past its edge */
+body:has(.app[data-theme="storm"]) {
+  background: #04030a;
+}
+
 .app[data-theme="storm"] .board-shell {
   background: transparent;
   border-color: transparent;
