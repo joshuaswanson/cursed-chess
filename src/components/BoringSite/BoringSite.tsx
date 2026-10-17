@@ -254,9 +254,9 @@ function MoveList() {
   );
 }
 
-/** Opponent, move list, and a couple of sensible buttons */
+/** Opponent, move list, and a sensible button */
 export function BoringSidebar() {
-  const { newGame, flipBoard } = useGameStore.getState();
+  const { newGame } = useGameStore.getState();
   const corrupt = useCorrupt();
   return (
     <aside className="boring-sidebar">
@@ -267,13 +267,6 @@ export function BoringSidebar() {
         <div className="boring-actions">
           <button type="button" className="boring-btn" onClick={newGame}>
             {corrupt("New game")}
-          </button>
-          <button
-            type="button"
-            className="boring-btn boring-btn-plain"
-            onClick={flipBoard}
-          >
-            {corrupt("Flip board")}
           </button>
         </div>
       </section>

@@ -415,7 +415,6 @@ export interface GameStore {
   kick: (target: KickTarget) => boolean;
   makeMove: (from: SquareIndex, to: SquareIndex, promotion?: PieceType) => void;
   newGame: () => void;
-  flipBoard: () => void;
   clearSelection: () => void;
   togglePause: () => void;
   handleGameEnd: (winner: Color | null) => void;
@@ -1275,7 +1274,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
-  flipBoard: () => set((state) => ({ flipped: !state.flipped })),
 
   clearSelection: () => set({ ...CLEARED_SELECTION, promotionPending: null }),
 
