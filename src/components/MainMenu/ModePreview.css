@@ -249,7 +249,7 @@
 /* He swings from the head, so it is his base that comes through the ball */
 .pv-kicker {
   transform-origin: 50% 15%;
-  animation: pv-kicker 3.4s ease-in-out infinite;
+  animation: pv-kicker 4.6s ease-in-out infinite;
 }
 
 .pv-ball {
@@ -259,7 +259,7 @@
   aspect-ratio: 1;
   translate: -50% -50%;
   filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
-  animation: pv-ball 3.4s infinite;
+  animation: pv-ball 4.6s infinite;
 }
 
 .pv-ball > svg {
@@ -268,77 +268,123 @@
   height: 100%;
 }
 
-.pv-goal-shout {
-  animation: pv-shout 3.4s infinite;
+.pv-goal {
+  animation: pv-net 4.6s ease-out infinite;
 }
 
+.pv-goal-shout {
+  animation: pv-shout 4.6s infinite;
+}
+
+/* He runs up and strikes it, then strolls back to his mark as it rolls out
+   of the net to the spot, both getting there as the next run starts */
 @keyframes pv-kicker {
   0%,
   100% {
     translate: -110% -50%;
+    rotate: 0deg;
   }
-  28% {
+  19% {
+    rotate: 14deg;
+  }
+  22% {
     translate: -50% -50%;
     rotate: 0deg;
   }
-  24% {
-    rotate: 14deg;
-  }
-  33% {
+  26% {
     translate: -40% -50%;
     rotate: -28deg;
   }
-  45%,
-  85% {
+  36%,
+  52% {
     translate: -50% -50%;
+    rotate: 0deg;
+  }
+  88% {
+    translate: -110% -50%;
     rotate: 0deg;
   }
 }
 
+/* Struck into the net, dropping to the ground there, and rolling slowly back
+   out to stop on the spot it was kicked from */
 @keyframes pv-ball {
   0%,
-  31% {
+  24% {
     left: 36%;
     top: 66%;
     rotate: 0deg;
     animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
   }
-  52% {
+  36% {
     left: 92%;
     top: 46%;
     rotate: 720deg;
+    animation-timing-function: ease-in;
   }
-  60%,
-  88% {
+  41% {
     left: 91%;
     top: 68%;
     rotate: 760deg;
-    opacity: 1;
+    animation-timing-function: ease-out;
+  }
+  43% {
+    top: 64%;
+  }
+  46%,
+  52% {
+    left: 90%;
+    top: 68%;
+    rotate: 770deg;
+    animation-timing-function: cubic-bezier(0.3, 0.5, 0.45, 1);
   }
   100% {
-    left: 91%;
-    top: 68%;
-    opacity: 0;
+    left: 36%;
+    top: 66%;
+    rotate: 0deg;
+  }
+}
+
+/* The net bellies out as the ball hits it */
+@keyframes pv-net {
+  0%,
+  35.5% {
+    translate: 0 0;
+    scale: 1 1;
+  }
+  37% {
+    translate: 6% 0;
+    scale: 1.1 1.04;
+  }
+  41% {
+    translate: -2% 0;
+    scale: 0.98 1;
+  }
+  45%,
+  100% {
+    translate: 0 0;
+    scale: 1 1;
   }
 }
 
 @keyframes pv-shout {
   0%,
-  52% {
+  36% {
     scale: 0;
     opacity: 0;
   }
-  60% {
+  42% {
     scale: 1.25;
     opacity: 1;
     rotate: -6deg;
   }
-  66%,
-  86% {
+  47%,
+  66% {
     scale: 1;
     opacity: 1;
     rotate: -3deg;
   }
+  74%,
   100% {
     scale: 1.1;
     opacity: 0;
