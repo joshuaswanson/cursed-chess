@@ -1,5 +1,10 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { useGameStore, GAME_MODES, MODE_SECONDS } from "../../stores/gameStore";
+import {
+  useGameStore,
+  GAME_MODES,
+  MODE_SECONDS,
+  modeIsTimed,
+} from "../../stores/gameStore";
 import { Color, PieceType } from "../../engine";
 import type { BattleRoyaleOverlay } from "../../plugins/battleRoyale";
 import type { PacView } from "../../plugins/pacman";
@@ -69,10 +74,9 @@ function NowPlaying() {
     modeIndex < 0
       ? MODE_SECONDS
       : (GAME_MODES[modeIndex].durationSeconds ?? MODE_SECONDS);
-  // Modes the kings sit out, and some others, have no clock; they run until someone wins
-  const untimed =
-    modeIndex >= 0 &&
-    (GAME_MODES[modeIndex].kingsSitOut || GAME_MODES[modeIndex].untilWon);
+  const untimed = useGameStore(
+    (s) => s.currentModeIndex >= 0 && !modeIsTimed(s),
+  );
   // Battle Royale counts down in turns, to the next line falling and then to the end
   const turns = useGameStore((s) => {
     if (GAME_MODES[s.currentModeIndex]?.theme !== "royale") return null;

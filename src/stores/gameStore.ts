@@ -141,6 +141,17 @@ export interface GameMode {
   beta?: boolean;
 }
 
+/**
+ * Only the adventure gives each mode a clock, and even there the modes won
+ * some other way than checkmate run until someone wins them
+ */
+export function modeIsTimed(
+  s: Pick<GameStore, "playMode" | "currentModeIndex">,
+): boolean {
+  const mode = GAME_MODES[s.currentModeIndex];
+  return s.playMode === "adventure" && !mode?.kingsSitOut && !mode?.untilWon;
+}
+
 export const GAME_MODES: GameMode[] = [
   {
     name: "PORTALS",
@@ -1595,9 +1606,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (isGuest()) return;
     const { paused, modeTimeRemaining } = get();
     if (paused) return;
-    // Modes the kings sit out run until one side wins them, with no clock
-    const mode = GAME_MODES[get().currentModeIndex];
-    if (mode?.kingsSitOut || mode?.untilWon) return;
+    if (!modeIsTimed(get())) return;
     if (lessonFor(get())) return;
     const next = Math.max(0, modeTimeRemaining - 1);
     set({ modeTimeRemaining: next });
