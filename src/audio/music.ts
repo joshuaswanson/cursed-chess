@@ -1,8 +1,5 @@
 import { audio, sfx } from "./sfx";
-import hitslabUrl from "./music/hitslab-video-game.mp3";
-import maksymmalkoUrl from "./music/maksymmalko-background.mp3";
-
-const PLAYLIST = [maksymmalkoUrl, hitslabUrl];
+import soundtrackUrl from "./music/maksymmalko-background.mp3";
 
 const VOLUME = 0.25;
 const FADE_IN_S = 1.2;
@@ -11,28 +8,18 @@ const FADE_OUT_S = 0.15;
 const PAUSE_AFTER_MS = 800;
 
 let track: HTMLAudioElement | null = null;
-/** Which track of the playlist is playing; the first is picked at random */
-let playing = Math.floor(Math.random() * PLAYLIST.length);
 let bus: GainNode | null = null;
 let wanted = false;
 let pauseTimer: ReturnType<typeof setTimeout> | null = null;
-
-/** The tracks take turns, each played through before the next starts */
-function playNext(): void {
-  if (!track) return;
-  playing = (playing + 1) % PLAYLIST.length;
-  track.src = PLAYLIST[playing];
-  if (audible()) void track.play().catch(() => {});
-}
 
 /** The track, streamed from its file and routed through the game's own sound, so the master volume applies */
 function connect(): { el: HTMLAudioElement; gain: GainNode } | null {
   const a = audio();
   if (!a) return null;
   if (!track || !bus) {
-    track = new Audio(PLAYLIST[playing]);
+    track = new Audio(soundtrackUrl);
+    track.loop = true;
     track.preload = "auto";
-    track.addEventListener("ended", playNext);
     bus = a.ctx.createGain();
     bus.gain.value = 0.0001;
     a.ctx.createMediaElementSource(track).connect(bus);
