@@ -2526,271 +2526,43 @@
 /* --- Thunderstorm --- */
 
 .scene-storm {
-  background: repeating-conic-gradient(#c7cfdc 0 25%, #6c7890 0 50%) 0 0 / 25%
-    50%;
+  background: #04030a;
 }
 
-/* The dark lifts for each bolt, flickers, and closes in again */
+.pv-storm {
+  inset: 0;
+}
+
+/* The game's board at the width of the card, showing its middle four ranks */
+.pv-storm-board {
+  left: 0;
+  top: -50%;
+  width: 100%;
+  aspect-ratio: 1;
+  background: repeating-conic-gradient(#c7cfdc 0 25%, #6c7890 0 50%) 0 0 / 25%
+    25%;
+}
+
+.pv-storm-board .pv-piece {
+  z-index: 1;
+}
+
+.pv-storm-board .pv-storm-gone {
+  visibility: hidden;
+}
+
 .pv-storm-dark {
   inset: 0;
-  background: #05070d;
-  animation: pv-storm-dark 5s linear infinite;
+  z-index: 2;
+  background: #04030a;
 }
 
-@keyframes pv-storm-dark {
-  0%,
-  18% {
-    opacity: 1;
-  }
-  19% {
-    opacity: 0;
-  }
-  20.5% {
-    opacity: 0.6;
-  }
-  22% {
-    opacity: 0;
-  }
-  38% {
-    opacity: 0;
-  }
-  48% {
-    opacity: 1;
-  }
-  64% {
-    opacity: 1;
-  }
-  65% {
-    opacity: 0;
-  }
-  66.5% {
-    opacity: 0.6;
-  }
-  68% {
-    opacity: 0;
-  }
-  80% {
-    opacity: 0;
-  }
-  90%,
-  100% {
-    opacity: 1;
-  }
-}
-
-.pv-bolt {
+.pv-storm-sky {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  overflow: visible;
-  opacity: 0;
-}
-
-.pv-bolt path {
-  fill: none;
-  stroke: #f7fbff;
-  stroke-width: 1.6;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 2px #9fd8ff) drop-shadow(0 0 5px #6fb6ff);
-}
-
-.pv-bolt-a {
-  animation: pv-bolt-a 5s linear infinite;
-}
-
-.pv-bolt-b {
-  animation: pv-bolt-b 5s linear infinite;
-}
-
-@keyframes pv-bolt-a {
-  0%,
-  18.9% {
-    opacity: 0;
-  }
-  19%,
-  20% {
-    opacity: 1;
-  }
-  20.6% {
-    opacity: 0.1;
-  }
-  21.2% {
-    opacity: 1;
-  }
-  24%,
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes pv-bolt-b {
-  0%,
-  64.9% {
-    opacity: 0;
-  }
-  65%,
-  66% {
-    opacity: 1;
-  }
-  66.6% {
-    opacity: 0.1;
-  }
-  67.2% {
-    opacity: 1;
-  }
-  70%,
-  100% {
-    opacity: 0;
-  }
-}
-
-/* The knight is lit white, burnt black, shakes, and crumbles to ash, and is back in the dark before the loop comes round */
-.pv-zapped > img {
-  animation: pv-zapped 5s linear infinite;
-}
-
-@keyframes pv-zapped {
-  0%,
-  18.9% {
-    filter: brightness(1) blur(0);
-    opacity: 1;
-    scale: 1;
-    translate: 0 0;
-  }
-  19.5% {
-    filter: brightness(6) blur(0);
-    scale: 1.12;
-  }
-  21% {
-    filter: brightness(0.12) blur(0);
-    scale: 1;
-    translate: 0 0;
-  }
-  22.5% {
-    translate: -5% 0;
-  }
-  24% {
-    translate: 5% 0;
-  }
-  25.5% {
-    translate: -3% 0;
-  }
-  27% {
-    filter: brightness(0.12) blur(0);
-    opacity: 1;
-    scale: 1;
-    translate: 0 0;
-  }
-  36% {
-    filter: brightness(0.1) blur(2px);
-    opacity: 0;
-    scale: 0.6 0.15;
-    translate: 0 40%;
-  }
-  92% {
-    filter: brightness(1) blur(0);
-    opacity: 0;
-    scale: 1;
-    translate: 0 0;
-  }
-  95%,
-  100% {
-    filter: brightness(1) blur(0);
-    opacity: 1;
-    scale: 1;
-    translate: 0 0;
-  }
-}
-
-.pv-zap-smoke {
-  left: 20%;
-  top: 10%;
-  width: 60%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(70, 72, 80, 0.8),
-    rgba(70, 72, 80, 0) 70%
-  );
-  opacity: 0;
-  animation: pv-zap-smoke 5s ease-out infinite;
-}
-
-@keyframes pv-zap-smoke {
-  0%,
-  21% {
-    opacity: 0;
-    scale: 0.4;
-    translate: 0 0;
-  }
-  25% {
-    opacity: 1;
-  }
-  40%,
-  100% {
-    opacity: 0;
-    scale: 1.8;
-    translate: 10% -110%;
-  }
-}
-
-/* The burnt spots the bolts leave */
-.pv-scorch {
-  width: 14%;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(12, 9, 6, 0.85) 0 22%,
-    rgba(34, 26, 18, 0) 66%
-  );
-  opacity: 0;
-}
-
-.pv-scorch-a {
-  left: 52%;
-  top: 56%;
-  animation: pv-scorch-a 5s linear infinite;
-}
-
-.pv-scorch-b {
-  left: 27%;
-  top: 32%;
-  animation: pv-scorch-b 5s linear infinite;
-}
-
-@keyframes pv-scorch-a {
-  0%,
-  18.9% {
-    opacity: 0;
-  }
-  19.5%,
-  60% {
-    opacity: 1;
-  }
-  64%,
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes pv-scorch-b {
-  0%,
-  64.9% {
-    opacity: 0;
-  }
-  65.5%,
-  88% {
-    opacity: 1;
-  }
-  92%,
-  100% {
-    opacity: 0;
-  }
+  pointer-events: none;
 }
 
 /* --- Pac-Man --- */

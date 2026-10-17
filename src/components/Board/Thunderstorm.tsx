@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import type { Piece } from "../../engine/types";
 import type { Strike } from "../../plugins/thunderstorm";
 import { pieceImage } from "../../utils/pieceImages";
 import { visualCol, visualRow } from "./boardGeometry";
@@ -352,21 +353,37 @@ function trace(ctx: CanvasRenderingContext2D, points: Point[], dx: number) {
 export function StormBolt({
   strikes,
   flipped,
+  imageOf = pieceImage,
 }: {
   strikes: Strike[];
   flipped: boolean;
+  /** The artwork for a piece, where it is not the game's own */
+  imageOf?: (piece: Piece) => string;
 }) {
   const fresh = useFreshStrikes(strikes);
   return (
     <>
       {fresh.map((strike) => (
-        <Bolt key={strike.id} strike={strike} flipped={flipped} />
+        <Bolt
+          key={strike.id}
+          strike={strike}
+          flipped={flipped}
+          imageOf={imageOf}
+        />
       ))}
     </>
   );
 }
 
-function Bolt({ strike, flipped }: { strike: Strike; flipped: boolean }) {
+function Bolt({
+  strike,
+  flipped,
+  imageOf,
+}: {
+  strike: Strike;
+  flipped: boolean;
+  imageOf: (piece: Piece) => string;
+}) {
   const rand = seededRandom(strike.id * 131 + strike.sq);
   const middle = middleOf(strike.sq, flipped);
   return (
@@ -406,7 +423,7 @@ function Bolt({ strike, flipped }: { strike: Strike; flipped: boolean }) {
             >
               <img
                 className="storm-lit-piece"
-                src={pieceImage(piece)}
+                src={imageOf(piece)}
                 draggable={false}
                 alt=""
                 style={{
@@ -415,7 +432,7 @@ function Bolt({ strike, flipped }: { strike: Strike; flipped: boolean }) {
               />
               <img
                 className="storm-lit-piece storm-lit-flash"
-                src={pieceImage(piece)}
+                src={imageOf(piece)}
                 draggable={false}
                 alt=""
                 style={{
@@ -423,7 +440,7 @@ function Bolt({ strike, flipped }: { strike: Strike; flipped: boolean }) {
                 }}
               />
               <Current
-                image={pieceImage(piece)}
+                image={imageOf(piece)}
                 seed={strike.id * 53 + sq}
                 delayOf={(i) =>
                   start + 20 + i * Math.round(((lasts - 0.25) * 1000) / 12)
@@ -433,7 +450,9 @@ function Bolt({ strike, flipped }: { strike: Strike; flipped: boolean }) {
           </span>
         );
       })}
-      {strike.killed && <Annihilation strike={strike} flipped={flipped} />}
+      {strike.killed && (
+        <Annihilation strike={strike} flipped={flipped} imageOf={imageOf} />
+      )}
     </div>
   );
 }
@@ -445,13 +464,15 @@ function Bolt({ strike, flipped }: { strike: Strike; flipped: boolean }) {
 function Annihilation({
   strike,
   flipped,
+  imageOf,
 }: {
   strike: Strike;
   flipped: boolean;
+  imageOf: (piece: Piece) => string;
 }) {
   if (!strike.killed) return null;
   const rand = seededRandom(strike.id * 977 + strike.sq * 7);
-  const image = pieceImage(strike.killed);
+  const image = imageOf(strike.killed);
   const silhouette = shapeOf(image);
   const cracks = Array.from({ length: 6 }, () =>
     pathOf(
