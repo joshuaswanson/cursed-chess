@@ -480,6 +480,8 @@ export interface GameStore {
   openMenu: () => void;
   /** From the main menu: the whole adventure again, from the plain chess site on */
   startAdventure: () => void;
+  /** Leaves the plain site at once for the adventure's first mode */
+  skipIntro: () => void;
   /** From the main menu: one mode, played by itself */
   startSingle: (index: number) => void;
 }
@@ -1718,6 +1720,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   // The adventure begins where it always does: on a plain chess site
   startAdventure: () => get().newGame(),
+
+  skipIntro: () => {
+    get().newGame();
+    set({ cursed: true });
+    get().switchMode(0);
+  },
 
   startSingle: (index) => {
     set({ menuOpen: false, playMode: "single", scoreWhite: 0, scoreBlack: 0 });

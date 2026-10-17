@@ -288,6 +288,9 @@ export function BoringFooter() {
           {corrupt(link)}
         </button>
       ))}
+      <button type="button" onClick={() => useGameStore.getState().skipIntro()}>
+        Skip intro
+      </button>
       <button type="button" onClick={() => useGameStore.getState().openMenu()}>
         Skip to main menu
       </button>
