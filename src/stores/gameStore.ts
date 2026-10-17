@@ -635,6 +635,19 @@ let lastTrenchDraw = 0;
 /** How often, at most, the Trenches board redraws: each redraw of a crowded front costs the page dearly */
 const TRENCH_REDRAW_MS = 200;
 
+/** The share of the time Chessbot takes a king left open in Factory Floor */
+const KING_TAKE_CHANCE = 0.15;
+
+/**
+ * With no check on the belts, a king is easily left open by accident, so
+ * Chessbot mostly looks past the chance to take it and plays on
+ */
+function sparingKings(moves: Move[]): Move[] {
+  if (Math.random() < KING_TAKE_CHANCE) return moves;
+  const spared = moves.filter((m) => m.captured?.type !== PieceType.King);
+  return spared.length > 0 ? spared : moves;
+}
+
 /** How long a mate stays up, with every piece that could take the king pointed out in turn, before the result comes up */
 const mateShowMs = (attackers: number) => 1400 + 400 * attackers;
 
@@ -1521,7 +1534,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             : conveyor
               ? chooseMove(
                   game,
-                  allowed,
+                  sparingKings(allowed),
                   bonus,
                   (board) => void runBelts(board),
                   (after) =>
