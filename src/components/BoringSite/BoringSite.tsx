@@ -292,7 +292,7 @@ export function BoringFooter() {
         Skip intro
       </button>
       <button type="button" onClick={() => useGameStore.getState().openMenu()}>
-        Skip to main menu
+        Main Menu
       </button>
     </footer>
   );
