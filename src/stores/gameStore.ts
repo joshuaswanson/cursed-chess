@@ -103,7 +103,7 @@ const SINGLE_FIFA_GOALS = 3;
 const RESULT_MS = 2500;
 const RESULT_HOLD_MS = 2800;
 /** How long Chessbot takes to rewire the game between two modes of the adventure */
-export const MODE_SWAP_MS = 5200;
+export const MODE_SWAP_MS = 9000;
 
 /** The square board shatters right after the hex title card leaves */
 const HEX_MORPH_OUT_MS = 4600;

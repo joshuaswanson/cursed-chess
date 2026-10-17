@@ -65,26 +65,25 @@ const FLOOD: [x: number, y: number, tilt: number][] = [
 ];
 
 /** When the parts of it happen, in ms from the start */
-const TERMINAL_MS = 150;
-const FLOOD_FROM_MS = 450;
-const FLOOD_EVERY_MS = 150;
-const TYPE_FROM_MS = 700;
-const CHAR_MS = 22;
-const RUMBLE_MS = 900;
-const YANK_MS = 3500;
-const SWITCH_OFF_MS = 4550;
+const TERMINAL_MS = 300;
+const FLOOD_FROM_MS = 1200;
+const FLOOD_EVERY_MS = 260;
+const TYPE_FROM_MS = 1000;
+const CHAR_MS = 34;
+const RUMBLE_MS = 2000;
+const YANK_MS = 6200;
+/** The screen starts to break up just before he switches it off */
+const TEARS_MS = 7050;
+const SWITCH_OFF_MS = 7600;
 const BAR_CELLS = 16;
 /** Bands of the screen that tear loose as the old board goes, as how far down they are and how tall, in percent, and how far they jump, in pixels */
 const TEARS: [top: number, height: number, shift: number][] = [
-  [5, 4, 40],
-  [13, 2, -70],
-  [22, 6, 25],
-  [34, 3, -45],
-  [43, 7, 60],
-  [56, 2, -30],
-  [62, 5, 80],
-  [74, 3, -55],
-  [85, 6, 35],
+  [9, 2, 40],
+  [24, 3, -60],
+  [41, 1.5, 30],
+  [55, 2.5, -45],
+  [70, 2, 70],
+  [84, 3, -35],
 ];
 
 const fileName = (index: number) =>
@@ -334,7 +333,7 @@ function Swap({ from, to }: { from: number; to: number }) {
                 top: `${top}%`,
                 height: `${height}%`,
                 "--shift": `${shift}px`,
-                "--late": `${YANK_MS + i * 45}ms`,
+                "--late": `${TEARS_MS + i * 40}ms`,
               } as CSSProperties
             }
           />
