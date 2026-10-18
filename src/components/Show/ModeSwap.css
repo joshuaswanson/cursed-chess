@@ -50,21 +50,8 @@
   animation: mode-swap-square 1.8s var(--swap-late, 0s) steps(1) infinite;
 }
 
-.app:is(
-    [data-swap="frenzy"],
-    [data-swap="underneath"],
-    [data-swap="charge"],
-    [data-swap="wave"]
-  )
-  .board
-  .square,
-.app:is(
-    [data-swap="frenzy"],
-    [data-swap="underneath"],
-    [data-swap="charge"],
-    [data-swap="wave"]
-  )
-  .hex-cell {
+.app[data-swap-hard] .board .square,
+.app[data-swap-hard] .hex-cell {
   animation: mode-swap-square 0.55s calc(var(--swap-late, 0s) * 0.3) steps(1)
     infinite;
 }
@@ -94,22 +81,8 @@
   animation: mode-swap-piece 1.6s var(--swap-late, 0s) steps(1) infinite;
 }
 
-.app:is(
-    [data-swap="frenzy"],
-    [data-swap="underneath"],
-    [data-swap="charge"],
-    [data-swap="wave"]
-  )
-  .board
-  .piece-img,
-.app:is(
-    [data-swap="frenzy"],
-    [data-swap="underneath"],
-    [data-swap="charge"],
-    [data-swap="wave"]
-  )
-  .hex-board
-  img {
+.app[data-swap-hard] .board .piece-img,
+.app[data-swap-hard] .hex-board img {
   animation: mode-swap-piece-frenzy 0.36s calc(var(--swap-late, 0s) * 0.2)
     steps(1) infinite;
 }
@@ -224,26 +197,15 @@
 
 /* Then it glitches out flat out, the way the plain site did at the end: shaking,
    its colours flipping, slices of it torn away, and its picture doubled */
-.app:is(
-    [data-swap="frenzy"],
-    [data-swap="underneath"],
-    [data-swap="charge"],
-    [data-swap="wave"]
-  )
-  .board-container {
+.app[data-swap-hard] .board-container {
   animation:
     glitch-jitter 0.22s steps(2) infinite,
     glitch-hue 0.6s steps(3) infinite,
     mode-swap-slice 0.9s steps(1) infinite;
 }
 
-.app:is(
-    [data-swap="frenzy"],
-    [data-swap="underneath"],
-    [data-swap="charge"],
-    [data-swap="wave"]
-  )
-  :is(.board-shell, .hex-board) {
+.app[data-swap-hard] .board-shell,
+.app[data-swap-hard] .hex-board {
   filter: drop-shadow(5px 0 0 rgba(255, 0, 90, 0.65))
     drop-shadow(-5px 0 0 rgba(0, 220, 255, 0.65));
 }
@@ -548,68 +510,86 @@
   }
 }
 
-/* --- The shockwave: the next mode blasting out from him across everything --- */
+/* --- The shockwave: the screen breaking up block by block out from him,
+   and turning into the next mode behind it --- */
 
-.mode-swap-wave {
+.mode-swap-blocks i {
   position: absolute;
-  inset: 0;
   z-index: 3;
 }
 
-.mode-swap-ring {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.5) 0 2px,
-      transparent 2px 7px
-    ),
-    conic-gradient(
-      from 0deg,
-      #21e6ff,
-      #ff2e88,
-      #7dffab,
-      #ffe45c,
-      #b26bff,
-      #21e6ff
-    );
-  filter: drop-shadow(0 0 12px #ffffff);
-  animation: mode-swap-ring-glitch 0.09s steps(2) infinite;
+.mode-swap-blocks i.is-glitch {
+  -webkit-backdrop-filter: invert(1) hue-rotate(90deg);
+  backdrop-filter: invert(1) hue-rotate(90deg);
+  animation: mode-swap-block-jitter 0.12s steps(2) infinite;
 }
 
-.mode-swap-ring.is-trailing {
-  background: #ffffff;
-  opacity: 0.7;
+.mode-swap-blocks i.is-glitch.kind-1 {
+  -webkit-backdrop-filter: hue-rotate(-140deg) saturate(4) brightness(1.3);
+  backdrop-filter: hue-rotate(-140deg) saturate(4) brightness(1.3);
 }
 
-@keyframes mode-swap-ring-glitch {
+.mode-swap-blocks i.is-glitch.kind-2 {
+  -webkit-backdrop-filter: invert(1) contrast(2.2) blur(1px);
+  backdrop-filter: invert(1) contrast(2.2) blur(1px);
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.18) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+@keyframes mode-swap-block-jitter {
   0% {
-    translate: 3px 0;
-    filter: drop-shadow(0 0 12px #ffffff) hue-rotate(0deg);
+    translate: var(--shift) 0;
   }
   50% {
-    translate: -3px 2px;
-    filter: drop-shadow(0 0 12px #ffffff) hue-rotate(120deg);
+    translate: calc(var(--shift) * -1) var(--lift);
   }
   100% {
-    translate: 0 -2px;
-    filter: drop-shadow(0 0 12px #ffffff) hue-rotate(240deg);
+    translate: 0 calc(var(--lift) * -1);
   }
 }
 
-/* --- The new world that swept in falls away bit by bit from the new mode --- */
-
-.mode-swap-dissolve i {
-  position: absolute;
-  width: calc(100% / 12 + 1px);
-  height: calc(100% / 8 + 1px);
-  animation: mode-swap-crumble 0.18s steps(2) forwards;
+.mode-swap-blocks i.is-new {
+  animation: mode-swap-block-in 0.24s steps(3) both;
 }
 
-@keyframes mode-swap-crumble {
-  to {
+@keyframes mode-swap-block-in {
+  0% {
+    translate: var(--shift) 0;
+    filter: invert(1) hue-rotate(120deg);
+  }
+  50% {
+    translate: calc(var(--shift) * -0.5) var(--lift);
+    filter: brightness(2) saturate(2);
+  }
+  100% {
+    translate: 0 0;
+    filter: none;
+  }
+}
+
+.mode-swap-blocks i.is-gone {
+  animation: mode-swap-block-gone 0.36s steps(3) forwards;
+}
+
+@keyframes mode-swap-block-gone {
+  0% {
+    translate: 0 0;
+    filter: none;
+    opacity: 1;
+  }
+  35% {
+    translate: var(--shift) 0;
+    filter: invert(1) hue-rotate(90deg);
+  }
+  70% {
+    translate: calc(var(--shift) * -1) var(--lift);
+    filter: hue-rotate(-90deg) saturate(3);
+    opacity: 0.6;
+  }
+  100% {
     opacity: 0;
     visibility: hidden;
   }
@@ -624,7 +604,7 @@
   .app[data-swap] .hex-board img,
   .app[data-swap] .board-container,
   .app[data-swap] .chessbot-dock .chessbot-head,
-  .mode-swap-ring {
+  .mode-swap-blocks i {
     animation: none;
   }
 }

@@ -104,8 +104,18 @@ const CHARGE_MS = 5700;
 const WAVE_MS = 6300;
 const WAVE_SPREAD_MS = 1000;
 const BAR_CELLS = 14;
+/** The shockwave works through the screen in blocks this many pixels across */
+const BLOCK_PX = 54;
+/** How unevenly the blocks are reached, in pixels, so the front is ragged */
+const WAVE_RAGGEDNESS = 90;
+/** How far behind the front the blocks keep glitching before they settle into the new mode */
+const WAVE_FRONT_PX = 60;
+/** How far ahead of the front the screen is already breaking up */
+const WAVE_AHEAD_PX = 70;
 
 type Phase = "wake" | "glitch" | "frenzy" | "underneath" | "charge" | "wave";
+/** The stages the board glitches out flat out in */
+const HARD: Phase[] = ["frenzy", "underneath", "charge", "wave"];
 
 const phaseAt = (ms: number): Phase =>
   ms >= WAVE_MS
@@ -255,14 +265,26 @@ function Swap({
       late: (i / STREAM) * 700,
       color: pick(["#7dffab", "#7dffab", "#c8ffd9", "#21e6ff"]),
     }));
-    const reach = Math.max(
-      ...[
-        [0, 0],
-        [window.innerWidth, 0],
-        [0, window.innerHeight],
-        [window.innerWidth, window.innerHeight],
-      ].map(([x, y]) => Math.hypot(x - bot.x, y - bot.y)),
-    );
+    // The screen in blocks, which the shockwave reaches each in turn, raggedly
+    const cols = Math.ceil(window.innerWidth / BLOCK_PX);
+    const rows = Math.ceil(window.innerHeight / BLOCK_PX);
+    const blocks = Array.from({ length: cols * rows }, (_, i) => {
+      const x = (i % cols) * BLOCK_PX;
+      const y = Math.floor(i / cols) * BLOCK_PX;
+      return {
+        i,
+        x,
+        y,
+        reachedAt:
+          Math.hypot(x + BLOCK_PX / 2 - bot.x, y + BLOCK_PX / 2 - bot.y) +
+          Math.random() * WAVE_RAGGEDNESS,
+        kind: Math.floor(Math.random() * 3),
+        shift: `${Math.round((Math.random() - 0.5) * 16)}px`,
+        lift: `${Math.round((Math.random() - 0.5) * 8)}px`,
+        late: Math.round(Math.random() * 650),
+      };
+    });
+    const reach = Math.max(...blocks.map((b) => b.reachedAt));
     return {
       bot,
       board,
@@ -275,7 +297,8 @@ function Swap({
       h,
       tiles,
       glyphs,
-      reach: reach + 60,
+      blocks,
+      reach: reach + WAVE_FRONT_PX,
     };
   });
 
@@ -330,11 +353,15 @@ function Swap({
     if (!app) return;
     if (switched) delete app.dataset.swap;
     else app.dataset.swap = phase;
+    // One plain switch for the worst of it, which every browser takes back off cleanly
+    app.toggleAttribute("data-swap-hard", !switched && HARD.includes(phase));
   }, [phase, switched]);
   useEffect(
     () => () => {
       const app = document.querySelector<HTMLElement>(".app");
-      if (app) delete app.dataset.swap;
+      if (!app) return;
+      delete app.dataset.swap;
+      app.removeAttribute("data-swap-hard");
     },
     [],
   );
@@ -360,9 +387,7 @@ function Swap({
   const sky = THEMES[GAME_MODES[to].theme].sky;
   const newWorld = `repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px), linear-gradient(160deg, ${sky[0]}, ${sky[1]}, ${sky[2]})`;
   const spread = Math.min(1, Math.max(0, (now - WAVE_MS) / WAVE_SPREAD_MS));
-  const radius = spread ** 1.6 * scene.reach;
-  const ring = (r: number, width: number) =>
-    `radial-gradient(circle at ${bot.x}px ${bot.y}px, transparent ${r - width}px, #000 ${r - width * 0.6}px, #000 ${r}px, transparent ${r + 3}px)`;
+  const radius = spread > 0 ? spread ** 1.4 * scene.reach : -Infinity;
 
   return (
     <div className="mode-swap" aria-hidden>
@@ -512,56 +537,43 @@ function Swap({
               )}
             </pre>
           </section>
-
-          {radius > 0 && (
-            <>
-              <div
-                className="mode-swap-wave"
-                style={{
-                  background: newWorld,
-                  clipPath: `circle(${radius}px at ${bot.x}px ${bot.y}px)`,
-                }}
-              />
-              {radius > 34 && (
-                <div
-                  className="mode-swap-ring"
-                  style={{
-                    maskImage: ring(radius, 34),
-                    WebkitMaskImage: ring(radius, 34),
-                  }}
-                />
-              )}
-              {radius > 86 && (
-                <div
-                  className="mode-swap-ring is-trailing"
-                  style={{
-                    maskImage: ring(radius - 70, 16),
-                    WebkitMaskImage: ring(radius - 70, 16),
-                  }}
-                />
-              )}
-            </>
-          )}
         </>
       )}
 
-      {/* Once the next mode is in place, the new world that swept over it falls away bit by bit */}
-      {switched && (
-        <div className="mode-swap-dissolve">
-          {Array.from({ length: 96 }, (_, i) => {
-            const col = i % 12;
-            const row = Math.floor(i / 12);
+      {/* The shockwave, block by block: the screen breaks up ahead of it and
+          turns into the next mode behind it, and once that mode is in place
+          the blocks glitch away off it */}
+      {(radius > -WAVE_AHEAD_PX || switched) && (
+        <div className="mode-swap-blocks">
+          {scene.blocks.map((b) => {
+            const ahead = radius - b.reachedAt;
+            const state = switched
+              ? "gone"
+              : ahead > WAVE_FRONT_PX
+                ? "new"
+                : ahead > -WAVE_AHEAD_PX
+                  ? "glitch"
+                  : null;
+            if (!state) return null;
             return (
               <i
-                key={i}
-                style={{
-                  left: `${(col / 12) * 100}%`,
-                  top: `${(row / 8) * 100}%`,
-                  backgroundImage: newWorld,
-                  backgroundSize: "100vw 100vh",
-                  backgroundPosition: `${(-col / 12) * window.innerWidth}px ${(-row / 8) * window.innerHeight}px`,
-                  animationDelay: `${Math.round(((i * 37) % 96) * 6.5)}ms`,
-                }}
+                key={b.i}
+                className={`is-${state} kind-${b.kind}`}
+                style={
+                  {
+                    left: b.x,
+                    top: b.y,
+                    width: BLOCK_PX,
+                    height: BLOCK_PX,
+                    backgroundImage: state === "glitch" ? undefined : newWorld,
+                    backgroundSize: "100vw 100vh",
+                    backgroundPosition: `${-b.x}px ${-b.y}px`,
+                    animationDelay:
+                      state === "gone" ? `${b.late}ms` : undefined,
+                    "--shift": b.shift,
+                    "--lift": b.lift,
+                  } as CSSProperties
+                }
               />
             );
           })}

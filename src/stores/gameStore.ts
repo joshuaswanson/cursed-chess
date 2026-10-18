@@ -105,7 +105,7 @@ const RESULT_HOLD_MS = 2800;
 /** How long Chessbot takes to rewire the game between two modes of the adventure */
 export const MODE_SWAP_MS = 7400;
 /** How long what is left of the swap takes to clear off the new mode */
-export const MODE_SWAP_CLEAR_MS = 800;
+export const MODE_SWAP_CLEAR_MS = 1050;
 
 /** The square board shatters right after the hex title card leaves */
 const HEX_MORPH_OUT_MS = 4600;
