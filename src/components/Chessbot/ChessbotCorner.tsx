@@ -311,7 +311,9 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
   const kind = useGameStore((s) => s.announcementType);
   const entrance = useGameStore((s) => s.curseStage);
   // Rewriting the game between two modes of the adventure, from where he sits
-  const rewriting = useGameStore((s) => s.modeSwap !== null);
+  const rewriting = useGameStore(
+    (s) => s.modeSwap !== null && !s.modeSwap.switched,
+  );
   const skipLine = useSkipLine();
   // How many games have been settled, so he works through his verdicts in turn
   const played = useGameStore((s) => s.scoreWhite + s.scoreBlack);

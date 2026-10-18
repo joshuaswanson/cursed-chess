@@ -50,7 +50,6 @@ function App() {
   const siteTab = useGameStore((s) => s.siteTab);
   const userPaused = useGameStore((s) => s.userPaused);
   const pauseShown = cursed && userPaused && !menuOpen;
-  const modeSwapping = useGameStore((s) => s.modeSwap !== null);
   const onFakePage = !cursed && siteTab !== "Play";
 
   useEffect(() => {
@@ -90,7 +89,6 @@ function App() {
   const appClass =
     "app" +
     (cursed ? " is-cursed" : " is-boring") +
-    (modeSwapping ? " mode-swapping" : "") +
     (curseStage ? ` curse-${curseStage}` : "") +
     // Still glitching while he gloats
     (curseStage === "oops" ? " curse-glitch" : "") +

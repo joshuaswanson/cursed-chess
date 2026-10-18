@@ -103,7 +103,9 @@ const SINGLE_FIFA_GOALS = 3;
 const RESULT_MS = 2500;
 const RESULT_HOLD_MS = 2800;
 /** How long Chessbot takes to rewire the game between two modes of the adventure */
-export const MODE_SWAP_MS = 9000;
+export const MODE_SWAP_MS = 7400;
+/** How long what is left of the swap takes to clear off the new mode */
+export const MODE_SWAP_CLEAR_MS = 800;
 
 /** The square board shatters right after the hex title card leaves */
 const HEX_MORPH_OUT_MS = 4600;
@@ -301,10 +303,21 @@ function moveOn(prepare?: () => void): void {
       id: (s.modeSwap?.id ?? 0) + 1,
       from: currentModeIndex,
       to: next,
+      switched: false,
     },
   }));
   holdPause(MODE_SWAP_MS);
-  schedule(goOn, MODE_SWAP_MS);
+  schedule(() => {
+    goOn();
+    // Scheduled after the switch, which clears whatever was scheduled before it
+    useGameStore.setState((s) => ({
+      modeSwap: s.modeSwap && { ...s.modeSwap, switched: true },
+    }));
+    schedule(
+      () => useGameStore.setState({ modeSwap: null }),
+      MODE_SWAP_CLEAR_MS,
+    );
+  }, MODE_SWAP_MS);
 }
 
 export type AnnouncementType = "mode" | "win" | "lose" | "draw";
@@ -372,7 +385,13 @@ export interface GameStore {
   /** The main menu is up, between games */
   menuOpen: boolean;
   /** Between two modes of the adventure, Chessbot rewiring the game from the one to the other */
-  modeSwap: { id: number; from: number; to: number } | null;
+  modeSwap: {
+    id: number;
+    from: number;
+    to: number;
+    /** The next mode is in place, and what is left of the swap is clearing off it */
+    switched: boolean;
+  } | null;
   /** Adventure runs every mode once in order; a single mode is played alone. Either ends at the main menu. */
   playMode: "adventure" | "single";
   /**
@@ -1755,7 +1774,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       currentModeIndex: nextIndex,
-      modeSwap: null,
       cursed: true,
       curseStage: null,
       introMood: "happy",

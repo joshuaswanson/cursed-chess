@@ -1,7 +1,9 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { GAME_MODES, MODE_SWAP_MS, useGameStore } from "../../stores/gameStore";
+import { THEMES } from "../../theme/themes";
 import type { ThemeId } from "../../theme/themes";
+import { boardFiles, boardRanks } from "../../utils/squareUtils";
 import { sfx } from "../../audio/sfx";
 import "./ModeSwap.css";
 
@@ -28,7 +30,7 @@ const RULES: Record<ThemeId, string> = {
   pacman: "pellets.scatter()",
 };
 
-/** Code pouring through the windows he throws open all over the screen */
+/** Code pouring through the windows he throws open */
 const CODE = [
   "patch rules.dll --force",
   "for piece in board: piece.loyalty = 0",
@@ -39,57 +41,107 @@ const CODE = [
   "undo_button.delete()",
   "physics.enabled = maybe",
   "while (you.winning) cheat()",
-  "board.reality.rewrite()",
   "assert chessbot.wins",
   "sudo make_it_worse",
   "load cursed_sprites.pak",
   "random.seed(evil)",
   "touch_move = strict",
   "compile mischief.c -O3",
+  "board.rewrite()",
 ];
 
-/** Where each window of code opens, as how far across and down the screen and how it leans; none over him in the middle */
+/** What each square of the board turns out to be running, underneath */
+const UNDERNEATH = [
+  "mov rook",
+  "jmp e4",
+  "xor king",
+  "0xDEAD",
+  "if(win)",
+  "null",
+  "ERR 0x4F",
+  "goto 64",
+  "pawn++",
+  "nop",
+  "ret 0",
+  "seg 0x8",
+  "cmp q,k",
+  "!!!",
+  "0b1010",
+  "halt?",
+];
+
+/** Where the windows of code open, as how far across and down the screen and how they lean */
 const FLOOD: [x: number, y: number, tilt: number][] = [
   [0.02, 0.06, -3],
   [0.74, 0.04, 2],
-  [0.04, 0.68, 2],
-  [0.76, 0.7, -2],
+  [0.04, 0.72, 2],
+  [0.78, 0.74, -2],
   [0.3, 0.02, 1],
-  [0.52, 0.82, -1],
+  [0.52, 0.86, -1],
   [0.01, 0.38, -1.5],
-  [0.8, 0.36, 3],
-  [0.22, 0.84, 2.5],
-  [0.56, 0.08, -2.5],
-  [0.12, 0.2, 1.5],
-  [0.66, 0.6, 1],
+  [0.84, 0.4, 3],
+  [0.22, 0.88, 2.5],
+  [0.58, 0.04, -2.5],
 ];
 
-/** When the parts of it happen, in ms from the start */
+/** Colours a square flashes as the board is hacked */
+const NEON = ["#ff2e88", "#21e6ff", "#7dffab", "#ffe45c", "#b26bff", "#ff6a2a"];
+const GLYPHS = "01<>{}[]#$%&*+=?/|~^";
+const STREAM = 44;
+
+/** When each part of it happens, in ms from the start */
 const TERMINAL_MS = 300;
-const FLOOD_FROM_MS = 1200;
-const FLOOD_EVERY_MS = 260;
+const STREAM_MS = 500;
+const GLITCH_MS = 900;
 const TYPE_FROM_MS = 1000;
-const CHAR_MS = 34;
-const RUMBLE_MS = 2000;
-const YANK_MS = 6200;
-/** The screen starts to break up just before he switches it off */
-const TEARS_MS = 7050;
-const SWITCH_OFF_MS = 7600;
-const BAR_CELLS = 16;
-/** By when his speech bubble has come up beside him */
-const BUBBLE_SETTLES_MS = 1000;
-/** Bands of the screen that tear loose as the old board goes, as how far down they are and how tall, in percent, and how far they jump, in pixels */
-const TEARS: [top: number, height: number, shift: number][] = [
-  [9, 2, 40],
-  [24, 3, -60],
-  [41, 1.5, 30],
-  [55, 2.5, -45],
-  [70, 2, 70],
-  [84, 3, -35],
-];
+const CHAR_MS = 30;
+const FLOOD_FROM_MS = 1400;
+const FLOOD_EVERY_MS = 300;
+const FRENZY_MS = 3100;
+const UNDERNEATH_MS = 4400;
+const UNDERNEATH_OVER_MS = 1200;
+const CHARGE_MS = 5700;
+const WAVE_MS = 6300;
+const WAVE_SPREAD_MS = 1000;
+const BAR_CELLS = 14;
+
+type Phase = "wake" | "glitch" | "frenzy" | "underneath" | "charge" | "wave";
+
+const phaseAt = (ms: number): Phase =>
+  ms >= WAVE_MS
+    ? "wave"
+    : ms >= CHARGE_MS
+      ? "charge"
+      : ms >= UNDERNEATH_MS
+        ? "underneath"
+        : ms >= FRENZY_MS
+          ? "frenzy"
+          : ms >= GLITCH_MS
+            ? "glitch"
+            : "wake";
 
 const fileName = (index: number) =>
   `${GAME_MODES[index].name.toLowerCase().replace(/[^a-z]+/g, "_")}.mode`;
+
+const pick = <T,>(list: readonly T[]) =>
+  list[Math.floor(Math.random() * list.length)];
+
+interface Box {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+const boxOf = (selector: string): Box | null => {
+  const r = document.querySelector(selector)?.getBoundingClientRect();
+  return r && r.width > 0
+    ? { left: r.left, top: r.top, right: r.right, bottom: r.bottom }
+    : null;
+};
+
+const overlaps = (a: Box, b: Box) =>
+  a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
 /** Shakes the game, hardest at first and settling */
 function shake(strength: number) {
@@ -107,75 +159,35 @@ function shake(strength: number) {
   }
 }
 
-/** The width and height of a window of code, as in the CSS */
-const windowSize = () => ({
-  w: Math.min(250, window.innerWidth * 0.4),
-  h: 128,
-});
-
-interface Box {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}
-
-const overlaps = (a: Box, b: Box) =>
-  a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-
-/** Where he sits and what he is saying, with room round it, so nothing is put over him */
-function zoneOfBot(): Box | null {
-  const boxes = [
-    ".chessbot-dock .chessbot-head",
-    ".chessbot-dock .chessbot-speech",
-  ]
-    .map((selector) =>
-      document.querySelector(selector)?.getBoundingClientRect(),
-    )
-    .filter((r): r is DOMRect => r !== undefined && r.width > 0);
-  if (boxes.length === 0) return null;
-  const pad = 26;
-  return {
-    left: Math.min(...boxes.map((r) => r.left)) - pad,
-    top: Math.min(...boxes.map((r) => r.top)) - pad,
-    right: Math.max(...boxes.map((r) => r.right)) + pad,
-    bottom: Math.max(...boxes.map((r) => r.bottom)) + pad,
-  };
-}
-
-/** A hole in the dark over him, so he stays in plain sight while the rest of the screen goes */
-function spotlight(zone: Box): CSSProperties {
-  const x = (zone.left + zone.right) / 2;
-  const y = (zone.top + zone.bottom) / 2;
-  // Wide enough that the corners of his bubble sit in full light
-  const rx = ((zone.right - zone.left) / 2) * 1.75;
-  const ry = ((zone.bottom - zone.top) / 2) * 1.75;
-  const mask = `radial-gradient(${rx}px ${ry}px at ${x}px ${y}px, transparent 85%, #000 100%)`;
-  return { maskImage: mask, WebkitMaskImage: mask };
-}
-
-/** Where on screen a thing is, by its middle, or the middle of the screen if it is not there */
-function middleOf(selector: string): { x: number; y: number } {
-  const r = document.querySelector(selector)?.getBoundingClientRect();
-  return r
-    ? { x: r.left + r.width / 2, y: r.top + r.height / 2 }
-    : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-}
-
 /**
- * Between two modes of the adventure, Chessbot rewrites the game from his
- * spot beside the board: alarms go off, a terminal and windows of code
- * fly out of him all over the screen, he types the next mode in and builds
- * it, the old board is torn away, the screen tears up, and he switches it
- * off and on again into the new mode
+ * Between two modes of the adventure, Chessbot hacks the board from his
+ * spot beside it: code streams out of him into it, its squares flash and
+ * its pieces glitch, then each square flips over to show the code it runs
+ * on, and a shockwave of glitch blasts out from him and turns everything
+ * into the next mode
  */
 export function ModeSwap() {
   const swap = useGameStore((s) => s.modeSwap);
   if (!swap) return null;
-  return <Swap key={swap.id} from={swap.from} to={swap.to} />;
+  return (
+    <Swap
+      key={swap.id}
+      from={swap.from}
+      to={swap.to}
+      switched={swap.switched}
+    />
+  );
 }
 
-function Swap({ from, to }: { from: number; to: number }) {
+function Swap({
+  from,
+  to,
+  switched,
+}: {
+  from: number;
+  to: number;
+  switched: boolean;
+}) {
   const lines = [
     `unload ${fileName(from)}`,
     `load ${fileName(to)}`,
@@ -185,45 +197,153 @@ function Swap({ from, to }: { from: number; to: number }) {
   const total = lines.reduce((sum, line) => sum + line.length, 0);
   const typedBy = TYPE_FROM_MS + total * CHAR_MS;
 
-  // Everything flies out of him, wherever he sits, and the terminal lands over the board
-  const [{ bot, board }] = useState(() => ({
-    bot: middleOf(".chessbot-dock .chessbot-head"),
-    board: middleOf(".board-container"),
-  }));
-  // Where he is once his line is up, which the dark and the windows keep clear of
-  const [zone, setZone] = useState<Box | null>(null);
-  useLayoutEffect(() => setZone(zoneOfBot()), []);
+  // Laid out once, from where everything is on screen as it starts
+  const [scene] = useState(() => {
+    const head = boxOf(".chessbot-dock .chessbot-head");
+    const bot = head
+      ? { x: (head.left + head.right) / 2, y: (head.top + head.bottom) / 2 }
+      : { x: window.innerWidth - 120, y: 120 };
+    const board = boxOf(".board") ??
+      boxOf(".hex-board") ??
+      boxOf(".board-container") ?? {
+        left: window.innerWidth * 0.2,
+        top: window.innerHeight * 0.15,
+        right: window.innerWidth * 0.6,
+        bottom: window.innerHeight * 0.85,
+      };
+    const hud = boxOf(".hud");
+    const termWidth = Math.min(360, hud ? hud.right - hud.left : 360);
+    const terminal = {
+      x: hud ? (hud.left + hud.right) / 2 : bot.x,
+      y: (head?.bottom ?? bot.y) + 24,
+    };
+    const termBox: Box = {
+      left: terminal.x - termWidth / 2,
+      top: terminal.y,
+      right: terminal.x + termWidth / 2,
+      bottom: terminal.y + 190,
+    };
+    const near: Box = {
+      left: bot.x - 90,
+      top: bot.y - 90,
+      right: bot.x + 260,
+      bottom: bot.y + 90,
+    };
+    const w = Math.min(220, window.innerWidth * 0.4);
+    const h = 116;
+    const windows = FLOOD.flatMap(([x, y, tilt], i) => {
+      const left = x * (window.innerWidth - w);
+      const top = y * (window.innerHeight - h);
+      const box = { left, top, right: left + w, bottom: top + h };
+      return [board, termBox, near].some((b) => overlaps(box, b))
+        ? []
+        : [{ left, top, tilt, i }];
+    });
+    const files = boardFiles();
+    const ranks = boardRanks();
+    const tiles = Array.from({ length: files * ranks }, (_, i) => ({
+      i,
+      late: UNDERNEATH_MS + Math.random() * UNDERNEATH_OVER_MS,
+      lines: [pick(UNDERNEATH), pick(UNDERNEATH), pick(UNDERNEATH)],
+      broken: Math.random() < 0.18,
+    }));
+    const glyphs = Array.from({ length: STREAM }, (_, i) => ({
+      char: pick(GLYPHS.split("")),
+      tx: board.left + Math.random() * (board.right - board.left) - bot.x,
+      ty: board.top + Math.random() * (board.bottom - board.top) - bot.y,
+      late: (i / STREAM) * 700,
+      color: pick(["#7dffab", "#7dffab", "#c8ffd9", "#21e6ff"]),
+    }));
+    const reach = Math.max(
+      ...[
+        [0, 0],
+        [window.innerWidth, 0],
+        [0, window.innerHeight],
+        [window.innerWidth, window.innerHeight],
+      ].map(([x, y]) => Math.hypot(x - bot.x, y - bot.y)),
+    );
+    return {
+      bot,
+      board,
+      files,
+      ranks,
+      terminal,
+      termWidth,
+      windows,
+      w,
+      h,
+      tiles,
+      glyphs,
+      reach: reach + 60,
+      // How far round him the wave leaves him in sight
+      clear: head
+        ? Math.max(head.right - head.left, head.bottom - head.top) / 2 + 14
+        : 60,
+    };
+  });
+
   const [now, setNow] = useState(0);
+  const phase = phaseAt(now);
+
   useEffect(() => {
     const start = performance.now();
     let frame = requestAnimationFrame(function tick(t) {
       setNow(t - start);
-      // His line comes up a moment after he starts, so the light keeps growing to take it in
-      if (t - start < BUBBLE_SETTLES_MS) setZone(zoneOfBot());
       if (t - start < MODE_SWAP_MS) frame = requestAnimationFrame(tick);
     });
     const at = (ms: number, fn: () => void) => window.setTimeout(fn, ms);
     const timers = [
       at(0, () => sfx.glitch()),
-      at(TERMINAL_MS, () => {
-        sfx.zap();
-        shake(10);
-      }),
-      at(RUMBLE_MS, () => sfx.rumble(1)),
-      at(YANK_MS, () => {
-        sfx.collapse();
-        shake(10);
-      }),
-      at(SWITCH_OFF_MS, () => {
+      at(TERMINAL_MS, () => sfx.zap()),
+      at(GLITCH_MS, () => sfx.glitch()),
+      at(FRENZY_MS, () => sfx.rumble(1)),
+      at(UNDERNEATH_MS, () => sfx.glitch()),
+      at(CHARGE_MS, () => sfx.zap()),
+      at(WAVE_MS, () => {
         sfx.boom();
-        shake(22);
+        shake(20);
       }),
     ];
+    // Every square of the board flashes and glitches in its own time
+    const squares = document.querySelectorAll<HTMLElement>(
+      ".board .square, .hex-cell",
+    );
+    for (const sq of squares) {
+      sq.style.setProperty(
+        "--swap-late",
+        `${(Math.random() * 1.6).toFixed(2)}s`,
+      );
+      sq.style.setProperty("--swap-flash", pick(NEON));
+      sq.style.setProperty("--swap-flash-2", pick(NEON));
+    }
     return () => {
       cancelAnimationFrame(frame);
       timers.forEach((t) => window.clearTimeout(t));
+      for (const sq of squares) {
+        sq.style.removeProperty("--swap-late");
+        sq.style.removeProperty("--swap-flash");
+        sq.style.removeProperty("--swap-flash-2");
+      }
     };
   }, []);
+
+  // The game itself shows what stage the hack is at, for its board and his glow
+  useEffect(() => {
+    const app = document.querySelector<HTMLElement>(".app");
+    if (!app) return;
+    if (switched) delete app.dataset.swap;
+    else app.dataset.swap = phase;
+  }, [phase, switched]);
+  useEffect(
+    () => () => {
+      const app = document.querySelector<HTMLElement>(".app");
+      if (app) delete app.dataset.swap;
+    },
+    [],
+  );
+  useEffect(() => {
+    if (switched) sfx.glitch();
+  }, [switched]);
 
   let left = Math.max(0, Math.floor((now - TYPE_FROM_MS) / CHAR_MS));
   const shown = lines.flatMap((line) => {
@@ -233,40 +353,87 @@ function Swap({ from, to }: { from: number; to: number }) {
     return [part];
   });
   const typing = now < typedBy;
-  const built = Math.min(1, Math.max(0, (now - typedBy) / (YANK_MS - typedBy)));
+  const built = Math.min(
+    1,
+    Math.max(0, (now - typedBy) / (CHARGE_MS - typedBy)),
+  );
   const cells = Math.round(built * BAR_CELLS);
 
+  const { bot, board } = scene;
+  const sky = THEMES[GAME_MODES[to].theme].sky;
+  const newWorld = `repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px), linear-gradient(160deg, ${sky[0]}, ${sky[1]}, ${sky[2]})`;
+  const spread = Math.min(1, Math.max(0, (now - WAVE_MS) / WAVE_SPREAD_MS));
+  const radius = spread ** 1.6 * scene.reach;
+  // He stays in sight through it all, the wave blasting out from round him
+  const aroundHim = `radial-gradient(circle at ${bot.x}px ${bot.y}px, transparent ${scene.clear}px, #000 ${scene.clear + 10}px)`;
+  const ring = (r: number, width: number) =>
+    `radial-gradient(circle at ${bot.x}px ${bot.y}px, transparent ${r - width}px, #000 ${r - width * 0.6}px, #000 ${r}px, transparent ${r + 3}px)`;
+
   return (
-    <div
-      className="mode-swap"
-      style={
-        {
-          "--swap-ms": `${MODE_SWAP_MS}ms`,
-          ...(zone && spotlight(zone)),
-        } as CSSProperties
-      }
-      aria-live="polite"
-    >
-      <span className="mode-swap-alert" />
-      <div className="mode-swap-flood" aria-hidden>
-        {FLOOD.map(([x, y, tilt], i) => {
-          const { w, h } = windowSize();
-          const left = x * (window.innerWidth - w);
-          const top = y * (window.innerHeight - h);
-          const box = { left, top, right: left + w, bottom: top + h };
-          if (zone && overlaps(box, zone)) return null;
-          return (
+    <div className="mode-swap" aria-hidden>
+      {!switched && (
+        <>
+          {now >= STREAM_MS && now < WAVE_MS && (
+            <div className="mode-swap-stream">
+              {scene.glyphs.map((g, i) => (
+                <i
+                  key={i}
+                  style={
+                    {
+                      left: bot.x,
+                      top: bot.y,
+                      color: g.color,
+                      "--tx": `${g.tx}px`,
+                      "--ty": `${g.ty}px`,
+                      animationDelay: `${g.late}ms`,
+                    } as CSSProperties
+                  }
+                >
+                  {g.char}
+                </i>
+              ))}
+            </div>
+          )}
+
+          <div
+            className="mode-swap-underneath"
+            style={{
+              left: board.left,
+              top: board.top,
+              width: board.right - board.left,
+              height: board.bottom - board.top,
+              gridTemplateColumns: `repeat(${scene.files}, 1fr)`,
+              gridTemplateRows: `repeat(${scene.ranks}, 1fr)`,
+              fontSize: (board.right - board.left) / scene.files / 7,
+            }}
+          >
+            {scene.tiles.map((tile) => (
+              <span
+                key={tile.i}
+                className={tile.broken ? "is-broken" : undefined}
+                style={{ animationDelay: `${tile.late}ms` }}
+              >
+                {tile.lines.map((line, k) => (
+                  <b key={k}>{line}</b>
+                ))}
+              </span>
+            ))}
+          </div>
+
+          {scene.windows.map(({ left: x, top: y, tilt, i }, n) => (
             <section
               key={i}
               className="mode-swap-window"
               style={
                 {
-                  "--x": x,
-                  "--y": y,
-                  "--bot-x": `${bot.x}px`,
-                  "--bot-y": `${bot.y}px`,
-                  "--tilt": `${tilt}deg`,
-                  "--late": `${FLOOD_FROM_MS + i * FLOOD_EVERY_MS}ms`,
+                  left: x,
+                  top: y,
+                  width: scene.w,
+                  height: scene.h,
+                  rotate: `${tilt}deg`,
+                  "--from-x": `${bot.x - x - scene.w / 2}px`,
+                  "--from-y": `${bot.y - y - scene.h / 2}px`,
+                  "--late": `${FLOOD_FROM_MS + n * FLOOD_EVERY_MS}ms`,
                   "--scroll": `${0.9 + (i % 4) * 0.25}s`,
                 } as CSSProperties
               }
@@ -279,75 +446,113 @@ function Swap({ from, to }: { from: number; to: number }) {
               </header>
               <pre>
                 {[0, 1].map((round) =>
-                  CODE.map((_, k) => {
-                    const line = CODE[(k + i * 5) % CODE.length];
-                    return (
-                      <span key={`${round}-${k}`}>
-                        {line}
-                        {"\n"}
-                      </span>
-                    );
-                  }),
+                  CODE.map((_, k) => (
+                    <span key={`${round}-${k}`}>
+                      {CODE[(k + i * 5) % CODE.length]}
+                      {"\n"}
+                    </span>
+                  )),
                 )}
               </pre>
             </section>
-          );
-        })}
-      </div>
-      <section
-        className="mode-swap-terminal"
-        style={
-          {
-            left: board.x,
-            top: board.y,
-            "--from-x": `${bot.x - board.x}px`,
-            "--from-y": `${bot.y - board.y}px`,
-          } as CSSProperties
-        }
-      >
-        <header>
-          <span>chessbot.exe</span>
-          <i />
-          <i />
-          <i />
-        </header>
-        <pre>
-          {shown.map((line, i) => (
-            <span key={i}>
-              {"> "}
-              {line}
-              {typing && i === shown.length - 1 && (
-                <span className="mode-swap-caret" />
-              )}
-              {"\n"}
-            </span>
           ))}
-          {!typing && (
-            <span className="mode-swap-build">
-              {`[${"#".repeat(cells)}${".".repeat(BAR_CELLS - cells)}] ${Math.round(built * 100)}%`}
-            </span>
-          )}
-        </pre>
-      </section>
-      <div className="mode-swap-tears" aria-hidden>
-        {TEARS.map(([top, height, shift], i) => (
-          <i
-            key={i}
+
+          <section
+            className="mode-swap-terminal"
             style={
               {
-                top: `${top}%`,
-                height: `${height}%`,
-                "--shift": `${shift}px`,
-                "--late": `${TEARS_MS + i * 40}ms`,
+                left: scene.terminal.x,
+                top: scene.terminal.y,
+                width: scene.termWidth,
+                "--from-x": `${bot.x - scene.terminal.x}px`,
+                "--from-y": `${bot.y - scene.terminal.y}px`,
               } as CSSProperties
             }
-          />
-        ))}
-      </div>
-      <span className="mode-swap-static" />
-      <div className="mode-swap-crt" aria-hidden>
-        <i />
-      </div>
+          >
+            <header>
+              <span>chessbot.exe</span>
+              <i />
+              <i />
+              <i />
+            </header>
+            <pre>
+              {shown.map((line, i) => (
+                <span key={i}>
+                  {"> "}
+                  {line}
+                  {typing && i === shown.length - 1 && (
+                    <span className="mode-swap-caret" />
+                  )}
+                  {"\n"}
+                </span>
+              ))}
+              {!typing && (
+                <span className="mode-swap-build">
+                  {`[${"#".repeat(cells)}${".".repeat(BAR_CELLS - cells)}] ${Math.round(built * 100)}%`}
+                </span>
+              )}
+            </pre>
+          </section>
+
+          {radius > 0 && (
+            <>
+              <div
+                className="mode-swap-wave"
+                style={{
+                  background: newWorld,
+                  clipPath: `circle(${radius}px at ${bot.x}px ${bot.y}px)`,
+                  maskImage: aroundHim,
+                  WebkitMaskImage: aroundHim,
+                }}
+              />
+              {radius - 34 > scene.clear && (
+                <div
+                  className="mode-swap-ring"
+                  style={{
+                    maskImage: ring(radius, 34),
+                    WebkitMaskImage: ring(radius, 34),
+                  }}
+                />
+              )}
+              {radius - 86 > scene.clear && (
+                <div
+                  className="mode-swap-ring is-trailing"
+                  style={{
+                    maskImage: ring(radius - 70, 16),
+                    WebkitMaskImage: ring(radius - 70, 16),
+                  }}
+                />
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {/* Once the next mode is in place, the new world that swept over it falls away bit by bit */}
+      {switched && (
+        <div
+          className="mode-swap-dissolve"
+          style={{ maskImage: aroundHim, WebkitMaskImage: aroundHim }}
+        >
+          {Array.from({ length: 96 }, (_, i) => {
+            const col = i % 12;
+            const row = Math.floor(i / 12);
+            return (
+              <i
+                key={i}
+                style={{
+                  left: `${(col / 12) * 100}%`,
+                  top: `${(row / 8) * 100}%`,
+                  backgroundImage: newWorld,
+                  backgroundSize: "100vw 100vh",
+                  backgroundPosition: `${(-col / 12) * window.innerWidth}px ${(-row / 8) * window.innerHeight}px`,
+                  animationDelay: `${Math.round(((i * 37) % 96) * 6.5)}ms`,
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

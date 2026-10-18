@@ -1,4 +1,4 @@
-/* --- Between modes of the adventure: Chessbot rewriting the game from his spot --- */
+/* --- Between modes of the adventure: Chessbot hacking the board from his spot --- */
 
 .mode-swap {
   position: fixed;
@@ -6,53 +6,227 @@
   z-index: 60;
   overflow: hidden;
   pointer-events: none;
-  background: rgba(6, 3, 16, 0.5);
-  animation: mode-swap-in 0.25s ease-out both;
 }
 
-@keyframes mode-swap-in {
-  from {
+/* --- Code streaming out of him into the board --- */
+
+.mode-swap-stream i {
+  position: absolute;
+  font:
+    bold 20px "Courier New",
+    Courier,
+    monospace;
+  font-style: normal;
+  text-shadow:
+    0 0 4px #ffffff,
+    0 0 10px currentColor,
+    0 0 22px currentColor;
+  translate: -50% -50%;
+  opacity: 0;
+  animation: mode-swap-glyph 0.7s linear infinite;
+}
+
+@keyframes mode-swap-glyph {
+  0% {
+    transform: translate(0, 0) scale(0.6);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(1.3);
     opacity: 0;
   }
 }
 
-/* Red alert: the screen flashes red, twice, and stays tinted */
-.mode-swap-alert {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 40, 60, 0.05),
-    rgba(255, 20, 40, 0.45)
-  );
-  animation: mode-swap-alert 1.1s steps(1) both;
+/* --- The board, hacked: its squares flash and its pieces glitch, then frenzy --- */
+
+.app[data-swap="glitch"] .board .square,
+.app[data-swap="glitch"] .hex-cell {
+  animation: mode-swap-square 1.8s var(--swap-late, 0s) steps(1) infinite;
 }
 
-@keyframes mode-swap-alert {
-  0% {
-    opacity: 1;
+.app:is(
+    [data-swap="frenzy"],
+    [data-swap="underneath"],
+    [data-swap="charge"],
+    [data-swap="wave"]
+  )
+  .board
+  .square,
+.app:is(
+    [data-swap="frenzy"],
+    [data-swap="underneath"],
+    [data-swap="charge"],
+    [data-swap="wave"]
+  )
+  .hex-cell {
+  animation: mode-swap-square 0.55s calc(var(--swap-late, 0s) * 0.3) steps(1)
+    infinite;
+}
+
+@keyframes mode-swap-square {
+  0%,
+  64% {
+    box-shadow: none;
   }
-  15% {
-    opacity: 0.2;
+  66% {
+    box-shadow: inset 0 0 0 999px var(--swap-flash);
   }
-  30% {
-    opacity: 1;
+  76% {
+    box-shadow: none;
   }
-  45%,
+  84% {
+    box-shadow: inset 0 0 0 999px var(--swap-flash-2);
+  }
+  90%,
   100% {
-    opacity: 0.45;
+    box-shadow: none;
   }
 }
 
-/* Windows of code thrown open all over the screen, each flying out of him */
-.mode-swap-window {
-  --w: min(250px, 40vw);
-  --h: 128px;
+.app[data-swap="glitch"] .board .piece-img,
+.app[data-swap="glitch"] .hex-board img {
+  animation: mode-swap-piece 1.6s var(--swap-late, 0s) steps(1) infinite;
+}
+
+.app:is(
+    [data-swap="frenzy"],
+    [data-swap="underneath"],
+    [data-swap="charge"],
+    [data-swap="wave"]
+  )
+  .board
+  .piece-img,
+.app:is(
+    [data-swap="frenzy"],
+    [data-swap="underneath"],
+    [data-swap="charge"],
+    [data-swap="wave"]
+  )
+  .hex-board
+  img {
+  animation: mode-swap-piece 0.5s calc(var(--swap-late, 0s) * 0.3) steps(1)
+    infinite;
+}
+
+@keyframes mode-swap-piece {
+  0%,
+  60% {
+    translate: 0 0;
+    filter: none;
+  }
+  62% {
+    translate: 4px -2px;
+    filter: drop-shadow(3px 0 0 #21e6ff) drop-shadow(-3px 0 0 #ff2e88);
+  }
+  68% {
+    translate: -3px 1px;
+    filter: invert(1) hue-rotate(90deg);
+  }
+  74% {
+    translate: 2px 0;
+    filter: drop-shadow(-4px 0 0 #7dffab) drop-shadow(4px 0 0 #ff2e88);
+    scale: 1 0.8;
+  }
+  80%,
+  100% {
+    translate: 0 0;
+    filter: none;
+    scale: 1;
+  }
+}
+
+/* In the frenzy the whole board shudders and its colours slip */
+.app:is([data-swap="frenzy"], [data-swap="underneath"], [data-swap="charge"])
+  .board-container {
+  animation: mode-swap-shudder 0.24s steps(2) infinite;
+}
+
+@keyframes mode-swap-shudder {
+  0% {
+    translate: 2px 0;
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    translate: -3px 1px;
+    filter: hue-rotate(40deg) saturate(1.4);
+  }
+  100% {
+    translate: 1px -1px;
+    filter: hue-rotate(-30deg);
+  }
+}
+
+/* --- Under each square, the code it runs on: they flip over one by one --- */
+
+.mode-swap-underneath {
   position: absolute;
-  left: calc(var(--x) * (100vw - var(--w)));
-  top: calc(var(--y) * (100vh - var(--h)));
-  width: var(--w);
-  height: var(--h);
+  display: grid;
+  perspective: 600px;
+}
+
+.mode-swap-underneath span {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15em;
+  padding: 0 0.5em;
+  overflow: hidden;
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.1;
+  color: #7dffab;
+  text-shadow: 0 0 5px rgba(80, 255, 150, 0.7);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.05) 0 1px,
+      transparent 1px 3px
+    ),
+    #06120c;
+  outline: 1px solid #1f6b45;
+  opacity: 0;
+  transform: rotateY(-90deg);
+  animation: mode-swap-flip 0.32s cubic-bezier(0.3, 1.4, 0.5, 1) forwards;
+}
+
+.mode-swap-underneath span.is-broken {
+  color: #ff5a7a;
+  text-shadow: 0 0 6px rgba(255, 60, 100, 0.8);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.05) 0 1px,
+      transparent 1px 3px
+    ),
+    #1a0509;
+  outline-color: #7a1f33;
+}
+
+.mode-swap-underneath b {
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+@keyframes mode-swap-flip {
+  from {
+    opacity: 1;
+    transform: rotateY(-90deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotateY(0deg);
+  }
+}
+
+/* --- Windows of code thrown open, each flying out of him --- */
+
+.mode-swap-window {
+  position: absolute;
   overflow: hidden;
   font-family: "Courier New", Courier, monospace;
   color: #7dffab;
@@ -68,25 +242,31 @@
   box-shadow:
     0 0 0 1px #000,
     0 12px 28px rgba(0, 0, 0, 0.55);
-  rotate: var(--tilt);
+  opacity: 0;
   animation: mode-swap-fly 0.32s var(--late) cubic-bezier(0.2, 0.8, 0.3, 1.15)
-    both;
+    forwards;
 }
 
 @keyframes mode-swap-fly {
   from {
-    translate: calc(var(--bot-x) - var(--x) * (100vw - var(--w)) - var(--w) / 2)
-      calc(var(--bot-y) - var(--y) * (100vh - var(--h)) - var(--h) / 2);
+    translate: var(--from-x) var(--from-y);
     scale: 0.05;
     opacity: 0;
   }
   30% {
     opacity: 1;
   }
+  to {
+    translate: 0 0;
+    scale: 1;
+    opacity: 1;
+  }
 }
 
 .mode-swap-window header,
 .mode-swap-terminal header {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -97,12 +277,6 @@
   color: #6fd39a;
   background: #0b1711;
   border-bottom: 1px solid #1f3a2c;
-}
-
-/* The code scrolls up under the title bar, never over it */
-.mode-swap-window header {
-  position: relative;
-  z-index: 1;
 }
 
 .mode-swap-window header span,
@@ -136,12 +310,11 @@
   }
 }
 
-/* His terminal, flying out of him and landing over the board */
+/* --- His terminal, flying out of him and settling just under him --- */
+
 .mode-swap-terminal {
   position: absolute;
   z-index: 2;
-  width: min(440px, 88vw);
-  min-height: 176px;
   overflow: hidden;
   font-family: "Courier New", Courier, monospace;
   color: #7dffab;
@@ -156,16 +329,15 @@
   border-radius: 7px;
   box-shadow:
     0 0 0 2px #000,
-    0 0 40px rgba(60, 255, 150, 0.35),
-    0 18px 44px rgba(0, 0, 0, 0.65);
-  translate: -50% -50%;
-  rotate: -1.5deg;
+    0 0 30px rgba(60, 255, 150, 0.3),
+    0 16px 40px rgba(0, 0, 0, 0.6);
+  translate: -50% 0;
   animation: mode-swap-terminal 0.45s 0.3s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
 }
 
 @keyframes mode-swap-terminal {
   from {
-    translate: calc(-50% + var(--from-x)) calc(-50% + var(--from-y));
+    translate: calc(-50% + var(--from-x)) var(--from-y);
     scale: 0.05;
     opacity: 0;
   }
@@ -174,15 +346,11 @@
   }
 }
 
-.mode-swap-terminal header {
-  font-size: 12px;
-}
-
 .mode-swap-terminal pre {
   margin: 0;
-  padding: 14px 16px 16px;
+  padding: 12px 14px 14px;
   font: inherit;
-  font-size: clamp(13px, 1.7vw, 17px);
+  font-size: clamp(12px, 1.3vw, 15px);
   font-weight: bold;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -209,151 +377,9 @@
   color: #c8ffd9;
 }
 
-/* Bands of the screen tear loose, jumping and flickering inverted */
-.mode-swap-tears i {
-  position: absolute;
-  left: -10%;
-  right: -10%;
-  z-index: 3;
-  -webkit-backdrop-filter: invert(1) hue-rotate(90deg) saturate(3);
-  backdrop-filter: invert(1) hue-rotate(90deg) saturate(3);
-  opacity: 0;
-  /* Held hidden until its moment comes: only the end of the run is kept */
-  animation: mode-swap-tear 0.5s var(--late) steps(1) forwards;
-}
+/* --- Him, working away in his spot, then charging up --- */
 
-.mode-swap-tears i:nth-child(3n) {
-  -webkit-backdrop-filter: hue-rotate(-120deg) saturate(4) brightness(1.4);
-  backdrop-filter: hue-rotate(-120deg) saturate(4) brightness(1.4);
-}
-
-@keyframes mode-swap-tear {
-  0% {
-    opacity: 1;
-    translate: var(--shift) 0;
-  }
-  12% {
-    translate: calc(var(--shift) * -1) 0;
-  }
-  24% {
-    opacity: 0;
-  }
-  36% {
-    opacity: 1;
-    translate: calc(var(--shift) * 0.5) 0;
-  }
-  50% {
-    translate: calc(var(--shift) * -1.5) 0;
-  }
-  62% {
-    opacity: 0;
-  }
-  74% {
-    opacity: 1;
-    translate: calc(var(--shift) * 2) 0;
-  }
-  88%,
-  100% {
-    opacity: 0;
-  }
-}
-
-/* Static over everything as the screen breaks up */
-.mode-swap-static {
-  position: absolute;
-  inset: -20px;
-  z-index: 3;
-  background:
-    repeating-radial-gradient(
-      circle at 13% 27%,
-      rgba(255, 255, 255, 0.14) 0 1px,
-      transparent 1px 3px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.07) 0 1px,
-      transparent 1px 2px
-    );
-  opacity: 0;
-  animation:
-    mode-swap-static-show var(--swap-ms) linear both,
-    mode-swap-static-jitter 0.12s steps(3) infinite;
-}
-
-@keyframes mode-swap-static-show {
-  0%,
-  78% {
-    opacity: 0;
-  }
-  79%,
-  84% {
-    opacity: 0.6;
-  }
-  84.5%,
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes mode-swap-static-jitter {
-  to {
-    translate: 20px 14px;
-  }
-}
-
-/* He switches the screen off like an old set: the picture squashes to a
-   line, the line to a dot, and the dot goes out */
-.mode-swap-crt {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  display: grid;
-  place-items: center;
-  background: #000;
-  opacity: 0;
-  animation: mode-swap-crt-dark var(--swap-ms) steps(1) both;
-}
-
-.mode-swap-crt i {
-  width: 100%;
-  height: 100%;
-  background: #f4faff;
-  box-shadow: 0 0 40px 10px rgba(200, 230, 255, 0.8);
-  animation: mode-swap-crt-off var(--swap-ms) linear both;
-}
-
-@keyframes mode-swap-crt-dark {
-  0% {
-    opacity: 0;
-  }
-  84.4%,
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes mode-swap-crt-off {
-  0%,
-  84.4% {
-    scale: 1 1;
-    opacity: 1;
-  }
-  88.9% {
-    scale: 1 0.006;
-  }
-  93.3% {
-    scale: 0.004 0.006;
-    opacity: 1;
-  }
-  97.8%,
-  100% {
-    scale: 0 0;
-    opacity: 0;
-  }
-}
-
-/* He works away in his spot, lit green by the code he is pouring out */
-.app.mode-swapping .chessbot-dock .chessbot-head {
+.app[data-swap] .chessbot-dock .chessbot-head {
   filter: drop-shadow(0 0 8px #7dffab) drop-shadow(0 0 18px #2bd47a);
   animation: mode-swap-hack 0.16s ease-in-out infinite alternate;
 }
@@ -369,71 +395,103 @@
   }
 }
 
-/* The old board rumbles harder and harder, and is torn away */
-.app.mode-swapping .board-container {
-  animation: mode-swap-yank var(--swap-ms, 9s) linear both;
+.app[data-swap="charge"] .chessbot-dock .chessbot-head {
+  filter: drop-shadow(0 0 10px #ffffff) drop-shadow(0 0 24px #7dffab)
+    drop-shadow(0 0 48px #21e6ff);
+  animation: mode-swap-charge 0.12s steps(2) infinite;
 }
 
-@keyframes mode-swap-yank {
-  0%,
-  22% {
-    translate: 0 0;
-    rotate: 0deg;
+@keyframes mode-swap-charge {
+  0% {
+    scale: 1.08;
+    translate: 2px 0;
   }
-  28% {
-    translate: 2px -1px;
-    rotate: -0.3deg;
+  50% {
+    scale: 1.18;
+    translate: -2px -1px;
   }
-  34% {
-    translate: -3px 1px;
-    rotate: 0.4deg;
-  }
-  40% {
-    translate: 4px 2px;
-    rotate: -0.6deg;
-  }
-  46% {
-    translate: -5px -2px;
-    rotate: 0.8deg;
-  }
-  52% {
-    translate: 6px 1px;
-    rotate: -1deg;
-  }
-  57% {
-    translate: -7px 2px;
-    rotate: 1.2deg;
-  }
-  62% {
-    translate: 8px -2px;
-    rotate: -1.5deg;
-  }
-  66% {
-    translate: -9px 0;
-    rotate: 1.8deg;
-  }
-  69% {
-    translate: 0 -4%;
-    rotate: -2deg;
-    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.4);
-  }
-  76%,
   100% {
-    translate: 0 130vh;
-    rotate: 14deg;
+    scale: 1.12;
+    translate: 1px 1px;
+  }
+}
+
+/* --- The shockwave: the next mode blasting out from him across everything --- */
+
+.mode-swap-wave {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+
+.mode-swap-ring {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.5) 0 2px,
+      transparent 2px 7px
+    ),
+    conic-gradient(
+      from 0deg,
+      #21e6ff,
+      #ff2e88,
+      #7dffab,
+      #ffe45c,
+      #b26bff,
+      #21e6ff
+    );
+  filter: drop-shadow(0 0 12px #ffffff);
+  animation: mode-swap-ring-glitch 0.09s steps(2) infinite;
+}
+
+.mode-swap-ring.is-trailing {
+  background: #ffffff;
+  opacity: 0.7;
+}
+
+@keyframes mode-swap-ring-glitch {
+  0% {
+    translate: 3px 0;
+    filter: drop-shadow(0 0 12px #ffffff) hue-rotate(0deg);
+  }
+  50% {
+    translate: -3px 2px;
+    filter: drop-shadow(0 0 12px #ffffff) hue-rotate(120deg);
+  }
+  100% {
+    translate: 0 -2px;
+    filter: drop-shadow(0 0 12px #ffffff) hue-rotate(240deg);
+  }
+}
+
+/* --- The new world that swept in falls away bit by bit from the new mode --- */
+
+.mode-swap-dissolve i {
+  position: absolute;
+  width: calc(100% / 12 + 1px);
+  height: calc(100% / 8 + 1px);
+  animation: mode-swap-crumble 0.18s steps(2) forwards;
+}
+
+@keyframes mode-swap-crumble {
+  to {
+    opacity: 0;
+    visibility: hidden;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mode-swap,
-  .mode-swap-alert,
-  .mode-swap-tears i,
-  .mode-swap-static,
-  .mode-swap-window,
-  .mode-swap-window pre,
-  .mode-swap-terminal,
-  .app.mode-swapping .chessbot-dock .chessbot-head,
-  .app.mode-swapping .board-container {
+  .mode-swap-stream,
+  .app[data-swap] .board .square,
+  .app[data-swap] .hex-cell,
+  .app[data-swap] .board .piece-img,
+  .app[data-swap] .hex-board img,
+  .app[data-swap] .board-container,
+  .app[data-swap] .chessbot-dock .chessbot-head,
+  .mode-swap-ring {
     animation: none;
   }
 }
