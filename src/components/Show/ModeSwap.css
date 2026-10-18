@@ -110,8 +110,47 @@
   )
   .hex-board
   img {
-  animation: mode-swap-piece 0.5s calc(var(--swap-late, 0s) * 0.3) steps(1)
-    infinite;
+  animation: mode-swap-piece-frenzy 0.36s calc(var(--swap-late, 0s) * 0.2)
+    steps(1) infinite;
+}
+
+@keyframes mode-swap-piece-frenzy {
+  0% {
+    translate: 0 0;
+    scale: 1;
+    rotate: 0deg;
+    filter: none;
+    opacity: 1;
+  }
+  20% {
+    translate: -8px 3px;
+    scale: 1.25 0.7;
+    filter: drop-shadow(5px 0 0 #ff2e88) drop-shadow(-5px 0 0 #21e6ff);
+  }
+  40% {
+    translate: 7px -7px;
+    rotate: 14deg;
+    filter: invert(1) hue-rotate(120deg);
+  }
+  60% {
+    translate: -4px 9px;
+    scale: 0.7 1.35;
+    rotate: 0deg;
+    filter: brightness(3) saturate(0);
+  }
+  80% {
+    translate: 11px 0;
+    rotate: -16deg;
+    filter: hue-rotate(200deg) saturate(4);
+    opacity: 0.35;
+  }
+  100% {
+    translate: 0 0;
+    scale: 1;
+    rotate: 0deg;
+    filter: none;
+    opacity: 1;
+  }
 }
 
 @keyframes mode-swap-piece {
@@ -141,25 +180,109 @@
   }
 }
 
-/* In the frenzy the whole board shudders and its colours slip */
-.app:is([data-swap="frenzy"], [data-swap="underneath"], [data-swap="charge"])
-  .board-container {
-  animation: mode-swap-shudder 0.24s steps(2) infinite;
+/* The board twitches now and then, as the plain site did when he first broke in */
+.app[data-swap="glitch"] .board-container {
+  animation: mode-swap-twitch 1.3s steps(1) infinite;
 }
 
-@keyframes mode-swap-shudder {
+@keyframes mode-swap-twitch {
+  0%,
+  55% {
+    translate: 0 0;
+    clip-path: none;
+    filter: none;
+  }
+  57% {
+    translate: 6px 0;
+    filter: hue-rotate(60deg) saturate(2);
+  }
+  59% {
+    translate: 0 0;
+    filter: none;
+  }
+  84% {
+    translate: -12px 0;
+    clip-path: inset(0 0 58% 0);
+    filter: hue-rotate(160deg) saturate(3);
+  }
+  87% {
+    translate: 10px 3px;
+    clip-path: inset(42% 0 0 0);
+    filter: invert(1) hue-rotate(90deg);
+  }
+  90% {
+    translate: -5px -2px;
+    clip-path: inset(20% 0 30% 0);
+  }
+  93%,
+  100% {
+    translate: 0 0;
+    clip-path: none;
+    filter: none;
+  }
+}
+
+/* Then it glitches out flat out, the way the plain site did at the end: shaking,
+   its colours flipping, slices of it torn away, and its picture doubled */
+.app:is(
+    [data-swap="frenzy"],
+    [data-swap="underneath"],
+    [data-swap="charge"],
+    [data-swap="wave"]
+  )
+  .board-container {
+  animation:
+    glitch-jitter 0.22s steps(2) infinite,
+    glitch-hue 0.6s steps(3) infinite,
+    mode-swap-slice 0.9s steps(1) infinite;
+}
+
+.app:is(
+    [data-swap="frenzy"],
+    [data-swap="underneath"],
+    [data-swap="charge"],
+    [data-swap="wave"]
+  )
+  :is(.board-shell, .hex-board) {
+  filter: drop-shadow(5px 0 0 rgba(255, 0, 90, 0.65))
+    drop-shadow(-5px 0 0 rgba(0, 220, 255, 0.65));
+}
+
+@keyframes mode-swap-slice {
   0% {
-    translate: 2px 0;
-    filter: hue-rotate(0deg);
+    clip-path: none;
+  }
+  12% {
+    clip-path: inset(0 0 64% 0);
+  }
+  20% {
+    clip-path: none;
+  }
+  38% {
+    clip-path: inset(30% 0 22% 0);
+  }
+  44% {
+    clip-path: inset(0 0 0 18%);
   }
   50% {
-    translate: -3px 1px;
-    filter: hue-rotate(40deg) saturate(1.4);
+    clip-path: none;
   }
+  70% {
+    clip-path: inset(55% 0 0 0);
+  }
+  76% {
+    clip-path: inset(10% 0 70% 0);
+  }
+  82%,
   100% {
-    translate: 1px -1px;
-    filter: hue-rotate(-30deg);
+    clip-path: none;
   }
+}
+
+/* Tears of colour and static running over the board in its frenzy */
+.mode-swap-tearing {
+  position: absolute;
+  overflow: hidden;
 }
 
 /* --- Under each square, the code it runs on: they flip over one by one --- */
@@ -379,6 +502,15 @@
 
 /* --- Him, working away in his spot, then charging up --- */
 
+/* He stays in front of everything he does, the shockwave sweeping under him */
+.app[data-swap] .hud {
+  z-index: auto;
+}
+
+.app[data-swap] .chessbot-dock {
+  z-index: 61;
+}
+
 .app[data-swap] .chessbot-dock .chessbot-head {
   filter: drop-shadow(0 0 8px #7dffab) drop-shadow(0 0 18px #2bd47a);
   animation: mode-swap-hack 0.16s ease-in-out infinite alternate;
@@ -484,6 +616,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .mode-swap-tearing,
   .mode-swap-stream,
   .app[data-swap] .board .square,
   .app[data-swap] .hex-cell,

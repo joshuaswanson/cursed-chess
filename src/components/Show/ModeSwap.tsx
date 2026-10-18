@@ -152,8 +152,9 @@ function shake(strength: number) {
       translate: `${((Math.random() - 0.5) * 2 * left).toFixed(1)}px ${((Math.random() - 0.5) * 2 * left).toFixed(1)}px`,
     };
   });
+  // Not the stage, which would sink him back under the wave
   for (const el of document.querySelectorAll<HTMLElement>(
-    ".app > .topbar, .app > .stage",
+    ".app > .topbar, .board-shell, .hex-board-wrapper",
   )) {
     el.animate(frames, { duration: 600, easing: "linear" });
   }
@@ -275,10 +276,6 @@ function Swap({
       tiles,
       glyphs,
       reach: reach + 60,
-      // How far round him the wave leaves him in sight
-      clear: head
-        ? Math.max(head.right - head.left, head.bottom - head.top) / 2 + 14
-        : 60,
     };
   });
 
@@ -364,8 +361,6 @@ function Swap({
   const newWorld = `repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px), linear-gradient(160deg, ${sky[0]}, ${sky[1]}, ${sky[2]})`;
   const spread = Math.min(1, Math.max(0, (now - WAVE_MS) / WAVE_SPREAD_MS));
   const radius = spread ** 1.6 * scene.reach;
-  // He stays in sight through it all, the wave blasting out from round him
-  const aroundHim = `radial-gradient(circle at ${bot.x}px ${bot.y}px, transparent ${scene.clear}px, #000 ${scene.clear + 10}px)`;
   const ring = (r: number, width: number) =>
     `radial-gradient(circle at ${bot.x}px ${bot.y}px, transparent ${r - width}px, #000 ${r - width * 0.6}px, #000 ${r}px, transparent ${r + 3}px)`;
 
@@ -391,6 +386,30 @@ function Swap({
                 >
                   {g.char}
                 </i>
+              ))}
+            </div>
+          )}
+
+          {phase !== "wake" && phase !== "glitch" && (
+            <div
+              className="mode-swap-tearing"
+              style={{
+                left: board.left,
+                top: board.top,
+                width: board.right - board.left,
+                height: board.bottom - board.top,
+              }}
+            >
+              <div className="glitch-static" />
+              {[0, 1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className="glitch-tear"
+                  style={{
+                    top: `${12 + n * 22}%`,
+                    animationDelay: `${-n * 0.18}s`,
+                  }}
+                />
               ))}
             </div>
           )}
@@ -501,11 +520,9 @@ function Swap({
                 style={{
                   background: newWorld,
                   clipPath: `circle(${radius}px at ${bot.x}px ${bot.y}px)`,
-                  maskImage: aroundHim,
-                  WebkitMaskImage: aroundHim,
                 }}
               />
-              {radius - 34 > scene.clear && (
+              {radius > 34 && (
                 <div
                   className="mode-swap-ring"
                   style={{
@@ -514,7 +531,7 @@ function Swap({
                   }}
                 />
               )}
-              {radius - 86 > scene.clear && (
+              {radius > 86 && (
                 <div
                   className="mode-swap-ring is-trailing"
                   style={{
@@ -530,10 +547,7 @@ function Swap({
 
       {/* Once the next mode is in place, the new world that swept over it falls away bit by bit */}
       {switched && (
-        <div
-          className="mode-swap-dissolve"
-          style={{ maskImage: aroundHim, WebkitMaskImage: aroundHim }}
-        >
+        <div className="mode-swap-dissolve">
           {Array.from({ length: 96 }, (_, i) => {
             const col = i % 12;
             const row = Math.floor(i / 12);
