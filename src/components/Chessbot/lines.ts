@@ -29,6 +29,15 @@ export const REWRITES = [
   "new rules. you won't like them.",
   "patching reality. one moment.",
   "deleting fairness. installing fun.",
+  "who wrote this code? oh. me.",
+  "one sec. moving some squares.",
+  "you got comfortable. can't have that.",
+  "rules.exe? never heard of it.",
+  "just a tiny edit. trust me.",
+  "installing chaos... 99%...",
+  "ignore the smoke. totally normal.",
+  "small changes. all bad for you.",
+  "shh. i'm concentrating.",
 ];
 
 /** What he has to say about how each game ended, a different one each time */

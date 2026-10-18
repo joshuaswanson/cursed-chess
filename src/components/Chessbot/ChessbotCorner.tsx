@@ -314,6 +314,12 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
   const rewriting = useGameStore(
     (s) => s.modeSwap !== null && !s.modeSwap.switched,
   );
+  // Which swap of the adventure this is, so each one gets its own line
+  const swapNo = useGameStore((s) =>
+    s.modeSwap
+      ? GAME_MODES.slice(1, s.modeSwap.to).filter((m) => !m.singleOnly).length
+      : 0,
+  );
   const skipLine = useSkipLine();
   // How many games have been settled, so he works through his verdicts in turn
   const played = useGameStore((s) => s.scoreWhite + s.scoreBlack);
@@ -349,7 +355,7 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
     entrance === "oops"
       ? ENTRANCE.oops
       : rewriting
-        ? REWRITES[played % REWRITES.length]
+        ? REWRITES[swapNo % REWRITES.length]
         : announcement
           ? kind === "mode"
             ? undefined
