@@ -49,6 +49,7 @@ function App() {
   const introDone = useGameStore((s) => s.introDone);
   const siteTab = useGameStore((s) => s.siteTab);
   const userPaused = useGameStore((s) => s.userPaused);
+  const modeIndex = useGameStore((s) => s.currentModeIndex);
   const pauseShown = cursed && userPaused && !menuOpen;
   const onFakePage = !cursed && siteTab !== "Play";
 
@@ -76,12 +77,19 @@ function App() {
     else useGameStore.getState().togglePause();
   };
 
+  // Each mode gets a board of its own, so nothing done to the last one carries over
   const board = isHexMode ? (
-    <div className={hexTransition === "morph-in" ? "hex-morph-in" : ""}>
+    <div
+      key={`hex-${modeIndex}`}
+      className={hexTransition === "morph-in" ? "hex-morph-in" : ""}
+    >
       <HexBoard />
     </div>
   ) : (
-    <div className={hexTransition === "morph-out" ? "hex-morph-out" : ""}>
+    <div
+      key={`board-${modeIndex}`}
+      className={hexTransition === "morph-out" ? "hex-morph-out" : ""}
+    >
       <Board />
     </div>
   );
