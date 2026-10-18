@@ -3,7 +3,7 @@ import type { Board, Piece, SquareIndex } from "../engine";
 import { ALL_SQUARES, fileOf, lastRank, rankOf } from "../utils/squareUtils";
 
 /** Pieces besides the king that every side gets to start a mode with */
-export const MIN_TROOPS = 6;
+export const MIN_TROOPS = 10;
 /** Who comes first when a side is short */
 const SQUAD: PieceType[] = [
   PieceType.Knight,
@@ -12,6 +12,10 @@ const SQUAD: PieceType[] = [
   PieceType.Bishop,
   PieceType.Pawn,
   PieceType.Rook,
+  PieceType.Knight,
+  PieceType.Pawn,
+  PieceType.Bishop,
+  PieceType.Pawn,
 ];
 
 export type ArrivalStyle = "parachute" | "sprint";
