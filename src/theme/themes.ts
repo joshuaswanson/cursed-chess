@@ -299,7 +299,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     title: "Thunderstorm",
     tagline:
       "The board is dark. Lightning lights it up for a moment every few seconds, and sometimes it kills a piece. It never hits a king.",
-    catchphrase: "Lightning never strikes twice. It strikes a lot.",
+    catchphrase: "How shocking.",
     // The night and the frame match the dark over the squares, so no edge of the board shows
     sky: ["#04030a", "#04030a", "#04030a"],
     accent: "#9fd8ff",
