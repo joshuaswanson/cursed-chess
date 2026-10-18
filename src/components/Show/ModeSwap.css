@@ -1,4 +1,6 @@
-/* --- Between modes of the adventure: Chessbot hacking the board from his spot --- */
+/* --- Between modes of the adventure: Chessbot hacking the site from his spot.
+   What happens to the board and panel is done from the script, so it can
+   all be taken off the page at once; here are only the things he adds --- */
 
 .mode-swap {
   position: fixed;
@@ -6,306 +8,6 @@
   z-index: 60;
   overflow: hidden;
   pointer-events: none;
-}
-
-/* --- Code streaming out of him into the board --- */
-
-.mode-swap-stream i {
-  position: absolute;
-  font:
-    bold 20px "Courier New",
-    Courier,
-    monospace;
-  font-style: normal;
-  text-shadow:
-    0 0 4px #ffffff,
-    0 0 10px currentColor,
-    0 0 22px currentColor;
-  translate: -50% -50%;
-  opacity: 0;
-  animation: mode-swap-glyph 0.7s linear infinite;
-}
-
-@keyframes mode-swap-glyph {
-  0% {
-    transform: translate(0, 0) scale(0.6);
-    opacity: 0;
-  }
-  12% {
-    opacity: 1;
-  }
-  85% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--tx), var(--ty)) scale(1.3);
-    opacity: 0;
-  }
-}
-
-/* --- The board, hacked: its squares flash and its pieces glitch, then frenzy --- */
-
-.app[data-swap="glitch"] .board .square,
-.app[data-swap="glitch"] .hex-cell {
-  animation: mode-swap-square 1.8s var(--swap-late, 0s) steps(1) infinite;
-}
-
-.app[data-swap-hard] .board .square,
-.app[data-swap-hard] .hex-cell {
-  animation: mode-swap-square 0.55s calc(var(--swap-late, 0s) * 0.3) steps(1)
-    infinite;
-}
-
-@keyframes mode-swap-square {
-  0%,
-  64% {
-    box-shadow: none;
-  }
-  66% {
-    box-shadow: inset 0 0 0 999px var(--swap-flash);
-  }
-  76% {
-    box-shadow: none;
-  }
-  84% {
-    box-shadow: inset 0 0 0 999px var(--swap-flash-2);
-  }
-  90%,
-  100% {
-    box-shadow: none;
-  }
-}
-
-.app[data-swap="glitch"] .board .piece-img,
-.app[data-swap="glitch"] .hex-board img {
-  animation: mode-swap-piece 1.6s var(--swap-late, 0s) steps(1) infinite;
-}
-
-.app[data-swap-hard] .board .piece-img,
-.app[data-swap-hard] .hex-board img {
-  animation: mode-swap-piece-frenzy 0.36s calc(var(--swap-late, 0s) * 0.2)
-    steps(1) infinite;
-}
-
-@keyframes mode-swap-piece-frenzy {
-  0% {
-    translate: 0 0;
-    scale: 1;
-    rotate: 0deg;
-    filter: none;
-    opacity: 1;
-  }
-  20% {
-    translate: -8px 3px;
-    scale: 1.25 0.7;
-    filter: drop-shadow(5px 0 0 #ff2e88) drop-shadow(-5px 0 0 #21e6ff);
-  }
-  40% {
-    translate: 7px -7px;
-    rotate: 14deg;
-    filter: invert(1) hue-rotate(120deg);
-  }
-  60% {
-    translate: -4px 9px;
-    scale: 0.7 1.35;
-    rotate: 0deg;
-    filter: brightness(3) saturate(0);
-  }
-  80% {
-    translate: 11px 0;
-    rotate: -16deg;
-    filter: hue-rotate(200deg) saturate(4);
-    opacity: 0.35;
-  }
-  100% {
-    translate: 0 0;
-    scale: 1;
-    rotate: 0deg;
-    filter: none;
-    opacity: 1;
-  }
-}
-
-@keyframes mode-swap-piece {
-  0%,
-  60% {
-    translate: 0 0;
-    filter: none;
-  }
-  62% {
-    translate: 4px -2px;
-    filter: drop-shadow(3px 0 0 #21e6ff) drop-shadow(-3px 0 0 #ff2e88);
-  }
-  68% {
-    translate: -3px 1px;
-    filter: invert(1) hue-rotate(90deg);
-  }
-  74% {
-    translate: 2px 0;
-    filter: drop-shadow(-4px 0 0 #7dffab) drop-shadow(4px 0 0 #ff2e88);
-    scale: 1 0.8;
-  }
-  80%,
-  100% {
-    translate: 0 0;
-    filter: none;
-    scale: 1;
-  }
-}
-
-/* The board twitches now and then, as the plain site did when he first broke in */
-.app[data-swap="glitch"] .board-container {
-  animation: mode-swap-twitch 1.3s steps(1) infinite;
-}
-
-@keyframes mode-swap-twitch {
-  0%,
-  55% {
-    translate: 0 0;
-    clip-path: none;
-    filter: none;
-  }
-  57% {
-    translate: 6px 0;
-    filter: hue-rotate(60deg) saturate(2);
-  }
-  59% {
-    translate: 0 0;
-    filter: none;
-  }
-  84% {
-    translate: -12px 0;
-    clip-path: inset(0 0 58% 0);
-    filter: hue-rotate(160deg) saturate(3);
-  }
-  87% {
-    translate: 10px 3px;
-    clip-path: inset(42% 0 0 0);
-    filter: invert(1) hue-rotate(90deg);
-  }
-  90% {
-    translate: -5px -2px;
-    clip-path: inset(20% 0 30% 0);
-  }
-  93%,
-  100% {
-    translate: 0 0;
-    clip-path: none;
-    filter: none;
-  }
-}
-
-/* Then it glitches out flat out, the way the plain site did at the end: shaking,
-   its colours flipping, slices of it torn away, and its picture doubled */
-.app[data-swap-hard] .board-container {
-  animation:
-    glitch-jitter 0.22s steps(2) infinite,
-    glitch-hue 0.6s steps(3) infinite,
-    mode-swap-slice 0.9s steps(1) infinite;
-}
-
-.app[data-swap-hard] .board-shell,
-.app[data-swap-hard] .hex-board {
-  filter: drop-shadow(5px 0 0 rgba(255, 0, 90, 0.65))
-    drop-shadow(-5px 0 0 rgba(0, 220, 255, 0.65));
-}
-
-@keyframes mode-swap-slice {
-  0% {
-    clip-path: none;
-  }
-  12% {
-    clip-path: inset(0 0 64% 0);
-  }
-  20% {
-    clip-path: none;
-  }
-  38% {
-    clip-path: inset(30% 0 22% 0);
-  }
-  44% {
-    clip-path: inset(0 0 0 18%);
-  }
-  50% {
-    clip-path: none;
-  }
-  70% {
-    clip-path: inset(55% 0 0 0);
-  }
-  76% {
-    clip-path: inset(10% 0 70% 0);
-  }
-  82%,
-  100% {
-    clip-path: none;
-  }
-}
-
-/* Tears of colour and static running over the board in its frenzy */
-.mode-swap-tearing {
-  position: absolute;
-  overflow: hidden;
-}
-
-/* --- Under each square, the code it runs on: they flip over one by one --- */
-
-.mode-swap-underneath {
-  position: absolute;
-  display: grid;
-  perspective: 600px;
-}
-
-.mode-swap-underneath span {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.15em;
-  padding: 0 0.5em;
-  overflow: hidden;
-  font-family: "Courier New", Courier, monospace;
-  line-height: 1.1;
-  color: #7dffab;
-  text-shadow: 0 0 5px rgba(80, 255, 150, 0.7);
-  background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.05) 0 1px,
-      transparent 1px 3px
-    ),
-    #06120c;
-  outline: 1px solid #1f6b45;
-  opacity: 0;
-  transform: rotateY(-90deg);
-  animation: mode-swap-flip 0.32s cubic-bezier(0.3, 1.4, 0.5, 1) forwards;
-}
-
-.mode-swap-underneath span.is-broken {
-  color: #ff5a7a;
-  text-shadow: 0 0 6px rgba(255, 60, 100, 0.8);
-  background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.05) 0 1px,
-      transparent 1px 3px
-    ),
-    #1a0509;
-  outline-color: #7a1f33;
-}
-
-.mode-swap-underneath b {
-  font-weight: bold;
-  white-space: nowrap;
-}
-
-@keyframes mode-swap-flip {
-  from {
-    opacity: 1;
-    transform: rotateY(-90deg);
-  }
-  to {
-    opacity: 1;
-    transform: rotateY(0deg);
-  }
 }
 
 /* --- Windows of code thrown open, each flying out of him --- */
@@ -462,149 +164,105 @@
   color: #c8ffd9;
 }
 
-/* --- Him, working away in his spot, then charging up --- */
+/* --- Errors piling up, each cascade the same window over and over, as
+   when a whole computer hangs --- */
 
-/* He stays in front of everything he does, the shockwave sweeping under him */
-.app[data-swap] .hud {
-  z-index: auto;
-}
-
-.app[data-swap] .chessbot-dock {
-  z-index: 61;
-}
-
-.app[data-swap] .chessbot-dock .chessbot-head {
-  filter: drop-shadow(0 0 8px #7dffab) drop-shadow(0 0 18px #2bd47a);
-  animation: mode-swap-hack 0.16s ease-in-out infinite alternate;
-}
-
-@keyframes mode-swap-hack {
-  from {
-    translate: 0 0;
-    rotate: -4deg;
-  }
-  to {
-    translate: 0 -4%;
-    rotate: 4deg;
-  }
-}
-
-.app[data-swap="charge"] .chessbot-dock .chessbot-head {
-  filter: drop-shadow(0 0 10px #ffffff) drop-shadow(0 0 24px #7dffab)
-    drop-shadow(0 0 48px #21e6ff);
-  animation: mode-swap-charge 0.12s steps(2) infinite;
-}
-
-@keyframes mode-swap-charge {
-  0% {
-    scale: 1.08;
-    translate: 2px 0;
-  }
-  50% {
-    scale: 1.18;
-    translate: -2px -1px;
-  }
-  100% {
-    scale: 1.12;
-    translate: 1px 1px;
-  }
-}
-
-/* --- The shockwave: the screen breaking up block by block out from him,
-   and turning into the next mode behind it --- */
-
-.mode-swap-blocks i {
+.mode-swap-error {
   position: absolute;
-  z-index: 3;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  font:
+    13px Tahoma,
+    Verdana,
+    "Segoe UI",
+    sans-serif;
+  color: #000;
+  background: #d4d0c8;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff;
+  box-shadow: 1px 1px 0 #000;
+  opacity: 0;
+  animation: mode-swap-pop 0.05s linear forwards;
 }
 
-.mode-swap-blocks i.is-glitch {
-  -webkit-backdrop-filter: invert(1) hue-rotate(90deg);
-  backdrop-filter: invert(1) hue-rotate(90deg);
-  animation: mode-swap-block-jitter 0.12s steps(2) infinite;
-}
-
-.mode-swap-blocks i.is-glitch.kind-1 {
-  -webkit-backdrop-filter: hue-rotate(-140deg) saturate(4) brightness(1.3);
-  backdrop-filter: hue-rotate(-140deg) saturate(4) brightness(1.3);
-}
-
-.mode-swap-blocks i.is-glitch.kind-2 {
-  -webkit-backdrop-filter: invert(1) contrast(2.2) blur(1px);
-  backdrop-filter: invert(1) contrast(2.2) blur(1px);
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.18) 0 1px,
-    transparent 1px 3px
-  );
-}
-
-@keyframes mode-swap-block-jitter {
-  0% {
-    translate: var(--shift) 0;
-  }
-  50% {
-    translate: calc(var(--shift) * -1) var(--lift);
-  }
-  100% {
-    translate: 0 calc(var(--lift) * -1);
-  }
-}
-
-.mode-swap-blocks i.is-new {
-  animation: mode-swap-block-in 0.24s steps(3) both;
-}
-
-@keyframes mode-swap-block-in {
-  0% {
-    translate: var(--shift) 0;
-    filter: invert(1) hue-rotate(120deg);
-  }
-  50% {
-    translate: calc(var(--shift) * -0.5) var(--lift);
-    filter: brightness(2) saturate(2);
-  }
-  100% {
-    translate: 0 0;
-    filter: none;
-  }
-}
-
-.mode-swap-blocks i.is-gone {
-  animation: mode-swap-block-gone 0.36s steps(3) forwards;
-}
-
-@keyframes mode-swap-block-gone {
-  0% {
-    translate: 0 0;
-    filter: none;
+@keyframes mode-swap-pop {
+  to {
     opacity: 1;
   }
-  35% {
-    translate: var(--shift) 0;
-    filter: invert(1) hue-rotate(90deg);
-  }
-  70% {
-    translate: calc(var(--shift) * -1) var(--lift);
-    filter: hue-rotate(-90deg) saturate(3);
-    opacity: 0.6;
-  }
-  100% {
-    opacity: 0;
-    visibility: hidden;
-  }
+}
+
+.mode-swap-error header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 4px 3px 6px;
+  font-weight: bold;
+  color: #ffffff;
+  background: linear-gradient(90deg, #0a246a, #a6caf0);
+}
+
+.mode-swap-error header i {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 14px;
+  font-style: normal;
+  line-height: 1;
+  color: #000;
+  background: #d4d0c8;
+  border: 1px solid;
+  border-color: #ffffff #404040 #404040 #ffffff;
+}
+
+.mode-swap-error p {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  margin: 0;
+  padding: 8px 12px 4px;
+}
+
+.mode-swap-error p b {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  color: #ffffff;
+  background: #d40000;
+  border-radius: 50%;
+}
+
+.mode-swap-error footer {
+  display: flex;
+  justify-content: center;
+  padding: 0 0 8px;
+}
+
+.mode-swap-error footer span {
+  padding: 2px 22px;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff;
+  outline: 1px dotted #000;
+  outline-offset: -5px;
+}
+
+/* --- The shockwave, drawn over everything but him --- */
+
+.mode-swap-shockwave {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mode-swap-tearing,
-  .mode-swap-stream,
-  .app[data-swap] .board .square,
-  .app[data-swap] .hex-cell,
-  .app[data-swap] .board .piece-img,
-  .app[data-swap] .hex-board img,
-  .app[data-swap] .board-container,
-  .app[data-swap] .chessbot-dock .chessbot-head,
-  .mode-swap-blocks i {
+  .mode-swap-window,
+  .mode-swap-window pre,
+  .mode-swap-terminal {
     animation: none;
   }
 }
