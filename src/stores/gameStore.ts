@@ -210,6 +210,11 @@ export const GAME_MODES: GameMode[] = [
     kingsSitOut: true,
   },
   {
+    name: "THUNDERSTORM",
+    theme: "storm",
+    create: () => [new ThunderstormPlugin()],
+  },
+  {
     name: "GRAVITY",
     theme: "gravity",
     create: () => [new GravityPlugin()],
@@ -221,11 +226,6 @@ export const GAME_MODES: GameMode[] = [
     durationSeconds: 60,
     introHoldMs: HEX_MORPH_DONE_MS,
     isHex: true,
-  },
-  {
-    name: "THUNDERSTORM",
-    theme: "storm",
-    create: () => [new ThunderstormPlugin()],
   },
   {
     name: "HEIST",
