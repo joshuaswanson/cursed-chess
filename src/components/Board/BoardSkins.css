@@ -590,3 +590,10 @@
 [data-theme="trenches"] .square {
   box-shadow: inset 0 0 0 0.5px rgba(20, 14, 6, 0.25);
 }
+
+/* Each on a layer of its own, so their filters run once and not again on
+   every repaint of the board over them */
+.battlefield,
+.world-river {
+  will-change: transform;
+}
