@@ -80,7 +80,7 @@ function ElixirMeter({
  * Shown while you sit on a full bar before your first card: everything goes
  * dark but your half of the board and your cards, and a hand drags one out
  */
-function DeployCoach({ holding }: { holding: boolean }) {
+function DeployCoach() {
   const [reach, setReach] = useState<{ from: Box; to: Box } | null>(null);
   useLayoutEffect(() => {
     const box = (selector: string) =>
@@ -102,15 +102,11 @@ function DeployCoach({ holding }: { holding: boolean }) {
         { selector: ".deploy-zone-border", pad: 6 },
         { selector: ".rally-bar-you", pad: 8 },
       ]}
-      tip={
-        holding
-          ? "Now click a square on your half"
-          : "Drag a card onto your half of the board"
-      }
+      tip="Drag a card onto your half of the board"
       tipOver=".deploy-zone-border"
       tipAt={0.2}
     >
-      {!holding && from && to && (
+      {from && to && (
         <svg
           className="deploy-coach-hand"
           viewBox="0 0 48 56"
@@ -254,7 +250,7 @@ export function YourRallyBar() {
             <div
               // A newly dealt card is a new element, so it comes in afresh
               key={`${slot}-${hand.dealt[slot]}`}
-              title={`Click or drag onto your half to deploy a ${label.toLowerCase()} for ${cost} elixir`}
+              title={`Drag onto your half to deploy a ${label.toLowerCase()} for ${cost} elixir`}
               className={`deploy-card${hand.dealt[slot] > 0 ? " dealt" : ""}${canAfford ? "" : " disabled"}${selected === type ? " selected" : ""}${drag?.moved && drag.type === type ? " lifted" : ""}`}
               style={{ "--slot": slot } as React.CSSProperties}
               aria-pressed={selected === type}
@@ -283,7 +279,7 @@ export function YourRallyBar() {
           );
         })}
       </div>
-      {rally.awaitingFirstDeploy && <DeployCoach holding={selected !== null} />}
+      {rally.awaitingFirstDeploy && <DeployCoach />}
       {drag?.moved && (
         <div
           className="deploy-card deploy-floating-card"
