@@ -35,7 +35,7 @@ export function PauseMenu() {
       <div className="pause-card">
         <h2 className="pause-title">{guest ? "Menu" : "Paused"}</h2>
         <p className="pause-mode">{theme.title}</p>
-        <p className="pause-rules">{theme.tagline}</p>
+        <p className="pause-rules">{theme.catchphrase}</p>
         <div className="pause-actions">
           <button
             type="button"
