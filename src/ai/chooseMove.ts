@@ -16,6 +16,7 @@ import type {
   SquareIndex,
 } from "../engine";
 import { fileOf, rankOf } from "../utils/squareUtils";
+import { pickBySkill } from "./skill";
 
 export const PIECE_VALUE: Record<PieceType, number> = {
   [PieceType.Pawn]: 1,
@@ -46,6 +47,20 @@ const PORTAL_BONUS = 0.6;
 const CENTER_BONUS = 0.15;
 /** Keeps equally scored moves from always resolving the same way */
 const NOISE = 0.35;
+/** How much of what a move leaves hanging the least skilled Chessbot still notices */
+const MIN_CAUTION = 0.2;
+/** From this skill on, he looks one reply further for a mate against him */
+const MATE_GUARD_SKILL = 0.7;
+/** How many of his best moves he checks for a mate in reply */
+const MATE_GUARD_MOVES = 6;
+const MATE_GUARD_PENALTY = 500;
+
+export interface MoveSense {
+  settle?: Settle;
+  judge?: Judge;
+  /** How well to play, from 0 to 1, where Story Mode sets it; left out, he plays as he always does */
+  skill?: number;
+}
 
 /**
  * Greedy one-move search: material won, minus the best capture it leaves the
@@ -55,26 +70,75 @@ export function chooseMove(
   game: Game,
   moves: Move[],
   squareBonus: SquareBonus,
+  { settle, judge, skill }: MoveSense = {},
+): Move {
+  const caution =
+    skill === undefined ? 1 : MIN_CAUTION + (1 - MIN_CAUTION) * skill;
+  const scored = moves.map((move) => ({
+    choice: move,
+    score:
+      scoreMove(game, move, squareBonus, caution, settle, judge) +
+      Math.random() * NOISE,
+  }));
+  if (skill === undefined) return pickBySkill(scored, 1);
+  if (skill >= MATE_GUARD_SKILL) guardAgainstMate(game, scored, settle, judge);
+  return pickBySkill(scored, skill);
+}
+
+/** Marks down the best few moves that would let the opponent mate at once */
+function guardAgainstMate(
+  game: Game,
+  scored: { choice: Move; score: number }[],
   settle?: Settle,
   judge?: Judge,
-): Move {
-  let best = moves[0];
-  let bestScore = -Infinity;
-  for (const move of moves) {
-    const score =
-      scoreMove(game, move, squareBonus, settle, judge) + Math.random() * NOISE;
-    if (score > bestScore) {
-      bestScore = score;
-      best = move;
+): void {
+  const best = [...scored]
+    .filter(({ score }) => score < CHECKMATE_SCORE)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MATE_GUARD_MOVES);
+  for (const entry of best) {
+    if (allowsMate(game, entry.choice, settle, judge)) {
+      entry.score -= MATE_GUARD_PENALTY;
     }
   }
-  return best;
+}
+
+function allowsMate(
+  game: Game,
+  move: Move,
+  settle?: Settle,
+  judge?: Judge,
+): boolean {
+  if (move.flags & MoveFlag.Portal) return false;
+  const after = copyOf(game);
+  if (move.flags & MoveFlag.ModeMove) after.executeTrustedMove(move);
+  else if (!after.makeMove(move)) return false;
+  if (settle) {
+    settle(after.board);
+    after.enPassant = null;
+  }
+  return after.getLegalMoves().some((reply) => {
+    const next = copyOf(after);
+    if (!next.makeMove(reply)) return false;
+    if (settle) {
+      settle(next.board);
+      next.enPassant = null;
+    }
+    return (judge ? judge(next) : next.getStatus()) === GameStatus.Checkmate;
+  });
+}
+
+function copyOf(game: Game): Game {
+  const copy = new Game(game.toFen());
+  copy.pawnRules = game.pawnRules;
+  return copy;
 }
 
 function scoreMove(
   game: Game,
   move: Move,
   squareBonus: SquareBonus,
+  caution: number,
   settle?: Settle,
   judge?: Judge,
 ): number {
@@ -83,8 +147,7 @@ function scoreMove(
   // Where a portal move lands is only decided when it is played
   if (move.flags & MoveFlag.Portal) return captured + PORTAL_BONUS;
 
-  const after = new Game(game.toFen());
-  after.pawnRules = game.pawnRules;
+  const after = copyOf(game);
   // Moves a mode allows beyond the engine's own rules, like a pawn taking a zombie
   if (move.flags & MoveFlag.ModeMove) after.executeTrustedMove(move);
   else if (!after.makeMove(move)) return -Infinity;
@@ -106,12 +169,14 @@ function scoreMove(
     score -= DRAW_PENALTY;
   }
 
-  score -= bestReplyGain(
-    after.board,
-    move.piece.color,
-    after.enPassant,
-    after.pawnRules,
-  );
+  score -=
+    caution *
+    bestReplyGain(
+      after.board,
+      move.piece.color,
+      after.enPassant,
+      after.pawnRules,
+    );
   score +=
     centerBonus(move.to, landed) + squareBonus(move.to, landed, move.from);
   return score;

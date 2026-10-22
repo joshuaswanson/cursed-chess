@@ -136,21 +136,17 @@ export class HexGame {
   }
 
   /**
-   * Greedy AI move: material won, minus the moved piece's value if it lands
-   * on an attacked square (less a recapture if it is defended)
+   * Every legal move with the bot's greedy score for it: material won, minus
+   * the moved piece's value if it lands on an attacked square (less a
+   * recapture if it is defended), a little shuffled so ties fall either way
    */
-  getBestMove(pieceValue: Record<PieceType, number>): HexMove | null {
-    const moves = this.getLegalMoves();
-    let best: HexMove | null = null;
-    let bestScore = -Infinity;
-    for (const move of moves) {
-      const score = this.scoreMove(move, pieceValue) + Math.random() * 0.35;
-      if (score > bestScore) {
-        bestScore = score;
-        best = move;
-      }
-    }
-    return best;
+  scoreMoves(
+    pieceValue: Record<PieceType, number>,
+  ): { choice: HexMove; score: number }[] {
+    return this.getLegalMoves().map((move) => ({
+      choice: move,
+      score: this.scoreMove(move, pieceValue) + Math.random() * 0.35,
+    }));
   }
 
   private scoreMove(

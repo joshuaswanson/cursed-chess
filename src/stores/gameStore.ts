@@ -50,6 +50,7 @@ import type {
 } from "./reinforcements";
 import { HexGame } from "../engine/hex/game";
 import { chooseMove, PIECE_VALUE } from "../ai/chooseMove";
+import { pickBySkill, storySkill } from "../ai/skill";
 import type { ThemeId } from "../theme/themes";
 import type { SquareBonus } from "../ai/chooseMove";
 import type { HexCoord, HexMove } from "../engine/hex";
@@ -879,6 +880,7 @@ function chooseInTheDark(
   moves: Move[],
   recalled: ReadonlyMap<SquareIndex, Piece>,
   bonus: SquareBonus,
+  skill?: number,
 ): Move {
   const foe = opponent(game.turn);
   const believed = new Game(game.toFen());
@@ -905,8 +907,16 @@ function chooseInTheDark(
         : move.flags & ~MoveFlag.Capture,
     };
   });
-  return moves[guesses.indexOf(chooseMove(believed, guesses, bonus))];
+  return moves[
+    guesses.indexOf(chooseMove(believed, guesses, bonus, { skill }))
+  ];
 }
+
+/** How well Chessbot plays: in Story Mode it follows the score, and elsewhere he plays as he always has */
+const chessbotSkill = (s: GameStore): number | undefined =>
+  s.playMode === "adventure" && !s.net
+    ? storySkill(s.scoreWhite, s.scoreBlack)
+    : undefined;
 
 /** Alternates two lists, so both sides' reinforcements arrive together */
 function interleave<T>(a: T[], b: T[]): T[] {
@@ -1499,7 +1509,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
     if (isHexMode) {
-      const move = hexGame?.getBestMove(PIECE_VALUE);
+      const skill = chessbotSkill(get());
+      const scored = hexGame?.scoreMoves(PIECE_VALUE) ?? [];
+      const move = scored.length > 0 ? pickBySkill(scored, skill ?? 1) : null;
       if (move) get().makeHexMove(move.from, move.to, move.promotion);
       return;
     }
@@ -1577,26 +1589,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const conveyor = get().pluginManager.find<ConveyorPlugin>("conveyor");
     const pacman = get().pluginManager.find<PacManPlugin>("pacman");
     if (game.turn === Color.Black) dark?.look(game.board);
+    const skill = chessbotSkill(get());
     const pick =
       game.turn !== Color.Black
         ? moves[Math.floor(Math.random() * moves.length)]
         : dark
-          ? chooseInTheDark(game, allowed, dark.memory(), bonus)
+          ? chooseInTheDark(game, allowed, dark.memory(), bonus, skill)
           : pacman
             ? pacman.choose(game, allowed)
             : conveyor
-              ? chooseMove(
-                  game,
-                  sparingKings(allowed),
-                  bonus,
-                  (board) => void runBelts(board),
-                  (after) =>
+              ? chooseMove(game, sparingKings(allowed), bonus, {
+                  settle: (board) => void runBelts(board),
+                  judge: (after) =>
                     conveyor.modifyGameStatus(
                       { game: after, board: after.board },
                       after.getStatus(),
                     ),
-                )
-              : chooseMove(game, allowed, bonus);
+                  skill,
+                })
+              : chooseMove(game, allowed, bonus, { skill });
     get().makeMove(pick.from, pick.to, pick.promotion);
   },
 
