@@ -2144,7 +2144,7 @@
   translate: -50% 13px;
   border-radius: 50%;
   background: conic-gradient(
-    from 90deg,
+    from 270deg,
     #ffe600 0 calc(180deg - var(--mouth)),
     transparent 0 calc(180deg + var(--mouth)),
     #ffe600 0
