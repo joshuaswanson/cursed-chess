@@ -223,17 +223,14 @@
   0%,
   48% {
     scale: 0;
-    rotate: -300deg;
     translate: -50% -42%;
   }
   58% {
     scale: 1.2;
-    rotate: 0deg;
     translate: -40% -70%;
   }
   64% {
     scale: 1;
-    rotate: 0deg;
     translate: -20% -50%;
     animation-timing-function: linear;
   }
