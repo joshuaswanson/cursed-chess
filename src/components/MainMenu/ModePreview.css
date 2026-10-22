@@ -1350,8 +1350,8 @@
   animation: pv-takes-hill 4.4s infinite;
 }
 
-/* Landing on the hill, a bob at each count, and on the third a leap and a
-   victory sway, lit up gold */
+/* Walking up onto the hill, a bob at each count, and on the third a leap
+   and a victory sway, lit up gold */
 .pv-takes-hill > img {
   transform-origin: 50% 92%;
   animation: pv-king-cheer 4.4s infinite;
@@ -1404,9 +1404,7 @@
 @keyframes pv-takes-hill {
   0% {
     translate: -260% -50%;
-  }
-  14% {
-    translate: -150% -110%;
+    animation-timing-function: linear;
   }
   24%,
   90% {
@@ -1420,14 +1418,42 @@
 }
 
 @keyframes pv-king-cheer {
-  0%,
-  22% {
+  0% {
     transform: none;
     filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35))
       drop-shadow(0 0 0 rgba(255, 210, 63, 0));
+    animation-timing-function: ease-out;
+  }
+  3% {
+    transform: translateY(-9%) rotate(5deg);
+    animation-timing-function: ease-in;
+  }
+  6% {
+    transform: scale(1.05, 0.95);
+    animation-timing-function: ease-out;
+  }
+  9% {
+    transform: translateY(-9%) rotate(-5deg);
+    animation-timing-function: ease-in;
+  }
+  12% {
+    transform: scale(1.05, 0.95);
+    animation-timing-function: ease-out;
+  }
+  15% {
+    transform: translateY(-9%) rotate(5deg);
+    animation-timing-function: ease-in;
+  }
+  18% {
+    transform: scale(1.05, 0.95);
+    animation-timing-function: ease-out;
+  }
+  21% {
+    transform: translateY(-9%) rotate(-5deg);
+    animation-timing-function: ease-in;
   }
   24% {
-    transform: scale(1.14, 0.86);
+    transform: scale(1.08, 0.92);
   }
   28%,
   30% {
