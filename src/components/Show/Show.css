@@ -1591,6 +1591,12 @@
   animation-delay: calc(0.5s + var(--n) * 50ms);
 }
 
+/* The middle man of each team stands on the near side of the rope */
+.card-tug-team img:nth-of-type(2) {
+  position: relative;
+  z-index: 1;
+}
+
 /* Lean back and squat when your team heaves, get dragged upright when theirs does */
 @keyframes card-heave {
   0%,
