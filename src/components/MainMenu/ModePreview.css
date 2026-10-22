@@ -658,59 +658,122 @@
   animation: pv-steps-on 1.9s linear both;
 }
 
-/* In from off the left edge, a square at a time, to the one square it should not step on */
+/* The pawn waddles over a hop at a time, tipping side to side, and comes
+   down hard on the last square */
+.pv-steps-on > img {
+  transform-origin: 50% 90%;
+  animation: pv-pawn-hops 1.9s both;
+}
+
+/* In from off the left edge to the one square it should not step on */
 @keyframes pv-steps-on {
-  0.00% {
+  from {
     left: -6.25%;
-    translate: -50% -50%;
+  }
+  to {
+    left: 68.75%;
+  }
+}
+
+@keyframes pv-pawn-hops {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1.08, 0.9);
+    animation-timing-function: ease-out;
+  }
+  2.5% {
+    transform: translateY(-12%) rotate(4deg) scale(0.95, 1.08);
+    animation-timing-function: ease-out;
   }
   8.33% {
-    left: 0%;
-    translate: -50% -68%;
+    transform: translateY(-34%) rotate(9deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  14.17% {
+    transform: translateY(-8%) rotate(3deg) scale(0.97, 1.05);
+    animation-timing-function: ease-in;
   }
   16.67% {
-    left: 6.25%;
-    translate: -50% -50%;
+    transform: translateY(0) rotate(0deg) scale(1.08, 0.9);
+    animation-timing-function: ease-out;
   }
-  25.00% {
-    left: 12.5%;
-    translate: -50% -68%;
+  19.17% {
+    transform: translateY(-12%) rotate(-4deg) scale(0.95, 1.08);
+    animation-timing-function: ease-out;
+  }
+  25% {
+    transform: translateY(-34%) rotate(-9deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  30.83% {
+    transform: translateY(-8%) rotate(-3deg) scale(0.97, 1.05);
+    animation-timing-function: ease-in;
   }
   33.33% {
-    left: 18.75%;
-    translate: -50% -50%;
+    transform: translateY(0) rotate(0deg) scale(1.08, 0.9);
+    animation-timing-function: ease-out;
+  }
+  35.83% {
+    transform: translateY(-12%) rotate(4deg) scale(0.95, 1.08);
+    animation-timing-function: ease-out;
   }
   41.67% {
-    left: 25%;
-    translate: -50% -68%;
+    transform: translateY(-34%) rotate(9deg) scale(1);
+    animation-timing-function: ease-in;
   }
-  50.00% {
-    left: 31.25%;
-    translate: -50% -50%;
+  47.5% {
+    transform: translateY(-8%) rotate(3deg) scale(0.97, 1.05);
+    animation-timing-function: ease-in;
+  }
+  50% {
+    transform: translateY(0) rotate(0deg) scale(1.08, 0.9);
+    animation-timing-function: ease-out;
+  }
+  52.5% {
+    transform: translateY(-12%) rotate(-4deg) scale(0.95, 1.08);
+    animation-timing-function: ease-out;
   }
   58.33% {
-    left: 37.5%;
-    translate: -50% -68%;
+    transform: translateY(-34%) rotate(-9deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  64.17% {
+    transform: translateY(-8%) rotate(-3deg) scale(0.97, 1.05);
+    animation-timing-function: ease-in;
   }
   66.67% {
-    left: 43.75%;
-    translate: -50% -50%;
+    transform: translateY(0) rotate(0deg) scale(1.08, 0.9);
+    animation-timing-function: ease-out;
   }
-  75.00% {
-    left: 50%;
-    translate: -50% -68%;
+  69.17% {
+    transform: translateY(-12%) rotate(4deg) scale(0.95, 1.08);
+    animation-timing-function: ease-out;
+  }
+  75% {
+    transform: translateY(-34%) rotate(9deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  80.83% {
+    transform: translateY(-8%) rotate(3deg) scale(0.97, 1.05);
+    animation-timing-function: ease-in;
   }
   83.33% {
-    left: 56.25%;
-    translate: -50% -50%;
+    transform: translateY(0) rotate(0deg) scale(1.08, 0.9);
+    animation-timing-function: ease-out;
+  }
+  85.83% {
+    transform: translateY(-12%) rotate(-4deg) scale(0.95, 1.08);
+    animation-timing-function: ease-out;
   }
   91.67% {
-    left: 62.5%;
-    translate: -50% -68%;
+    transform: translateY(-34%) rotate(-9deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  97.5% {
+    transform: translateY(-8%) rotate(-3deg) scale(0.97, 1.05);
+    animation-timing-function: ease-in;
   }
   100% {
-    left: 68.75%;
-    translate: -50% -50%;
+    transform: translateY(0) rotate(0deg) scale(1.12, 0.86);
   }
 }
 
