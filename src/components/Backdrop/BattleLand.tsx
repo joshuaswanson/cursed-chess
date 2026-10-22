@@ -1,5 +1,11 @@
 const W = 1600;
 const H = 900;
+/** Sides of the tiles the grass noise is drawn on */
+const GRASS_TILE = 600;
+const FINE_TILE = 200;
+const PATCH_TONES = ["#4f6a26", "#9a9a4a"];
+/** How far past its shape a patch of meadow fades out */
+const PATCH_FADE = 30;
 
 function seeded(seed: number) {
   let s = seed;
@@ -21,7 +27,7 @@ export function BattleLand() {
     y: rand() * H,
     rx: 80 + rand() * 180,
     ry: 50 + rand() * 120,
-    tone: rand() < 0.6 ? "#4f6a26" : "#9a9a4a",
+    tone: rand() < 0.6 ? PATCH_TONES[0] : PATCH_TONES[1],
   }));
   const trees = Array.from({ length: 22 }, () => {
     const left = rand() < 0.5;
@@ -63,6 +69,7 @@ export function BattleLand() {
             baseFrequency="0.012"
             numOctaves="3"
             seed="4"
+            stitchTiles="stitch"
           />
           <feColorMatrix
             values="0 0 0 0 0.18
@@ -77,6 +84,7 @@ export function BattleLand() {
             baseFrequency="0.7"
             numOctaves="1"
             seed="9"
+            stitchTiles="stitch"
           />
           <feColorMatrix
             values="0 0 0 0 0.1
@@ -85,12 +93,43 @@ export function BattleLand() {
                     0 0 0 -2.2 1.25"
           />
         </filter>
-        <filter id="land-blur" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="22" />
-        </filter>
-        <filter id="land-shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="6" />
-        </filter>
+        {/* The grass is noise drawn once on a tile and repeated: noise across
+            the whole window takes Safari over a second to draw */}
+        <pattern
+          id="land-grass-tile"
+          width={GRASS_TILE}
+          height={GRASS_TILE}
+          patternUnits="userSpaceOnUse"
+        >
+          <rect
+            width={GRASS_TILE}
+            height={GRASS_TILE}
+            filter="url(#land-grass)"
+          />
+        </pattern>
+        <pattern
+          id="land-grass-fine-tile"
+          width={FINE_TILE}
+          height={FINE_TILE}
+          patternUnits="userSpaceOnUse"
+        >
+          <rect
+            width={FINE_TILE}
+            height={FINE_TILE}
+            filter="url(#land-grass-fine)"
+          />
+        </pattern>
+        {/* Soft-edged patches and shadows, fading out by gradient */}
+        {PATCH_TONES.map((tone) => (
+          <radialGradient key={tone} id={`land-patch-${tone.slice(1)}`}>
+            <stop offset="0.45" stopColor={tone} />
+            <stop offset="1" stopColor={tone} stopOpacity="0" />
+          </radialGradient>
+        ))}
+        <radialGradient id="land-shadow">
+          <stop offset="0.6" stopColor="#0f1606" stopOpacity="0.45" />
+          <stop offset="1" stopColor="#0f1606" stopOpacity="0" />
+        </radialGradient>
         {[
           ["#86ab4a", "#4f7226", "#263c11"],
           ["#9aa94a", "#617128", "#323a12"],
@@ -144,17 +183,17 @@ export function BattleLand() {
       </defs>
 
       <rect width={W} height={H} fill="#6c8738" />
-      <rect width={W} height={H} filter="url(#land-grass)" />
-      <rect width={W} height={H} filter="url(#land-grass-fine)" />
-      <g filter="url(#land-blur)" opacity="0.5">
+      <rect width={W} height={H} fill="url(#land-grass-tile)" />
+      <rect width={W} height={H} fill="url(#land-grass-fine-tile)" />
+      <g opacity="0.5">
         {patches.map((p, i) => (
           <ellipse
             key={i}
             cx={p.x}
             cy={p.y}
-            rx={p.rx}
-            ry={p.ry}
-            fill={p.tone}
+            rx={p.rx + PATCH_FADE}
+            ry={p.ry + PATCH_FADE}
+            fill={`url(#land-patch-${p.tone.slice(1)})`}
           />
         ))}
       </g>
@@ -164,10 +203,8 @@ export function BattleLand() {
           <circle
             cx={t.x + t.r * 0.35}
             cy={t.y + t.r * 0.45}
-            r={t.r}
-            fill="#0f1606"
-            opacity="0.45"
-            filter="url(#land-shadow)"
+            r={t.r + 9}
+            fill="url(#land-shadow)"
           />
           <g filter="url(#land-leafy)">
             {t.clumps.map(([dx, dy, k], j) => (
