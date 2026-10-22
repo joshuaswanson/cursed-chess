@@ -716,6 +716,8 @@
 .card-band {
   position: relative;
   width: 112vw;
+  /* Overhanging the window equally on both sides, so it stays centred */
+  margin-inline: -6vw;
   padding: 4.5vh 14vw 5vh;
   overflow: hidden;
   text-align: center;
@@ -748,7 +750,8 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: normal;
-  font-size: clamp(44px, 9vw, 130px);
+  /* Long titles come down in size so they still fit across the band */
+  font-size: min(clamp(44px, 9vw, 130px), 130vw / var(--letters, 1));
   line-height: 1;
   white-space: nowrap;
   text-shadow:

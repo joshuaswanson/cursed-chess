@@ -279,7 +279,11 @@ function ModeCard({ theme, closing }: { theme: ModeTheme; closing: boolean }) {
         <Flair theme={theme.id} />
         <div className="card-beats">
           <div className="card-beat card-beat-title">
-            <h1 className="card-title" aria-label={theme.title}>
+            <h1
+              className="card-title"
+              aria-label={theme.title}
+              style={{ "--letters": theme.title.length } as React.CSSProperties}
+            >
               <Letters text={theme.title} />
             </h1>
           </div>
