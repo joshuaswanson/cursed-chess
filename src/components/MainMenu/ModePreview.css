@@ -339,6 +339,80 @@
   animation: pv-kicker 4.6s ease-in-out infinite;
 }
 
+/* Running steps up to the ball, and a walk back to his mark */
+.pv-kicker > img {
+  transform-origin: 50% 90%;
+  animation: pv-kicker-steps 4.6s infinite;
+}
+
+@keyframes pv-kicker-steps {
+  0% {
+    transform: none;
+    animation-timing-function: ease-out;
+  }
+  3.17% {
+    transform: translateY(-14%) rotate(5deg);
+    animation-timing-function: ease-in;
+  }
+  6.33% {
+    transform: scale(1.06, 0.94);
+    animation-timing-function: ease-out;
+  }
+  9.5% {
+    transform: translateY(-14%) rotate(-5deg);
+    animation-timing-function: ease-in;
+  }
+  12.67% {
+    transform: scale(1.06, 0.94);
+    animation-timing-function: ease-out;
+  }
+  15.83% {
+    transform: translateY(-14%) rotate(5deg);
+    animation-timing-function: ease-in;
+  }
+  19% {
+    transform: none;
+  }
+  52% {
+    transform: none;
+    animation-timing-function: ease-out;
+  }
+  56.5% {
+    transform: translateY(-8%) rotate(4deg);
+    animation-timing-function: ease-in;
+  }
+  61% {
+    transform: scale(1.04, 0.96);
+    animation-timing-function: ease-out;
+  }
+  65.5% {
+    transform: translateY(-8%) rotate(-4deg);
+    animation-timing-function: ease-in;
+  }
+  70% {
+    transform: scale(1.04, 0.96);
+    animation-timing-function: ease-out;
+  }
+  74.5% {
+    transform: translateY(-8%) rotate(4deg);
+    animation-timing-function: ease-in;
+  }
+  79% {
+    transform: scale(1.04, 0.96);
+    animation-timing-function: ease-out;
+  }
+  83.5% {
+    transform: translateY(-8%) rotate(-4deg);
+    animation-timing-function: ease-in;
+  }
+  88% {
+    transform: none;
+  }
+  100% {
+    transform: none;
+  }
+}
+
 .pv-ball {
   left: 36%;
   top: 66%;
