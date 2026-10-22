@@ -806,10 +806,9 @@ export function Board() {
                 trenchPicked === sq && !!overlays.trenches?.movable.includes(sq)
               }
               entrenched={
-                // Only the trench's own side takes cover behind its sandbags;
-                // men who have taken it shelter against its far wall
+                // Whoever holds a trench, its own men or those who took it,
+                // stands down behind the sandbags in front of it
                 !!overlays.trenches &&
-                (piece.color === Color.White) === flipped &&
                 behindSandbags(flipped, rowOnScreen(sq, flipped))
               }
             />
