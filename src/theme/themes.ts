@@ -25,7 +25,6 @@ export type BackdropKind = ThemeId;
 export interface ModeTheme {
   id: ThemeId;
   title: string;
-  tagline: string;
   /** The short shout that follows the title on the mode's card */
   catchphrase: string;
   /** Three stops of the sky behind everything, top to bottom */
@@ -48,7 +47,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   opening: {
     id: "opening",
     title: "Chess",
-    tagline: "Play chess online against the computer.",
     catchphrase: "Good luck.",
     sky: ["#f2f2f2", "#f2f2f2", "#f2f2f2"],
     accent: "#81b64c",
@@ -62,7 +60,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   portals: {
     id: "portals",
     title: "Portals",
-    tagline: "Step into one, burst out of the other.",
     catchphrase: "In one side, out the other!",
     sky: ["#05031c", "#1b0b4f", "#4a1170"],
     accent: "#ff8a1a",
@@ -76,7 +73,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   fog: {
     id: "fog",
     title: "Fog of war",
-    tagline: "Their half is lost in the mist. Trust your gut.",
     catchphrase: "The enemy hides in the fog!",
     sky: ["#0d1720", "#253842", "#51666a"],
     accent: "#bfe8de",
@@ -90,7 +86,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   royale: {
     id: "royale",
     title: "Battle royale",
-    tagline: "The board falls away a line at a time. Most material left wins.",
     catchphrase: "Get to the safe zone!",
     sky: ["#140303", "#5c0d06", "#d9480f"],
     accent: "#ff7a1a",
@@ -104,7 +99,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   clash: {
     id: "clash",
     title: "Clash royale",
-    tagline: "Pieces fight on their own. Drag in backup.",
     catchphrase: "Drag and drop to deploy!",
     sky: ["#0c2a6b", "#2c55c9", "#e2304a"],
     accent: "#ffd23f",
@@ -118,8 +112,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   fifa: {
     id: "fifa",
     title: "FIFA",
-    tagline:
-      "Click your ball carrier, then a teammate to pass or the goal to shoot. Take the carrier to steal the ball.",
     catchphrase: "Play ball!",
     sky: ["#030a12", "#0b2a1c", "#1d6b35"],
     accent: "#c8ff3d",
@@ -133,7 +125,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   mines: {
     id: "mines",
     title: "Minefield",
-    tagline: "Ten mines are buried. Read the warnings.",
     catchphrase: "Watch your step!",
     sky: ["#1b2210", "#3c4a1f", "#6d7a33"],
     accent: "#ffcc00",
@@ -147,8 +138,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   hill: {
     id: "hill",
     title: "King of the hill",
-    tagline:
-      "Have more pieces on the center than the foe to control it. Hold it three turns in a row to win.",
     catchphrase: "Control the center!",
     sky: ["#ff9a1f", "#ffcf3f", "#fff2a8"],
     accent: "#c4320a",
@@ -162,7 +151,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   gravity: {
     id: "gravity",
     title: "Gravity",
-    tagline: "Everything falls. The board keeps turning.",
     catchphrase: "The board never stops turning!",
     sky: ["#12052e", "#3d1494", "#00b3a7"],
     accent: "#3ee6b0",
@@ -176,7 +164,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   hex: {
     id: "hex",
     title: "Hex chess",
-    tagline: "Same armies, six directions.",
     catchphrase: "Chess on hexagons!",
     sky: ["#0d0221", "#4a0a77", "#ff2e88"],
     accent: "#ff2e88",
@@ -190,8 +177,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   stratego: {
     id: "stratego",
     title: "Stratego",
-    tagline:
-      "Their pieces stay masked until they strike. Cross at the bridges.",
     catchphrase: "Enemy pieces are hidden!",
     sky: ["#1c140b", "#3d2c18", "#6b5232"],
     accent: "#d6342f",
@@ -205,8 +190,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   tug: {
     id: "tug",
     title: "Tug of War",
-    tagline:
-      "Pieces on the two middle files grab the rope. Out-muscle them and haul the flag three squares your way.",
     catchphrase: "Heave ho!",
     sky: ["#3f7f2a", "#5fae3a", "#6dbb44"],
     accent: "#f2c14e",
@@ -220,8 +203,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   zombies: {
     id: "zombies",
     title: "Zombies",
-    tagline:
-      "Captured pieces rise from their graves and bite the way they used to capture. Get your king cornered by the undead and you lose.",
     catchphrase: "Beware the undead!",
     sky: ["#07060f", "#1a1530", "#27402a"],
     accent: "#8fe04a",
@@ -235,8 +216,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   trenches: {
     id: "trenches",
     title: "Trenches",
-    tagline:
-      "Send squads up from the rear, then order each trench line forward when you choose. Take the enemy's trenches and get at their general.",
     catchphrase: "All Quiet on the Chesstern Front",
     sky: ["#0b0d0f", "#1d2226", "#3a3227"],
     accent: "#c9a44a",
@@ -250,8 +229,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   lanterns: {
     id: "lanterns",
     title: "Lanterns",
-    tagline:
-      "The board is dark. Each lantern lights the squares round its carrier. Take a piece carrying one to carry it yourself.",
     catchphrase: "Who turned out the lights?",
     // The night and the board's frame are the same black as the dark over
     // the squares, so the edges of the board cannot be seen
@@ -267,8 +244,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   conveyor: {
     id: "conveyor",
     title: "Factory floor",
-    tagline:
-      "The board is four looping conveyor belts. After every move each belt carries everything on it one place along, the opposite way to the belt next to it. A pawn carried onto its last rank becomes a queen.",
     catchphrase: "Not OSHA approved",
     sky: ["#0e1114", "#1c2228", "#3b2a14"],
     accent: "#ffc21a",
@@ -282,8 +257,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   heist: {
     id: "heist",
     title: "Heist",
-    tagline:
-      "It is dark, and you cannot see their pieces. Get the jewel out of the vault and home to your first two rows. Whoever carries it creeps one square at a time. Pieces jump clear of the searchlights and cannot step into one. Whoever has the jewel is lit up wherever they go, and can always move.",
     catchphrase: "I'm putting together a team.",
     sky: ["#05070f", "#0c1428", "#1b2440"],
     accent: "#f5c542",
@@ -297,8 +270,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   storm: {
     id: "storm",
     title: "Thunderstorm",
-    tagline:
-      "The board is dark. Lightning lights it up for a moment every few seconds, and sometimes it kills a piece. It never hits a king.",
     catchphrase: "How shocking.",
     // The night and the frame match the dark over the squares, so no edge of the board shows
     sky: ["#04030a", "#04030a", "#04030a"],
@@ -313,8 +284,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   pacman: {
     id: "pacman",
     title: "Pac-Man",
-    tagline:
-      "Nobody can take a piece. Eat the pellets instead: a piece eats every pellet it passes over. Eat a power pellet and you can take their pieces for your next three moves. The middle two rows lead into a tunnel at each side. Most points when the last pellet is eaten wins.",
     catchphrase: "Waka waka.",
     sky: ["#000000", "#000000", "#000000"],
     accent: "#ffe600",
