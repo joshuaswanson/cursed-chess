@@ -106,7 +106,7 @@ export class BattleRoyalePlugin implements ModePlugin {
   id = "battle-royale";
   name = "Battle Royale";
   description =
-    "The board falls away a line at a time. Most material left at the end wins.";
+    "The board falls away a line at a time. The strongest army left at the end wins.";
 
   private zone: Zone = { f0: 0, f1: 7, r0: 0, r1: 7 };
   private steps: Step[] = [];

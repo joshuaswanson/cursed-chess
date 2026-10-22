@@ -177,8 +177,8 @@ export function FinalZone({
       <span className="br-final-label">
         {closed
           ? roundsLeft === 1
-            ? "Last turn! Most material wins"
-            : `${roundsLeft} turns left. Most material wins`
+            ? "Last turn! Strongest army wins"
+            : `${roundsLeft} turns left. Strongest army wins`
           : "Safe zone"}
       </span>
     </div>
