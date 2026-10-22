@@ -25,9 +25,12 @@
     --sky-3 var(--theme-blend);
 }
 
+/* On a layer of its own, so the panel and board animating over it never
+   make the browser redraw it, filters and all */
 .backdrop-scene {
   position: absolute;
   inset: 0;
+  will-change: transform;
   animation: scene-in 1.2s ease-out both;
 }
 
