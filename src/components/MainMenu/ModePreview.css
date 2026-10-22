@@ -2981,19 +2981,30 @@
       38% 76% no-repeat;
   mask-composite: exclude;
   -webkit-mask-composite: xor;
-  animation: pv-dark 5s ease-in-out infinite alternate;
+  animation: pv-dark 6s infinite;
 }
 
+/* The pawn creeps right until its light just catches the knight, then
+   bolts back to the left and stands there shaking */
 @keyframes pv-dark {
-  from {
+  0% {
     mask-position:
       0 0,
       8% 50%;
+    animation-timing-function: linear;
   }
-  to {
+  50%,
+  56% {
     mask-position:
       0 0,
-      92% 50%;
+      53% 50%;
+    animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1);
+  }
+  70%,
+  100% {
+    mask-position:
+      0 0,
+      8% 50%;
   }
 }
 
@@ -3004,105 +3015,182 @@
   width: 38%;
   height: 76%;
   background: radial-gradient(rgba(255, 176, 64, 0.35), transparent 70%);
-  animation: pv-lamplight 5s ease-in-out infinite alternate;
+  animation: pv-lamplight 6s infinite;
 }
 
 @keyframes pv-lamplight {
-  to {
-    left: 57%;
+  0% {
+    left: 5%;
+    animation-timing-function: linear;
+  }
+  50%,
+  56% {
+    left: 33%;
+    animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1);
+  }
+  70%,
+  100% {
+    left: 5%;
   }
 }
 
-/* It picks its way along a step at a time, lantern and all, tipping from
-   foot to foot and slowing to turn at each end */
+/* A step at a time on the way out, lantern and all; a jump at the sight of
+   the knight; a scramble back, leaning into the run; then a shiver */
 .scene-lanterns .pv-lamplight .pv-piece {
   transform-origin: 50% 90%;
-  animation: pv-lantern-steps 5s linear infinite alternate;
+  animation: pv-lantern-steps 6s infinite;
 }
 
 @keyframes pv-lantern-steps {
   0% {
-    transform: scale(1.016, 0.984);
+    transform: none;
     animation-timing-function: ease-out;
   }
-  5% {
-    transform: translateY(-2%) rotate(1.6deg);
-    animation-timing-function: ease-in;
-  }
-  10% {
-    transform: scale(1.032, 0.968);
-    animation-timing-function: ease-out;
-  }
-  15% {
-    transform: translateY(-4%) rotate(-3.2deg);
-    animation-timing-function: ease-in;
-  }
-  20% {
-    transform: scale(1.04, 0.96);
-    animation-timing-function: ease-out;
-  }
-  25% {
+  4.17% {
     transform: translateY(-5%) rotate(4deg);
     animation-timing-function: ease-in;
   }
-  30% {
-    transform: scale(1.04, 0.96);
+  8.33% {
+    transform: scale(1.03, 0.97);
     animation-timing-function: ease-out;
   }
-  35% {
+  12.5% {
     transform: translateY(-5%) rotate(-4deg);
     animation-timing-function: ease-in;
   }
-  40% {
-    transform: scale(1.04, 0.96);
+  16.67% {
+    transform: scale(1.03, 0.97);
     animation-timing-function: ease-out;
   }
-  45% {
+  20.83% {
     transform: translateY(-5%) rotate(4deg);
+    animation-timing-function: ease-in;
+  }
+  25% {
+    transform: scale(1.03, 0.97);
+    animation-timing-function: ease-out;
+  }
+  29.17% {
+    transform: translateY(-5%) rotate(-4deg);
+    animation-timing-function: ease-in;
+  }
+  33.33% {
+    transform: scale(1.03, 0.97);
+    animation-timing-function: ease-out;
+  }
+  37.5% {
+    transform: translateY(-5%) rotate(4deg);
+    animation-timing-function: ease-in;
+  }
+  41.67% {
+    transform: scale(1.03, 0.97);
+    animation-timing-function: ease-out;
+  }
+  45.83% {
+    transform: translateY(-5%) rotate(-4deg);
     animation-timing-function: ease-in;
   }
   50% {
-    transform: scale(1.04, 0.96);
+    transform: none;
     animation-timing-function: ease-out;
   }
-  55% {
-    transform: translateY(-5%) rotate(-4deg);
+  51.5% {
+    transform: translateY(-22%) scale(0.92, 1.1);
     animation-timing-function: ease-in;
   }
-  60% {
-    transform: scale(1.04, 0.96);
+  53% {
+    transform: scale(1.08, 0.92);
+  }
+  54% {
+    transform: rotate(-6deg);
+  }
+  55% {
+    transform: rotate(6deg);
+  }
+  56% {
+    transform: rotate(-4deg);
     animation-timing-function: ease-out;
   }
-  65% {
-    transform: translateY(-5%) rotate(4deg);
+  57.4% {
+    transform: translateY(-14%) rotate(-14deg);
+    animation-timing-function: ease-in;
+  }
+  58.8% {
+    transform: rotate(-10deg) scale(1.06, 0.94);
+    animation-timing-function: ease-out;
+  }
+  60.2% {
+    transform: translateY(-14%) rotate(-14deg);
+    animation-timing-function: ease-in;
+  }
+  61.6% {
+    transform: rotate(-10deg) scale(1.06, 0.94);
+    animation-timing-function: ease-out;
+  }
+  63% {
+    transform: translateY(-14%) rotate(-14deg);
+    animation-timing-function: ease-in;
+  }
+  64.4% {
+    transform: rotate(-10deg) scale(1.06, 0.94);
+    animation-timing-function: ease-out;
+  }
+  65.8% {
+    transform: translateY(-14%) rotate(-14deg);
+    animation-timing-function: ease-in;
+  }
+  67.2% {
+    transform: rotate(-10deg) scale(1.06, 0.94);
+    animation-timing-function: ease-out;
+  }
+  68.6% {
+    transform: translateY(-14%) rotate(-14deg);
     animation-timing-function: ease-in;
   }
   70% {
-    transform: scale(1.04, 0.96);
-    animation-timing-function: ease-out;
+    transform: scale(1.06, 0.94);
   }
-  75% {
-    transform: translateY(-5%) rotate(-4deg);
-    animation-timing-function: ease-in;
+  72% {
+    transform: none;
+  }
+  74% {
+    transform: translateX(0.8%) rotate(1.5deg);
+  }
+  76% {
+    transform: translateX(-0.8%) rotate(-1.5deg);
+  }
+  78% {
+    transform: translateX(0.8%) rotate(1.5deg);
   }
   80% {
-    transform: scale(1.032, 0.968);
-    animation-timing-function: ease-out;
+    transform: translateX(-0.8%) rotate(-1.5deg);
   }
-  85% {
-    transform: translateY(-4%) rotate(3.2deg);
-    animation-timing-function: ease-in;
+  82% {
+    transform: translateX(0.8%) rotate(1.5deg);
+  }
+  84% {
+    transform: translateX(-0.8%) rotate(-1.5deg);
+  }
+  86% {
+    transform: translateX(0.8%) rotate(1.5deg);
+  }
+  88% {
+    transform: translateX(-0.8%) rotate(-1.5deg);
   }
   90% {
-    transform: scale(1.016, 0.984);
-    animation-timing-function: ease-out;
+    transform: translateX(0.8%) rotate(1.5deg);
   }
-  95% {
-    transform: translateY(-2%) rotate(-1.6deg);
-    animation-timing-function: ease-in;
+  92% {
+    transform: translateX(-0.8%) rotate(-1.5deg);
+  }
+  94% {
+    transform: translateX(0.8%) rotate(1.5deg);
+  }
+  96% {
+    transform: translateX(-0.8%) rotate(-1.5deg);
   }
   100% {
-    transform: scale(1.016, 0.984);
+    transform: none;
   }
 }
 
