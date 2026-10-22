@@ -77,23 +77,131 @@
   animation: pv-out-of-portal 4.4s ease-in-out infinite;
 }
 
+/* The piece glides along while its knight hops: a crouch, a rearing
+   takeoff, nose down to land, and a squash as it touches down. The knight
+   is drawn facing left, so rearing is a turn clockwise */
+.pv-into-portal > img,
+.pv-out-of-portal > img {
+  transform-origin: 50% 90%;
+}
+
+.pv-into-portal > img {
+  animation: pv-hops-in 4.4s infinite;
+}
+
+.pv-out-of-portal > img {
+  animation: pv-hops-out 4.4s infinite;
+}
+
+@keyframes pv-hops-in {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1.1, 0.88);
+    animation-timing-function: ease-out;
+  }
+  1.68% {
+    transform: translateY(-14%) rotate(9deg) scale(0.94, 1.1);
+    animation-timing-function: ease-out;
+  }
+  7% {
+    transform: translateY(-46%) rotate(0deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  12.32% {
+    transform: translateY(-12%) rotate(-9deg) scale(0.95, 1.08);
+    animation-timing-function: ease-in;
+  }
+  14% {
+    transform: translateY(0) rotate(0deg) scale(1.1, 0.88);
+    animation-timing-function: ease-out;
+  }
+  15.68% {
+    transform: translateY(-14%) rotate(9deg) scale(0.94, 1.1);
+    animation-timing-function: ease-out;
+  }
+  21% {
+    transform: translateY(-46%) rotate(0deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  26.32% {
+    transform: translateY(-12%) rotate(-9deg) scale(0.95, 1.08);
+    animation-timing-function: ease-in;
+  }
+  28% {
+    transform: translateY(0) rotate(0deg) scale(1.1, 0.88);
+    animation-timing-function: ease-out;
+  }
+  31%,
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes pv-hops-out {
+  0%,
+  62% {
+    transform: none;
+  }
+  64% {
+    transform: translateY(0) rotate(0deg) scale(1.1, 0.88);
+    animation-timing-function: ease-out;
+  }
+  65.44% {
+    transform: translateY(-14%) rotate(9deg) scale(0.94, 1.1);
+    animation-timing-function: ease-out;
+  }
+  70% {
+    transform: translateY(-46%) rotate(0deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  74.56% {
+    transform: translateY(-12%) rotate(-9deg) scale(0.95, 1.08);
+    animation-timing-function: ease-in;
+  }
+  76% {
+    transform: translateY(0) rotate(0deg) scale(1.1, 0.88);
+    animation-timing-function: ease-out;
+  }
+  77.44% {
+    transform: translateY(-14%) rotate(9deg) scale(0.94, 1.1);
+    animation-timing-function: ease-out;
+  }
+  82% {
+    transform: translateY(-46%) rotate(0deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  86.56% {
+    transform: translateY(-12%) rotate(-9deg) scale(0.95, 1.08);
+    animation-timing-function: ease-in;
+  }
+  88% {
+    transform: translateY(0) rotate(0deg) scale(1.1, 0.88);
+    animation-timing-function: ease-out;
+  }
+  89.44% {
+    transform: translateY(-14%) rotate(9deg) scale(0.94, 1.1);
+    animation-timing-function: ease-out;
+  }
+  94% {
+    transform: translateY(-46%) rotate(0deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  98.56% {
+    transform: translateY(-12%) rotate(-9deg) scale(0.95, 1.08);
+    animation-timing-function: ease-in;
+  }
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1.1, 0.88);
+    animation-timing-function: ease-out;
+  }
+}
+
 /* Two hops up to the portal, a stretch as it takes hold, and down the drain */
 @keyframes pv-into-portal {
   0% {
     translate: -270% -50%;
     scale: 1;
     rotate: 0deg;
-  }
-  7% {
-    translate: -230% -100%;
-  }
-  14% {
-    translate: -190% -50%;
-    scale: 1.08 0.9;
-  }
-  21% {
-    translate: -155% -100%;
-    scale: 1;
+    animation-timing-function: linear;
   }
   28%,
   32% {
@@ -114,7 +222,7 @@
   }
 }
 
-/* Spat out of the other one, then off across the board at a walk */
+/* Spat out of the other one, then off across the board in three hops */
 @keyframes pv-out-of-portal {
   0%,
   48% {
@@ -131,21 +239,7 @@
     scale: 1;
     rotate: 0deg;
     translate: -20% -50%;
-  }
-  70% {
-    translate: 5% -62%;
-  }
-  76% {
-    translate: 30% -50%;
-  }
-  82% {
-    translate: 55% -62%;
-  }
-  88% {
-    translate: 80% -50%;
-  }
-  94% {
-    translate: 110% -62%;
+    animation-timing-function: linear;
   }
   100% {
     scale: 1;
