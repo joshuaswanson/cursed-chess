@@ -60,7 +60,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   portals: {
     id: "portals",
     title: "Portals",
-    catchphrase: "In one side, out the other!",
+    catchphrase: "Let's get this party started!",
     sky: ["#05031c", "#1b0b4f", "#4a1170"],
     accent: "#ff8a1a",
     accent2: "#2f9bff",
