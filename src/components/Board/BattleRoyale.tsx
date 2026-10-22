@@ -216,13 +216,7 @@ const pathOf = (points: [number, number][]) =>
  * What is left after the ring falls: a slab with a jagged broken lip, its
  * cliff face showing below, and lava glowing along the break.
  */
-export function BrokenRim({
-  zone,
-  flipped,
-}: {
-  zone: Zone;
-  flipped: boolean;
-}) {
+export function BrokenRim({ zone, flipped }: { zone: Zone; flipped: boolean }) {
   const box = zoneBox(zone, flipped);
   const [x0, x1, y0, y1] = [box.x0, box.x1, box.y0, box.y1].map((v) => v * 100);
   const rand = seededRandom(x0 + x1 * 3 + y0 * 7 + y1 * 11);

@@ -62,8 +62,7 @@ export function chooseMove(
   let bestScore = -Infinity;
   for (const move of moves) {
     const score =
-      scoreMove(game, move, squareBonus, settle, judge) +
-      Math.random() * NOISE;
+      scoreMove(game, move, squareBonus, settle, judge) + Math.random() * NOISE;
     if (score > bestScore) {
       bestScore = score;
       best = move;

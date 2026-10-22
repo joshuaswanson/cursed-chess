@@ -97,8 +97,7 @@ function NowPlaying() {
     const view = s.pluginManager
       .getAllOverlays()
       .find((o) => o.type === "battle-royale")?.data as
-      | BattleRoyaleOverlay
-      | undefined;
+      BattleRoyaleOverlay | undefined;
     return view ? `${view.roundsLeft}/${view.countdownRounds}` : null;
   });
   // Pac-Man counts down the pellets still to be eaten
