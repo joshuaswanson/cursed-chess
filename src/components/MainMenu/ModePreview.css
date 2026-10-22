@@ -1279,6 +1279,24 @@
   animation: pv-takes-hill 4.4s infinite;
 }
 
+/* Landing on the hill, a bob at each count, and on the third a leap and a
+   victory sway, lit up gold */
+.pv-takes-hill > img {
+  transform-origin: 50% 92%;
+  animation: pv-king-cheer 4.4s infinite;
+}
+
+.pv-confetti {
+  left: 50%;
+  top: 30%;
+  width: 3cqw;
+  height: 1.6cqw;
+  border-radius: 1px;
+  background: var(--c);
+  opacity: 0;
+  animation: pv-confetti 4.4s ease-out infinite;
+}
+
 .pv-count {
   right: 8%;
   top: 14%;
@@ -1327,6 +1345,89 @@
   100% {
     translate: -50% -50%;
     opacity: 0;
+  }
+}
+
+@keyframes pv-king-cheer {
+  0%,
+  22% {
+    transform: none;
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35))
+      drop-shadow(0 0 0 rgba(255, 210, 63, 0));
+  }
+  24% {
+    transform: scale(1.14, 0.86);
+  }
+  28%,
+  30% {
+    transform: none;
+  }
+  32% {
+    transform: translateY(-8%);
+  }
+  35%,
+  48% {
+    transform: none;
+  }
+  50% {
+    transform: translateY(-8%);
+  }
+  53%,
+  62% {
+    transform: none;
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35))
+      drop-shadow(0 0 0 rgba(255, 210, 63, 0));
+  }
+  65% {
+    transform: scale(1.12, 0.86);
+    animation-timing-function: ease-out;
+  }
+  71% {
+    transform: translateY(-34%) rotate(-8deg) scale(0.94, 1.1);
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35))
+      drop-shadow(0 0 1.6cqw rgba(255, 210, 63, 0.95));
+    animation-timing-function: ease-in;
+  }
+  76% {
+    transform: scale(1.12, 0.88);
+  }
+  79% {
+    transform: translateY(-6%) rotate(9deg);
+  }
+  82% {
+    transform: rotate(-9deg);
+  }
+  85% {
+    transform: translateY(-6%) rotate(7deg);
+  }
+  88%,
+  100% {
+    transform: none;
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35))
+      drop-shadow(0 0 1.6cqw rgba(255, 210, 63, 0.95));
+  }
+}
+
+/* Flung out from the king as he lands his leap, then fluttering down */
+@keyframes pv-confetti {
+  0%,
+  70% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(0) scale(0.4);
+  }
+  72% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) rotate(200deg)
+      scale(1);
+  }
+  92%,
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(calc(var(--d) * -1.15))
+      translateX(1cqw) rotate(380deg) scale(0.9);
   }
 }
 

@@ -445,6 +445,20 @@ const TRACERS = Array.from({ length: 16 }, (_, i) => ({
 /** Where along a trench its men stand, in percent across the scene */
 const TRENCH_LINE = [10, 28, 46, 64, 82];
 
+/** Thrown up around the king when he holds the hill */
+const CONFETTI = [
+  "#ffd23f",
+  "#ff5a5f",
+  "#4fc3ff",
+  "#7be37b",
+  "#ffffff",
+  "#ffd23f",
+  "#ff5a5f",
+  "#4fc3ff",
+  "#7be37b",
+  "#ffffff",
+];
+
 /** Something that happens in each mode, played on a loop in a little window */
 const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // A knight hops up to the blue portal, is sucked in, and walks out of the orange one
@@ -678,7 +692,21 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   hill: (
     <>
       <span className="pv-hill" />
-      <Piece is="wK" x={50} y={50} className="pv-takes-hill" />
+      <Piece is="wK" x={50} y={50} className="pv-takes-hill">
+        {CONFETTI.map((colour, n) => (
+          <i
+            key={n}
+            className="pv-confetti"
+            style={
+              {
+                "--a": `${n * 36 + (n % 3) * 9}deg`,
+                "--d": `${16 + (n % 4) * 3}cqw`,
+                "--c": colour,
+              } as CSSProperties
+            }
+          />
+        ))}
+      </Piece>
       <span className="pv-count">
         <i>1</i>
         <i>2</i>
