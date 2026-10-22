@@ -23,6 +23,7 @@ import {
   BoringSidebar,
 } from "./components/BoringSite/BoringSite";
 import { useGameStore } from "./stores/gameStore";
+import { useAddress } from "./hooks/useAddress";
 import { useGameLoop } from "./hooks/useGameLoop";
 import { music } from "./audio/music";
 import { sfx } from "./audio/sfx";
@@ -37,6 +38,7 @@ import { BotWindows } from "./components/BoringSite/BotWindows";
 
 function App() {
   useGameLoop();
+  useAddress();
   const theme = useTheme();
   const cursed = useGameStore((s) => s.cursed);
   const curseStage = useGameStore((s) => s.curseStage);
