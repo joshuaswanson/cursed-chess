@@ -13,6 +13,7 @@ import { useTheme } from "../../theme/useTheme";
 import { pieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
 import "./Hud.css";
+import { PauseIcon } from "./icons";
 import { ChessbotCorner } from "../Chessbot/ChessbotCorner";
 
 const MOVE_SECONDS = 10;
@@ -264,6 +265,17 @@ function MoveClock() {
   );
 }
 
+/** Brings up the pause screen, the same as the logo and the Escape key */
+function PauseButton() {
+  const { togglePause } = useGameStore.getState();
+  return (
+    <button type="button" className="hud-pause" onClick={togglePause}>
+      <PauseIcon />
+      Pause
+    </button>
+  );
+}
+
 function useShortcuts() {
   const { togglePause } = useGameStore.getState();
   useEffect(() => {
@@ -300,6 +312,7 @@ export function Hud() {
       <NowPlaying />
       <PacScore />
       <MoveClock />
+      <PauseButton />
     </aside>
   );
 }

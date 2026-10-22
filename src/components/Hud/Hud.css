@@ -272,6 +272,41 @@
   opacity: 0.85;
 }
 
+.hud-pause {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px 7px 11px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 4px 5px 0 var(--ink);
+  cursor: pointer;
+  transition:
+    translate 0.08s,
+    box-shadow 0.08s,
+    background-color 0.15s;
+}
+
+.hud-pause:hover {
+  background: var(--accent);
+}
+
+.hud-pause:active {
+  translate: 2px 3px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.hud-pause .icon {
+  width: 16px;
+  height: 16px;
+}
+
 .thinking-dots {
   display: inline-flex;
   gap: 3px;
