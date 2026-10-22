@@ -1597,6 +1597,11 @@
   z-index: 1;
 }
 
+/* The knight is drawn facing left; the left team's faces the rope */
+.card-tug-team-w img:nth-of-type(2) {
+  transform: scaleX(-1);
+}
+
 /* Lean back and squat when your team heaves, get dragged upright when theirs does */
 @keyframes card-heave {
   0%,
