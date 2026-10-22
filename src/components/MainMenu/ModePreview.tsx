@@ -171,7 +171,7 @@ function MineScene() {
           key={run.n}
           is="wP"
           x={-6.25}
-          y={60}
+          y={58}
           size={20}
           className="pv-steps-on"
         />
@@ -184,7 +184,7 @@ function MineScene() {
           <Piece
             is="wP"
             x={68.75}
-            y={60}
+            y={58}
             size={20}
             className="pv-thrown"
             style={
