@@ -7,29 +7,36 @@ import "./Coach.css";
 
 interface Hole {
   selector: string;
-  /** How far past the element the hole reaches, in pixels */
-  pad?: number;
+  /** How far past the element the hole reaches, in pixels: all round, or across and down */
+  pad?: number | [number, number];
   round?: boolean;
 }
 
-const boxesOf = (selector: string): Box[] =>
+/** An element's box, and how round its corners are */
+type Outline = Box & { radius: number };
+
+const boxesOf = (selector: string): Outline[] =>
   [...document.querySelectorAll(selector)].map((el) => {
     const { left, top, width, height } = el.getBoundingClientRect();
-    return { left, top, width, height };
+    const radius = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
+    return { left, top, width, height, radius };
   });
 
-const hole = (box: Box, { pad = 0, round }: Omit<Hole, "selector">) => {
+const hole = (box: Outline, { pad = 0, round }: Omit<Hole, "selector">) => {
+  const [padX, padY] = typeof pad === "number" ? [pad, pad] : pad;
   if (round) {
     const { x, y } = centre(box);
-    const r = Math.max(box.width, box.height) / 2 + pad;
+    const r = Math.max(box.width, box.height) / 2 + Math.max(padX, padY);
     return <circle cx={x} cy={y} r={r} />;
   }
+  const radius = box.radius && box.radius + Math.min(padX, padY);
   return (
     <rect
-      x={box.left - pad}
-      y={box.top - pad}
-      width={box.width + pad * 2}
-      height={box.height + pad * 2}
+      x={box.left - padX}
+      y={box.top - padY}
+      width={box.width + padX * 2}
+      height={box.height + padY * 2}
+      rx={radius}
     />
   );
 };
@@ -41,7 +48,7 @@ function Sheet({
   holes,
 }: {
   className: string;
-  over: Box;
+  over: Outline;
   holes: Hole[];
 }) {
   const id = useId();
@@ -53,6 +60,7 @@ function Sheet({
           y={over.top}
           width={over.width}
           height={over.height}
+          rx={over.radius}
           fill="#fff"
         />
         <g fill="#000">
@@ -111,6 +119,7 @@ export function Coach({
     top: 0,
     width: window.innerWidth,
     height: window.innerHeight,
+    radius: 0,
   };
   const under = boxesOf(tipOver)[0];
   const shaded = shade && boxesOf(shade.over)[0];

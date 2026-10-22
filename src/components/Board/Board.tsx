@@ -1086,7 +1086,7 @@ export function Board() {
                 over: ".board-shell",
                 lit: [
                   { selector: ".square.rope-square" },
-                  { selector: ".tug-win-line.win-white", pad: 6 },
+                  { selector: ".tug-win-line.win-white", pad: [0, 6] },
                 ],
               }}
               tip="Get your pieces on the rope to pull it your way"
