@@ -498,6 +498,11 @@
   animation-name: pv-lean-far;
 }
 
+/* The pawns stand on the near side of the rope */
+.pv-near-rope {
+  z-index: 1;
+}
+
 /* A plain twisted rope running off both edges, which goes thin under strain */
 .pv-rope {
   left: -14%;

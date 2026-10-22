@@ -620,12 +620,12 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   tug: (
     <>
       <span className="pv-team">
-        <Piece is="wP" x={12} y={50} size={22} />
+        <Piece is="wP" x={12} y={50} size={22} className="pv-near-rope" />
         <Piece is="wN" x={28} y={48} size={24} className="pv-faces-right" />
       </span>
       <span className="pv-team pv-team-far">
         <Piece is="bN" x={72} y={48} size={24} />
-        <Piece is="bP" x={88} y={50} size={22} />
+        <Piece is="bP" x={88} y={50} size={22} className="pv-near-rope" />
       </span>
       <span className="pv-rope" />
       <span className="pv-flag" />
