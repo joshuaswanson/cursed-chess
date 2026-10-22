@@ -2913,6 +2913,99 @@
   }
 }
 
+/* It picks its way along a step at a time, lantern and all, tipping from
+   foot to foot and slowing to turn at each end */
+.scene-lanterns .pv-lamplight .pv-piece {
+  transform-origin: 50% 90%;
+  animation: pv-lantern-steps 5s linear infinite alternate;
+}
+
+@keyframes pv-lantern-steps {
+  0% {
+    transform: scale(1.016, 0.984);
+    animation-timing-function: ease-out;
+  }
+  5% {
+    transform: translateY(-2%) rotate(1.6deg);
+    animation-timing-function: ease-in;
+  }
+  10% {
+    transform: scale(1.032, 0.968);
+    animation-timing-function: ease-out;
+  }
+  15% {
+    transform: translateY(-4%) rotate(-3.2deg);
+    animation-timing-function: ease-in;
+  }
+  20% {
+    transform: scale(1.04, 0.96);
+    animation-timing-function: ease-out;
+  }
+  25% {
+    transform: translateY(-5%) rotate(4deg);
+    animation-timing-function: ease-in;
+  }
+  30% {
+    transform: scale(1.04, 0.96);
+    animation-timing-function: ease-out;
+  }
+  35% {
+    transform: translateY(-5%) rotate(-4deg);
+    animation-timing-function: ease-in;
+  }
+  40% {
+    transform: scale(1.04, 0.96);
+    animation-timing-function: ease-out;
+  }
+  45% {
+    transform: translateY(-5%) rotate(4deg);
+    animation-timing-function: ease-in;
+  }
+  50% {
+    transform: scale(1.04, 0.96);
+    animation-timing-function: ease-out;
+  }
+  55% {
+    transform: translateY(-5%) rotate(-4deg);
+    animation-timing-function: ease-in;
+  }
+  60% {
+    transform: scale(1.04, 0.96);
+    animation-timing-function: ease-out;
+  }
+  65% {
+    transform: translateY(-5%) rotate(4deg);
+    animation-timing-function: ease-in;
+  }
+  70% {
+    transform: scale(1.04, 0.96);
+    animation-timing-function: ease-out;
+  }
+  75% {
+    transform: translateY(-5%) rotate(-4deg);
+    animation-timing-function: ease-in;
+  }
+  80% {
+    transform: scale(1.032, 0.968);
+    animation-timing-function: ease-out;
+  }
+  85% {
+    transform: translateY(-4%) rotate(3.2deg);
+    animation-timing-function: ease-in;
+  }
+  90% {
+    transform: scale(1.016, 0.984);
+    animation-timing-function: ease-out;
+  }
+  95% {
+    transform: translateY(-2%) rotate(-1.6deg);
+    animation-timing-function: ease-in;
+  }
+  100% {
+    transform: scale(1.016, 0.984);
+  }
+}
+
 /* --- Heist --- */
 
 /* The jewel in the middle of the hall */
