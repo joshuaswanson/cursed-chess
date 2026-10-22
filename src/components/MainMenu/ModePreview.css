@@ -195,30 +195,26 @@
   }
 }
 
-/* Two hops up to the portal, a stretch as it takes hold, and down the drain */
+/* Two hops up to the portal, a stretch as it takes hold, and pulled in */
 @keyframes pv-into-portal {
   0% {
     translate: -270% -50%;
     scale: 1;
-    rotate: 0deg;
     animation-timing-function: linear;
   }
   28%,
   32% {
     translate: -120% -50%;
     scale: 1;
-    rotate: 0deg;
   }
   38% {
     translate: -90% -48%;
     scale: 1.35 0.7;
-    rotate: 30deg;
   }
   48%,
   100% {
     translate: -50% -42%;
     scale: 0;
-    rotate: 420deg;
   }
 }
 
