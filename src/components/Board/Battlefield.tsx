@@ -6,6 +6,9 @@ import type { Meander } from "./meander";
 const SQ = 100;
 const BOARD = SQ * 8;
 const PLANKS_PER_SQUARE = 6;
+/** Sides of the tiles the grass noise is drawn on */
+const GRASS_TILE = 400;
+const FINE_GRASS_TILE = 200;
 
 /** Deterministic noise so the terrain looks the same on every render */
 function seeded(seed: number) {
@@ -52,6 +55,71 @@ function traceBackward({ points, controls }: ReturnType<typeof bank>): string {
   return d;
 }
 
+/** Points along a bank's curve, one every `step` units across */
+function sample(
+  { points, controls }: ReturnType<typeof bank>,
+  step: number,
+): Point[] {
+  const line = [points[0]];
+  controls.forEach((c, i) => {
+    const a = points[i];
+    const b = points[i + 1];
+    const n = Math.max(1, Math.round((b.x - a.x) / step));
+    for (let k = 1; k <= n; k++) {
+      const t = k / n;
+      const u = 1 - t;
+      line.push({
+        x: u * u * a.x + 2 * u * t * c.x + t * t * b.x,
+        y: u * u * a.y + 2 * u * t * c.y + t * t * b.y,
+      });
+    }
+  });
+  return line;
+}
+
+const toPath = (line: Point[]) =>
+  line
+    .map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join("");
+
+/**
+ * A band of earth along the bank, `offset` from its line, each edge torn its
+ * own way. Drawn as a shape, so no filter has to roughen it: filters across
+ * a river this long take Safari seconds to draw.
+ */
+function tornBand(
+  line: Point[],
+  offset: number,
+  width: number,
+  tear: number,
+  rand: () => number,
+): string {
+  const edge = (side: 1 | -1) => {
+    let drift = 0;
+    return line.map((p) => {
+      drift = drift * 0.7 + (rand() - 0.5) * tear;
+      return { x: p.x, y: p.y + offset + (side * width) / 2 + drift };
+    });
+  };
+  return toPath([...edge(-1), ...edge(1).reverse()]) + "Z";
+}
+
+/**
+ * The bands of a bank from the land to the water: how far out, how wide, and
+ * how torn. Soft ones are laid down three times, wider and fainter each time,
+ * so they fade out at the edges.
+ */
+const BANK_BANDS = [
+  { shift: 16, width: 26, tear: 8, fill: "#8a7a45", opacity: 0.55, soft: true },
+  { shift: 10, width: 20, tear: 5, fill: "#9a7a4e", opacity: 1 },
+  { shift: 5, width: 13, tear: 5, fill: "#73553a", opacity: 1 },
+  { shift: 1.5, width: 7, tear: 5, fill: "#452f1b", opacity: 1 },
+  { shift: -11, width: 12, tear: 8, fill: "#cdf5ee", opacity: 0.4, soft: true },
+  { shift: -4, width: 6, tear: 8, fill: "#0a232d", opacity: 0.4, soft: true },
+];
+/** How much wider each fainter pass of a soft band is */
+const FEATHER = [9, 6, 3, 0];
+
 const STONE_TONES = ["#8f877c", "#77706a", "#a39a8c", "#6a625a"];
 const GRASS_TONES = ["#6f8f34", "#5a7a28", "#86a843", "#4b6820", "#9bbd52"];
 
@@ -62,21 +130,18 @@ const GRASS_TONES = ["#6f8f34", "#5a7a28", "#86a843", "#4b6820", "#9bbd52"];
  * edge. `side` is -1 when the land lies above the line and 1 when below.
  */
 function Bank({
-  d,
+  line,
   points,
   side,
   seed,
-  roughId,
 }: {
-  d: string;
+  line: Point[];
   points: Point[];
   side: 1 | -1;
   seed: number;
-  roughId: string;
 }) {
   const rand = seeded(seed);
   const pick = <T,>(items: T[]) => items[Math.floor(rand() * items.length)];
-  const shift = (k: number) => `translate(0 ${side * k})`;
   const stones: {
     x: number;
     y: number;
@@ -126,43 +191,30 @@ function Bank({
 
   return (
     <g className="bf-bank">
+      {BANK_BANDS.flatMap((band, i) => {
+        const passes = band.soft ? FEATHER : [0];
+        // Stacked, the passes add up to the band's own opacity in the middle
+        const each = 1 - (1 - band.opacity) ** (1 / passes.length);
+        // Every pass of a band is torn the same way, so they fade out evenly
+        return passes.map((extra) => (
+          <path
+            key={`${i}-${extra}`}
+            d={tornBand(
+              line,
+              side * band.shift,
+              band.width + extra,
+              band.tear,
+              seeded(seed * 7 + i),
+            )}
+            fill={band.fill}
+            fillOpacity={each}
+          />
+        ));
+      })}
       <path
-        d={d}
-        className="bank-blend"
-        transform={shift(16)}
-        filter={`url(#${roughId}-soft)`}
+        d={toPath(line.map((p) => ({ x: p.x, y: p.y - side * 3 })))}
+        className="bank-sheen"
       />
-      <path
-        d={d}
-        className="bank-dirt"
-        transform={shift(10)}
-        filter={`url(#${roughId})`}
-      />
-      <path
-        d={d}
-        className="bank-slope"
-        transform={shift(5)}
-        filter={`url(#${roughId})`}
-      />
-      <path
-        d={d}
-        className="bank-mud"
-        transform={shift(1.5)}
-        filter={`url(#${roughId})`}
-      />
-      <path
-        d={d}
-        className="bank-shallows"
-        transform={shift(-11)}
-        filter={`url(#${roughId}-soft)`}
-      />
-      <path
-        d={d}
-        className="bank-shadow"
-        transform={shift(-4)}
-        filter={`url(#${roughId}-soft)`}
-      />
-      <path d={d} className="bank-sheen" transform={shift(-3)} />
       {stones.map((st, i) => (
         <g key={i}>
           {st.foam && (
@@ -209,33 +261,6 @@ function Bank({
         />
       ))}
     </g>
-  );
-}
-
-/** Roughens the bank's dirt and mud so their edges are never smooth, and softens its blends */
-function RoughFilter({ id }: { id: string }) {
-  return (
-    <>
-      <filter id={id} x="-5%" y="-50%" width="110%" height="200%">
-        <feTurbulence
-          type="fractalNoise"
-          baseFrequency="0.09"
-          numOctaves="2"
-          seed="3"
-        />
-        <feDisplacementMap in="SourceGraphic" scale="6" />
-      </filter>
-      <filter id={`${id}-soft`} x="-5%" y="-80%" width="110%" height="260%">
-        <feTurbulence
-          type="fractalNoise"
-          baseFrequency="0.05"
-          numOctaves="2"
-          seed="8"
-        />
-        <feDisplacementMap in="SourceGraphic" scale="10" result="rough" />
-        <feGaussianBlur in="rough" stdDeviation="3" />
-      </filter>
-    </>
   );
 }
 
@@ -380,15 +405,12 @@ export function Battlefield({
   const grassId = `bf-grass-${id}`;
   const grainId = `bf-grain-${id}`;
   const riverClipId = `bf-river-${id}`;
-  const roughId = `bf-rough-${id}`;
 
   const y0 = Math.min(...riverRows) * SQ;
   const y1 = (Math.max(...riverRows) + 1) * SQ;
   const top = bank(y0, 11);
   const bottom = bank(y1, 23);
-  const topBank = traceForward(top);
-  const bottomBank = traceForward(bottom);
-  const riverShape = topBank + traceBackward(bottom) + " Z";
+  const riverShape = traceForward(top) + traceBackward(bottom) + " Z";
   const bridgeCols = runs(
     Array.from({ length: 8 }, (_, c) => c).filter((c) => !lakeCols.includes(c)),
   );
@@ -421,6 +443,7 @@ export function Battlefield({
               baseFrequency="0.018"
               numOctaves="3"
               seed="4"
+              stitchTiles="stitch"
             />
             <feColorMatrix
               values="0 0 0 0 0.20
@@ -435,6 +458,7 @@ export function Battlefield({
               baseFrequency="0.9"
               numOctaves="1"
               seed="9"
+              stitchTiles="stitch"
             />
             <feColorMatrix
               values="0 0 0 0 0.1
@@ -457,14 +481,34 @@ export function Battlefield({
                       0 0 0 -1.4 0.9"
             />
           </filter>
+          {/* Grass noise drawn once on a tile and repeated, which Safari
+              draws far faster than noise across the whole board */}
+          {[
+            [`${grassId}-tile`, grassId, GRASS_TILE],
+            [`${grassId}-fine-tile`, `${grassId}-fine`, FINE_GRASS_TILE],
+          ].map(([tile, noise, size]) => (
+            <pattern
+              key={tile}
+              id={String(tile)}
+              width={size}
+              height={size}
+              patternUnits="userSpaceOnUse"
+            >
+              <rect width={size} height={size} filter={`url(#${noise})`} />
+            </pattern>
+          ))}
           <filter id="bf-soft" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="6" />
           </filter>
         </defs>
 
         <rect width={BOARD} height={BOARD} fill="#7a8f3e" />
-        <rect width={BOARD} height={BOARD} filter={`url(#${grassId})`} />
-        <rect width={BOARD} height={BOARD} filter={`url(#${grassId}-fine)`} />
+        <rect width={BOARD} height={BOARD} fill={`url(#${grassId}-tile)`} />
+        <rect
+          width={BOARD}
+          height={BOARD}
+          fill={`url(#${grassId}-fine-tile)`}
+        />
 
         {bridgeCols.map(([a, b], i) => {
           const x = ((a + b + 1) / 2) * SQ;
@@ -525,7 +569,6 @@ export function Battlefield({
           <clipPath id={riverClipId}>
             <path d={riverShape} />
           </clipPath>
-          <RoughFilter id={roughId} />
         </defs>
         <rect
           y={bandTop}
@@ -535,19 +578,12 @@ export function Battlefield({
           filter="url(#bf-soft)"
           clipPath={`url(#${riverClipId})`}
         />
+        <Bank line={sample(top, 3)} points={top.points} side={-1} seed={61} />
         <Bank
-          d={topBank}
-          points={top.points}
-          side={-1}
-          seed={61}
-          roughId={roughId}
-        />
-        <Bank
-          d={bottomBank}
+          line={sample(bottom, 3)}
           points={bottom.points}
           side={1}
           seed={67}
-          roughId={roughId}
         />
         {bridgeCols.map(([a, b], i) => (
           <Bridge
@@ -600,7 +636,6 @@ export function WorldRiver({ rows }: { rows: number }) {
     const wx = (p.x + 20) * scaleX;
     return { x: wx, y: p.y + meander(wx) };
   };
-  const worldRoughId = `wr-rough-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   const total = height + pad * 2;
   const viewBox = `0 0 ${WORLD_WIDTH} ${total}`;
@@ -639,22 +674,17 @@ export function WorldRiver({ rows }: { rows: number }) {
         style={style}
         aria-hidden
       >
-        <defs>
-          <RoughFilter id={worldRoughId} />
-        </defs>
         <Bank
-          d={stretch(traceForward(top))}
+          line={sample(top, 1.5).map(stretchPoint)}
           points={top.points.map(stretchPoint)}
           side={-1}
           seed={71}
-          roughId={worldRoughId}
         />
         <Bank
-          d={stretch(traceForward(bottom))}
+          line={sample(bottom, 1.5).map(stretchPoint)}
           points={bottom.points.map(stretchPoint)}
           side={1}
           seed={73}
-          roughId={worldRoughId}
         />
       </svg>
     </>

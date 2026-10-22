@@ -380,41 +380,11 @@
   filter: url(#bf-soft);
 }
 
-.bf-bank path {
+.bank-sheen,
+.bank-grass {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-.bank-blend {
-  stroke: #8a7a45;
-  stroke-width: 26;
-  opacity: 0.55;
-}
-
-.bank-dirt {
-  stroke: #9a7a4e;
-  stroke-width: 20;
-}
-
-.bank-slope {
-  stroke: #73553a;
-  stroke-width: 13;
-}
-
-.bank-mud {
-  stroke: #452f1b;
-  stroke-width: 7;
-}
-
-.bank-shallows {
-  stroke: rgba(205, 245, 238, 0.4);
-  stroke-width: 12;
-}
-
-.bank-shadow {
-  stroke: rgba(10, 35, 45, 0.4);
-  stroke-width: 6;
 }
 
 .bank-sheen {
@@ -425,10 +395,6 @@
 
 .bank-foam {
   fill: rgba(245, 255, 255, 0.55);
-}
-
-.bf-bank .bank-grass {
-  stroke-linecap: round;
 }
 
 [data-theme="stratego"] .square.light {
