@@ -1078,9 +1078,9 @@ export function Board() {
           )}
           {lesson === "tug" && (
             <Coach
-              lit={[{ selector: ".board-shell" }]}
+              lit={[{ selector: ".board" }]}
               shade={{
-                over: ".board-shell",
+                over: ".board",
                 lit: [{ selector: ".square.rope-square" }],
               }}
               tip="Get your pieces on the rope to pull it your way"
