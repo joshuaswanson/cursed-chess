@@ -5,8 +5,6 @@ import { TARGET_LEAD } from "./skill";
 const LEAN_SPAN = 3;
 /** How many times better one side's odds are than the other's when the luck leans all the way */
 const FULL_ODDS = 2;
-/** How much longer the player's move clock lasts when the luck leans all the way their way */
-const SPARE_TIME = 0.3;
 
 let lean = () => 0;
 
@@ -38,10 +36,6 @@ export function luckyChance(chance: number, color: Color): number {
   const odds = (chance / (1 - chance)) * fortune(color) ** 2;
   return odds / (1 + odds);
 }
-
-/** How fast the player's move clock runs down, slower the more the luck leans their way */
-export const playerClockPace = (): number =>
-  1 / (1 + SPARE_TIME * Math.max(0, lean()));
 
 /** One of `items` at random, each as many times likelier than the rest as its weight */
 export function pickWeighted<T>(

@@ -51,7 +51,7 @@ import type {
 import { HexGame } from "../engine/hex/game";
 import { chooseMove, PIECE_VALUE } from "../ai/chooseMove";
 import { pickBySkill, storySkill } from "../ai/skill";
-import { playerClockPace, setLean, storyLean } from "../ai/luck";
+import { setLean, storyLean } from "../ai/luck";
 import type { ThemeId } from "../theme/themes";
 import type { SquareBonus } from "../ai/chooseMove";
 import type { HexCoord, HexMove } from "../engine/hex";
@@ -1472,9 +1472,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const minefield = pluginManager.find<MinefieldPlugin>("minefield");
     if (minefield && minefield.pendingExplosions.size > 0) return;
     const key = turn === Color.White ? "timeWhite" : "timeBlack";
-    const pace =
-      (lessonFor(get()) ? LESSON_PACE : 1) *
-      (turn === Color.White ? playerClockPace() : 1);
+    const pace = lessonFor(get()) ? LESSON_PACE : 1;
     const next = Math.max(0, get()[key] - 0.1 * pace);
     set({ [key]: next });
     if (next <= 0) get().expireTimer();
