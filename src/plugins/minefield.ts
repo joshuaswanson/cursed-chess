@@ -23,6 +23,14 @@ export class MinefieldPlugin implements ModePlugin {
   private exploded = new Set<number>();
   /** Squares where a piece just landed on a mine — awaiting explosion animation */
   pendingExplosions = new Set<number>();
+  private count: number;
+  private within?: (sq: SquareIndex) => boolean;
+
+  /** `count` mines, buried only where `within` allows, if it is given */
+  constructor(count = MINE_COUNT, within?: (sq: SquareIndex) => boolean) {
+    this.count = count;
+    this.within = within;
+  }
 
   onGameStart(ctx: PluginContext): void {
     this.mines.clear();
@@ -35,7 +43,7 @@ export class MinefieldPlugin implements ModePlugin {
     for (let rank = 1; rank < 7; rank++) {
       for (let file = 0; file < 8; file++) {
         const sq = ((rank << 4) | file) as SquareIndex;
-        if (!ctx.board.get(sq)) {
+        if (!ctx.board.get(sq) && (this.within?.(sq) ?? true)) {
           candidates.push(sq);
         }
       }
@@ -44,7 +52,7 @@ export class MinefieldPlugin implements ModePlugin {
     // A mine is worse luck for the side whose half it lies in
     const owner = (sq: SquareIndex) =>
       rankOf(sq) < 4 ? Color.White : Color.Black;
-    const count = Math.min(MINE_COUNT, candidates.length);
+    const count = Math.min(this.count, candidates.length);
     for (let i = 0; i < count; i++) {
       const mine = pickWeighted(candidates, (sq) => 1 / fortune(owner(sq)))!;
       this.mines.add(mine);

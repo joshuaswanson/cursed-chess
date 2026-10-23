@@ -71,6 +71,11 @@ export class PortalChessPlugin implements ModePlugin {
   private portalRedirects = new Map<string, Move>();
   private moveCount = 0;
   private repositionInterval = 4;
+  private pairs: number;
+
+  constructor(pairs = 2) {
+    this.pairs = pairs;
+  }
 
   onGameStart(): void {
     this.portals = [];
@@ -420,16 +425,17 @@ export class PortalChessPlugin implements ModePlugin {
 
   private spawnPortals(ctx: PluginContext): void {
     const empty = ALL_SQUARES.filter((sq) => !ctx.board.get(sq));
-    if (empty.length < 4) return;
+    if (empty.length < this.pairs * 2) return;
 
     for (let i = empty.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [empty[i], empty[j]] = [empty[j], empty[i]];
     }
-    this.portals = [
+    const pairs: PortalPair[] = [
       { a: empty[0], b: empty[1], color: "blue" },
       { a: empty[2], b: empty[3], color: "orange" },
     ];
+    this.portals = pairs.slice(0, this.pairs);
   }
 
   /** Find all unoccupied, non-portal adjacent squares around a square */
