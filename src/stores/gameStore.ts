@@ -62,6 +62,8 @@ import {
   introScript,
 } from "../components/Chessbot/intro";
 import type { ChessbotMood } from "../components/Chessbot/Chessbot";
+import { DEV_NOTES } from "../components/DevNote/notes";
+import type { DevNoteText } from "../components/DevNote/notes";
 
 export type { PortalMoveInfo };
 
@@ -426,6 +428,9 @@ export interface GameStore {
   zombiesActing: boolean;
   /** Chessbot is reacting or saying something, so he starts on his move once he has finished */
   chessbotTalking: boolean;
+  /** Dave's message on screen, which holds the game until it is closed */
+  devNote: DevNoteText | null;
+  dismissDevNote: () => void;
   setChessbotTalking: (talking: boolean) => void;
   siteTab: SiteTab;
   setSiteTab: (tab: SiteTab) => void;
@@ -637,6 +642,7 @@ const FRESH_BOARD = {
   promotionPending: null,
   deployPieceType: null,
   clashHand: dealClashHand(),
+  devNote: null,
 } satisfies Partial<GameStore>;
 
 const FRESH_CLOCKS = {
@@ -661,7 +667,7 @@ function schedule(fn: () => void, ms: number): void {
 
 function syncPaused(): void {
   useGameStore.setState((s) => ({
-    paused: s.userPaused || pauseHolds > 0 || s.menuOpen,
+    paused: s.userPaused || pauseHolds > 0 || s.menuOpen || s.devNote !== null,
   }));
 }
 
@@ -669,6 +675,22 @@ function cancelScheduled(): void {
   for (const id of pendingTimers) clearTimeout(id);
   pendingTimers.clear();
   pauseHolds = 0;
+  syncPaused();
+}
+
+/** How long after a mode's title cards clear Dave's message arrives */
+const DEV_NOTE_DELAY_MS = 2000;
+/** How soon a message held back by something else on screen tries again */
+const DEV_NOTE_RETRY_MS = 500;
+
+/** Puts Dave's message up once nothing else is holding the game or being said */
+function deliverDevNote(note: DevNoteText): void {
+  const s = useGameStore.getState();
+  if (s.paused || s.chessbotTalking || s.promotionPending) {
+    schedule(() => deliverDevNote(note), DEV_NOTE_RETRY_MS);
+    return;
+  }
+  useGameStore.setState({ devNote: note });
   syncPaused();
 }
 
@@ -1009,6 +1031,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   zombiesActing: false,
   chessbotTalking: false,
   setChessbotTalking: (talking) => set({ chessbotTalking: talking }),
+  devNote: null,
+  dismissDevNote: () => {
+    set({ devNote: null });
+    syncPaused();
+  },
   siteTab: "Play",
   setSiteTab: (tab) => set({ siteTab: tab }),
 
@@ -1802,11 +1829,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
       skippedTurn: null,
       portalTravelling: false,
       zombiesActing: false,
+      devNote: null,
       ...FRESH_CLOCKS,
     });
 
     holdPause(mode.introHoldMs ?? INTRO_HOLD_MS);
     get().showAnnouncement(mode.name, MODE_CARD_MS, "mode");
+
+    const storyNumber = GAME_MODES.slice(0, nextIndex + 1).filter(
+      (m) => !m.singleOnly,
+    ).length;
+    const note =
+      get().playMode === "adventure" && !get().net
+        ? DEV_NOTES.find((n) => n.atMode === storyNumber)
+        : undefined;
+    if (note) {
+      schedule(() => deliverDevNote(note), INTRO_END_MS + DEV_NOTE_DELAY_MS);
+    }
 
     if (mode.isHex) {
       // Remember each piece's square so it can fly to its new hex cell

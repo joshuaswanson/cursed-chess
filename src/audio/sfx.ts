@@ -454,6 +454,16 @@ export const sfx = {
     );
   },
 
+  /** A message arriving: a soft, polite two-note chime */
+  notify(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    chord(c, out, t, [880], 0.5, "sine", 0.12);
+    chord(c, out, t + 0.12, [1318.5], 0.7, "sine", 0.1);
+  },
+
   win(): void {
     const a = audio();
     if (!a) return;

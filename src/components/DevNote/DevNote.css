@@ -1,0 +1,119 @@
+/* Written from the plain chess site, so it keeps that site's look whatever mode is on */
+
+.dev-note {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 100;
+  display: grid;
+  gap: 10px;
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px 16px;
+  background: #ffffff;
+  color: #312e2b;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(49, 46, 43, 0.22);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  animation: dev-note-in 280ms ease-out;
+}
+
+.dev-note.is-hacked {
+  animation: dev-note-shake 90ms steps(2) infinite;
+}
+
+.dev-note-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dev-note-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #769656;
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.dev-note-from {
+  display: grid;
+  flex: 1;
+  line-height: 1.2;
+}
+
+.dev-note-from small {
+  font-size: 12px;
+  color: #6b6967;
+}
+
+.dev-note-time {
+  align-self: flex-start;
+  font-size: 12px;
+  color: #8b8987;
+}
+
+.dev-note-text {
+  margin: 0;
+}
+
+.dev-note-text.is-rewritten {
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1.3;
+  color: #1b1033;
+  text-shadow:
+    1px 0 #3aa7ff,
+    -1px 0 #ff3a8c;
+}
+
+.dev-note-ok {
+  justify-self: end;
+  padding: 6px 20px;
+  font: inherit;
+  font-weight: bold;
+  color: #ffffff;
+  background: #81b64c;
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0 3px 0 #5d9948;
+  cursor: pointer;
+}
+
+.dev-note-ok:hover {
+  background: #8fc25a;
+}
+
+.dev-note-ok:focus-visible {
+  outline: 2px solid #312e2b;
+  outline-offset: 2px;
+}
+
+.dev-note-ok:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@keyframes dev-note-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@keyframes dev-note-shake {
+  0% {
+    transform: translate(-2px, 1px);
+  }
+  100% {
+    transform: translate(2px, -1px);
+  }
+}

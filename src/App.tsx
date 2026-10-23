@@ -35,6 +35,7 @@ import { MainMenu } from "./components/MainMenu/MainMenu";
 import { PauseMenu } from "./components/PauseMenu/PauseMenu";
 import { ModeSwap } from "./components/Show/ModeSwap";
 import { BotWindows } from "./components/BoringSite/BotWindows";
+import { DevNote } from "./components/DevNote/DevNote";
 
 function App() {
   useGameLoop();
@@ -177,6 +178,7 @@ function App() {
       {cursed && theme.id === "trenches" && <TrenchWeather />}
       {cursed && theme.id === "storm" && <StormWeather />}
       {cursed && <ModeSwap />}
+      {cursed && <DevNote />}
       {pauseShown && <PauseMenu />}
       <PromotionDialog />
       <ShowCards />
