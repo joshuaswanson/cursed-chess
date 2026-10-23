@@ -36,7 +36,7 @@ import { PacManPlugin } from "../plugins/pacman";
 import { HEIST_FILES, HEIST_RANKS, HeistPlugin } from "../plugins/heist";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
-import { TugOfWarPlugin } from "../plugins/tugOfWar";
+import { HEAVE_HOLD_MS, TugOfWarPlugin } from "../plugins/tugOfWar";
 import { ZOMBIE_FINISH_MS, ZombiesPlugin } from "../plugins/zombies";
 import { TrenchesPlugin } from "../plugins/trenches";
 import { FinalePlugin } from "../plugins/finale";
@@ -1458,9 +1458,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     pluginManager.invokeOnAfterMove(processedMove);
     pluginManager.invokeOnTurnEnd(mover);
-    // Nobody moves again until the belts have stopped
+    // Nobody moves again until the belts have stopped, or the rope has been hauled
     if (pluginManager.find<ConveyorPlugin>("conveyor")) {
       holdPause(BELT_RUN_MS);
+    }
+    if (pluginManager.find<TugOfWarPlugin>("tug-of-war")?.heaved) {
+      holdPause(HEAVE_HOLD_MS);
     }
 
     const status = pluginManager.invokeModifyGameStatus(game.getStatus());

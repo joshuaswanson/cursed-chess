@@ -320,7 +320,7 @@ export function Board() {
   }, [portalsDue, travel, slides, settlePortals]);
 
   useGravitySpin(shellRef, overlays.gravityDirection !== null);
-  // A heave waits for the move that ended the round to land, and for any capture's burst
+  // A heave waits for the move that set it off to land, and for any capture's burst
   const heaveDelay = moveHistory[moveHistory.length - 1]?.move.captured
     ? SLIDE_MS + CAPTURE_BURST_MS
     : SLIDE_MS + 100;
