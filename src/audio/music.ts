@@ -38,14 +38,28 @@ function startPlaying(): void {
   line.gain.gain.cancelScheduledValues(now);
   line.gain.gain.setValueAtTime(Math.max(line.gain.gain.value, 0.0001), now);
   line.gain.gain.exponentialRampToValueAtTime(VOLUME, now + FADE_IN_S);
-  // Browsers refuse to play before the first click or key press; the next one starts it
-  line.el.play().catch(() => {
-    const retry = () => {
-      if (audible()) void line.el.play().catch(() => {});
-    };
-    window.addEventListener("pointerdown", retry, { once: true });
-    window.addEventListener("keydown", retry, { once: true });
-  });
+  line.el.play().catch(waitForGesture);
+}
+
+/** Events Safari and Chrome each count as the user asking for sound */
+const GESTURES = ["pointerdown", "pointerup", "click", "touchend", "keydown"];
+
+/** Browsers refuse to play before the user clicks or presses a key, so each gesture tries again until one is let through */
+function retryOnGesture(): void {
+  if (!track || !audible()) return;
+  audio();
+  track
+    .play()
+    .then(() => {
+      for (const event of GESTURES)
+        window.removeEventListener(event, retryOnGesture, true);
+    })
+    .catch(() => {});
+}
+
+function waitForGesture(): void {
+  for (const event of GESTURES)
+    window.addEventListener(event, retryOnGesture, true);
 }
 
 function stopPlaying(): void {
