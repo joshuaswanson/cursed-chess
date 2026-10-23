@@ -10,7 +10,7 @@ const MELTDOWN_CRACKLE_MS = 420;
 /** How long he looks about from behind the move list before he winks */
 const WINK_AFTER_MS = 1500;
 /** How far his head comes out from behind the move list, in pixels */
-const PEEK_PX = 84;
+const PEEK_PX = 77;
 const PEEK_SIZE = 110;
 
 /** The whole site breaking up as he is deleted, worse the longer it goes on */
@@ -48,13 +48,13 @@ interface Peek {
   top: number;
 }
 
-/** Where he peeks out: from behind the left edge of the move list on the plain site */
+/** Where he peeks out: from behind the right edge of the move list on the plain site */
 function usePeekSpot(): Peek | null {
   const [spot] = useState<Peek | null>(() => {
     const panel = document.querySelector(".boring-panel");
     if (!panel) return null;
     const box = panel.getBoundingClientRect();
-    return { edge: box.left, top: box.top + box.height * 0.3 };
+    return { edge: box.right, top: box.top + box.height * 0.3 };
   });
   return spot;
 }
@@ -69,7 +69,7 @@ function PeekAndIris({ closing }: { closing: boolean }) {
   }, []);
   if (!spot) return null;
   const centre = {
-    "--iris-x": `${spot.edge - PEEK_PX / 2}px`,
+    "--iris-x": `${spot.edge + PEEK_PX / 2}px`,
     "--iris-y": `${spot.top + PEEK_SIZE * 0.45}px`,
   } as CSSProperties;
   return (
@@ -77,7 +77,7 @@ function PeekAndIris({ closing }: { closing: boolean }) {
       <div
         className="finale-peek"
         style={{
-          left: spot.edge - PEEK_SIZE,
+          left: spot.edge,
           top: spot.top,
           width: PEEK_SIZE,
           height: PEEK_SIZE,
@@ -85,7 +85,7 @@ function PeekAndIris({ closing }: { closing: boolean }) {
         aria-hidden
       >
         <div className="finale-peek-bot">
-          <Chessbot mood={winked ? "wink" : "sly"} grounded={false} />
+          <Chessbot mood={winked ? "wink" : "lookright"} grounded={false} />
         </div>
       </div>
       {closing && <div className="finale-iris" style={centre} aria-hidden />}
