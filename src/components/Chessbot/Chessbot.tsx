@@ -323,11 +323,7 @@ function Face({
     case "wink":
       return (
         <>
-          <path
-            d="M62 90 h24 v5 a12 11 0 0 1 -24 0 z"
-            fill={EYE}
-            filter={glow}
-          />
+          <circle cx="74" cy="94" r="12" fill={EYE} filter={glow} />
           <path
             d="M113 97 Q126 82 139 97"
             fill="none"
