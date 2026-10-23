@@ -17,7 +17,8 @@ export type ThemeId =
   | "conveyor"
   | "heist"
   | "storm"
-  | "pacman";
+  | "pacman"
+  | "finale";
 
 /** Which animated scene sits behind the board */
 export type BackdropKind = ThemeId;
@@ -293,6 +294,20 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#0b0b26",
     dark: "#000000",
     text: "#ffe600",
+  },
+  // Chessbot at his angriest, on the plain board the story started on
+  finale: {
+    id: "finale",
+    title: "Final Battle",
+    catchphrase: "Keep him busy!",
+    sky: ["#16000c", "#2c0017", "#060008"],
+    accent: "#ff2d55",
+    accent2: "#00e5ff",
+    ink: "#0b0007",
+    frame: "#1d0712",
+    light: "#eeeed2",
+    dark: "#769656",
+    text: "#ffe9ef",
   },
 };
 

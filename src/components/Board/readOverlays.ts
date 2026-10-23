@@ -12,6 +12,7 @@ import type { Lantern, LanternView } from "../../plugins/lanterns";
 import type { HeistView } from "../../plugins/heist";
 import type { StormView } from "../../plugins/thunderstorm";
 import type { PacView } from "../../plugins/pacman";
+import type { FinaleView } from "../../plugins/finale";
 
 export interface PortalPair {
   a: SquareIndex;
@@ -47,6 +48,8 @@ export interface BoardOverlays {
   strategoHidden: Set<SquareIndex>;
   strategoLakes: Set<SquareIndex>;
   pendingExplosions: SquareIndex[];
+  /** Everything the final battle throws at the board, or nothing in any other mode */
+  finale: FinaleView | null;
 }
 
 /** Gather every active mode's overlays into the data the board renders from */
@@ -75,6 +78,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     strategoHidden: new Set(),
     strategoLakes: new Set(),
     pendingExplosions: [],
+    finale: null,
   };
 
   for (const overlay of overlays) {
@@ -161,6 +165,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
         break;
       case "tug-of-war":
         result.tug = overlay.data as TugView;
+        break;
+      case "finale":
+        result.finale = overlay.data as FinaleView;
         break;
     }
   }

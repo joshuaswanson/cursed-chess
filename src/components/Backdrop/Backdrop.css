@@ -1206,3 +1206,42 @@
     transform: translate(12%, 4%);
   }
 }
+
+/* The final battle: the dark torn by strips of every mode's sky */
+.corrupted {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.corrupted-band {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  opacity: 0;
+  animation: corrupted-band 4s steps(1) infinite;
+}
+
+@keyframes corrupted-band {
+  0%,
+  58% {
+    opacity: 0;
+    translate: 0 0;
+  }
+  60% {
+    opacity: 0.85;
+    translate: -6% 0;
+  }
+  66% {
+    opacity: 0.4;
+    translate: 4% 0;
+  }
+  72% {
+    opacity: 0.9;
+    translate: 0 0;
+  }
+  78%,
+  100% {
+    opacity: 0;
+  }
+}

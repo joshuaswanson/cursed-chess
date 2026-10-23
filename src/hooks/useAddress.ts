@@ -30,7 +30,9 @@ function goTo(place: string): void {
   const s = useGameStore.getState();
   const here = placeOf(s);
   if (here === null || here === place) return;
-  const index = GAME_MODES.findIndex((mode) => slug(mode.name) === place);
+  const index = GAME_MODES.findIndex(
+    (mode) => !mode.finale && slug(mode.name) === place,
+  );
   if (place === MENU || index >= 0) s.openMenu();
   if (index >= 0) s.startSingle(index);
   if (place === "") s.startAdventure();

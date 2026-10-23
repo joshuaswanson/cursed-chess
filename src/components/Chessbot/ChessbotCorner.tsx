@@ -6,6 +6,9 @@ import { Color, GameStatus, MoveFlag, isGameOver } from "../../engine";
 import type { MinefieldPlugin } from "../../plugins/minefield";
 import {
   ENTRANCE,
+  FINALE_RANTS,
+  FINALE_REWRITE,
+  FINALE_SCREAM,
   FIRST_MINE,
   OWN_MINE,
   PITCHES,
@@ -90,6 +93,8 @@ function useBubble(line: string | undefined) {
 const QUIP_MS = 3400;
 const QUIP_CHANCE = 0.6;
 const IDLE_QUIP_MS: [number, number] = [16000, 30000];
+/** In the final battle he rants far more often */
+const RANT_MS: [number, number] = [6000, 10000];
 
 const pick = (lines: readonly string[]) =>
   lines[Math.floor(Math.random() * lines.length)];
@@ -118,12 +123,21 @@ function useQuip(): string | undefined {
       window.clearTimeout(calm);
       calm = window.setTimeout(() => say(text), RATTLED_MS);
     };
+    let rants = 0;
     const muse = () => {
-      const [least, most] = IDLE_QUIP_MS;
+      const raging = useGameStore.getState().finaleStage === "battle";
+      const [least, most] = raging ? RANT_MS : IDLE_QUIP_MS;
       idle = window.setTimeout(
         () => {
-          const { paused, announcement, menuOpen } = useGameStore.getState();
-          if (!paused && !announcement && !menuOpen) say(pick(QUIPS.idle));
+          const { paused, announcement, menuOpen, finaleStage } =
+            useGameStore.getState();
+          if (!paused && !announcement && !menuOpen) {
+            say(
+              finaleStage === "battle"
+                ? FINALE_RANTS[rants++ % FINALE_RANTS.length]
+                : pick(QUIPS.idle),
+            );
+          }
           muse();
         },
         least + Math.random() * (most - least),
@@ -234,6 +248,24 @@ function usePitch(): string | undefined {
   return line;
 }
 
+/** How fast his scream draws out as he is deleted, and how long it can get */
+const SCREAM_STEP_MS = 110;
+const SCREAM_MOST = 36;
+
+/** His scream as the deletion finishes, a longer NOOO the longer it goes on */
+function useScream(on: boolean): string | undefined {
+  const [held, setHeld] = useState(1);
+  useEffect(() => {
+    if (!on) return;
+    const timer = window.setInterval(
+      () => setHeld((n) => Math.min(SCREAM_MOST, n + 1)),
+      SCREAM_STEP_MS,
+    );
+    return () => window.clearInterval(timer);
+  }, [on]);
+  return on ? FINALE_SCREAM + "O".repeat(held) : undefined;
+}
+
 /** How long he talks about a missed turn */
 const SKIP_LINE_MS = 3200;
 
@@ -320,6 +352,12 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
       ? GAME_MODES.slice(1, s.modeSwap.to).filter((m) => !m.singleOnly).length
       : 0,
   );
+  const intoFinale = useGameStore(
+    (s) => !!s.modeSwap && !!GAME_MODES[s.modeSwap.to]?.finale,
+  );
+  const raging = useGameStore((s) => s.finaleStage === "battle");
+  const deleting = useGameStore((s) => s.finaleStage === "deleting");
+  const scream = useScream(deleting);
   const skipLine = useSkipLine();
   // How many games have been settled, so he works through his verdicts in turn
   const played = useGameStore((s) => s.scoreWhite + s.scoreBlack);
@@ -351,11 +389,14 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
       !s.pluginManager.isAutonomous(),
   );
   const thinking = onTurn && !talking;
-  const line =
-    entrance === "oops"
+  const line = deleting
+    ? scream
+    : entrance === "oops"
       ? ENTRANCE.oops
       : rewriting
-        ? REWRITES[swapNo % REWRITES.length]
+        ? intoFinale
+          ? FINALE_REWRITE
+          : REWRITES[swapNo % REWRITES.length]
         : announcement
           ? kind === "mode"
             ? undefined
@@ -363,25 +404,31 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
           : (skipLine ?? (thinking ? undefined : pitch) ?? quip);
   // Over a card, or making his entrance, he wears the look that goes with
   // it, unless the game has just rattled him
-  const staged: ChessbotMood | undefined = peeking
-    ? glance
-      ? "lookleft"
-      : "sly"
-    : rewriting
-      ? "laugh"
-      : entrance === "glitch"
-        ? "laugh"
-        : entrance === "oops"
-          ? "smug"
-          : !announcement
-            ? undefined
-            : kind === "mode"
-              ? "proud"
-              : kind === "win"
-                ? "sulk"
-                : kind === "lose"
-                  ? "proud"
-                  : "smug";
+  const staged: ChessbotMood | undefined = deleting
+    ? "panic"
+    : peeking
+      ? glance
+        ? "lookleft"
+        : "sly"
+      : rewriting
+        ? intoFinale
+          ? "angry"
+          : "laugh"
+        : entrance === "glitch"
+          ? "laugh"
+          : entrance === "oops"
+            ? "smug"
+            : !announcement
+              ? raging
+                ? "angry"
+                : undefined
+              : kind === "mode"
+                ? "proud"
+                : kind === "win"
+                  ? "sulk"
+                  : kind === "lose"
+                    ? "proud"
+                    : "smug";
   // Making excuses for walking onto his own mine, he cannot look at you
   const sheepish =
     quip !== undefined && (OWN_MINE as readonly string[]).includes(quip);
@@ -413,7 +460,7 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
     <aside
       className={
         docked
-          ? "chessbot-dock"
+          ? `chessbot-dock${raging ? " is-raging" : ""}${deleting ? " is-deleting" : ""}`
           : `chessbot-corner${peeking ? " is-peeking" : peeked ? " has-peeked" : " arrives"}`
       }
       aria-live="polite"

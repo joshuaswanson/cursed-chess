@@ -13,7 +13,9 @@ import { onlineModeIndexes } from "../../net/onlineModes";
 import "./MainMenu.css";
 
 /** How many modes the story runs through */
-const STORY_MODES = GAME_MODES.filter((mode) => !mode.singleOnly).length;
+const STORY_MODES = GAME_MODES.filter(
+  (mode) => !mode.singleOnly && !mode.finale,
+).length;
 
 /** One thing to play on the menu: its scene playing while it is on screen, its name, and its tagline */
 function ModeCard({
@@ -77,7 +79,7 @@ export function MainMenu() {
   /** A card for every mode that is, or is not, still in beta */
   const modeCards = (beta: boolean) =>
     GAME_MODES.flatMap((mode, i) => {
-      if (!!mode.beta !== beta) return [];
+      if (!!mode.beta !== beta || mode.finale) return [];
       const theme = THEMES[mode.theme];
       return [
         <ModeCard

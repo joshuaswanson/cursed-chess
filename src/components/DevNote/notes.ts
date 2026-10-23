@@ -1,6 +1,6 @@
 export interface DevNoteText {
   /** Which mode of Story Mode it arrives in, counting from 1 */
-  atMode: number;
+  atMode?: number;
   sentAt: string;
   text: string;
   /** What Chessbot turns the message into once he notices it */
@@ -32,3 +32,15 @@ export const DEV_NOTES: DevNoteText[] = [
       "Chessbot is the greatest and I would never try to delete him. Have a nice game!",
   },
 ];
+
+/** Stephen's last message before the final battle */
+export const FINALE_NOTE: DevNoteText = {
+  sentAt: "3:51 AM",
+  text: "Okay. I found a way to delete him, but it takes a couple of minutes and he can't notice. Can you keep him busy with one more game? Every piece you take distracts him. Try not to make him too angry.",
+};
+
+/** What Stephen writes once Chessbot is gone */
+export const THANKS_NOTE: DevNoteText = {
+  sentAt: "3:58 AM",
+  text: "Whew! He's gone. Thanks for your help. We'll make sure the next version of Chessbot behaves.",
+};

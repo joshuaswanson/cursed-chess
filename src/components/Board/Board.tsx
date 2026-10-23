@@ -29,6 +29,7 @@ import { Crater } from "./Crater";
 import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
 import { LanternDark, LanternFeel, LanternIcon } from "./Lanterns";
 import { StormBolt, StormScars } from "./Thunderstorm";
+import { FinaleOver, FinaleUnder } from "./Finale";
 import { PacMaze, PacPellet } from "./PacMan";
 import { TUNNEL_MS, eatTimes, tunnelWay, usePacSounds } from "./pacMotion";
 import { HeistLights, HeistLoot } from "./Heist";
@@ -501,8 +502,10 @@ export function Board() {
       : "No clear shot!";
   const battleRoyale = overlays.battleRoyale;
   const dangerProgress = battleRoyale?.dangerProgress ?? 0;
+  const finale = overlays.finale;
+  const strikes = overlays.storm?.recent ?? finale?.strikes ?? null;
   const collapse = useCollapse(
-    battleRoyale?.lastCollapse ?? null,
+    battleRoyale?.lastCollapse ?? finale?.collapse ?? null,
     dangerProgress,
   );
   const doomed = new Set(battleRoyale?.doomed ?? []);
@@ -731,6 +734,11 @@ export function Board() {
                 eatenAfterMs={pacEats?.get(sq)}
               />
             )}
+          {squareMods.some((m) => m.className === "finale-belt") && (
+            <span className="belt-tile">
+              <span className="belt-chevrons" />
+            </span>
+          )}
           {conveyor && (
             <span
               key={rides.size > 0 ? conveyor.run : "still"}
@@ -1018,6 +1026,7 @@ export function Board() {
             />
           )}
           {hexTransition === "morph-out" && <BoardShatter flipped={flipped} />}
+          {finale && <FinaleUnder view={finale} flipped={flipped} />}
           {overlays.tug && (
             <TugLayer
               view={overlays.tug}
@@ -1089,9 +1098,7 @@ export function Board() {
             />
           )}
           {pac && <PacMaze />}
-          {overlays.storm && (
-            <StormScars strikes={overlays.storm.recent} flipped={flipped} />
-          )}
+          {strikes && <StormScars strikes={strikes} flipped={flipped} />}
           {dark && (
             <LanternFeel
               mine={
@@ -1118,9 +1125,8 @@ export function Board() {
               lightning={overlays.storm ? stormStrike : null}
             />
           )}
-          {overlays.storm && (
-            <StormBolt strikes={overlays.storm.recent} flipped={flipped} />
-          )}
+          {strikes && <StormBolt strikes={strikes} flipped={flipped} />}
+          {finale && <FinaleOver view={finale} flipped={flipped} />}
           {football &&
             [Color.Black, Color.White].map((defender) => (
               <Goal

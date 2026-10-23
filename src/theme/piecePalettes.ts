@@ -74,6 +74,11 @@ export const PIECE_PALETTES: Partial<
     light: ["#f6f9ff", "#cdd8ea", "#8295b5"],
     dark: ["#8f9bb8", "#3a4560", "#10141f"],
   },
+  // Chessbot's army goes red with his temper
+  finale: {
+    light: ["#ffffff", "#e4e4ea", "#a9a9b8"],
+    dark: ["#ff7a8e", "#c8173d", "#4a0414"],
+  },
   // Hard-hat yellow against steel blue
   conveyor: {
     light: ["#fffbe8", "#ffd84d", "#c08a00"],

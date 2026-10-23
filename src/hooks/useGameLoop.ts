@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import {
   AUTONOMOUS_TICK_MS,
+  FINALE_TICK_MS,
   STORM_TICK_MS,
   useGameStore,
 } from "../stores/gameStore";
@@ -9,13 +10,20 @@ import { isGameOver } from "../engine";
 const MOVE_TICK_MS = 100;
 const MODE_TICK_MS = 1000;
 
-/** Drives the move clock, the autonomous-mode tick, the turning gravity board, the thunderstorm, and the mode countdown */
+/** Drives the move clock, the autonomous-mode tick, the turning gravity board, the thunderstorm, the final battle, and the mode countdown */
 export function useGameLoop(): void {
   const moveTimerActive = useGameStore((s) => s.moveTimerActive);
   const gameOver = useGameStore((s) => isGameOver(s.status));
   const isAutonomous = useGameStore((s) => s.pluginManager.isAutonomous());
-  const { tickTimer, tickAutonomous, tickModeTimer, tickGravity, tickStorm } =
-    useGameStore.getState();
+  const finale = useGameStore((s) => s.finaleStage === "battle");
+  const {
+    tickTimer,
+    tickAutonomous,
+    tickModeTimer,
+    tickGravity,
+    tickStorm,
+    tickFinale,
+  } = useGameStore.getState();
 
   useEffect(() => {
     if (!moveTimerActive || gameOver || isAutonomous) return;
@@ -40,6 +48,12 @@ export function useGameLoop(): void {
     const interval = setInterval(tickStorm, STORM_TICK_MS);
     return () => clearInterval(interval);
   }, [gameOver, tickStorm]);
+
+  useEffect(() => {
+    if (!finale) return;
+    const interval = setInterval(tickFinale, FINALE_TICK_MS);
+    return () => clearInterval(interval);
+  }, [finale, tickFinale]);
 
   useEffect(() => {
     if (gameOver) return;

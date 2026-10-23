@@ -36,6 +36,8 @@ import { PauseMenu } from "./components/PauseMenu/PauseMenu";
 import { ModeSwap } from "./components/Show/ModeSwap";
 import { BotWindows } from "./components/BoringSite/BotWindows";
 import { DevNote } from "./components/DevNote/DevNote";
+import { FinaleEnding } from "./components/Show/FinaleEnding";
+import type { FinalePlugin } from "./plugins/finale";
 
 function App() {
   useGameLoop();
@@ -53,6 +55,14 @@ function App() {
   const siteTab = useGameStore((s) => s.siteTab);
   const userPaused = useGameStore((s) => s.userPaused);
   const modeIndex = useGameStore((s) => s.currentModeIndex);
+  const finale = useGameStore((s) => s.finaleStage);
+  const fighting = finale === "battle" || finale === "deleting";
+  // The rain and the bolts from the sky come with the storm in the final battle
+  const finaleStorm = useGameStore(
+    (s) =>
+      s.finaleStage === "battle" &&
+      !!s.pluginManager.find<FinalePlugin>("finale")?.acts.includes("storm"),
+  );
   const pauseShown = cursed && userPaused && !menuOpen;
   const onFakePage = !cursed && siteTab !== "Play";
 
@@ -62,7 +72,10 @@ function App() {
 
   // The soundtrack kicks in once the curse takes hold. It stays off in the
   // trenches, where there is only the guns and the rain.
-  const musicOn = cursed && theme.id !== "trenches" && !pauseShown;
+  // It cuts out as Chessbot is deleted, and comes back for the credits
+  const musicOn =
+    finale === "credits" ||
+    (cursed && theme.id !== "trenches" && !pauseShown && finale !== "deleting");
   useEffect(() => {
     music.set(musicOn);
   }, [musicOn]);
@@ -113,6 +126,9 @@ function App() {
     // Your first move lets him through: the plain site glitches hard as he
     // breaks in and again as he is shut out, twitches while he types, and
     // then holds still while you think over your next move
+    (fighting ? " is-finale" : "") +
+    (finale === "deleting" ? " finale-deleting" : "") +
+    (finale === "peek" ? " finale-hiccup" : "") +
     (cursed || !aside || aside === "said"
       ? ""
       : aside === "typing"
@@ -176,9 +192,12 @@ function App() {
       <PageFog active={theme.id === "fog" && introDone} />
       {cursed && theme.id === "portals" && <SpaceTraffic />}
       {cursed && theme.id === "trenches" && <TrenchWeather />}
-      {cursed && theme.id === "storm" && <StormWeather />}
+      {cursed && (theme.id === "storm" || finaleStorm) && (
+        <StormWeather rainy={theme.id === "storm"} />
+      )}
       {cursed && <ModeSwap />}
-      {cursed && <DevNote />}
+      <DevNote />
+      <FinaleEnding />
       {pauseShown && <PauseMenu />}
       <PromotionDialog />
       <ShowCards />

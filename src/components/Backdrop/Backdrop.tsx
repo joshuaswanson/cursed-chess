@@ -11,6 +11,7 @@ import { MudField } from "./MudField";
 import { Museum } from "./Museum";
 import { Factory } from "./Factory";
 import { StormSky } from "./StormSky";
+import { Corrupted } from "./Corrupted";
 import "./Backdrop.css";
 
 /** How long the spirals take to slow, stop, and wind up the other way */
@@ -171,6 +172,8 @@ function Scene({ theme }: { theme: ThemeId }) {
       return <BattleLand />;
     case "storm":
       return <StormSky />;
+    case "finale":
+      return <Corrupted />;
     default:
       return null;
   }

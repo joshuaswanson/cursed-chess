@@ -39,6 +39,7 @@ import { FootballPlugin } from "../plugins/football";
 import { TugOfWarPlugin } from "../plugins/tugOfWar";
 import { ZOMBIE_FINISH_MS, ZombiesPlugin } from "../plugins/zombies";
 import { TrenchesPlugin } from "../plugins/trenches";
+import { FinalePlugin } from "../plugins/finale";
 import type { SquadId } from "../plugins/trenches";
 import type { KickTarget } from "../plugins/football";
 import { benchKings, reinforce, returnKing } from "./reinforcements";
@@ -62,7 +63,11 @@ import {
   introScript,
 } from "../components/Chessbot/intro";
 import type { ChessbotMood } from "../components/Chessbot/Chessbot";
-import { DEV_NOTES } from "../components/DevNote/notes";
+import {
+  DEV_NOTES,
+  FINALE_NOTE,
+  THANKS_NOTE,
+} from "../components/DevNote/notes";
 import type { DevNoteText } from "../components/DevNote/notes";
 
 export type { PortalMoveInfo };
@@ -126,6 +131,16 @@ export const ARRIVAL_MS = 1700;
 /** How long a king takes to stroll off the board */
 export const KING_DEPART_MS = 1600;
 
+export type FinaleStage =
+  | "battle"
+  | "deleting"
+  | "erased"
+  | "thanks"
+  | "calm"
+  | "peek"
+  | "iris"
+  | "credits";
+
 export interface GameMode {
   name: string;
   theme: ThemeId;
@@ -151,6 +166,8 @@ export interface GameMode {
   singleOnly?: boolean;
   /** Still being tried out: listed apart from the finished modes on the main menu */
   beta?: boolean;
+  /** The battle that ends Story Mode, reached only by playing through it */
+  finale?: boolean;
 }
 
 /**
@@ -279,11 +296,21 @@ export const GAME_MODES: GameMode[] = [
     singleOnly: true,
     beta: true,
   },
+  {
+    name: "FINAL BATTLE",
+    theme: "finale",
+    create: () => [new FinalePlugin()],
+    noReinforcements: true,
+    untilWon: true,
+    finale: true,
+  },
 ];
 
 /** The next mode of the adventure after this one, or -1 once the last has been played */
 function nextAdventureMode(after: number): number {
-  return GAME_MODES.findIndex((mode, i) => i > after && !mode.singleOnly);
+  return GAME_MODES.findIndex(
+    (mode, i) => i > after && !mode.singleOnly && !mode.finale,
+  );
 }
 
 /**
@@ -292,27 +319,38 @@ function nextAdventureMode(after: number): number {
  * `prepare` runs just before the next mode is set up.
  */
 function moveOn(prepare?: () => void): void {
-  const { playMode, currentModeIndex } = useGameStore.getState();
+  const { playMode, currentModeIndex, net } = useGameStore.getState();
   const next = nextAdventureMode(currentModeIndex);
-  const goOn = () => {
-    prepare?.();
-    useGameStore.getState().switchMode();
-  };
-  if (playMode !== "adventure" || currentModeIndex < 0 || next < 0) {
-    goOn();
+  const story = playMode === "adventure" && currentModeIndex >= 0 && !net;
+  // After the last mode of the story, Stephen asks for help, and Chessbot
+  // rewrites the game one last time
+  if (story && next < 0 && !GAME_MODES[currentModeIndex].finale) {
+    const finale = GAME_MODES.findIndex((mode) => mode.finale);
+    deliverDevNote(FINALE_NOTE, () => swapTo(finale, prepare));
     return;
   }
+  if (!story || next < 0) {
+    prepare?.();
+    useGameStore.getState().switchMode();
+    return;
+  }
+  swapTo(next, prepare);
+}
+
+/** Chessbot rewires the game into mode `to` where everyone can see him do it */
+function swapTo(to: number, prepare?: () => void): void {
   useGameStore.setState((s) => ({
     modeSwap: {
       id: (s.modeSwap?.id ?? 0) + 1,
-      from: currentModeIndex,
-      to: next,
+      from: s.currentModeIndex,
+      to,
       switched: false,
     },
   }));
   holdPause(MODE_SWAP_MS);
   schedule(() => {
-    goOn();
+    prepare?.();
+    useGameStore.getState().switchMode(to);
     // Scheduled after the switch, which clears whatever was scheduled before it
     useGameStore.setState((s) => ({
       modeSwap: s.modeSwap && { ...s.modeSwap, switched: true },
@@ -431,6 +469,13 @@ export interface GameStore {
   /** Stephen's message on screen, which holds the game until it is closed */
   devNote: DevNoteText | null;
   dismissDevNote: () => void;
+  /** Where the final battle has got to, from the fight itself through Chessbot's end to the credits */
+  finaleStage: FinaleStage | null;
+  /** Counts each change the final battle makes to the board between moves */
+  finaleTick: number;
+  tickFinale: () => void;
+  /** Ends the credits and goes back to the main menu */
+  finishStory: () => void;
   setChessbotTalking: (talking: boolean) => void;
   siteTab: SiteTab;
   setSiteTab: (tab: SiteTab) => void;
@@ -643,6 +688,7 @@ const FRESH_BOARD = {
   deployPieceType: null,
   clashHand: dealClashHand(),
   devNote: null,
+  finaleStage: null,
 } satisfies Partial<GameStore>;
 
 const FRESH_CLOCKS = {
@@ -667,7 +713,12 @@ function schedule(fn: () => void, ms: number): void {
 
 function syncPaused(): void {
   useGameStore.setState((s) => ({
-    paused: s.userPaused || pauseHolds > 0 || s.menuOpen || s.devNote !== null,
+    paused:
+      s.userPaused ||
+      pauseHolds > 0 ||
+      s.menuOpen ||
+      s.devNote !== null ||
+      (s.finaleStage !== null && s.finaleStage !== "battle"),
   }));
 }
 
@@ -683,15 +734,104 @@ const DEV_NOTE_DELAY_MS = 2000;
 /** How soon a message held back by something else on screen tries again */
 const DEV_NOTE_RETRY_MS = 500;
 
-/** Puts Stephen's message up once nothing else is holding the game or being said */
-function deliverDevNote(note: DevNoteText): void {
+/** What happens once the message on screen is closed */
+let afterDevNote: (() => void) | null = null;
+
+/**
+ * Puts Stephen's message up once nothing else is holding the game or being
+ * said, and runs `then` once it is closed
+ */
+function deliverDevNote(note: DevNoteText, then?: () => void): void {
   const s = useGameStore.getState();
-  if (s.paused || s.chessbotTalking || s.promotionPending) {
-    schedule(() => deliverDevNote(note), DEV_NOTE_RETRY_MS);
+  const busy =
+    pauseHolds > 0 ||
+    s.userPaused ||
+    s.devNote !== null ||
+    s.chessbotTalking ||
+    s.promotionPending;
+  if (busy) {
+    schedule(() => deliverDevNote(note, then), DEV_NOTE_RETRY_MS);
     return;
   }
+  afterDevNote = then ?? null;
   useGameStore.setState({ devNote: note });
   syncPaused();
+}
+
+/** How often the final battle moves on between moves */
+export const FINALE_TICK_MS = 100;
+/** How long Chessbot screams as he is deleted, and how long the site then takes to glitch back to plain chess */
+const DELETING_MS = 5200;
+const ERASE_MS = 1600;
+/** How long Stephen's thanks waits for the plain site to settle */
+const THANKS_AFTER_MS = 900;
+/** How long the plain site sits quiet, how long Chessbot peeks out of it, and how long the picture takes to close on him */
+const CALM_MS = 2600;
+const PEEK_MS = 3200;
+const IRIS_MS = 2000;
+
+/**
+ * Chessbot is deleted, screaming, and the site glitches back to plain chess.
+ * Stephen says thanks, all is quiet, and then he peeks out and winks.
+ */
+function startFinaleEnding(): void {
+  const set = useGameStore.setState;
+  if (useGameStore.getState().finaleStage !== "battle") return;
+  cancelScheduled();
+  set({
+    finaleStage: "deleting",
+    ...CLEARED_SELECTION,
+    promotionPending: null,
+    devNote: null,
+    announcement: null,
+  });
+  syncPaused();
+  schedule(() => set({ finaleStage: "erased" }), DELETING_MS);
+  schedule(() => {
+    setBoardSize();
+    const game = new Game();
+    set({
+      game,
+      pluginManager: freshPluginManager(game),
+      ...FRESH_BOARD,
+      ...FRESH_CLOCKS,
+      timeWhite: UNLIMITED_SECONDS,
+      currentModeIndex: -1,
+      modeTimeRemaining: UNLIMITED_SECONDS,
+      cursed: false,
+      curseStage: null,
+      corruption: 0,
+      aside: "said",
+      modeSwap: null,
+      finaleStage: "thanks",
+    });
+    syncPaused();
+    schedule(
+      () =>
+        deliverDevNote(THANKS_NOTE, () => {
+          set({ finaleStage: "calm" });
+          schedule(() => set({ finaleStage: "peek" }), CALM_MS);
+          schedule(() => set({ finaleStage: "iris" }), CALM_MS + PEEK_MS);
+          schedule(
+            () => set({ finaleStage: "credits" }),
+            CALM_MS + PEEK_MS + IRIS_MS,
+          );
+        }),
+      THANKS_AFTER_MS,
+    );
+  }, DELETING_MS + ERASE_MS);
+}
+
+/** In the final battle he never takes the player's king or mates them, so the deletion always gets to finish */
+function merciful(game: Game, moves: Move[]): Move[] {
+  const spared = moves.filter((move) => {
+    if (move.captured?.type === PieceType.King) return false;
+    if (!game.executeTrustedMove(move)) return true;
+    const mates = game.getStatus() === GameStatus.Checkmate;
+    game.undoMove();
+    return !mates;
+  });
+  return spared.length > 0 ? spared : moves;
 }
 
 /** Freeze play for `ms`. Overlapping holds stack, so the longest one wins. */
@@ -935,11 +1075,16 @@ function chooseInTheDark(
   ];
 }
 
+/** How sharp Chessbot plays in the final battle: enough to worry the player, not enough to stop them */
+const FINALE_SKILL = 0.5;
+
 /** How well Chessbot plays: in Story Mode it follows the score, and elsewhere he plays as he always has */
 const chessbotSkill = (s: GameStore): number | undefined =>
-  s.playMode === "adventure" && !s.net
-    ? storySkill(s.scoreWhite, s.scoreBlack)
-    : undefined;
+  s.finaleStage === "battle"
+    ? FINALE_SKILL
+    : s.playMode === "adventure" && !s.net
+      ? storySkill(s.scoreWhite, s.scoreBlack)
+      : undefined;
 
 /** Alternates two lists, so both sides' reinforcements arrive together */
 function interleave<T>(a: T[], b: T[]): T[] {
@@ -1032,9 +1177,56 @@ export const useGameStore = create<GameStore>((set, get) => ({
   chessbotTalking: false,
   setChessbotTalking: (talking) => set({ chessbotTalking: talking }),
   devNote: null,
+  finaleStage: null,
+  finaleTick: 0,
+  tickFinale: () => {
+    if (isGuest()) return;
+    const s = get();
+    const finale = s.pluginManager.find<FinalePlugin>("finale");
+    if (
+      !finale ||
+      s.finaleStage !== "battle" ||
+      s.paused ||
+      !s.introDone ||
+      isGameOver(s.status)
+    ) {
+      return;
+    }
+    const mines = s.pluginManager.find<MinefieldPlugin>("minefield");
+    const settled =
+      !s.portalTravelling &&
+      !s.gravityFalling &&
+      (mines?.pendingExplosions.size ?? 0) === 0;
+    const { killed, struck, changed, restaged } = finale.advance(
+      { game: s.game, board: s.game.board },
+      FINALE_TICK_MS,
+      settled,
+    );
+    if (finale.done) {
+      startFinaleEnding();
+      return;
+    }
+    if (!changed) return;
+    const status = killed
+      ? s.pluginManager.invokeModifyGameStatus(s.game.getStatus())
+      : s.status;
+    set({
+      finaleTick: s.finaleTick + 1,
+      stormStrike: s.stormStrike + (struck ? 1 : 0),
+      status,
+      ...(killed || restaged
+        ? { ...CLEARED_SELECTION, promotionPending: null }
+        : {}),
+    });
+    if (isGameOver(status)) startFinaleEnding();
+  },
+  finishStory: () => get().openMenu(),
   dismissDevNote: () => {
+    const then = afterDevNote;
+    afterDevNote = null;
     set({ devNote: null });
     syncPaused();
+    then?.();
   },
   siteTab: "Play",
   setSiteTab: (tab) => set({ siteTab: tab }),
@@ -1374,6 +1566,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   handleGameEnd: (winner) => {
+    // However the final battle ends, it ends with Chessbot deleted
+    if (get().finaleStage === "battle") {
+      startFinaleEnding();
+      return;
+    }
     const { scoreWhite, scoreBlack } = get();
     set({
       scoreWhite: scoreWhite + (winner === Color.White ? 1 : 0),
@@ -1604,11 +1801,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // And where he can, he opens by going through a portal, to show it off
     const throughPortal = (pool: Move[]) =>
       pool.filter((m) => m.flags & MoveFlag.Portal);
-    const allowed = !firstInPortals
+    const offered = !firstInPortals
       ? moves
       : ([throughPortal(gentle), gentle, throughPortal(sparing), sparing].find(
           (pool) => pool.length > 0,
         ) ?? moves);
+    const allowed =
+      get().finaleStage === "battle" ? merciful(game, offered) : offered;
 
     const dark =
       get().pluginManager.find<LanternsPlugin>("lanterns") ??
@@ -1896,8 +2095,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const width = mode.files ?? 8;
     const resized = depth !== boardRanks() || width !== boardFiles();
     setBoardSize(depth, width);
-    const nextGame =
-      isHexMode || resized
+    // The final battle is fought with full armies
+    const nextGame = mode.finale
+      ? new Game()
+      : isHexMode || resized
         ? Game.fromArmies(armies[Color.White], armies[Color.Black])
         : game;
     // A turned board's pawn rules end with its mode
@@ -1960,8 +2161,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       pluginManager: freshPluginManager(nextGame, plugins),
       turn: nextGame.turn,
       moveHistory: [...nextGame.history],
-      ...(isHexMode || resized ? { lastMove: null } : {}),
+      ...(isHexMode || resized || mode.finale ? { lastMove: null } : {}),
+      finaleStage: mode.finale ? "battle" : null,
     });
+    for (const plugin of plugins) {
+      if (plugin instanceof FinalePlugin) plugin.attach(get().pluginManager);
+    }
     if (
       get().net === null &&
       nextGame.turn === Color.Black &&
@@ -1976,8 +2181,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 }));
 
+/** How far the chance in the final battle leans the player's way, whatever the score */
+const FINALE_LEAN = 0.6;
+
 setLean(() => {
   const s = useGameStore.getState();
+  if (s.finaleStage === "battle") return FINALE_LEAN;
   return s.playMode === "adventure" && !s.net
     ? storyLean(s.scoreWhite, s.scoreBlack)
     : 0;

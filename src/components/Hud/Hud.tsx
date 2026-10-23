@@ -15,6 +15,7 @@ import { sfx } from "../../audio/sfx";
 import "./Hud.css";
 import { PauseIcon } from "./icons";
 import { ChessbotCorner } from "../Chessbot/ChessbotCorner";
+import { DeleteBar } from "../DevNote/DeleteBar";
 
 const MOVE_SECONDS = 10;
 const RING_RADIUS = 26;
@@ -303,6 +304,9 @@ function useShortcuts() {
 /** The broadcast panel beside the board */
 export function Hud() {
   const adventure = useGameStore((s) => s.playMode === "adventure");
+  const deleting = useGameStore(
+    (s) => s.finaleStage === "battle" || s.finaleStage === "deleting",
+  );
   useShortcuts();
   return (
     <aside className="hud">
@@ -313,6 +317,7 @@ export function Hud() {
       <PacScore />
       <MoveClock />
       <PauseButton />
+      {deleting && <DeleteBar />}
     </aside>
   );
 }

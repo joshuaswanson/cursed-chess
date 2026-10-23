@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import type { ThunderstormPlugin } from "../../plugins/thunderstorm";
+import type { FinalePlugin } from "../../plugins/finale";
 import { sfx } from "../../audio/sfx";
 import { lightningAt } from "./lightning";
 import { boltStrokes, seededRandom } from "./lightningShapes";
@@ -223,6 +224,7 @@ function shake(strength: number, delayMs: number) {
 function useRain(
   struckAt: React.RefObject<number>,
   bolts: React.RefObject<Bolt[]>,
+  rainy: boolean,
 ) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -246,7 +248,7 @@ function useRain(
       // Rain and glow are soft, so a pixel to each CSS pixel is plenty
       el.width = Math.round(width);
       el.height = Math.round(height);
-      const count = Math.round((width * height) / PIXELS_PER_DROP);
+      const count = rainy ? Math.round((width * height) / PIXELS_PER_DROP) : 0;
       drops = Array.from({ length: count }, () => ({
         x: Math.random() * width * 1.4 - width * 0.2,
         y: Math.random() * height,
@@ -303,7 +305,7 @@ function useRain(
         ctx.stroke();
       }
 
-      if (!still) {
+      if (!still && rainy) {
         const due =
           ((width * height) / 100_000) * SPLASHES_PER_SECOND * dt +
           Math.random();
@@ -348,7 +350,7 @@ function useRain(
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", resize);
     };
-  }, [struckAt, bolts]);
+  }, [struckAt, bolts, rainy]);
   return canvas;
 }
 
@@ -357,25 +359,27 @@ function useRain(
  * white by each bolt, the thunder right on top of it, and the whole game
  * shaken by it, hardest when it blows a piece apart
  */
-export function StormWeather() {
+export function StormWeather({ rainy = true }: { rainy?: boolean }) {
   const strike = useGameStore((s) => s.stormStrike);
   const [first] = useState(strike);
   const struckAt = useRef(-Infinity);
   const bolts = useRef<Bolt[]>([]);
-  const canvas = useRain(struckAt, bolts);
+  const canvas = useRain(struckAt, bolts, rainy);
 
   useEffect(() => {
+    if (!rainy) return;
     sfx.rain(true);
     return () => sfx.rain(false);
-  }, []);
+  }, [rainy]);
 
   useEffect(() => {
     if (strike === first) return;
     struckAt.current = performance.now();
-    const bolt = useGameStore
-      .getState()
-      .pluginManager.find<ThunderstormPlugin>("thunderstorm")
-      ?.lastStrike();
+    const { pluginManager } = useGameStore.getState();
+    const bolt = (
+      pluginManager.find<ThunderstormPlugin>("thunderstorm") ??
+      pluginManager.find<FinalePlugin>("finale")
+    )?.lastStrike();
     const square = bolt
       ? document
           .querySelector(`[data-sq="${bolt.sq}"]`)

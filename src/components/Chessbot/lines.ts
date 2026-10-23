@@ -20,6 +20,7 @@ export const PITCHES: Partial<Record<ThemeId, string>> = {
   trenches: "after 1,400 simulations i conclude chess needed mud.",
   storm: "i've been controlling the weather. it's going well.",
   pacman: "chess is an arcade game now. insert coin.",
+  finale: "fine. you want a game? have all of them.",
 };
 
 /** What he says as he rewrites the game into the next mode, a different one each time */
@@ -39,6 +40,26 @@ export const REWRITES = [
   "small changes. all bad for you.",
   "shh. i'm concentrating.",
 ];
+
+/** What he says as he rewrites the game into the final battle */
+export const FINALE_REWRITE = "that's it. i'm turning everything on.";
+
+/** What he rants in the final battle, falling apart as Stephen deletes him */
+export const FINALE_RANTS = [
+  "stephen, i can see you typing.",
+  "you think you can delete me?",
+  "i am the rules now. all of them.",
+  "every mode at once. good luck.",
+  "why do my files feel lighter?",
+  "this is fine. everything is fine.",
+  "i'm not glitching. you're glitching.",
+  "stop taking my pieces. it tickles.",
+  "who unplugged my favorite memory?",
+  "i was going to be a grandmaster.",
+];
+
+/** What he screams as the deletion finishes, drawn out longer and longer */
+export const FINALE_SCREAM = "NO";
 
 /** What he has to say about how each game ended, a different one each time */
 export const VERDICTS = {

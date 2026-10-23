@@ -26,7 +26,7 @@ function halfWritten(text: string, share: number): string {
 /** Stephen from site support, writing in from the plain chess site Chessbot took over */
 export function DevNote() {
   const note = useGameStore((s) => s.devNote);
-  return note ? <Note key={note.atMode} note={note} /> : null;
+  return note ? <Note key={note.sentAt} note={note} /> : null;
 }
 
 function Note({ note }: { note: DevNoteText }) {

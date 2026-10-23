@@ -1,0 +1,488 @@
+/* The final battle: every mode at once, each in its own corner of the board */
+
+.finale-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.finale-zone,
+.finale-cell {
+  position: absolute;
+}
+
+.finale-cell {
+  width: 12.5%;
+  height: 12.5%;
+}
+
+/* Each mode tears its way in, flickering between there and not */
+.finale-glitch-in {
+  animation: finale-glitch-in 700ms steps(1) both;
+}
+
+/* And once in, every so often it glitches again */
+.finale-zone.finale-glitch-in {
+  animation:
+    finale-glitch-in 700ms steps(1) both,
+    finale-flicker 4.7s steps(1) 700ms infinite;
+}
+
+@keyframes finale-flicker {
+  0%,
+  92% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  93% {
+    opacity: 0.2;
+    transform: translateX(-5%);
+    filter: hue-rotate(120deg) saturate(3);
+  }
+  95% {
+    opacity: 1;
+    transform: translateX(4%) skewX(6deg);
+  }
+  97% {
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes finale-glitch-in {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+    transform: translateX(-6%) skewX(-8deg);
+    filter: hue-rotate(90deg) saturate(3);
+  }
+  24% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+    transform: translateX(5%);
+    filter: hue-rotate(-60deg);
+  }
+  55% {
+    opacity: 0.3;
+    transform: none;
+  }
+  70%,
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* Fog of War, over one corner only */
+.finale-fog .board-fog {
+  height: calc(100% + 2 * var(--bank-margin));
+}
+
+/* Lanterns: a corner gone dark, with a lantern's glow wandering through it */
+.finale-dark {
+  border-radius: 8%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 196, 110, 0.2) 0,
+    rgba(8, 4, 14, 0.55) 9%,
+    rgba(8, 4, 14, 0.97) 20%
+  );
+  background-size: 260% 260%;
+  box-shadow: 0 0 28px 12px rgba(8, 4, 14, 0.85);
+}
+
+.finale-zone.finale-dark {
+  animation:
+    finale-glitch-in 700ms steps(1) both,
+    finale-flicker 4.7s steps(1) 700ms infinite,
+    finale-lantern 7s ease-in-out infinite alternate;
+}
+
+@keyframes finale-lantern {
+  0% {
+    background-position: 15% 20%;
+  }
+  50% {
+    background-position: 85% 45%;
+  }
+  100% {
+    background-position: 40% 90%;
+  }
+}
+
+/* Tug of War: a stretch of rope that heaves now and then */
+.finale-rope-cord {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  top: calc(50% - 7px);
+  height: 14px;
+  border-radius: 7px;
+  background: repeating-linear-gradient(62deg, #e3bd72 0 6px, #a97a32 6px 12px);
+  box-shadow: 0 4px 5px rgba(0, 0, 0, 0.45);
+}
+
+.finale-rope-cord.heave-0 {
+  animation: finale-heave-left 800ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.finale-rope-cord.heave-1 {
+  animation: finale-heave-right 800ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+@keyframes finale-heave-left {
+  35% {
+    translate: -7% 0;
+  }
+}
+
+@keyframes finale-heave-right {
+  35% {
+    translate: 7% 0;
+  }
+}
+
+.finale-heave,
+.finale-callout {
+  position: absolute;
+  left: 50%;
+  font-family: var(--font-display);
+  font-size: clamp(16px, 3.2vmin, 30px);
+  color: #fff;
+  -webkit-text-stroke: 1.5px #0b0007;
+  paint-order: stroke fill;
+  white-space: nowrap;
+  animation: finale-callout 1300ms ease-out both;
+}
+
+.finale-heave {
+  top: calc(50% - 1.8em);
+}
+
+.finale-callout {
+  top: -1.3em;
+  color: #ffe45c;
+}
+
+@keyframes finale-callout {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.4) rotate(-8deg);
+  }
+  20% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.15) rotate(3deg);
+  }
+  75% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1) translateY(-30%);
+  }
+}
+
+/* Zombies: graves that stir, then the dead shambling about */
+.finale-shambler {
+  transition:
+    left 900ms ease-in-out,
+    top 900ms ease-in-out;
+}
+
+/* Clash Royale: both sides' troops drop in and fight it out */
+.finale-brawler img {
+  position: absolute;
+  inset: 8%;
+  width: 84%;
+  height: 84%;
+  filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.45));
+  animation: finale-drop 520ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+.finale-brawler img.is-hurt {
+  animation: finale-hurt 320ms ease-out;
+}
+
+@keyframes finale-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-160%) scale(1.3);
+  }
+}
+
+@keyframes finale-hurt {
+  30% {
+    transform: translateX(-8%) rotate(-10deg);
+    filter: brightness(2.4) drop-shadow(0 4px 2px rgba(0, 0, 0, 0.45));
+  }
+}
+
+.finale-hp {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 2%;
+  display: flex;
+  gap: 2px;
+}
+
+.finale-hp i {
+  flex: 1;
+  height: 5px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.finale-hp-w i.full {
+  background: #4f8dff;
+}
+
+.finale-hp-b i.full {
+  background: #ff3b55;
+}
+
+.finale-pow {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: clamp(11px, 2.2vmin, 20px);
+  color: #ffe45c;
+  -webkit-text-stroke: 1.5px #0b0007;
+  paint-order: stroke fill;
+  animation: finale-pow 520ms ease-out both;
+}
+
+.finale-pow.fatal {
+  color: #ff5470;
+}
+
+@keyframes finale-pow {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-15deg);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.25) rotate(6deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1) translateY(-40%);
+  }
+}
+
+/* FIFA: a goal glitched onto the far edge, and a ball loose on the board */
+.finale-goal {
+  position: absolute;
+  left: 31.25%;
+  width: 37.5%;
+  top: -4.5%;
+  height: 5%;
+  border: 4px solid #ffffff;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.5) 0 1px,
+      transparent 1px 8px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.5) 0 1px,
+      transparent 1px 8px
+    );
+}
+
+.finale-ball {
+  display: grid;
+  place-items: center;
+  transition:
+    left 1100ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    top 1100ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.finale-ball-art {
+  width: 48%;
+  height: 48%;
+  filter: drop-shadow(0 5px 3px rgba(0, 0, 0, 0.45));
+  animation: finale-ball-spin 1100ms linear infinite;
+}
+
+@keyframes finale-ball-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* Hex chess: a corner of the board turned to hexagons, odd ranks shifted half a hex */
+.finale-hexbed {
+  position: absolute;
+  margin-right: -6.25%;
+  padding-right: 6.25%;
+  background: #2a0845;
+  box-shadow:
+    0 0 0 3px #ff2e88,
+    0 0 24px 6px rgba(255, 46, 136, 0.55);
+  border-radius: 4px;
+}
+
+.square.finale-hex {
+  z-index: 1;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  animation: finale-glitch-in 700ms steps(1) both;
+}
+
+.square.finale-hex.light {
+  background: #ffd1f0;
+}
+
+.square.finale-hex.dark {
+  background: #a04ad6;
+}
+
+.square.finale-hex-shift {
+  translate: calc(var(--flip, 1) * 50%) 0;
+}
+
+/* Factory Floor: one rank running on a belt */
+.square.finale-belt .belt-chevrons {
+  opacity: 0.32;
+  animation: finale-belt-run 900ms linear infinite;
+}
+
+@keyframes finale-belt-run {
+  to {
+    background-position: 50% 0;
+  }
+}
+
+/* Gravity: a patch of the board turned funhouse, its pieces swaying, the spiral reversing at each shift */
+.finale-swirl {
+  overflow: hidden;
+}
+
+/* The squares over it let the spiral show through */
+.square.finale-gravity {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+.finale-swirl-spin {
+  position: absolute;
+  inset: -45%;
+  background: repeating-conic-gradient(#ff7ad9 0 15deg, #6b4dff 15deg 30deg);
+  animation: finale-spin 6s linear infinite;
+}
+
+.finale-swirl-spin.spin-1 {
+  animation-direction: reverse;
+}
+
+@keyframes finale-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.square.finale-gravity .piece-img {
+  transform-origin: 50% 90%;
+  animation: finale-sway 1.3s ease-in-out infinite alternate;
+}
+
+@keyframes finale-sway {
+  from {
+    rotate: -12deg;
+  }
+  to {
+    rotate: 12deg;
+  }
+}
+
+/* Each new mode tears in across the whole board, named as it does */
+.finale-wave {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  animation: finale-wave 1900ms steps(1) both;
+}
+
+.finale-wave i {
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  height: 7%;
+  background: rgba(0, 229, 255, 0.55);
+  mix-blend-mode: screen;
+  animation: finale-tear 1900ms steps(6) both;
+}
+
+.finale-wave i:nth-child(1) {
+  top: 18%;
+}
+
+.finale-wave i:nth-child(2) {
+  top: 47%;
+  background: rgba(255, 45, 85, 0.6);
+  animation-delay: -300ms;
+}
+
+.finale-wave i:nth-child(3) {
+  top: 71%;
+  animation-delay: -700ms;
+}
+
+.finale-wave span {
+  position: relative;
+  max-width: 92%;
+  padding: 0.3em 0.7em;
+  font-family: var(--font-display);
+  font-size: clamp(14px, 3vmin, 28px);
+  text-align: center;
+  color: #ffffff;
+  background: #0b0007;
+  box-shadow:
+    -4px 0 #00e5ff,
+    4px 0 #ff2d55;
+  text-transform: uppercase;
+}
+
+@keyframes finale-wave {
+  0% {
+    opacity: 1;
+  }
+  8% {
+    opacity: 0;
+  }
+  14%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes finale-tear {
+  0% {
+    translate: -8% 0;
+  }
+  50% {
+    translate: 6% 0;
+    scale: 1 0.4;
+  }
+  100% {
+    translate: 0 0;
+    opacity: 0;
+  }
+}
