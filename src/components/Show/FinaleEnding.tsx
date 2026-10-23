@@ -123,12 +123,18 @@ function Credits() {
             </div>
           ))}
         </dl>
-        <h2>Playtesters</h2>
-        <ul className="credits-names">
-          {PLAYTESTERS.map((name) => (
-            <li key={name}>{name}</li>
-          ))}
-        </ul>
+        <section className="credits-thanks">
+          <h2>Special thanks</h2>
+          <ul className="credits-names">
+            {PLAYTESTERS.map((name) => (
+              <li key={name}>{name}</li>
+            ))}
+          </ul>
+          <p>
+            My playtesters, who played every broken build, found the bugs, and
+            told me what was fun. This game is better because of you.
+          </p>
+        </section>
         <h2>Music</h2>
         <p>maksymmalko</p>
         <p className="credits-note">
