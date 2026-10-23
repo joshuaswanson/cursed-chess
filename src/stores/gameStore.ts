@@ -428,7 +428,7 @@ export interface GameStore {
   zombiesActing: boolean;
   /** Chessbot is reacting or saying something, so he starts on his move once he has finished */
   chessbotTalking: boolean;
-  /** Dave's message on screen, which holds the game until it is closed */
+  /** Stephen's message on screen, which holds the game until it is closed */
   devNote: DevNoteText | null;
   dismissDevNote: () => void;
   setChessbotTalking: (talking: boolean) => void;
@@ -678,12 +678,12 @@ function cancelScheduled(): void {
   syncPaused();
 }
 
-/** How long after a mode's title cards clear Dave's message arrives */
+/** How long after a mode's title cards clear Stephen's message arrives */
 const DEV_NOTE_DELAY_MS = 2000;
 /** How soon a message held back by something else on screen tries again */
 const DEV_NOTE_RETRY_MS = 500;
 
-/** Puts Dave's message up once nothing else is holding the game or being said */
+/** Puts Stephen's message up once nothing else is holding the game or being said */
 function deliverDevNote(note: DevNoteText): void {
   const s = useGameStore.getState();
   if (s.paused || s.chessbotTalking || s.promotionPending) {

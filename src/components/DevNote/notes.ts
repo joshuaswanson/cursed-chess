@@ -7,7 +7,7 @@ export interface DevNoteText {
   rewrite?: string;
 }
 
-/** Dave from site support, trying all through Story Mode to shut Chessbot down */
+/** Stephen from site support, trying all through Story Mode to shut Chessbot down */
 export const DEV_NOTES: DevNoteText[] = [
   {
     atMode: 2,

@@ -4,7 +4,7 @@ import { sfx } from "../../audio/sfx";
 import type { DevNoteText } from "./notes";
 import "./DevNote.css";
 
-/** How long Dave's message is up before Chessbot catches it */
+/** How long Stephen's message is up before Chessbot catches it */
 const CAUGHT_AT_MS = 2600;
 /** How long Chessbot's rewrite takes to come through */
 const REWRITE_MS = 1100;
@@ -23,7 +23,7 @@ function halfWritten(text: string, share: number): string {
     .join("");
 }
 
-/** Dave from site support, writing in from the plain chess site Chessbot took over */
+/** Stephen from site support, writing in from the plain chess site Chessbot took over */
 export function DevNote() {
   const note = useGameStore((s) => s.devNote);
   return note ? <Note key={note.atMode} note={note} /> : null;
@@ -80,10 +80,10 @@ function Note({ note }: { note: DevNoteText }) {
     >
       <div className="dev-note-head">
         <span className="dev-note-avatar" aria-hidden>
-          D
+          S
         </span>
         <span className="dev-note-from" id="dev-note-from">
-          <b>Dave</b>
+          <b>Stephen</b>
           <small>Site Support</small>
         </span>
         <time className="dev-note-time">{note.sentAt}</time>
