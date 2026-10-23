@@ -20,6 +20,7 @@ import {
   isValidSquare,
   rankOf,
 } from "../utils/squareUtils";
+import { fortune, pickWeighted } from "../ai/luck";
 
 /** Rounds a buried piece lies under its tombstone before it rises */
 const RISE_AFTER_ROUNDS = 2;
@@ -375,8 +376,9 @@ export class ZombiesPlugin implements ModePlugin {
         this.canBite(this.zombies, from, sq)
       );
     });
-    if (prey.length === 0) return null;
-    return prey[Math.floor(Math.random() * prey.length)];
+    return (
+      pickWeighted(prey, (sq) => 1 / fortune(board.get(sq)!.color)) ?? null
+    );
   }
 
   /**

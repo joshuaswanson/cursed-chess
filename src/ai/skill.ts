@@ -4,7 +4,7 @@
  * sharper he plays, and the further they fall behind the more he lets slip,
  * so the run stays close with the player about a win in front.
  */
-const TARGET_LEAD = 1;
+export const TARGET_LEAD = 1;
 const SKILL_AT_TARGET = 0.6;
 const SKILL_PER_WIN = 0.2;
 

@@ -21,6 +21,7 @@ import {
   ROOK_DIRECTIONS,
   QUEEN_DIRECTIONS,
 } from "../engine/moves";
+import { fortune, pickWeighted } from "../ai/luck";
 
 const SLIDING_DIRECTIONS: Partial<Record<PieceType, number[]>> = {
   [PieceType.Bishop]: BISHOP_DIRECTIONS,
@@ -181,7 +182,12 @@ export class PortalChessPlugin implements ModePlugin {
       // adjacent to the exit portal (no capture through portals)
       const adjacent = this.getUnoccupiedAdjacent(ctx, exitSq);
       if (adjacent.length === 0) continue;
-      const landSq = adjacent[Math.floor(Math.random() * adjacent.length)];
+      // The unlucky landings are those the other side attacks
+      const landSq = pickWeighted(adjacent, (sq) =>
+        isSquareAttacked(ctx.board, sq, opponent(color))
+          ? 1 / fortune(color)
+          : fortune(color),
+      )!;
       const portalMove: Move = {
         from: move.from,
         to: landSq,

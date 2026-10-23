@@ -1,4 +1,4 @@
-import { PieceType } from "../engine/types";
+import { Color, PieceType } from "../engine/types";
 import type { Move, SquareIndex } from "../engine/types";
 import type {
   ModePlugin,
@@ -6,7 +6,8 @@ import type {
   BoardOverlay,
   SquareModifier,
 } from "./types";
-import { isValidSquare } from "../utils/squareUtils";
+import { isValidSquare, rankOf } from "../utils/squareUtils";
+import { fortune, pickWeighted } from "../ai/luck";
 
 const MINE_COUNT = 10;
 const ADJACENT_DIRS = [16, -16, 1, -1, 17, 15, -15, -17];
@@ -40,15 +41,14 @@ export class MinefieldPlugin implements ModePlugin {
       }
     }
 
-    // Shuffle and pick mines
-    for (let i = candidates.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-    }
-
+    // A mine is worse luck for the side whose half it lies in
+    const owner = (sq: SquareIndex) =>
+      rankOf(sq) < 4 ? Color.White : Color.Black;
     const count = Math.min(MINE_COUNT, candidates.length);
     for (let i = 0; i < count; i++) {
-      this.mines.add(candidates[i]);
+      const mine = pickWeighted(candidates, (sq) => 1 / fortune(owner(sq)))!;
+      this.mines.add(mine);
+      candidates.splice(candidates.indexOf(mine), 1);
     }
   }
 

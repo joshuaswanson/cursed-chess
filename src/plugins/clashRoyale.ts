@@ -4,6 +4,7 @@ import type { Board } from "../engine/board";
 import { generatePseudoLegalMoves, opponent } from "../engine/moves";
 import type { ModePlugin, PluginContext, BoardOverlay } from "./types";
 import { ALL_SQUARES, fileOf, rankOf } from "../utils/squareUtils";
+import { luckyChance } from "../ai/luck";
 
 interface UnitStats {
   hp: number;
@@ -521,7 +522,7 @@ export class RallyPlugin implements ModePlugin {
   /** The foe saves up for its next card, then drops it near the fighting */
   private foeDeploy(board: Board): void {
     if (this.resourceBlack < PIECE_COST[this.foeCard]) return;
-    if (Math.random() > 0.08) return;
+    if (Math.random() > luckyChance(0.08, Color.Black)) return;
 
     const allies = ALL_SQUARES.filter(
       (s) => board.get(s)?.color === Color.White,

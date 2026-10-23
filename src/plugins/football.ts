@@ -4,6 +4,7 @@ import type { Board } from "../engine/board";
 import { isSquareAttacked, opponent } from "../engine/moves";
 import type { ModePlugin, PluginContext, BoardOverlay } from "./types";
 import { ALL_SQUARES, fileOf, rankOf, toIndex } from "../utils/squareUtils";
+import { luckyChance } from "../ai/luck";
 
 /** Files c to f: the mouth of each goal */
 export const GOAL_FILES = [2, 3, 4, 5];
@@ -431,7 +432,7 @@ export class FootballPlugin implements ModePlugin {
         })),
       ].sort((a, b) => shot.path.indexOf(a.sq) - shot.path.indexOf(b.sq));
       for (const { sq, chance } of stoppers) {
-        if (Math.random() < chance) {
+        if (Math.random() < luckyChance(chance, opponent(kicker.color))) {
           this.ball = sq;
           return finish({
             kind: "shot",
@@ -441,7 +442,7 @@ export class FootballPlugin implements ModePlugin {
         }
       }
       const exit = { file: shot.exitFile, rank: goalRank(kicker.color) };
-      if (Math.random() > shot.accuracy) {
+      if (Math.random() > luckyChance(shot.accuracy, kicker.color)) {
         const side = shot.exitFile < 4 ? -1 : 1;
         const rebound =
           Math.random() < POST_CHANCE
@@ -484,7 +485,9 @@ export class FootballPlugin implements ModePlugin {
     const pass = this.passOptions(board, from).find((p) => p.to === target);
     if (!pass) return null;
     for (const { sq, near } of pass.threats) {
-      if (Math.random() < INTERCEPT_CHANCE) {
+      if (
+        Math.random() < luckyChance(INTERCEPT_CHANCE, opponent(kicker.color))
+      ) {
         // They jump into the ball's path, take it there, and stay there
         dives = [{ from: sq, to: near }];
         board.put(near, board.get(sq)!);

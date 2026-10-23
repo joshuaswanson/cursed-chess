@@ -10,6 +10,7 @@ import type {
 } from "./types";
 import { ALL_SQUARES, fileOf, rankOf } from "../utils/squareUtils";
 import { DarkMemory } from "./darkMemory";
+import { fortune, pickWeighted } from "../ai/luck";
 
 /** Where the lightning came down, and the piece it killed if it hit one */
 export interface Strike {
@@ -52,19 +53,19 @@ const ALL_LIT = new Set(ALL_SQUARES);
 const NOTHING_LIT = new Set<SquareIndex>();
 
 /** One of the squares at random, those nearer the middle of the board more likely */
-const pickNearMiddle = (squares: SquareIndex[]): SquareIndex | null => {
-  const weights = squares.map((sq) =>
-    Math.exp(
-      -((fileOf(sq) - 3.5) ** 2 + (rankOf(sq) - 3.5) ** 2) / (2 * SPREAD ** 2),
-    ),
-  );
-  let roll = Math.random() * weights.reduce((sum, w) => sum + w, 0);
-  for (let i = 0; i < squares.length; i++) {
-    roll -= weights[i];
-    if (roll <= 0) return squares[i];
-  }
-  return squares[squares.length - 1] ?? null;
-};
+const pickNearMiddle = (
+  squares: SquareIndex[],
+  weight: (sq: SquareIndex) => number = () => 1,
+): SquareIndex | null =>
+  pickWeighted(
+    squares,
+    (sq) =>
+      weight(sq) *
+      Math.exp(
+        -((fileOf(sq) - 3.5) ** 2 + (rankOf(sq) - 3.5) ** 2) /
+          (2 * SPREAD ** 2),
+      ),
+  ) ?? null;
 
 const between = ([shortest, longest]: [number, number]) =>
   shortest + Math.random() * (longest - shortest);
@@ -167,7 +168,10 @@ export class ThunderstormPlugin implements ModePlugin {
     const fresh = (s: SquareIndex) => !this.burstHit.includes(s);
     const victim =
       Math.random() < KILL_CHANCE
-        ? pickNearMiddle(this.victims(ctx.board, ctx.game.turn).filter(fresh))
+        ? pickNearMiddle(
+            this.victims(ctx.board, ctx.game.turn).filter(fresh),
+            (sq) => 1 / fortune(ctx.board.get(sq)!.color),
+          )
         : null;
     const sq =
       victim ??
