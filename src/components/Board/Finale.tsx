@@ -32,7 +32,7 @@ const squareStyle = (sq: SquareIndex, flipped: boolean): CSSProperties => ({
   top: `${visualRow(sq, flipped) * CELL}%`,
 });
 
-/** What lies under the squares: the ground of the hex corner, and the spiral the gravity patch turns on */
+/** What lies under the squares: the ground of the hex corner, and the pit the gravity patch turns over */
 export function FinaleUnder({
   view,
   flipped,
@@ -52,12 +52,10 @@ export function FinaleUnder({
       )}
       {gravity && (
         <div
-          className="finale-zone finale-swirl finale-glitch-in"
+          className="finale-zone finale-pit finale-glitch-in"
           style={boxStyle(gravity, flipped)}
           aria-hidden
-        >
-          <div className={`finale-swirl-spin spin-${view.tilts % 2}`} />
-        </div>
+        />
       )}
     </>
   );

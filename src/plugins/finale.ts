@@ -9,12 +9,14 @@ import type {
   SquareModifier,
 } from "./types";
 import type { PluginManager } from "./manager";
+import type { CSSProperties } from "react";
 import { ALL_SQUARES, fileOf, rankOf, toIndex } from "../utils/squareUtils";
 import { fortune, pickWeighted } from "../ai/luck";
 import { PIECE_VALUE } from "../ai/chooseMove";
 import { PortalChessPlugin } from "./portalChess";
 import { MinefieldPlugin } from "./minefield";
 import { RallyPlugin } from "./clashRoyale";
+import { fallStep } from "./gravity";
 import type { BattleView } from "./clashRoyale";
 import type { Strike } from "./thunderstorm";
 import type { Collapse } from "./battleRoyale";
@@ -268,6 +270,9 @@ export interface FinaleView {
   ball: SquareIndex;
   /** Counts the shifts of gravity in its patch of the board, and the rope's heaves */
   tilts: number;
+  /** The angle gravity's patch last settled at, and the pieces that fell then */
+  settledAt: number;
+  fell: { from: SquareIndex; to: SquareIndex }[];
   heaves: number;
 }
 
@@ -282,7 +287,14 @@ const STRIKE_KILL_CHANCE = 0.3;
 const ZOMBIE_RISE_MS = 1800;
 const SHAMBLE_MS = 2400;
 const BALL_MS = 1300;
-const TILT_MS = 5200;
+/** How fast gravity's patch of the board turns, in degrees per second */
+const SPIN_RATE = 9;
+/** Gravity changes direction each time the patch has turned this far */
+const SHIFT_STEP = 45;
+/** How long the patch holds still while its pieces come loose and fall */
+const FALL_HOLD_MS = 1600;
+/** The longest the patch is drawn turning on past its last tick, so it stops with the battle */
+const SMOOTH_MS = 150;
 const HEAVE_MS = 3600;
 const RECENT_STRIKES = 4;
 const BRAWLER_TYPES = [
@@ -341,7 +353,13 @@ export class FinalePlugin implements ModePlugin {
   private ball: SquareIndex = toIndex(4, 4);
   private untilBall = BALL_MS;
   private tilts = 0;
-  private untilTilt = TILT_MS / 2;
+  /** How far gravity's patch has turned, the angle it last settled at, and which way it turns */
+  private spin = 0;
+  private settledAt = 0;
+  private spinDir: 1 | -1 = 1;
+  private holdSpin = 0;
+  private spunAt = 0;
+  private fell: { from: SquareIndex; to: SquareIndex }[] = [];
   private heaves = 0;
   private untilHeave = HEAVE_MS / 2;
 
@@ -381,14 +399,20 @@ export class FinalePlugin implements ModePlugin {
   /**
    * Runs the battle on by `ms`. A new stage waits for `settled`, so nothing
    * the last one started is cut off. Says whether a piece on the board was
-   * killed, whether anything to be seen changed, and whether a new stage
-   * began.
+   * killed, whether pieces fell, whether anything to be seen changed, and
+   * whether a new stage began.
    */
   advance(
     ctx: PluginContext,
     ms: number,
     settled: boolean,
-  ): { killed: boolean; struck: boolean; changed: boolean; restaged: boolean } {
+  ): {
+    killed: boolean;
+    fell: boolean;
+    struck: boolean;
+    changed: boolean;
+    restaged: boolean;
+  } {
     this.elapsed += ms;
     this.stageMs += ms;
     const before = this.look();
@@ -416,13 +440,7 @@ export class FinalePlugin implements ModePlugin {
         this.ball = pitch[Math.floor(Math.random() * pitch.length)];
       }
     }
-    if (this.has("gravity")) {
-      this.untilTilt -= ms;
-      if (this.untilTilt <= 0) {
-        this.untilTilt = TILT_MS;
-        this.tilts++;
-      }
-    }
+    const fell = this.has("gravity") && this.turnPatch(ctx.board, ms);
     if (this.has("tug")) {
       this.untilHeave -= ms;
       if (this.untilHeave <= 0) {
@@ -432,10 +450,18 @@ export class FinalePlugin implements ModePlugin {
     }
     return {
       killed,
+      fell,
       struck: this.lastStrike() !== bolt,
       changed: this.look() !== before,
       restaged,
     };
+  }
+
+  /** How far gravity's patch has turned by `now`, carried on smoothly from the last tick */
+  spinAt(now: number): number {
+    if (this.holdSpin > 0) return this.spin;
+    const since = Math.min(Math.max(0, now - this.spunAt), SMOOTH_MS);
+    return this.spin + (this.spinDir * SPIN_RATE * since) / 1000;
   }
 
   lastStrike(): Strike | null {
@@ -452,6 +478,7 @@ export class FinalePlugin implements ModePlugin {
       this.zombies.map((z) => [z.sq, z.risen]),
       this.ball,
       this.tilts,
+      this.fell,
       this.heaves,
       [...this.hidden],
     ]);
@@ -481,7 +508,7 @@ export class FinalePlugin implements ModePlugin {
   private start(ctx: PluginContext, act: FinaleAct): void {
     this.live = [...this.live, act];
     this.wave++;
-    const zone = ZONES[act]?.();
+    const zone = this.placeZone(act);
     if (zone) this.zones = { ...this.zones, [act]: zone };
     if (act === "portals") this.borrow(ctx, new PortalChessPlugin(1));
     if (act === "mines") {
@@ -489,7 +516,29 @@ export class FinalePlugin implements ModePlugin {
     }
     if (act === "stratego") this.hideSome(ctx.board);
     if (act === "clash") this.dropBrawlers(ctx.board, zone!);
+    if (act === "gravity") {
+      this.spin = 0;
+      this.settledAt = 0;
+      this.spinDir = Math.random() < 0.5 ? 1 : -1;
+      this.holdSpin = 0;
+      this.fell = [];
+    }
     if (act === "zombies") this.digGraves(ctx.board);
+  }
+
+  /** Where a mode lands, clear of the others in play where there is room */
+  private placeZone(act: FinaleAct): Box | undefined {
+    const place = ZONES[act];
+    if (!place) return undefined;
+    const others = Object.values(this.zones);
+    const clashes = (box: Box) =>
+      others.some(
+        (o) =>
+          box.f0 <= o.f1 && o.f0 <= box.f1 && box.r0 <= o.r1 && o.r0 <= box.r1,
+      );
+    let box = place();
+    for (let tries = 0; tries < 40 && clashes(box); tries++) box = place();
+    return box;
   }
 
   /** Runs one of the modes' own plugins, ahead of this one, so this one has the last word on moves */
@@ -617,6 +666,52 @@ export class FinalePlugin implements ModePlugin {
     this.arena = new Board();
   }
 
+  /**
+   * Turns gravity's patch of the board. Each time it has turned another
+   * eighth, the pieces in it fall the new way down, as far as the patch's
+   * edge or the next piece, and it holds still while they land. Returns
+   * whether any fell.
+   */
+  private turnPatch(board: Board, ms: number): boolean {
+    this.spunAt = performance.now();
+    if (this.holdSpin > 0) {
+      this.holdSpin -= ms;
+      return false;
+    }
+    this.spin += (this.spinDir * SPIN_RATE * ms) / 1000;
+    const next = this.settledAt + this.spinDir * SHIFT_STEP;
+    if ((this.spin - next) * this.spinDir < 0) return false;
+    this.spin = next;
+    this.settledAt = next;
+    this.holdSpin = FALL_HOLD_MS;
+    this.tilts++;
+    const zone = this.zones.gravity!;
+    const { df, dr } = fallStep(next);
+    const toward = (sq: SquareIndex) => rankOf(sq) * dr + fileOf(sq) * df;
+    const step = (sq: SquareIndex) => {
+      const to = toIndex(fileOf(sq) + df, rankOf(sq) + dr);
+      const inside =
+        fileOf(sq) + df >= zone.f0 &&
+        fileOf(sq) + df <= zone.f1 &&
+        rankOf(sq) + dr >= zone.r0 &&
+        rankOf(sq) + dr <= zone.r1;
+      return inside && !board.get(to) ? to : null;
+    };
+    this.fell = [];
+    const pieces = squaresIn(zone)
+      .filter((sq) => board.get(sq))
+      .sort((a, b) => toward(b) - toward(a));
+    for (const from of pieces) {
+      let to = from;
+      for (let next = step(to); next !== null; next = step(to)) to = next;
+      if (to === from) continue;
+      board.put(to, board.remove(from)!);
+      this.fell.push({ from, to });
+      if (this.hidden.delete(from)) this.hidden.add(to);
+    }
+    return this.fell.length > 0;
+  }
+
   private digGraves(board: Board): void {
     this.untilRise = ZOMBIE_RISE_MS;
     const open = ALL_SQUARES.filter(
@@ -689,7 +784,14 @@ export class FinalePlugin implements ModePlugin {
       mods.push({ className: "finale-belt" });
     }
     if (gravity && inBox(sq, gravity)) {
-      mods.push({ className: "finale-gravity" });
+      // Where the square sits in the patch, which turns about its centre
+      mods.push({
+        className: "finale-gravity",
+        style: {
+          "--gx": fileOf(sq) - gravity.f0,
+          "--gy": rankOf(sq) - gravity.r0,
+        } as CSSProperties,
+      });
     }
     return mods;
   }
@@ -710,6 +812,8 @@ export class FinalePlugin implements ModePlugin {
       zombies: this.zombies,
       ball: this.ball,
       tilts: this.tilts,
+      settledAt: this.settledAt,
+      fell: this.fell,
       heaves: this.heaves,
     };
     const overlays: BoardOverlay[] = [

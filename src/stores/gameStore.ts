@@ -1197,7 +1197,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       !s.portalTravelling &&
       !s.gravityFalling &&
       (mines?.pendingExplosions.size ?? 0) === 0;
-    const { killed, struck, changed, restaged } = finale.advance(
+    const { killed, fell, struck, changed, restaged } = finale.advance(
       { game: s.game, board: s.game.board },
       FINALE_TICK_MS,
       settled,
@@ -1207,17 +1207,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
     if (!changed) return;
-    const status = killed
-      ? s.pluginManager.invokeModifyGameStatus(s.game.getStatus())
-      : s.status;
+    const status =
+      killed || fell
+        ? s.pluginManager.invokeModifyGameStatus(s.game.getStatus())
+        : s.status;
     set({
       finaleTick: s.finaleTick + 1,
       stormStrike: s.stormStrike + (struck ? 1 : 0),
       status,
-      ...(killed || restaged
+      ...(killed || fell || restaged
         ? { ...CLEARED_SELECTION, promotionPending: null }
         : {}),
+      ...(fell && { gravityFalling: true }),
     });
+    if (fell) schedule(() => set({ gravityFalling: false }), GRAVITY_SHIFT_MS);
     if (isGameOver(status)) startFinaleEnding();
   },
   finishStory: () => get().openMenu(),

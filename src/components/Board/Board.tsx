@@ -37,6 +37,7 @@ import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
 import type { GravityPlugin } from "../../plugins/gravity";
+import type { FinalePlugin } from "../../plugins/finale";
 import { BattleEffects, BattleUnit, TrenchGuns } from "./Battle";
 import {
   visualCol as colOnScreen,
@@ -202,6 +203,33 @@ function useGravitySpin(
   }, [shellRef, active]);
 }
 
+/** Turns gravity's patch of the board in the final battle, every frame, about its centre */
+function useFinaleSpin(
+  shellRef: React.RefObject<HTMLDivElement | null>,
+  active: boolean,
+) {
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!active || !shell) return;
+    let frame = 0;
+    const draw = () => {
+      const finale = useGameStore
+        .getState()
+        .pluginManager.find<FinalePlugin>("finale");
+      if (finale) {
+        const angle = finale.spinAt(performance.now());
+        shell.style.setProperty("--patch-spin", `${angle}deg`);
+      }
+      frame = requestAnimationFrame(draw);
+    };
+    frame = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(frame);
+      shell.style.removeProperty("--patch-spin");
+    };
+  }, [shellRef, active]);
+}
+
 function playPortalPhase(phase: PortalPhase): void {
   if (phase.type === "shrink") sfx.portalEnter();
   if (phase.type === "pop" || phase.type === "fly") {
@@ -320,6 +348,7 @@ export function Board() {
   }, [portalsDue, travel, slides, settlePortals]);
 
   useGravitySpin(shellRef, overlays.gravityDirection !== null);
+  useFinaleSpin(shellRef, !!overlays.finale?.zones.gravity);
   // A heave waits for the move that set it off to land, and for any capture's burst
   const heaveDelay = moveHistory[moveHistory.length - 1]?.move.captured
     ? SLIDE_MS + CAPTURE_BURST_MS
@@ -348,9 +377,11 @@ export function Board() {
     flipped,
     squareSize,
   );
+  // Gravity's patch in the final battle drops its pieces as the mode does
+  const patch = overlays.gravityAngle === null ? overlays.finale : null;
   const gravityShift = useGravityShift(
-    overlays.gravityMoves,
-    overlays.gravityAngle,
+    patch?.zones.gravity ? patch.fell : overlays.gravityMoves,
+    patch?.zones.gravity ? patch.settledAt : overlays.gravityAngle,
     flipped,
     squareSize,
   );
@@ -587,8 +618,10 @@ export function Board() {
       // The belts carry the floor tiles too, which swaps light and dark with every run
       const tileShift = conveyor ? conveyor.run % 2 : 0;
       let className = `square ${(rank + file + tileShift) % 2 !== 0 ? "light" : "dark"}`;
+      let squareStyle: React.CSSProperties | undefined;
       for (const mod of squareMods) {
         if (mod.className) className += ` ${mod.className}`;
+        if (mod.style) squareStyle = { ...squareStyle, ...mod.style };
       }
       if (sq === selectedSquare) className += " selected";
       if (isLastMove && !isDead) className += " last-move";
@@ -719,6 +752,7 @@ export function Board() {
           key={sq}
           data-sq={sq}
           className={className}
+          style={squareStyle}
           onClick={() => {
             if (!drag) selectSquare(sq);
           }}
@@ -948,7 +982,7 @@ export function Board() {
     (overlays.hasFog ? " fog-active" : "") +
     (overlays.portalPairs.length > 0 ? " portal-active" : "") +
     (overlays.gravityDirection ? " gravity-active" : "") +
-    (gravityShift ? " gravity-shifting" : "") +
+    (gravityShift && overlays.gravityDirection ? " gravity-shifting" : "") +
     (battleRoyale ? " battle-royale" : "") +
     (brBroken ? " br-broken" : "") +
     (collapse ? " br-quake" : "") +
@@ -961,6 +995,7 @@ export function Board() {
     "--yank": tugYank,
     "--heave-delay": `${heaveDelay}ms`,
     "--flip": flipped ? -1 : 1,
+    ...(finale?.zones.gravity && { "--patch-angle": `${finale.settledAt}deg` }),
     ...(deployPieceType && {
       "--deploy-preview": `url(${pieceImage({ type: deployPieceType, color: Color.White })})`,
     }),
@@ -1282,7 +1317,7 @@ export function Board() {
         </div>
       </div>
       {overlays.football && <Commentary call={playCall} />}
-      {gravityShift && (
+      {gravityShift && overlays.gravityDirection && (
         <GravityAlert key={gravityShift.id} delta={gravityShift.delta} />
       )}
     </>

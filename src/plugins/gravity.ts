@@ -78,6 +78,12 @@ function pawnRulesForAngle(angle: number): PawnRules {
   };
 }
 
+/** The step a piece falls by once the board has settled at `angle` */
+export function fallStep(angle: number): { df: number; dr: number } {
+  const normalized = ((angle % 360) + 360) % 360;
+  return DIR_OFFSETS[ANGLE_TO_DIR[normalized] ?? "south"];
+}
+
 export class GravityPlugin implements ModePlugin {
   id = "gravity";
   name = "Gravity";
