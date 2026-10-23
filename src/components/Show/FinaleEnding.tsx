@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
-import { GAME_MODES, useGameStore } from "../../stores/gameStore";
-import { THEMES } from "../../theme/themes";
+import { useGameStore } from "../../stores/gameStore";
 import { Chessbot } from "../Chessbot/Chessbot";
 import { sfx } from "../../audio/sfx";
 import "./FinaleEnding.css";
@@ -94,10 +93,7 @@ function PeekAndIris({ closing }: { closing: boolean }) {
   );
 }
 
-/** The story's modes, as they appear in the credits */
-const MODE_TITLES = GAME_MODES.filter((m) => !m.singleOnly && !m.finale).map(
-  (m) => THEMES[m.theme].title,
-);
+const PLAYTESTERS = ["Arthur", "Lena"];
 
 const CAST: [string, string][] = [
   ["Chessbot", "Himself"],
@@ -127,10 +123,10 @@ function Credits() {
             </div>
           ))}
         </dl>
-        <h2>The modes</h2>
-        <ul className="credits-modes">
-          {MODE_TITLES.map((title) => (
-            <li key={title}>{title}</li>
+        <h2>Playtesters</h2>
+        <ul className="credits-names">
+          {PLAYTESTERS.map((name) => (
+            <li key={name}>{name}</li>
           ))}
         </ul>
         <h2>Music</h2>
