@@ -16,6 +16,7 @@ import type {
   SquareIndex,
 } from "../engine";
 import { fileOf, rankOf } from "../utils/squareUtils";
+import { lookAhead } from "./search";
 import { pickBySkill } from "./skill";
 
 export const PIECE_VALUE: Record<PieceType, number> = {
@@ -49,8 +50,11 @@ const CENTER_BONUS = 0.15;
 const NOISE = 0.35;
 /** How much of what a move leaves hanging the least skilled Chessbot still notices */
 const MIN_CAUTION = 0.2;
-/** From this skill on, he looks one reply further for a mate against him */
-const MATE_GUARD_SKILL = 0.7;
+/** From this skill on, he looks moves ahead, and from the next one further still */
+const SEARCH_SKILL = 0.7;
+const DEEP_SKILL = 0.9;
+/** From this skill on, he never plays into a mate in one he could have seen */
+const MATE_GUARD_SKILL = SEARCH_SKILL;
 /** How many of his best moves he checks for a mate in reply */
 const MATE_GUARD_MOVES = 6;
 const MATE_GUARD_PENALTY = 500;
@@ -74,15 +78,39 @@ export function chooseMove(
 ): Move {
   const caution =
     skill === undefined ? 1 : MIN_CAUTION + (1 - MIN_CAUTION) * skill;
-  const scored = moves.map((move) => ({
-    choice: move,
-    score:
-      scoreMove(game, move, squareBonus, caution, settle, judge) +
-      Math.random() * NOISE,
-  }));
+  const searching = skill !== undefined && skill >= SEARCH_SKILL && !settle;
+  const depth = skill !== undefined && skill >= DEEP_SKILL ? 3 : 1;
+  const ahead = searching
+    ? lookAhead(
+        game.board,
+        moves.filter((m) => !(m.flags & (MoveFlag.Portal | MoveFlag.ModeMove))),
+        PIECE_VALUE,
+        game.pawnRules,
+        depth,
+      )
+    : new Map<Move, number>();
+  const scored = moves.map((move) => {
+    const searched = ahead.get(move);
+    const score =
+      searched === undefined
+        ? scoreMove(game, move, squareBonus, caution, settle, judge)
+        : searched + placement(move, squareBonus);
+    return { choice: move, score: score + Math.random() * NOISE };
+  });
   if (skill === undefined) return pickBySkill(scored, 1);
-  if (skill >= MATE_GUARD_SKILL) guardAgainstMate(game, scored, settle, judge);
+  // One move ahead is not far enough to see a mate coming, only three are
+  if (skill >= MATE_GUARD_SKILL && (!searching || depth < 3)) {
+    guardAgainstMate(game, scored, settle, judge);
+  }
   return pickBySkill(scored, skill);
+}
+
+/** What a move is worth for where it puts the piece, in the middle and by the mode's own lights */
+function placement(move: Move, squareBonus: SquareBonus): number {
+  const landed: Piece = move.promotion
+    ? { type: move.promotion, color: move.piece.color }
+    : move.piece;
+  return centerBonus(move.to, landed) + squareBonus(move.to, landed, move.from);
 }
 
 /** Marks down the best few moves that would let the opponent mate at once */
