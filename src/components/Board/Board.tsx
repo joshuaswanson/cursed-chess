@@ -1126,7 +1126,13 @@ export function Board() {
             />
           )}
           {strikes && <StormBolt strikes={strikes} flipped={flipped} />}
-          {finale && <FinaleOver view={finale} flipped={flipped} />}
+          {finale && (
+            <FinaleOver
+              view={finale}
+              flipped={flipped}
+              squareSize={squareSize}
+            />
+          )}
           {football &&
             [Color.Black, Color.White].map((defender) => (
               <Goal

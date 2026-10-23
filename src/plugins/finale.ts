@@ -1,6 +1,6 @@
 import { Color, MoveFlag, PieceType } from "../engine/types";
 import type { Move, Piece, SquareIndex } from "../engine/types";
-import type { Board } from "../engine/board";
+import { Board } from "../engine/board";
 import { isSquareAttacked, opponent } from "../engine/moves";
 import type {
   BoardOverlay,
@@ -14,6 +14,8 @@ import { fortune, pickWeighted } from "../ai/luck";
 import { PIECE_VALUE } from "../ai/chooseMove";
 import { PortalChessPlugin } from "./portalChess";
 import { MinefieldPlugin } from "./minefield";
+import { RallyPlugin } from "./clashRoyale";
+import type { BattleView } from "./clashRoyale";
 import type { Strike } from "./thunderstorm";
 import type { Collapse } from "./battleRoyale";
 
@@ -86,7 +88,7 @@ const ZONES: Partial<Record<FinaleAct, () => Box>> = {
   gravity: () => anywhere(3, 3, 1, 6),
   hex: corner,
   mines: () => anywhere(4, 2, 2, 5),
-  clash: () => anywhere(4, 2, 2, 5),
+  clash: () => anywhere(4, 3, 2, 5),
   storm: () => anywhere(4, 3, 1, 6),
   tug: () => anywhere(4, 2, 2, 5),
   conveyor: () => anywhere(4, 1, 2, 5),
@@ -235,21 +237,10 @@ function hexMoves(
   });
 }
 
-/** A trooper of either side dropped in to brawl, standing on the board but no part of the game */
+/** A trooper of either side dropped in to fight, standing on the board but no part of the game */
 export interface Brawler {
-  id: number;
   sq: SquareIndex;
-  type: PieceType;
-  color: Color;
-  hp: number;
-}
-
-export interface BrawlHit {
-  id: number;
-  from: SquareIndex;
-  to: SquareIndex;
-  /** Whether the blow finished the one it hit */
-  fatal: boolean;
+  piece: Piece;
 }
 
 export interface Zombie {
@@ -269,7 +260,8 @@ export interface FinaleView {
   progress: number;
   strikes: Strike[];
   brawlers: Brawler[];
-  hits: BrawlHit[];
+  /** The Clash Royale fight in its patch of the board */
+  brawl: BattleView | null;
   collapse: Collapse | null;
   holes: SquareIndex[];
   zombies: Zombie[];
@@ -279,10 +271,8 @@ export interface FinaleView {
   heaves: number;
 }
 
-export const BRAWLER_HP = 5;
 /** How many of Chessbot's pieces are face down at a time in the Stratego stage */
 const HIDDEN = 3;
-const BRAWL_TICK_MS = 850;
 /** How long into the brawl the ground under it gives way, or after one side is wiped out, if that is sooner */
 const COLLAPSE_AFTER_MS = 14_000;
 const COLLAPSE_AFTER_WIN_MS = 2_000;
@@ -337,10 +327,10 @@ export class FinalePlugin implements ModePlugin {
   private zones: Partial<Record<FinaleAct, Box>> = {};
   private strikes: Strike[] = [];
   private untilStrike = 1200;
-  private brawlers: Brawler[] = [];
-  private hits: BrawlHit[] = [];
+  /** The fight runs on a board of its own, so its troopers are no part of the game */
+  private arena = new Board();
+  private rally: RallyPlugin | null = null;
   private nextId = 1;
-  private untilBrawl = BRAWL_TICK_MS;
   private brawlWonAt: number | null = null;
   private collapse: Collapse | null = null;
   private holes: SquareIndex[] = [];
@@ -416,7 +406,7 @@ export class FinalePlugin implements ModePlugin {
 
     let killed = false;
     if (this.has("storm")) killed = this.storm(ctx, ms);
-    if (this.has("clash")) this.brawl(ctx.board, ms);
+    if (this.has("clash")) this.brawl(ctx, ms);
     if (this.has("zombies")) this.shamble(ctx.board, ms);
     if (this.has("fifa")) {
       this.untilBall -= ms;
@@ -457,8 +447,7 @@ export class FinalePlugin implements ModePlugin {
     return JSON.stringify([
       this.wave,
       this.strikes.map((s) => s.id),
-      this.brawlers.map((b) => [b.sq, b.hp]),
-      this.hits.length && this.hits[this.hits.length - 1].id,
+      this.rally?.view.events.map((e) => e.id),
       this.collapse?.id,
       this.zombies.map((z) => [z.sq, z.risen]),
       this.ball,
@@ -480,7 +469,8 @@ export class FinalePlugin implements ModePlugin {
     this.stageMs = 0;
     this.live = [];
     this.zones = {};
-    this.brawlers = [];
+    this.rally = null;
+    this.arena = new Board();
     this.brawlWonAt = null;
     this.collapse = null;
     this.holes = [];
@@ -561,7 +551,21 @@ export class FinalePlugin implements ModePlugin {
     return killed !== null;
   }
 
+  private get brawlers(): Brawler[] {
+    return ALL_SQUARES.flatMap((sq) => {
+      const piece = this.arena.get(sq);
+      return piece ? [{ sq, piece }] : [];
+    });
+  }
+
   private dropBrawlers(board: Board, zone: Box): void {
+    this.arena = new Board();
+    this.rally = new RallyPlugin(
+      (sq) =>
+        inBox(sq, zone) &&
+        !board.get(sq) &&
+        !this.zombies.some((z) => z.sq === sq),
+    );
     const open = squaresIn(zone).filter((sq) => !board.get(sq));
     for (let i = open.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -574,66 +578,27 @@ export class FinalePlugin implements ModePlugin {
     ];
     sides.forEach((squares, i) => {
       for (const sq of squares) {
-        this.brawlers.push({
-          id: this.nextId++,
+        this.rally!.drop(
+          this.arena,
           sq,
-          type: BRAWLER_TYPES[Math.floor(Math.random() * BRAWLER_TYPES.length)],
-          color: i === 0 ? Color.White : Color.Black,
-          hp: BRAWLER_HP,
-        });
+          BRAWLER_TYPES[Math.floor(Math.random() * BRAWLER_TYPES.length)],
+          i === 0 ? Color.White : Color.Black,
+        );
       }
     });
   }
 
-  private brawl(board: Board, ms: number): void {
+  private brawl(ctx: PluginContext, ms: number): void {
     const won =
       this.brawlWonAt !== null &&
       this.stageMs - this.brawlWonAt >= COLLAPSE_AFTER_WIN_MS;
     if (this.collapse === null && (won || this.stageMs >= COLLAPSE_AFTER_MS)) {
-      this.collapseZone(board);
+      this.collapseZone(ctx.board);
       return;
     }
-    if (this.collapse) return;
-    this.untilBrawl -= ms;
-    if (this.untilBrawl > 0) return;
-    this.untilBrawl = BRAWL_TICK_MS;
-    const order = [...this.brawlers].sort(() => Math.random() - 0.5);
-    for (const brawler of order) {
-      if (brawler.hp <= 0) continue;
-      const foes = this.brawlers.filter(
-        (b) => b.hp > 0 && b.color !== brawler.color,
-      );
-      if (foes.length === 0) break;
-      const target = foes.find((f) => near(f.sq, brawler.sq, 1));
-      if (target) {
-        target.hp--;
-        this.hits.push({
-          id: this.nextId++,
-          from: brawler.sq,
-          to: target.sq,
-          fatal: target.hp <= 0,
-        });
-        continue;
-      }
-      // Nobody in reach: a step toward the nearest of them
-      const goal = foes[0].sq;
-      const steps = around(brawler.sq).filter(
-        (sq) =>
-          inBox(sq, this.zones.clash!) &&
-          !board.get(sq) &&
-          !this.occupied().has(sq),
-      );
-      const dist = (sq: SquareIndex) =>
-        Math.abs(fileOf(sq) - fileOf(goal)) +
-        Math.abs(rankOf(sq) - rankOf(goal));
-      const best = steps.sort((a, b) => dist(a) - dist(b))[0];
-      if (best !== undefined && dist(best) < dist(brawler.sq)) {
-        brawler.sq = best;
-      }
-    }
-    this.brawlers = this.brawlers.filter((b) => b.hp > 0);
-    this.hits = this.hits.slice(-12);
-    const sides = new Set(this.brawlers.map((b) => b.color));
+    if (this.collapse || !this.rally) return;
+    this.rally.tickAutonomous({ ...ctx, board: this.arena }, ms);
+    const sides = new Set(this.brawlers.map((b) => b.piece.color));
     if (sides.size < 2 && this.brawlWonAt === null) {
       this.brawlWonAt = this.stageMs;
     }
@@ -645,13 +610,11 @@ export class FinalePlugin implements ModePlugin {
     this.collapse = {
       id: this.nextId++,
       squares,
-      fallen: this.brawlers.map((b) => ({
-        sq: b.sq,
-        piece: { type: b.type, color: b.color },
-      })),
+      fallen: this.brawlers,
     };
     this.holes = squares;
-    this.brawlers = [];
+    this.rally = null;
+    this.arena = new Board();
   }
 
   private digGraves(board: Board): void {
@@ -741,7 +704,7 @@ export class FinalePlugin implements ModePlugin {
       progress: this.progress,
       strikes: this.strikes,
       brawlers: this.brawlers,
-      hits: this.hits,
+      brawl: this.rally?.view ?? null,
       collapse: this.collapse,
       holes: this.holes,
       zombies: this.zombies,

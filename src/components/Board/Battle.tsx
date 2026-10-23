@@ -144,6 +144,7 @@ export function BattleUnit({
   entrenched = false,
   aiming = false,
   picked = false,
+  image,
 }: {
   sq: SquareIndex;
   piece: Piece;
@@ -158,6 +159,8 @@ export function BattleUnit({
   aiming?: boolean;
   /** Picked out by you, waiting on the order to go forward */
   picked?: boolean;
+  /** The piece's artwork, where it is not the current mode's */
+  image?: string;
 }) {
   const unit = view.units[sq];
   let arrival: ArrivalEvent | undefined;
@@ -221,7 +224,7 @@ export function BattleUnit({
         <span className="unit-base" />
         <div ref={bodyRef} className="unit-body" style={motion}>
           <img
-            src={pieceImage(piece)}
+            src={image ?? pieceImage(piece)}
             alt={`${piece.color}${piece.type}`}
             className="unit-img"
             draggable={false}

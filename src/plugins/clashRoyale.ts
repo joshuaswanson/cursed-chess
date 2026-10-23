@@ -197,6 +197,17 @@ export class RallyPlugin implements ModePlugin {
   private winner: Color | null = null;
   private youHaveDeployed = false;
 
+  /**
+   * With `arena`, the battle is kept to the squares it allows: units march
+   * only onto them, and the foe deploys nothing of its own
+   */
+  private arena?: (sq: SquareIndex) => boolean;
+
+  constructor(arena?: (sq: SquareIndex) => boolean) {
+    this.arena = arena;
+    if (arena) this.youHaveDeployed = true;
+  }
+
   /** Your bar is full and you have yet to play a card this battle */
   get awaitingFirstDeploy(): boolean {
     return !this.youHaveDeployed && this.resourceWhite >= MAX_ELIXIR;
@@ -230,7 +241,7 @@ export class RallyPlugin implements ModePlugin {
     this.clock += tickMs;
     this.gainElixir(tickMs);
     this.enlist(board);
-    this.foeDeploy(board);
+    if (!this.arena) this.foeDeploy(board);
 
     const ready = [...this.units].filter(([, unit]) => {
       unit.readyIn -= tickMs;
@@ -269,19 +280,24 @@ export class RallyPlugin implements ModePlugin {
       this.resourceWhite -= cost;
       this.youHaveDeployed = true;
     } else this.resourceBlack -= cost;
+    this.drop(board, sq, type, color);
+    return true;
+  }
 
+  /** Drops a unit in for free */
+  drop(board: Board, sq: SquareIndex, type: PieceType, color: Color): void {
     board.put(sq, { type, color });
     const unit = this.recruit(type, DROP_MS + rand(150, 450));
     this.units.set(sq, unit);
     this.emit({ kind: "deploy", unitId: unit.id, sq, color });
-    return true;
+  }
+
+  get view(): BattleView {
+    return { units: Object.fromEntries(this.units), events: [...this.events] };
   }
 
   getBoardOverlays(): BoardOverlay[] {
-    const view: BattleView = {
-      units: Object.fromEntries(this.units),
-      events: [...this.events],
-    };
+    const view = this.view;
     return [
       {
         type: "rally-resources",
@@ -504,7 +520,7 @@ export class RallyPlugin implements ModePlugin {
     };
 
     const steps = generatePseudoLegalMoves(board, piece.color, null).filter(
-      (m) => m.from === sq && !m.captured,
+      (m) => m.from === sq && !m.captured && (this.arena?.(m.to) ?? true),
     );
     const here = appeal(sq);
     let best: SquareIndex | null = null;

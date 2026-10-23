@@ -2,11 +2,11 @@ import { useEffect } from "react";
 import type { CSSProperties } from "react";
 import { PieceType } from "../../engine";
 import type { SquareIndex } from "../../engine";
-import { BRAWLER_HP } from "../../plugins/finale";
 import type { Box, FinaleView } from "../../plugins/finale";
 import { THEMES } from "../../theme/themes";
 import { themedPieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
+import { BattleEffects, BattleUnit } from "./Battle";
 import { visualCol, visualRow } from "./boardGeometry";
 import { BoardFog } from "../Fog/Fog";
 import { SoccerBall } from "./Football";
@@ -71,19 +71,18 @@ export function FinaleUnder({
 export function FinaleOver({
   view,
   flipped,
+  squareSize,
 }: {
   view: FinaleView;
   flipped: boolean;
+  squareSize: number;
 }) {
   const has = (act: FinaleView["acts"][number]) => view.acts.includes(act);
   const { fog, lanterns, tug, gravity } = view.zones;
   useEffect(() => {
     if (view.wave > 0) sfx.glitch();
   }, [view.wave]);
-  const lastHit = view.hits[view.hits.length - 1];
-  useEffect(() => {
-    if (lastHit) sfx.hit(lastHit.fatal);
-  }, [lastHit]);
+  const { brawl } = view;
 
   return (
     <div className="finale-layer" aria-hidden>
@@ -137,38 +136,30 @@ export function FinaleOver({
           )}
         </div>
       ))}
-      {view.brawlers.map((brawler) => (
-        <div
-          key={brawler.id}
-          className="finale-cell finale-brawler"
-          style={squareStyle(brawler.sq, flipped)}
-        >
-          <img
-            src={themedPieceImage(
-              `${brawler.color}${brawler.type.toUpperCase()}`,
-              "clash",
-            )}
-            alt=""
-            draggable={false}
-            key={brawler.hp}
-            className={brawler.hp < BRAWLER_HP ? "is-hurt" : undefined}
-          />
-          <span className={`finale-hp finale-hp-${brawler.color}`}>
-            {Array.from({ length: BRAWLER_HP }, (_, i) => (
-              <i key={i} className={i < brawler.hp ? "full" : undefined} />
-            ))}
-          </span>
-        </div>
-      ))}
-      {view.hits.slice(-4).map((hit) => (
-        <span
-          key={hit.id}
-          className={`finale-cell finale-pow${hit.fatal ? " fatal" : ""}`}
-          style={squareStyle(hit.to, flipped)}
-        >
-          {hit.fatal ? "KO!" : "POW"}
-        </span>
-      ))}
+      {brawl &&
+        view.brawlers.map(({ sq, piece }) => (
+          <div
+            // A unit that moves is drawn anew on its new square, marching in from the old one
+            key={`${brawl.units[sq]?.id}-${sq}`}
+            className="finale-cell"
+            style={squareStyle(sq, flipped)}
+          >
+            <BattleUnit
+              sq={sq}
+              piece={piece}
+              view={brawl}
+              flipped={flipped}
+              squareSize={squareSize}
+              image={themedPieceImage(
+                `${piece.color}${piece.type.toUpperCase()}`,
+                "clash",
+              )}
+            />
+          </div>
+        ))}
+      {brawl && (
+        <BattleEffects view={brawl} flipped={flipped} squareSize={squareSize} />
+      )}
       {has("fifa") && (
         <>
           <div className="finale-goal finale-glitch-in" />
