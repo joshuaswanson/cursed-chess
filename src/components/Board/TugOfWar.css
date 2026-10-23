@@ -332,7 +332,7 @@
 /* Pieces on the rope step in to grip it from either side and move with it.
    Each team leans way back and digs in while it heaves, and is dragged
    upright while the other team does. */
-[data-theme="tug"] .square.rope-square .piece-img {
+:is([data-theme="tug"], [data-theme="finale"]) .square.rope-square .piece-img {
   --side: 1;
   left: calc(var(--side) * var(--flip, 1) * var(--square-size, 72px) * 0.27);
   translate: 0 var(--rope-shift, 0px);
@@ -343,12 +343,12 @@
   will-change: transform;
 }
 
-[data-theme="tug"] .square.rope-black .piece-img {
+:is([data-theme="tug"], [data-theme="finale"]) .square.rope-black .piece-img {
   rotate: calc(var(--side) * var(--flip, 1) * -1 * var(--lean-black, 9deg));
   scale: 1 var(--squash-black, 1);
 }
 
-[data-theme="tug"] .square.rope-e .piece-img {
+:is([data-theme="tug"], [data-theme="finale"]) .square.rope-e .piece-img {
   --side: -1;
 }
 
@@ -420,7 +420,7 @@
 }
 
 /* The rope's files are worn into the ground from all the pulling */
-[data-theme="tug"] .square.rope-square {
+:is([data-theme="tug"], [data-theme="finale"]) .square.rope-square {
   box-shadow: inset 0 0 0 999px rgba(120, 80, 40, 0.1);
 }
 

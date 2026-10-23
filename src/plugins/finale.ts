@@ -1,7 +1,11 @@
 import { Color, MoveFlag, PieceType } from "../engine/types";
 import type { Move, Piece, SquareIndex } from "../engine/types";
 import { Board } from "../engine/board";
-import { isSquareAttacked, opponent } from "../engine/moves";
+import {
+  generatePseudoLegalMoves,
+  isSquareAttacked,
+  opponent,
+} from "../engine/moves";
 import type {
   BoardOverlay,
   ModePlugin,
@@ -17,6 +21,8 @@ import { PortalChessPlugin } from "./portalChess";
 import { MinefieldPlugin } from "./minefield";
 import { RallyPlugin } from "./clashRoyale";
 import { fallStep } from "./gravity";
+import { TugOfWarPlugin } from "./tugOfWar";
+import type { Rope } from "./tugOfWar";
 import type { BattleView } from "./clashRoyale";
 import type { Strike } from "./thunderstorm";
 import type { Collapse } from "./battleRoyale";
@@ -92,7 +98,6 @@ const ZONES: Partial<Record<FinaleAct, () => Box>> = {
   mines: () => anywhere(4, 2, 2, 5),
   clash: () => anywhere(4, 3, 2, 5),
   storm: () => anywhere(4, 3, 1, 6),
-  tug: () => anywhere(4, 2, 2, 5),
   conveyor: () => anywhere(4, 1, 2, 5),
   // In front of the goal glitched onto the far edge
   fifa: () => ({ f0: 2, f1: 5, r0: 5, r1: 7 }),
@@ -268,12 +273,11 @@ export interface FinaleView {
   holes: SquareIndex[];
   zombies: Zombie[];
   ball: SquareIndex;
-  /** Counts the shifts of gravity in its patch of the board, and the rope's heaves */
+  /** Counts the shifts of gravity in its patch of the board */
   tilts: number;
   /** The angle gravity's patch last settled at, and the pieces that fell then */
   settledAt: number;
   fell: { from: SquareIndex; to: SquareIndex }[];
-  heaves: number;
 }
 
 /** How many of Chessbot's pieces are face down at a time in the Stratego stage */
@@ -295,7 +299,8 @@ const SHIFT_STEP = 45;
 const FALL_HOLD_MS = 1600;
 /** The longest the patch is drawn turning on past its last tick, so it stops with the battle */
 const SMOOTH_MS = 150;
-const HEAVE_MS = 3600;
+/** How many ranks the rope runs over */
+const ROPE_LENGTH = 4;
 const RECENT_STRIKES = 4;
 const BRAWLER_TYPES = [
   PieceType.Pawn,
@@ -360,8 +365,6 @@ export class FinalePlugin implements ModePlugin {
   private holdSpin = 0;
   private spunAt = 0;
   private fell: { from: SquareIndex; to: SquareIndex }[] = [];
-  private heaves = 0;
-  private untilHeave = HEAVE_MS / 2;
 
   /** The plugins of the modes it borrows whole, which have to sit with the others to be found */
   attach(manager: PluginManager): void {
@@ -441,13 +444,6 @@ export class FinalePlugin implements ModePlugin {
       }
     }
     const fell = this.has("gravity") && this.turnPatch(ctx.board, ms);
-    if (this.has("tug")) {
-      this.untilHeave -= ms;
-      if (this.untilHeave <= 0) {
-        this.untilHeave = HEAVE_MS;
-        this.heaves++;
-      }
-    }
     return {
       killed,
       fell,
@@ -479,7 +475,6 @@ export class FinalePlugin implements ModePlugin {
       this.ball,
       this.tilts,
       this.fell,
-      this.heaves,
       [...this.hidden],
     ]);
   }
@@ -507,6 +502,9 @@ export class FinalePlugin implements ModePlugin {
 
   private start(ctx: PluginContext, act: FinaleAct): void {
     this.live = [...this.live, act];
+    const rope = act === "tug" ? this.placeRope(ctx.board) : null;
+    // With nowhere both sides can lay hands on a rope, there is no tug of war
+    if (act === "tug" && !rope) return;
     this.wave++;
     const zone = this.placeZone(act);
     if (zone) this.zones = { ...this.zones, [act]: zone };
@@ -516,6 +514,15 @@ export class FinalePlugin implements ModePlugin {
     }
     if (act === "stratego") this.hideSome(ctx.board);
     if (act === "clash") this.dropBrawlers(ctx.board, zone!);
+    if (rope) {
+      const [f0, f1] = rope.files;
+      const [r0, r1] = rope.ranks;
+      this.zones = { ...this.zones, tug: { f0, f1, r0, r1 } };
+      this.borrow(
+        ctx,
+        new TugOfWarPlugin(rope, (sq) => this.occupied().has(sq)),
+      );
+    }
     if (act === "gravity") {
       this.spin = 0;
       this.settledAt = 0;
@@ -539,6 +546,41 @@ export class FinalePlugin implements ModePlugin {
     let box = place();
     for (let tries = 0; tries < 40 && clashes(box); tries++) box = place();
     return box;
+  }
+
+  /**
+   * A short rope, clear of the other modes, somewhere both sides have a
+   * piece on it or one that can move onto it, or null if there is nowhere
+   */
+  private placeRope(board: Board): Rope | null {
+    const blocked = this.occupied();
+    const others = Object.values(this.zones);
+    const reach = (color: Color) =>
+      new Set([
+        ...ALL_SQUARES.filter((sq) => board.get(sq)?.color === color),
+        ...generatePseudoLegalMoves(board, color, null).map((m) => m.to),
+      ]);
+    const white = reach(Color.White);
+    const black = reach(Color.Black);
+    const fits: Rope[] = [];
+    for (let f0 = 0; f0 < 7; f0++) {
+      for (let r0 = 1; r0 + ROPE_LENGTH - 1 <= 6; r0++) {
+        const box = { f0, f1: f0 + 1, r0, r1: r0 + ROPE_LENGTH - 1 };
+        const clear = others.every(
+          (o) =>
+            box.f1 < o.f0 || o.f1 < box.f0 || box.r1 < o.r0 || o.r1 < box.r0,
+        );
+        const squares = squaresIn(box).filter((sq) => !blocked.has(sq));
+        if (
+          clear &&
+          squares.some((sq) => white.has(sq)) &&
+          squares.some((sq) => black.has(sq))
+        ) {
+          fits.push({ files: [f0, f0 + 1], ranks: [box.r0, box.r1] });
+        }
+      }
+    }
+    return fits[Math.floor(Math.random() * fits.length)] ?? null;
   }
 
   /** Runs one of the modes' own plugins, ahead of this one, so this one has the last word on moves */
@@ -814,7 +856,6 @@ export class FinalePlugin implements ModePlugin {
       tilts: this.tilts,
       settledAt: this.settledAt,
       fell: this.fell,
-      heaves: this.heaves,
     };
     const overlays: BoardOverlay[] = [
       { type: "finale", squares: [], data: view },

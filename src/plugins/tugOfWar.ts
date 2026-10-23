@@ -15,14 +15,23 @@ import {
   rankOf,
 } from "../utils/squareUtils";
 
-/** The rope runs up the line between these two files */
-export const ROPE_FILES = [3, 4];
 /** Drag the flag this many squares into your half to win */
 export const WIN_LINE = 3;
 /** How long a heave's haul, and the run of any piece jammed off the rope, take to play out */
 export const HEAVE_HOLD_MS = 1900;
 
+/** Where a rope runs: up the line between two neighbouring files, over a run of ranks */
+export interface Rope {
+  files: [number, number];
+  ranks: [number, number];
+}
+
+/** The rope of Tug of War itself, the whole length of the board */
+const FULL_ROPE: Rope = { files: [3, 4], ranks: [0, 7] };
+
 export interface TugView {
+  /** Where the rope runs, where it is short of the whole board */
+  rope?: Rope;
   /** Where the flag is, in squares from the center line; positive is toward White's end */
   flag: number;
   /** Hands each side has on the rope */
@@ -41,8 +50,6 @@ const HAND_WORTH = 3.2;
 
 /** How much of a hand's worth is lost by putting it where the other side can take it */
 const SHAKY_GRIP = 0.6;
-
-const onRope = (sq: SquareIndex) => ROPE_FILES.includes(fileOf(sq));
 
 /** A pawn is never hauled onto the first or last rank, where it would promote or be stuck */
 const canStand = (piece: Piece, sq: SquareIndex) =>
@@ -75,6 +82,32 @@ export class TugOfWarPlugin implements ModePlugin {
   heaveDir = 0;
   private dragged: Haul[] = [];
   private winner: Color | null = null;
+  private rope: Rope;
+  /** Squares nobody can be hauled onto */
+  private blocked: (sq: SquareIndex) => boolean;
+  /** How far the flag can go: the win line, or the end of a short rope, which nobody wins */
+  private reach: number;
+
+  /** With `rope`, a short rope in one part of the board, that pieces hold and are hauled along but nobody wins */
+  constructor(
+    rope?: Rope,
+    blocked: (sq: SquareIndex) => boolean = () => false,
+  ) {
+    this.rope = rope ?? FULL_ROPE;
+    this.blocked = blocked;
+    this.reach = rope
+      ? Math.floor((rope.ranks[1] - rope.ranks[0] + 1) / 2)
+      : WIN_LINE;
+  }
+
+  private onRope(sq: SquareIndex): boolean {
+    const { files, ranks } = this.rope;
+    return (
+      files.includes(fileOf(sq)) &&
+      rankOf(sq) >= ranks[0] &&
+      rankOf(sq) <= ranks[1]
+    );
+  }
   /** Whether the move just made set off a heave */
   heaved = false;
 
@@ -89,7 +122,7 @@ export class TugOfWarPlugin implements ModePlugin {
   /** Pieces of a color holding the rope */
   hands(board: Board, color: Color): number {
     return ALL_SQUARES.filter(
-      (sq) => onRope(sq) && board.get(sq)?.color === color,
+      (sq) => this.onRope(sq) && board.get(sq)?.color === color,
     ).length;
   }
 
@@ -100,10 +133,11 @@ export class TugOfWarPlugin implements ModePlugin {
     this.heaved = ahead;
     if (!ahead) return;
     const pull = color === Color.White ? 1 : -1;
-    this.flag = Math.max(-WIN_LINE, Math.min(WIN_LINE, this.flag + pull));
+    this.flag = Math.max(-this.reach, Math.min(this.reach, this.flag + pull));
     this.heave++;
     this.heaveDir = pull;
     this.dragged = this.dragAlong(ctx.board, pull);
+    if (this.rope !== FULL_ROPE) return;
     if (this.flag >= WIN_LINE) this.winner = Color.White;
     if (this.flag <= -WIN_LINE) this.winner = Color.Black;
   }
@@ -118,13 +152,20 @@ export class TugOfWarPlugin implements ModePlugin {
     const step = pull > 0 ? -16 : 16;
     // Those nearest the end they are hauled toward go first, clearing the way
     const holders = ALL_SQUARES.filter(
-      (sq) => onRope(sq) && board.get(sq),
+      (sq) => this.onRope(sq) && board.get(sq),
     ).sort((a, b) => (pull > 0 ? a - b : b - a));
     const moves: Haul[] = [];
     for (const from of holders) {
       const piece = board.get(from)!;
       const to = from + step;
-      const fits = isValidSquare(to) && !board.get(to) && canStand(piece, to);
+      const fits =
+        isValidSquare(to) &&
+        this.onRope(to) &&
+        !board.get(to) &&
+        !this.blocked(to) &&
+        canStand(piece, to);
+      // On a short rope a piece at the end of it digs in and holds on
+      if (!fits && this.rope !== FULL_ROPE) continue;
       const dest = fits ? to : this.stepAside(board, from, piece);
       if (dest === null) continue;
       board.remove(from);
@@ -140,7 +181,7 @@ export class TugOfWarPlugin implements ModePlugin {
     from: SquareIndex,
     piece: Piece,
   ): SquareIndex | null {
-    const side = fileOf(from) === ROPE_FILES[0] ? -1 : 1;
+    const side = fileOf(from) === this.rope.files[0] ? -1 : 1;
     const score = (sq: SquareIndex) => {
       const df = fileOf(sq) - fileOf(from);
       const dr = rankOf(sq) - rankOf(from);
@@ -152,7 +193,11 @@ export class TugOfWarPlugin implements ModePlugin {
       );
     };
     const free = ALL_SQUARES.filter(
-      (sq) => !onRope(sq) && !board.get(sq) && canStand(piece, sq),
+      (sq) =>
+        !this.onRope(sq) &&
+        !board.get(sq) &&
+        !this.blocked(sq) &&
+        canStand(piece, sq),
     ).sort((a, b) => score(a) - score(b));
     return free[0] ?? null;
   }
@@ -169,8 +214,8 @@ export class TugOfWarPlugin implements ModePlugin {
     ctx: PluginContext,
     square: SquareIndex,
   ): SquareModifier[] {
-    if (!onRope(square)) return [];
-    const side = fileOf(square) === ROPE_FILES[0] ? "rope-d" : "rope-e";
+    if (!this.onRope(square)) return [];
+    const side = fileOf(square) === this.rope.files[0] ? "rope-d" : "rope-e";
     const team =
       ctx.board.get(square)?.color === Color.Black ? " rope-black" : "";
     return [{ className: `rope-square ${side}${team}` }];
@@ -191,19 +236,20 @@ export class TugOfWarPlugin implements ModePlugin {
     const toward = piece.color === Color.White ? this.flag : -this.flag;
     const stakes = 1 + Math.abs(toward) * 0.6;
     let hands = 0;
-    if (onRope(to) && !onRope(from)) hands += 1;
-    if (!onRope(to) && onRope(from)) hands -= 1;
+    if (this.onRope(to) && !this.onRope(from)) hands += 1;
+    if (!this.onRope(to) && this.onRope(from)) hands -= 1;
     const taken = board.get(to);
-    if (taken && taken.color !== piece.color && onRope(to)) hands += 1;
+    if (taken && taken.color !== piece.color && this.onRope(to)) hands += 1;
     // A hand put where it can be taken straight off again is worth little
     const foe = piece.color === Color.White ? Color.Black : Color.White;
     const shaky =
-      onRope(to) && isSquareAttacked(board, to, foe) ? SHAKY_GRIP : 0;
+      this.onRope(to) && isSquareAttacked(board, to, foe) ? SHAKY_GRIP : 0;
     return (hands - shaky) * HAND_WORTH * stakes;
   }
 
   getBoardOverlays(ctx: PluginContext): BoardOverlay[] {
     const view: TugView = {
+      ...(this.rope !== FULL_ROPE && { rope: this.rope }),
       flag: this.flag,
       white: this.hands(ctx.board, Color.White),
       black: this.hands(ctx.board, Color.Black),

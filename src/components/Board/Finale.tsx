@@ -76,7 +76,7 @@ export function FinaleOver({
   squareSize: number;
 }) {
   const has = (act: FinaleView["acts"][number]) => view.acts.includes(act);
-  const { fog, lanterns, tug, gravity } = view.zones;
+  const { fog, lanterns, gravity } = view.zones;
   useEffect(() => {
     if (view.wave > 0) sfx.glitch();
   }, [view.wave]);
@@ -104,22 +104,6 @@ export function FinaleOver({
           className="finale-zone finale-dark finale-glitch-in"
           style={boxStyle(lanterns, flipped)}
         />
-      )}
-      {tug && (
-        <div
-          className="finale-zone finale-rope finale-glitch-in"
-          style={boxStyle(tug, flipped)}
-        >
-          <div
-            className={`finale-rope-cord heave-${view.heaves % 2}`}
-            key={view.heaves}
-          />
-          {view.heaves > 0 && (
-            <span className="finale-heave" key={`h${view.heaves}`}>
-              Heave!
-            </span>
-          )}
-        </div>
       )}
       {view.zombies.map((zombie) => (
         <div

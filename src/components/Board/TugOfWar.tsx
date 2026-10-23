@@ -727,7 +727,18 @@ export function TugLayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.heave]);
 
-  const flagTop = fromTop(view.flag, flipped);
+  // A short rope in one part of the board has the rope and flag alone, without the arena
+  const short = view.rope;
+  const length = short ? short.ranks[1] - short.ranks[0] + 1 : 8;
+  const flagTop = short
+    ? length / 2 + (flipped ? -view.flag : view.flag)
+    : fromTop(view.flag, flipped);
+  const ropeBox: Style | undefined = short && {
+    left: `${(flipped ? 6 - short.files[0] : short.files[0]) * 12.5}%`,
+    top: `${(flipped ? short.ranks[0] : 7 - short.ranks[1]) * 12.5}%`,
+    width: "25%",
+    height: `${length * 12.5}%`,
+  };
   // Which way the last heave went on screen: down is positive
   const yank = view.heaveDir * (flipped ? -1 : 1);
   const lines = [
@@ -744,31 +755,39 @@ export function TugLayer({
 
   return (
     <>
-      <div ref={rootRef} className="tug-layer" aria-hidden>
-        <MudSplats />
-        <MudPit />
-        <MudRipple />
-        <span className="tug-center-line" />
-        {lines.map(({ toWhite, team }) => (
-          <span
-            key={team}
-            className={`tug-win-line win-${team}`}
-            style={{ top: `${fromTop(toWhite, flipped) * 12.5}%` }}
-          >
-            <span className="tug-win-label">
-              {team === "white" ? "Your win line" : "Their win line"}
+      {!short && (
+        <div ref={rootRef} className="tug-layer" aria-hidden>
+          <MudSplats />
+          <MudPit />
+          <MudRipple />
+          <span className="tug-center-line" />
+          {lines.map(({ toWhite, team }) => (
+            <span
+              key={team}
+              className={`tug-win-line win-${team}`}
+              style={{ top: `${fromTop(toWhite, flipped) * 12.5}%` }}
+            >
+              <span className="tug-win-label">
+                {team === "white" ? "Your win line" : "Their win line"}
+              </span>
             </span>
-          </span>
-        ))}
-      </div>
-      <div className="tug-layer tug-rope-layer" aria-hidden>
+          ))}
+        </div>
+      )}
+      <div
+        ref={short ? rootRef : undefined}
+        className="tug-layer tug-rope-layer"
+        style={ropeBox}
+        aria-hidden
+      >
         <div
           key={view.heave}
           className={`tug-rope-wrap${view.heave > 0 ? " heaving" : ""}`}
           style={{ "--yank": yank } as Style}
         >
-          <Coil end="top" hauled={flagTop - 4} />
-          <Coil end="bottom" hauled={flagTop - 4} />
+          {/* The loose ends lie piled past the board's edges, where there is room for them */}
+          {!short && <Coil end="top" hauled={flagTop - 4} />}
+          {!short && <Coil end="bottom" hauled={flagTop - 4} />}
           <div className="tug-rope-shadow">
             <div
               className="tug-rope"
@@ -780,7 +799,7 @@ export function TugLayer({
           <div
             key={part}
             className={`tug-flag${part === "cloth" ? " under-rope" : ""}`}
-            style={{ top: `${flagTop * 12.5}%` }}
+            style={{ top: `${(flagTop / length) * 100}%` }}
           >
             <div
               key={view.heave}
