@@ -38,7 +38,7 @@ import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
 import type { GravityPlugin } from "../../plugins/gravity";
 import type { FinalePlugin } from "../../plugins/finale";
-import { BattleEffects, BattleUnit, TrenchGuns } from "./Battle";
+import { BattleEffects, BattleUnit } from "./Battle";
 import {
   visualCol as colOnScreen,
   visualRow as rowOnScreen,
@@ -1033,22 +1033,6 @@ export function Board() {
           {overlays.trenches && <WorldTrenchesFront flipped={flipped} />}
           {overlays.trenches && (
             <LineOrders view={overlays.trenches} flipped={flipped} />
-          )}
-          {overlays.trenches && battle && (
-            <>
-              <TrenchGuns
-                view={battle}
-                board={game.board}
-                flipped={flipped}
-                facing="away"
-              />
-              <TrenchGuns
-                view={battle}
-                board={game.board}
-                flipped={flipped}
-                facing="toward"
-              />
-            </>
           )}
           {lakes.size > 0 && (
             <Battlefield

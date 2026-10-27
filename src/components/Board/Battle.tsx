@@ -184,11 +184,11 @@ export function BattleUnit({
   const tower = piece.type === PieceType.King;
   const firing =
     action?.unitId === unit.id &&
-    (action.weapon === "rifle" ||
-      action.weapon === "bayonet" ||
-      action.weapon === "sniper")
+    (action.weapon === "rifle" || action.weapon === "sniper")
       ? action
       : undefined;
+  const burst =
+    action?.unitId === unit.id && action.weapon === "mg" ? action : undefined;
   const held =
     arms === "sniper"
       ? arms
@@ -205,7 +205,6 @@ export function BattleUnit({
       side={gripSide(sq, flipped)}
       aim={firing ? aimAngle(firing, flipped) : null}
       fireMs={Math.max(0, (firing?.delayMs ?? 0) - AIM_MS)}
-      thrust={firing?.weapon === "bayonet"}
       german={piece.color === Color.Black}
     />
   );
@@ -244,7 +243,10 @@ export function BattleUnit({
             <GrenadeBelt german={piece.color === Color.Black} />
           )}
           {arms === "vickers" && (
-            <CarriedVickers german={piece.color === Color.Black} />
+            <CarriedVickers
+              german={piece.color === Color.Black}
+              aim={burst ? aimAngle(burst, flipped) : null}
+            />
           )}
           {!overParapet && rifle}
         </div>
@@ -274,7 +276,6 @@ const Rifle = memo(function Rifle({
   side,
   aim,
   fireMs,
-  thrust = false,
   german = false,
   shot,
 }: {
@@ -288,8 +289,6 @@ const Rifle = memo(function Rifle({
   side: number;
   aim: number | null;
   fireMs: number;
-  /** Driven forward with the bayonet, in place of firing */
-  thrust?: boolean;
   /** A German's Mauser, in place of a British Lee-Enfield */
   german?: boolean;
 }) {
@@ -304,7 +303,7 @@ const Rifle = memo(function Rifle({
   return (
     <span
       ref={ref}
-      className={`unit-rifle${aim === null ? "" : thrust ? " thrusting" : " firing"}`}
+      className={`unit-rifle${aim === null ? "" : " firing"}`}
       style={style}
       aria-hidden
     >
@@ -580,60 +579,6 @@ function towardEnemy(color: Color, flipped: boolean): { x: number; y: number } {
   return { x: 0, y: (color === Color.White) !== flipped ? -1 : 1 };
 }
 
-/**
- * The machine guns, each on its tripod in front of its gunner, drawn on the
- * side of him it stands: behind a gunner facing away up the board, in front
- * of one facing the viewer, where it rests on the sandbags. Each traverses
- * onto whatever it is firing at.
- */
-export function TrenchGuns({
-  view,
-  board,
-  flipped,
-  facing,
-}: {
-  view: BattleView;
-  board: { get: (sq: SquareIndex) => Piece | null };
-  flipped: boolean;
-  /** Which guns to draw: those facing away from the viewer, or toward */
-  facing: "away" | "toward";
-}) {
-  const guns = Object.entries(view.units).flatMap(([key, unit]) => {
-    const sq = Number(key);
-    const piece = board.get(sq);
-    if (view.arms?.[unit.id] !== "mg" || !piece) return [];
-    const away = towardEnemy(piece.color, flipped).y < 0;
-    if ((facing === "away") !== away) return [];
-    const burst = [...view.events]
-      .reverse()
-      .find(
-        (e): e is AttackEvent =>
-          e.kind === "attack" && e.unitId === unit.id && e.weapon === "mg",
-      );
-    return [{ sq, color: piece.color, burst }];
-  });
-  return (
-    <div className={`trench-guns guns-${facing}`} aria-hidden>
-      {guns.map(({ sq, color, burst }) => (
-        <span
-          key={sq}
-          className="trench-gun"
-          style={{
-            left: `${visualCol(sq, flipped) * 12.5}%`,
-            top: `${visualRow(sq, flipped) * 12.5}%`,
-          }}
-        >
-          <MachineGun
-            color={color}
-            flipped={flipped}
-            aim={burst ? aimAngle(burst, flipped) : null}
-          />
-        </span>
-      ))}
-    </div>
-  );
-}
-
 /** The Vickers gun itself: water jacket, receiver, spade grips, flash hider, and its belt of rounds */
 function VickersBody({ german = false }: { german?: boolean }) {
   if (german) return <Mg08Body />;
@@ -740,69 +685,26 @@ function Mg08Body() {
   );
 }
 
-/** A machine gunner's Vickers, or a German's MG 08, carried over his shoulder until he digs it in */
+/** A machine gunner's Vickers, or a German's MG 08, carried over his shoulder, and swung onto whatever he fires at */
 const CarriedVickers = memo(function CarriedVickers({
   german = false,
+  aim = null,
 }: {
   german?: boolean;
+  aim?: number | null;
 }) {
   return (
-    <span className="carried-vickers" aria-hidden>
+    <span
+      className={`carried-vickers${aim === null ? "" : " firing"}`}
+      style={aim === null ? undefined : ({ "--aim": `${aim}deg` } as Style)}
+      aria-hidden
+    >
       <BakedArt name={`vickers:${german}`} viewBox="0 0 100 34">
         <VickersBody german={german} />
       </BakedArt>
     </span>
   );
 });
-
-/**
- * The machine gun on its tripod in front of the gunner. It traverses onto
- * whatever it is firing at and stays trained there through the burst, then
- * settles back toward the enemy line.
- */
-function MachineGun({
-  color,
-  flipped,
-  aim,
-}: {
-  color: Color;
-  flipped: boolean;
-  aim: number | null;
-}) {
-  const ahead = towardEnemy(color, flipped);
-  const rest = (Math.atan2(ahead.y, ahead.x) * 180) / Math.PI;
-  const style: Style = {
-    "--pivot-y": `${50 + ahead.y * MG_PIVOT_AHEAD * 100}%`,
-    "--turn": `${aim ?? rest}deg`,
-  };
-  return (
-    <span className="unit-mg" style={style} aria-hidden>
-      {color === Color.White ? (
-        <svg className="mg-tripod" viewBox="0 0 40 40">
-          <path
-            d="M20 20 L5 35 M20 20 L35 35 M20 20 L20 3"
-            className="mg-legs"
-          />
-          <path d="M3 35 h5 M32 35 h5 M18 3 h4" className="mg-feet" />
-          <circle cx="20" cy="20" r="4.5" className="mg-head" />
-        </svg>
-      ) : (
-        /* The MG 08's sled mount: a heavy steel frame that folds out flat */
-        <svg className="mg-tripod mg-sled" viewBox="0 0 40 40">
-          <path d="M8 36 L12 8 L28 8 L32 36" className="mg-legs" />
-          <path d="M10 24 H30 M11 15 H29" className="mg-legs" />
-          <path d="M6 36 h5 M29 36 h5" className="mg-feet" />
-          <circle cx="20" cy="20" r="4.5" className="mg-head" />
-        </svg>
-      )}
-      <span className="mg-gun">
-        <BakedArt name={`mg:${color}`} viewBox="0 0 100 34">
-          <VickersBody german={color === Color.Black} />
-        </BakedArt>
-      </span>
-    </span>
-  );
-}
 
 /** A round's path across the board, from the muzzle to where it lands */
 function shotLine(event: AttackEvent, flipped: boolean, squareSize: number) {
@@ -1958,7 +1860,7 @@ function Effect({
 
   switch (event.kind) {
     case "attack": {
-      if (event.weapon === "bayonet" || event.weapon === "shrapnel") {
+      if (event.weapon === "shrapnel") {
         const struck = { animationDelay: `${event.hitMs}ms` };
         return event.miss ? null : (
           <>
@@ -2124,8 +2026,6 @@ function playEvent(event: BattleEvent): void {
         later(fired, sfx.sniper);
       } else if (event.weapon === "shrapnel") {
         break;
-      } else if (event.weapon === "bayonet") {
-        sfx.swing();
       } else if (event.ranged) {
         sfx.bowShot();
       } else {

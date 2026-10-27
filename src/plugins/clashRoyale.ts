@@ -90,8 +90,8 @@ export type BattleEvent =
       ranged: boolean;
       kill: boolean;
       hitMs: number;
-      /** A gunshot from a rifle or a machine gun, drawn as a tracer, or a thrust with a bayonet */
-      weapon?: "rifle" | "mg" | "sniper" | "bayonet" | "shrapnel";
+      /** A gunshot from a rifle or a machine gun, drawn as a tracer, or a grenade's shrapnel */
+      weapon?: "rifle" | "mg" | "sniper" | "shrapnel";
       /** The shot or blow went wide, landing this far off the target in squares */
       miss?: boolean;
       impact?: { x: number; y: number };
@@ -135,9 +135,8 @@ export type BattleEvent =
       delayMs: number;
     };
 
-/** What a soldier carries: a rifle, the fixed machine gun he is manning, a sniper's scoped rifle, a rifle and a bag of grenades, or a general's cap and cane */
-export type Arms =
-  "rifle" | "mg" | "vickers" | "sniper" | "grenadier" | "general";
+/** What a soldier carries: a rifle, a machine gun, a sniper's scoped rifle, a rifle and a bag of grenades, or a general's cap and cane */
+export type Arms = "rifle" | "vickers" | "sniper" | "grenadier" | "general";
 
 export interface BattleView {
   units: Record<number, Unit>;

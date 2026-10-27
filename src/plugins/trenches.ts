@@ -76,28 +76,20 @@ const ROUND_GAP_MS = 85;
 /** A shot's chance of hitting, by where its target stands */
 const RIFLE_HIT = { trench: 0.07, reserve: 0.18, open: 0.5 };
 const ROUND_HIT = { trench: 0.025, reserve: 0.07, open: 0.3 };
-/**
- * A machine gun dug into a trench is the best thing there is for holding a
- * line: longer bursts, murderous against anyone out of a trench, and its
- * crew well covered from fire coming the other way
- */
-const NEST_ROUNDS = 9;
-const NEST_HIT = { trench: 0.03, reserve: 0.22, open: 0.62 };
-const NEST_COVER = 0.45;
-/** Fired off the ground by a team caught in the open, it is a poor weapon to attack with */
+/** Fired off the ground by a team caught in the open, the gun is a poor weapon to attack with */
 const CARRIED_AIM = 0.5;
 /**
  * Assault troops are for taking ground. They cross no man's land fast,
  * are quickly through the wire, are hard to hit on the run, throw grenades
- * as fast as they can pull the pins while attacking, and win hand to hand.
+ * as fast as they can pull the pins while attacking, and are deadly at close quarters.
  * Standing in a trench with a rifle they are no better than anyone, and worse.
  */
 const ASSAULT_PACE = 0.6;
 const ASSAULT_WIRE = 0.35;
 const ASSAULT_DODGE = 0.55;
 const ASSAULT_GRENADES = 0.55;
-const ASSAULT_MELEE_HIT = 0.95;
-const ASSAULT_MELEE_DAMAGE = 3;
+const ASSAULT_POINT_BLANK_HIT = 0.95;
+const ASSAULT_POINT_BLANK_DAMAGE = 3;
 const ASSAULT_RIFLE = 0.5;
 /** With every enemy down in a trench, a man only fires this often when his turn comes */
 const IDLE_FIRE = 0.3;
@@ -123,9 +115,10 @@ const SHRAPNEL_HIT = 0.35;
 const SNAGGED_HIT_BONUS = 0.2;
 /** Running men fire less often and less well */
 const RUNNING_AIM = 0.5;
-const MELEE_HIT = 0.7;
-const MELEE_DAMAGE = 2;
-const MELEE_MS = 900;
+/** Shot from the next square, a man cannot duck out of the way, even below a parapet */
+const POINT_BLANK_HIT = 0.7;
+const POINT_BLANK_DAMAGE = 2;
+const POINT_BLANK_MS = 900;
 /** How long a dash takes from one square to the next, and how long the wire holds a man */
 const STEP_MS = 700;
 const WIRE_MS: [number, number] = [1600, 2600];
@@ -215,12 +208,10 @@ function distance(a: SquareIndex, b: SquareIndex): number {
 }
 
 /**
- * What a soldier carries, by what he is: bishops are snipers, knights assault
- * troops with grenades, and the rest riflemen. Whoever stands in a gun nest,
- * whatever he is, mans the machine gun fixed there.
+ * What a soldier carries, by what he is: rooks are machine gunners, bishops
+ * snipers, knights assault troops with grenades, and the rest riflemen
  */
-function armsFor(sq: SquareIndex, piece: Piece, nests: Set<SquareIndex>): Arms {
-  if (nests.has(sq)) return "mg";
+function armsFor(piece: Piece): Arms {
   switch (piece.type) {
     case PieceType.King:
       return "general";
@@ -271,8 +262,6 @@ export class TrenchesPlugin implements ModePlugin {
   private nextId = 1;
   private clock = 0;
   private wire = new Set<SquareIndex>();
-  /** Where machine guns are dug in; whoever stands in one mans it */
-  private nests = new Set<SquareIndex>();
   private foeMoveUpAt = 0;
   /** When each side last sent a squad up; every card readies again from then */
   private sentAt: Record<Color, number> = {
@@ -307,7 +296,6 @@ export class TrenchesPlugin implements ModePlugin {
     this.lastOrder = { [Color.White]: -Infinity, [Color.Black]: -Infinity };
     this.foeAttackAt = FOE_FIRST_ATTACK_MS;
     this.winner = null;
-    this.nests = new Set();
     this.sentAt = { [Color.White]: 0, [Color.Black]: 0 };
     this.foeMoveUpAt = rand(...FOE_MOVE_UP_MS);
     this.craters = [];
@@ -518,16 +506,15 @@ export class TrenchesPlugin implements ModePlugin {
           (sq) =>
             rankOf(sq) === from &&
             board.get(sq)?.color === color &&
-            this.units.get(sq)?.order === "hold" &&
-            !this.nests.has(sq),
+            this.units.get(sq)?.order === "hold",
         ),
       ) ?? null
     );
   }
 
   /**
-   * Over the top: everyone in the side's most forward trench, but the man on
-   * the machine gun, charges for the next enemy trench
+   * Over the top: everyone in the side's most forward trench charges for the
+   * next enemy trench
    */
   attack(board: Board, color: Color): boolean {
     if (this.winner !== null || this.cooldown(color) > 0) return false;
@@ -536,7 +523,7 @@ export class TrenchesPlugin implements ModePlugin {
     let going = 0;
     for (const [sq, unit] of this.units) {
       if (rankOf(sq) !== line.from || board.get(sq)?.color !== color) continue;
-      if (this.nests.has(sq) || unit.order !== "hold") continue;
+      if (unit.order !== "hold") continue;
       // The general directs the war from the rear; he never goes over the top
       if (board.get(sq)?.type === PieceType.King) continue;
       unit.order = "charge";
@@ -548,17 +535,6 @@ export class TrenchesPlugin implements ModePlugin {
     this.lastOrder[color] = this.clock;
     this.charges[color]++;
     return true;
-  }
-
-  /** A machine gunner who settles in a trench he can fire from digs his gun in there, for good */
-  private digGun(board: Board, sq: SquareIndex, piece: Piece): void {
-    if (
-      piece.type === PieceType.Rook &&
-      coverAt(sq) === "trench" &&
-      this.canFire(board, sq, piece.color)
-    ) {
-      this.nests.add(sq);
-    }
   }
 
   /**
@@ -596,7 +572,7 @@ export class TrenchesPlugin implements ModePlugin {
     const cards = SQUADS.map((s) =>
       Math.ceil(this.readyIn(Color.White, s) / 1000),
     ).join();
-    return `${this.nextId}|${this.events.length}|${exposed}|${charging}|${snagged}|${cards}|${this.nests.size}`;
+    return `${this.nextId}|${this.events.length}|${exposed}|${charging}|${snagged}|${cards}`;
   }
 
   /** How long until a side's squad is ready to go */
@@ -704,7 +680,6 @@ export class TrenchesPlugin implements ModePlugin {
         rankOf(sq) === rank &&
         piece?.color === color &&
         piece.type !== PieceType.King &&
-        (!this.nests.has(sq) || piece.type === PieceType.Rook) &&
         unit.order === "hold"
       );
     });
@@ -737,8 +712,7 @@ export class TrenchesPlugin implements ModePlugin {
     const next = ranks[ranks.indexOf(rank) + 1];
     if (next === undefined) return false;
     const men = this.holding(board, color, rank);
-    for (const [sq, unit] of men) {
-      if (board.get(sq)?.type === PieceType.Rook) this.nests.delete(sq);
+    for (const [, unit] of men) {
       unit.order = "charge";
       unit.goal = next;
       unit.readyIn = rand(0, 450);
@@ -763,7 +737,6 @@ export class TrenchesPlugin implements ModePlugin {
     );
     if (next === undefined || !man) return false;
     const [, unit] = man;
-    if (board.get(sq)?.type === PieceType.Rook) this.nests.delete(sq);
     unit.order = "charge";
     unit.goal = next;
     unit.readyIn = 0;
@@ -783,11 +756,10 @@ export class TrenchesPlugin implements ModePlugin {
       return;
     }
 
-    // Anyone close enough is fought hand to hand
+    // Anyone close enough is shot point blank
     const foe = this.adjacentFoe(board, sq, piece.color);
     if (foe !== null) {
-      this.melee(board, sq, foe, piece, unit);
-      unit.readyIn = jitter(MELEE_MS);
+      this.pointBlank(board, sq, foe, piece, unit);
       return;
     }
 
@@ -801,7 +773,6 @@ export class TrenchesPlugin implements ModePlugin {
       }
       if (rankOf(sq) === unit.goal) {
         unit.order = "hold";
-        this.digGun(board, sq, piece);
       } else if (this.advance(board, sq, unit, piece)) {
         return;
       } else if (
@@ -827,17 +798,12 @@ export class TrenchesPlugin implements ModePlugin {
       }
     }
 
-    // A machine gunner holding a firing trench digs his gun in where he stands
-    this.digGun(board, sq, piece);
     if (this.fightInTrench(board, sq, unit, piece)) return;
     if (this.moveUp(board, sq, unit, piece)) return;
 
     // Only the line nearest the enemy fires; the back trench keeps its head
     // down, all but its snipers, who have the range to shoot from there
-    if (
-      !this.canFire(board, sq, piece.color) &&
-      armsFor(sq, piece, this.nests) !== "sniper"
-    ) {
+    if (!this.canFire(board, sq, piece.color) && armsFor(piece) !== "sniper") {
       unit.readyIn = rand(800, 1600);
       return;
     }
@@ -851,17 +817,7 @@ export class TrenchesPlugin implements ModePlugin {
 
     // To fire he has to come up over the parapet, and while up he can be hit
     this.raise(unit, PEEK_MS);
-    switch (armsFor(sq, piece, this.nests)) {
-      case "mg":
-        if (this.burst(board, sq, piece)) {
-          // With men out in the open in front of him, he never lets up: one
-          // burst runs straight into the next
-          unit.readyIn = this.enemyInTheOpen(board, piece.color)
-            ? NEST_ROUNDS * ROUND_GAP_MS + rand(40, 120)
-            : jitter(BURST_MS);
-          return;
-        }
-        break;
+    switch (armsFor(piece)) {
       case "sniper":
         if (this.snipe(board, sq, piece)) {
           unit.readyIn = jitter(SNIPE_MS);
@@ -876,10 +832,12 @@ export class TrenchesPlugin implements ModePlugin {
         unit.readyIn = jitter(RIFLE_MS);
         return;
       case "vickers":
-        // Caught in the open, he throws himself down and fires the gun off the
-        // ground where he is; in a trench he digs it in properly first
-        if (coverAt(sq) !== "trench" && this.burst(board, sq, piece)) {
-          unit.readyIn = jitter(BURST_MS * 1.4);
+        if (this.burst(board, sq, piece)) {
+          // With men out in the open in front of him, he never lets up: one
+          // burst runs straight into the next
+          unit.readyIn = this.enemyInTheOpen(board, piece.color)
+            ? BURST_ROUNDS * ROUND_GAP_MS + rand(40, 120)
+            : jitter(BURST_MS);
           return;
         }
         unit.readyIn = jitter(RIFLE_MS * 0.5);
@@ -1171,7 +1129,6 @@ export class TrenchesPlugin implements ModePlugin {
     if (to === undefined) return false;
     const ms = Math.round(STEP_MS * pace * (unit.assault ? ASSAULT_PACE : 1));
     this.relocate(board, sq, to);
-    this.digGun(board, to, board.get(to)!);
     this.emit({ kind: "move", unitId: unit.id, from: sq, to, ms, delayMs: 0 });
     unit.readyIn = ms + (pace < 1 ? rand(50, 200) : rand(300, 900));
     if (this.wire.has(to)) {
@@ -1246,9 +1203,9 @@ export class TrenchesPlugin implements ModePlugin {
         open: 14,
       });
     if (target === null) return false;
-    const dugIn = this.nests.has(sq);
-    const rounds = dugIn ? NEST_ROUNDS : BURST_ROUNDS;
-    for (let round = 0; round < rounds; round++) {
+    // Set up in a trench the gun fires steady; off the ground in the open it sprays
+    const aim = coverAt(sq) === "trench" ? 1 : CARRIED_AIM;
+    for (let round = 0; round < BURST_ROUNDS; round++) {
       if (!board.get(target)) break;
       this.shoot(
         board,
@@ -1256,9 +1213,7 @@ export class TrenchesPlugin implements ModePlugin {
         target,
         piece,
         "mg",
-        dugIn
-          ? this.hitChance(sq, target, NEST_HIT)
-          : this.hitChance(sq, target, ROUND_HIT) * CARRIED_AIM,
+        this.hitChance(sq, target, ROUND_HIT) * aim,
         RISE_MS + round * ROUND_GAP_MS,
         round,
       );
@@ -1278,8 +1233,6 @@ export class TrenchesPlugin implements ModePlugin {
     if (!enfilade && this.crouched(target)) return 0;
     const cover = enfilade ? "open" : coverAt(target);
     let odds = table[cover] + (snagged ? SNAGGED_HIT_BONUS : 0);
-    // A gun crew behind its own sandbags is hard to get at from in front
-    if (!enfilade && this.nests.has(target)) odds *= NEST_COVER;
     // Assault troops on the run across open ground are hard to draw a bead on
     const victim = this.units.get(target);
     if (victim?.assault && victim.order === "charge" && cover === "open") {
@@ -1290,9 +1243,8 @@ export class TrenchesPlugin implements ModePlugin {
 
   /**
    * With the enemy in the same trench, the fight is fought along it: each man
-   * makes his way toward the nearest of them to close with him, and shoots
-   * down the trench when he cannot get past. The machine gunner stays on his
-   * gun and rakes the trench.
+   * fires down the trench at the nearest of them, the machine gunner raking
+   * it with bursts
    */
   private fightInTrench(
     board: Board,
@@ -1309,25 +1261,9 @@ export class TrenchesPlugin implements ModePlugin {
     if (rivals.length === 0) return false;
     const gap = (s: SquareIndex) => Math.abs(fileOf(s) - fileOf(sq));
     const nearest = rivals.reduce((a, b) => (gap(b) < gap(a) ? b : a));
-    const gunner = this.nests.has(sq);
-    if (gunner) {
+    if (piece.type === PieceType.Rook) {
       this.burst(board, sq, piece, nearest);
       unit.readyIn = jitter(BURST_MS);
-      return true;
-    }
-    const step = sq + Math.sign(fileOf(nearest) - fileOf(sq));
-    if (!board.get(step)) {
-      const ms = Math.round(STEP_MS * rand(0.9, 1.2));
-      this.relocate(board, sq, step);
-      this.emit({
-        kind: "move",
-        unitId: unit.id,
-        from: sq,
-        to: step,
-        ms,
-        delayMs: 0,
-      });
-      unit.readyIn = ms;
       return true;
     }
     this.shoot(
@@ -1354,10 +1290,10 @@ export class TrenchesPlugin implements ModePlugin {
     delayMs: number,
     round: number,
     damage = 1,
-  ): void {
+  ): boolean {
     const shooter = this.units.get(from)!;
     const target = this.units.get(to);
-    if (!target) return;
+    if (!target) return false;
     const hit = Math.random() < chance;
     const hitMs = bulletMs(from, to);
     // A miss kicks up the mud somewhere near the target
@@ -1384,56 +1320,62 @@ export class TrenchesPlugin implements ModePlugin {
       round,
     });
     if (kill) this.fall(board, to, from, delayMs + hitMs);
+    return kill;
   }
 
-  private melee(
+  /**
+   * A man with an enemy on the next square shoots him point blank with
+   * whatever he carries, a short burst from a machine gunner. Charging, he
+   * takes the ground of a man he kills if it is on his way.
+   */
+  private pointBlank(
     board: Board,
     from: SquareIndex,
     to: SquareIndex,
     piece: Piece,
     unit: TrenchUnit,
   ): void {
-    const target = this.units.get(to);
-    if (!target) return;
-    const damage = unit.assault ? ASSAULT_MELEE_DAMAGE : MELEE_DAMAGE;
-    const hit = Math.random() < (unit.assault ? ASSAULT_MELEE_HIT : MELEE_HIT);
-    if (hit) target.hp -= damage;
-    const kill = hit && target.hp <= 0;
-    const hitMs = 170;
-    this.emit({
-      kind: "attack",
-      unitId: unit.id,
-      targetId: target.id,
-      color: piece.color,
-      from,
-      to,
-      damage: hit ? damage : 0,
-      ranged: false,
-      kill,
-      hitMs,
-      miss: !hit,
-      weapon: "bayonet",
-    });
+    const chance = unit.assault ? ASSAULT_POINT_BLANK_HIT : POINT_BLANK_HIT;
+    const damage = unit.assault
+      ? ASSAULT_POINT_BLANK_DAMAGE
+      : POINT_BLANK_DAMAGE;
+    const arms = armsFor(piece);
+    const weapon =
+      arms === "vickers" ? "mg" : arms === "sniper" ? "sniper" : "rifle";
+    const rounds = weapon === "mg" ? 3 : 1;
+    let kill = false;
+    for (let round = 0; round < rounds && !kill; round++) {
+      kill = this.shoot(
+        board,
+        from,
+        to,
+        piece,
+        weapon,
+        chance,
+        AIM_MS + round * ROUND_GAP_MS,
+        round,
+        damage,
+      );
+    }
+    const firedMs = AIM_MS + rounds * ROUND_GAP_MS + bulletMs(from, to);
+    unit.readyIn = firedMs + jitter(POINT_BLANK_MS);
     if (!kill) return;
-    this.fall(board, to, from, hitMs);
-    // A charging man takes the ground of the one he cut down, if it is on his way
     const ahead =
       piece.color === Color.White
         ? rankOf(to) >= rankOf(from)
         : rankOf(to) <= rankOf(from);
-    if (unit.order === "charge" && ahead) {
-      const ms = travelMs(from, to);
-      this.relocate(board, from, to);
-      this.emit({
-        kind: "move",
-        unitId: unit.id,
-        from,
-        to,
-        ms,
-        delayMs: hitMs,
-      });
-      unit.readyIn = hitMs + ms;
-    }
+    if (unit.order !== "charge" || !ahead) return;
+    const ms = travelMs(from, to);
+    this.relocate(board, from, to);
+    this.emit({
+      kind: "move",
+      unitId: unit.id,
+      from,
+      to,
+      ms,
+      delayMs: firedMs,
+    });
+    unit.readyIn = firedMs + ms;
   }
 
   private fall(
@@ -1579,7 +1521,7 @@ export class TrenchesPlugin implements ModePlugin {
       arms: Object.fromEntries(
         [...this.units].flatMap(([sq, unit]) => {
           const piece = ctx.board.get(sq);
-          return piece ? [[unit.id, armsFor(sq, piece, this.nests)]] : [];
+          return piece ? [[unit.id, armsFor(piece)]] : [];
         }),
       ),
     };

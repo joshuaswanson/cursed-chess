@@ -637,34 +637,6 @@
   animation: rifle-fire 1s var(--fire) ease-out both;
 }
 
-/* Lowered onto the enemy and driven home with the bayonet, then pulled back */
-.unit-rifle.thrusting {
-  animation: rifle-thrust 0.5s ease-in-out both;
-}
-
-@keyframes rifle-thrust {
-  0% {
-    rotate: var(--rest);
-    transform: translateX(0);
-  }
-  25% {
-    rotate: var(--aim);
-    transform: translateX(-8%);
-  }
-  40% {
-    rotate: var(--aim);
-    transform: translateX(26%);
-  }
-  70% {
-    rotate: var(--aim);
-    transform: translateX(0);
-  }
-  100% {
-    rotate: var(--rest);
-    transform: translateX(0);
-  }
-}
-
 @keyframes rifle-fire {
   0% {
     rotate: var(--rest);
@@ -692,51 +664,6 @@
   fill: none;
   stroke: #4a3a22;
   stroke-width: 1.2;
-}
-
-/* The machine gun stands on its tripod in front of its gunner, and turns on it */
-.unit-mg {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-}
-
-.mg-tripod {
-  position: absolute;
-  left: 50%;
-  top: var(--pivot-y);
-  width: 44%;
-  height: 44%;
-  translate: -50% -46%;
-  overflow: visible;
-}
-
-/* Pivots a quarter of the way along, where it sits on the tripod */
-.mg-gun {
-  position: absolute;
-  left: calc(50% - 80% * 0.25);
-  top: calc(var(--pivot-y) - 14%);
-  width: 80%;
-  height: 28%;
-  transform-origin: 25% 50%;
-  rotate: var(--turn);
-  transition: rotate 0.22s ease-out;
-  overflow: visible;
-  filter: drop-shadow(0.03em 0.06em 0 rgba(10, 8, 4, 0.55));
-}
-
-.mg-legs {
-  fill: none;
-  stroke: #2b2b2b;
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-
-.mg-feet {
-  stroke: #1a1a1a;
-  stroke-width: 3;
-  stroke-linecap: round;
 }
 
 /* The water jacket that keeps the barrel cool, ribbed along its length */
@@ -847,26 +774,6 @@
   width: 58%;
 }
 
-/* The machine guns, laid over the board. Each rests on the sandbags in
-   front of its gunner, so it is drawn over them, like a rifle levelled
-   over the parapet. */
-.trench-guns {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-}
-
-.trench-guns.guns-toward {
-  z-index: 5;
-}
-
-.trench-gun {
-  position: absolute;
-  width: 12.5%;
-  height: 12.5%;
-}
-
 /* Every soldier stands over the sandbags, so a man climbing out of a trench
    is never drawn behind the bags he is climbing over. Those down in their
    own trench stand behind the sandbags and earth in front of it, and only
@@ -931,12 +838,12 @@
   fill: url(#gun-steel-30);
 }
 
-.mg-gun .gun-wood {
+.carried-vickers .gun-wood {
   fill: url(#gun-wood-34);
 }
 
-.mg-gun .gun-steel,
-.mg-gun .mg-jacket {
+.carried-vickers .gun-steel,
+.carried-vickers .mg-jacket {
   fill: url(#gun-steel-34);
 }
 
@@ -1361,6 +1268,15 @@
   z-index: 4;
   overflow: visible;
   rotate: -32deg;
+  transition:
+    rotate 0.22s ease-out,
+    top 0.22s ease-out;
+}
+
+/* Swung off his shoulder and levelled at what he is firing at */
+.carried-vickers.firing {
+  top: 38%;
+  rotate: var(--aim);
 }
 
 /* --- German kit --- */
@@ -1407,10 +1323,6 @@
   filter: brightness(1.05) saturate(0.6);
 }
 
-.mg-sled .mg-legs {
-  stroke-width: 2.6;
-}
-
 /* One shadow for the whole soldier, kit and all, cast from around his body,
    so the flash as he fires or is hit stays a plain change of brightness the
    compositor can run */
@@ -1454,8 +1366,7 @@
 .unit-helmet > svg,
 .field-glasses > svg,
 .unit-grenades > svg,
-.carried-vickers > svg,
-.mg-gun > svg {
+.carried-vickers > svg {
   display: block;
   width: 100%;
   height: 100%;
