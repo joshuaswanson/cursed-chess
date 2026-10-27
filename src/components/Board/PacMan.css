@@ -38,6 +38,146 @@
   filter: drop-shadow(0 0 0.06px #5a5aff);
 }
 
+/* The walls inside the maze, and the ghosts' pen, in the same double blue line */
+.pac-maze .pac-wall {
+  fill: #000;
+  stroke: #2121ff;
+  stroke-width: 0.055;
+  filter: drop-shadow(0 0 0.06px #5a5aff);
+}
+
+.pac-maze .pac-pen-door {
+  stroke: #ffb8ff;
+  stroke-width: 0.07;
+}
+
+.app[data-theme="pacman"] .square.pac-pen {
+  background: #000;
+  cursor: default;
+}
+
+/* The ghosts glide a square once the move before them has landed */
+.pac-ghosts {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.pac-ghost {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+  display: grid;
+  place-items: center;
+  transition:
+    left 380ms linear var(--ghost-delay, 0ms),
+    top 380ms linear var(--ghost-delay, 0ms);
+}
+
+.pac-ghost-art {
+  width: 78%;
+  height: 78%;
+  overflow: visible;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.6));
+}
+
+/* The hem flicks between its two shapes as the ghost goes */
+.pac-ghost-body.hem-1 {
+  animation: pac-hem 0.26s steps(1) infinite;
+}
+
+.pac-ghost-body.hem-0 {
+  animation: pac-hem 0.26s steps(1) infinite reverse;
+}
+
+@keyframes pac-hem {
+  50% {
+    visibility: hidden;
+  }
+}
+
+.pac-ghost-fright {
+  display: none;
+}
+
+/* Waiting in the pen, a ghost bobs up and down */
+.pac-ghost.in-pen .pac-ghost-art {
+  animation: pac-bob 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes pac-bob {
+  from {
+    translate: 0 -8%;
+  }
+  to {
+    translate: 0 8%;
+  }
+}
+
+/* Scared, it turns blue with a wavy mouth, and flashes white as the power runs out */
+.pac-ghost.is-scared .pac-ghost-body {
+  fill: #2121ff;
+}
+
+.pac-ghost.is-scared .pac-ghost-eyes {
+  display: none;
+}
+
+.pac-ghost.is-scared .pac-ghost-fright {
+  display: inline;
+}
+
+.pac-ghost.is-ending .pac-ghost-body {
+  animation:
+    pac-hem 0.26s steps(1) infinite,
+    pac-flash 0.4s steps(1) infinite;
+}
+
+.pac-ghost.is-ending .pac-ghost-body.hem-0 {
+  animation:
+    pac-hem 0.26s steps(1) infinite reverse,
+    pac-flash 0.4s steps(1) infinite;
+}
+
+@keyframes pac-flash {
+  50% {
+    fill: #fff;
+  }
+}
+
+/* Eaten, only its eyes are left, resting in the pen */
+.pac-ghost.is-eaten .pac-ghost-body {
+  display: none;
+}
+
+/* A piece a ghost caught shrivels up under it, spinning, and is gone */
+.pac-caught {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+  pointer-events: none;
+  animation: pac-caught 1.2s ease-in both;
+}
+
+@keyframes pac-caught {
+  0% {
+    scale: 1;
+    rotate: 0deg;
+    opacity: 1;
+  }
+  70% {
+    scale: 0.3 0.05;
+    rotate: 540deg;
+    opacity: 1;
+  }
+  100% {
+    scale: 0;
+    rotate: 720deg;
+    opacity: 0;
+  }
+}
+
 /* A small dot on each square, and a big blinking one for each power pellet */
 .pac-dot {
   position: absolute;
@@ -132,6 +272,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .pac-power,
+  .pac-ghost-body,
+  .pac-ghost.in-pen .pac-ghost-art,
   .square.pac-scared .piece-img {
     animation: none;
   }

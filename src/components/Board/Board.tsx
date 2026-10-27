@@ -30,7 +30,7 @@ import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
 import { LanternDark, LanternFeel, LanternIcon } from "./Lanterns";
 import { StormBolt, StormScars } from "./Thunderstorm";
 import { FinaleOver, FinaleUnder } from "./Finale";
-import { PacMaze, PacPellet } from "./PacMan";
+import { PacGhosts, PacMaze, PacPellet } from "./PacMan";
 import { TUNNEL_MS, eatTimes, tunnelWay, usePacSounds } from "./pacMotion";
 import { HeistLights, HeistLoot } from "./Heist";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
@@ -1132,7 +1132,14 @@ export function Board() {
               tipAt={0}
             />
           )}
-          {pac && <PacMaze />}
+          {pac && <PacMaze flipped={flipped} />}
+          {pac && (
+            <PacGhosts
+              view={pac}
+              flipped={flipped}
+              delayMs={pacTunnel ? TUNNEL_MS : SLIDE_MS}
+            />
+          )}
           {strikes && <StormScars strikes={strikes} flipped={flipped} />}
           {dark && (
             <LanternFeel
