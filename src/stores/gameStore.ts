@@ -957,7 +957,7 @@ function startCursedIntro(): void {
   }, boomAt + CURSE_REVEAL_MS);
 }
 
-/** Ends the turn for an action that does not move a piece, like a kick or a battering */
+/** Ends the turn without a piece moving: after a kick, when time runs out, or when a side has no move */
 function passTurnWithoutMoving(endDelayMs: number): void {
   const state = useGameStore.getState();
   const { game, pluginManager } = state;
