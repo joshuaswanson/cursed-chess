@@ -58,13 +58,13 @@ export const MAZE_WALLS: [SquareIndex, SquareIndex][] = [
   beside(4, 4),
 ];
 const WALLS = new Set(MAZE_WALLS.map(([a, b]) => wallKey(a, b)));
+/** A square's colour: 0 dark, 1 light */
+const shade = (sq: SquareIndex) => (fileOf(sq) + rankOf(sq)) % 2;
 /** How many moves the ghosts stay blue, to be eaten, after a power pellet */
 export const POWER_MOVES = 3;
 export const PELLET_POINTS = 10;
 export const POWER_POINTS = 50;
 export const GHOST_POINTS = 200;
-/** Moves in a row without a pellet eaten, after which the ghosts win */
-const STALL_PLIES = 30;
 /** How long a move, and the ghosts' step after it, take to play out before the next move */
 export const GHOSTS_HOLD_MS = 800;
 /** How many moves an eaten ghost spends back in the pen before it comes out again */
@@ -371,7 +371,6 @@ export class PacManPlugin implements ModePlugin {
   private score = 0;
   private powerLeft = 0;
   private run: PacRun | null = null;
-  private quietPlies = 0;
   private result: Color | null = null;
   /** The way each move found for the last position goes, by its squares */
   private found: { fen: string; steps: Map<string, PacStep> } | null = null;
@@ -414,16 +413,13 @@ export class PacManPlugin implements ModePlugin {
           )[0],
       ),
     );
-    const lightSquare = (sq: SquareIndex) =>
-      (fileOf(sq) + rankOf(sq)) % 2 === 1;
     this.pellets = new Set(
-      empty.filter((sq) => lightSquare(sq) && !this.power.has(sq)),
+      empty.filter((sq) => shade(sq) === 1 && !this.power.has(sq)),
     );
     this.total = this.pellets.size + this.power.size;
     this.score = 0;
     this.powerLeft = 0;
     this.run = null;
-    this.quietPlies = 0;
     this.result = null;
     this.found = null;
     // Nobody castles through a maze, or takes in passing
@@ -533,7 +529,6 @@ export class PacManPlugin implements ModePlugin {
     this.lastLanding = move.to;
     if (this.powerLeft > 0) this.powerLeft--;
     if (power) this.powerLeft = POWER_MOVES;
-    this.quietPlies = eaten.length > 0 ? 0 : this.quietPlies + 1;
     this.run = {
       id: (this.run?.id ?? 0) + 1,
       from: move.from,
@@ -686,11 +681,22 @@ export class PacManPlugin implements ModePlugin {
     }
   }
 
-  /** Eating the last pellet wins. The ghosts win once no piece can move, or the pellets go uneaten too long. */
+  /** Whether a piece is left that can get to a pellet: any but a bishop, and a bishop to one on its own colour */
+  private canStillEat(board: Board): boolean {
+    const shades = new Set([...this.pellets, ...this.power].map(shade));
+    return ALL_SQUARES.some((sq) => {
+      const piece = board.get(sq);
+      return (
+        !!piece && (piece.type !== PieceType.Bishop || shades.has(shade(sq)))
+      );
+    });
+  }
+
+  /** Eating the last pellet wins. The ghosts win once no piece left can move, or get to a pellet. */
   private decide(board: Board): void {
     if (this.pellets.size + this.power.size === 0) this.result = Color.White;
     else if (
-      this.quietPlies >= STALL_PLIES ||
+      !this.canStillEat(board) ||
       pacSteps(board, Color.White, false, {
         shut: new Set(PEN),
         prey: new Set(),
