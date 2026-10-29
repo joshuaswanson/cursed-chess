@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { centre } from "./box";
 import type { Box } from "./box";
 import "./Coach.css";
+import { t } from "../../i18n";
 
 interface Hole {
   selector: string;
@@ -137,7 +138,7 @@ export function Coach({
           top: under.top + under.height * tipAt,
         }}
       >
-        {tip}
+        {t(tip)}
       </p>
       {children}
     </div>,

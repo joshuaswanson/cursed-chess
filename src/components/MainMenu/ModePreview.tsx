@@ -16,6 +16,7 @@ import { Portal } from "../Board/Portal";
 import { Tombstone } from "../Board/Zombies";
 import { seededRandom } from "../Board/lightningShapes";
 import "./ModePreview.css";
+import { t } from "../../i18n";
 
 /** The mode a scene belongs to, so its pieces come in that mode's colours */
 const SceneTheme = createContext<ThemeId | null>(null);
@@ -626,7 +627,7 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <span className="pv-ball">
         <SoccerBall />
       </span>
-      <span className="pv-shout pv-goal-shout">GOAL!</span>
+      <span className="pv-shout pv-goal-shout">{t("GOAL!")}</span>
     </>
   ),
   // The two teams heave out of time with each other, so the rope goes taut

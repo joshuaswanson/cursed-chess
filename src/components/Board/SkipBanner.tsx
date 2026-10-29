@@ -1,4 +1,5 @@
 import { useGameStore } from "../../stores/gameStore";
+import { t } from "../../i18n";
 import "./Reinforcements.css";
 
 const COPY = {
@@ -26,9 +27,9 @@ export function SkipBanner() {
       className="reinforce-banner skip-banner"
       role="status"
     >
-      <span className="reinforce-title">{copy.title}</span>
+      <span className="reinforce-title">{t(copy.title)}</span>
       <span className="reinforce-sub">
-        {skipped.color === seat ? copy.you : copy.foe}
+        {t(skipped.color === seat ? copy.you : copy.foe)}
       </span>
     </div>
   );

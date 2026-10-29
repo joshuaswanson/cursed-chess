@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import type { FinalePlugin } from "../../plugins/finale";
 import "./DevNote.css";
+import { t } from "../../i18n";
 
 /** How often the bar catches up with the deletion */
 const POLL_MS = 200;
@@ -25,7 +26,7 @@ export function DeleteBar() {
     <div
       className={`dev-note delete-bar${done ? " is-done" : ""}`}
       role="progressbar"
-      aria-label="Deleting Chessbot"
+      aria-label={t("Deleting Chessbot")}
       aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
@@ -41,7 +42,9 @@ export function DeleteBar() {
         <span className="delete-percent">{percent}%</span>
       </div>
       <p className="dev-note-text">
-        {done ? "Deleting chessbot.exe... done!" : "Deleting chessbot.exe..."}
+        {done
+          ? t("Deleting chessbot.exe... done!")
+          : t("Deleting chessbot.exe...")}
       </p>
       <div className="delete-track">
         <div className="delete-fill" style={{ scale: `${shown} 1` }} />

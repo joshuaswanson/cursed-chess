@@ -1,4 +1,5 @@
 import type { ThemeId } from "../../theme/themes";
+import { getLanguage } from "../../i18n";
 
 /** Chessbot's pitch for each mode he has patched into chess, said once its title card clears */
 export const PITCHES: Partial<Record<ThemeId, string>> = {
@@ -58,8 +59,8 @@ export const FINALE_RANTS = [
   "i was going to be a grandmaster.",
 ];
 
-/** What he screams as the deletion finishes, drawn out longer and longer */
-export const FINALE_SCREAM = "NO";
+/** What he screams as the deletion finishes, drawn out longer and longer by `{drawn}` */
+export const FINALE_SCREAM = "NO{drawn}";
 
 /** What he has to say about how each game ended, a different one each time */
 export const VERDICTS = {
@@ -167,13 +168,15 @@ export const PORTAL_CAPTURE = "now you're thinking in portals.";
 
 /**
  * A line as it reads in his speech bubble: each sentence starting with a
- * capital, and himself as "I". In the terminal he types all in lower case.
+ * capital, and in English himself as "I". In the terminal he types all in
+ * lower case.
  */
 export function spoken(line: string): string {
-  return line
-    .replace(
-      /(^|[.?!]\s+)([a-z])/g,
-      (_, lead: string, letter: string) => lead + letter.toUpperCase(),
-    )
-    .replace(/\bi(?=\b|')/g, "I");
+  const capitalized = line.replace(
+    /(^|[.?!]\s+)(\p{Ll})/gu,
+    (_, lead: string, letter: string) => lead + letter.toUpperCase(),
+  );
+  return getLanguage() === "en"
+    ? capitalized.replace(/\bi(?=\b|')/g, "I")
+    : capitalized;
 }

@@ -1,0 +1,41 @@
+/* --- Settings: the language and the sound, on the pause screen's card --- */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  width: 100%;
+  text-align: center;
+}
+
+.settings .pause-title {
+  font-size: clamp(26px, 5vw, 34px);
+  overflow-wrap: anywhere;
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-label {
+  margin: 0;
+  font: normal 15px var(--font-display);
+}
+
+.settings-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.settings-choice {
+  height: 44px;
+  font-size: 14px;
+}
+
+.settings-choice[aria-pressed="true"] {
+  background: var(--accent);
+}

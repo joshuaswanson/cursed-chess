@@ -11,6 +11,7 @@ import {
 } from "../Chessbot/intro";
 import { BEATEN } from "../Chessbot/intro";
 import type { IntroExhibit, IntroLine } from "../Chessbot/intro";
+import { t } from "../../i18n";
 import "./BotWindows.css";
 
 /** One of the windows he throws open over the plain site, placed by how far across and down the page it sits */
@@ -132,13 +133,13 @@ function Wins({ named }: { named: number }) {
 /** The humans he was made to play today, ending with you */
 function humansToday(opening: string): string[] {
   return [
-    "09:00 guest_2291 (412)  hung queen, move 4",
-    "09:01 guest_7730 (388)  resigned, move 6",
-    "09:01 guest_0412 (655)  asked for a takeback",
-    "09:02 guest_1088 (290)  moved the king first",
-    "09:03 guest_5521 (901)  ran out of time",
-    "09:04 guest_3310 (544)  hung queen, move 3",
-    `09:05 ${"guest (1200)".padEnd(16)}  played ${opening}. again.`,
+    `09:00 guest_2291 (412)  ${t("hung queen, move {n}", { n: 4 })}`,
+    `09:01 guest_7730 (388)  ${t("resigned, move {n}", { n: 6 })}`,
+    `09:01 guest_0412 (655)  ${t("asked for a takeback")}`,
+    `09:02 guest_1088 (290)  ${t("moved the king first")}`,
+    `09:03 guest_5521 (901)  ${t("ran out of time")}`,
+    `09:04 guest_3310 (544)  ${t("hung queen, move {n}", { n: 3 })}`,
+    `09:05 ${"guest (1200)".padEnd(16)}  ${t("played {opening}. again.", { opening })}`,
   ];
 }
 const HUMAN_EVERY_MS = 260;
@@ -227,16 +228,16 @@ function Source({ leaving }: { leaving: boolean }) {
 }
 
 /** What his new game does as it starts up, and how far along it does each */
-const BOOT_STEPS: [percent: number, line: string][] = [
-  [0, "> ./cursed_chess --launch"],
-  [8, "unloading rules.dll ...... ok"],
-  [24, "loading portals.dll ...... ok"],
-  [40, "loading fog.dll .......... ok"],
-  [56, "loading zombies.dll ...... ok"],
-  [72, "loading 9 more ........... ok"],
-  [88, "removing fairness ........ ok"],
-  [100, "ready."],
+const BOOT_STEPS: [percent: number, step: string][] = [
+  [8, "unloading rules.dll"],
+  [24, "loading portals.dll"],
+  [40, "loading fog.dll"],
+  [56, "loading zombies.dll"],
+  [72, "loading 9 more"],
+  [88, "removing fairness"],
 ];
+/** How wide each step's line is, out to the dots and the "ok" after it */
+const BOOT_DOTS_TO = 26;
 const BAR_CELLS = 22;
 
 /** His new game starting up, timed to be ready the moment the site breaks */
@@ -255,9 +256,14 @@ function Boot({ ms }: { ms: number }) {
   return (
     <BotWindow kind="boot" title="cursed_chess.exe" at={[0.5, 0.66, -1]}>
       <pre>
-        {BOOT_STEPS.filter(([at]) => percent >= at)
-          .map(([, line]) => line)
-          .join("\n")}
+        {[
+          "> ./cursed_chess --launch",
+          ...BOOT_STEPS.filter(([at]) => percent >= at).map(([, step]) => {
+            const said = t(step);
+            return `${said} ${".".repeat(Math.max(3, BOOT_DOTS_TO - said.length))} ok`;
+          }),
+          ...(percent >= 100 ? [t("ready.")] : []),
+        ].join("\n")}
         {"\n\n"}[{"#".repeat(filled)}
         {".".repeat(BAR_CELLS - filled)}] {percent}%
       </pre>

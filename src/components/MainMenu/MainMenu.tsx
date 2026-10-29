@@ -10,6 +10,9 @@ import {
 import { Logo } from "../Logo/Logo";
 import { Lobby } from "./Lobby";
 import { onlineModeIndexes } from "../../net/onlineModes";
+import { t } from "../../i18n";
+import { GearIcon } from "../Hud/icons";
+import { SettingsDialog } from "../Settings/Settings";
 import "./MainMenu.css";
 
 /** How many modes the story runs through */
@@ -74,6 +77,7 @@ export function MainMenu() {
   const open = useGameStore((s) => s.menuOpen);
   const link = useGameStore((s) => s.net);
   const lobbyOpen = useGameStore((s) => s.lobbyOpen);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { startAdventure, startSingle } = useGameStore.getState();
   if (!open) return null;
   /** A card for every mode that is, or is not, still in beta */
@@ -84,8 +88,8 @@ export function MainMenu() {
       return [
         <ModeCard
           key={mode.theme}
-          title={theme.title}
-          tagline={theme.catchphrase}
+          title={t(theme.title)}
+          tagline={t(theme.catchphrase)}
           colors={[theme.sky[1], theme.accent]}
           onPlay={() => startSingle(i)}
         >
@@ -94,18 +98,28 @@ export function MainMenu() {
       ];
     });
   return (
-    <div className="main-menu" role="dialog" aria-label="Main menu">
+    <div className="main-menu" role="dialog" aria-label={t("Main menu")}>
       <div className="menu-sheet">
         <header className="menu-head">
           <Logo />
-          <a
-            className="menu-credit"
-            href={SITE_URL}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Made by <b>Joshua Swanson</b>
-          </a>
+          <div className="menu-stickers">
+            <a
+              className="menu-credit"
+              href={SITE_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t("Made by")} <b>Joshua Swanson</b>
+            </a>
+            <button
+              type="button"
+              className="menu-credit menu-settings"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <GearIcon />
+              {t("Settings")}
+            </button>
+          </div>
         </header>
         {link || lobbyOpen ? (
           <div className="menu-list">
@@ -117,8 +131,8 @@ export function MainMenu() {
                   return (
                     <ModeCard
                       key={theme.id}
-                      title={theme.title}
-                      tagline={theme.catchphrase}
+                      title={t(theme.title)}
+                      tagline={t(theme.catchphrase)}
                       colors={[theme.sky[1], theme.accent]}
                       onPlay={() => startSingle(i)}
                     >
@@ -134,16 +148,18 @@ export function MainMenu() {
             {/* The two ways to play everything, on a row of their own */}
             <div className="menu-featured">
               <ModeCard
-                title="Story Mode"
-                tagline={`Battle Chessbot across all ${STORY_MODES} game modes!`}
+                title={t("Story Mode")}
+                tagline={t("Battle Chessbot across all {n} game modes!", {
+                  n: STORY_MODES,
+                })}
                 colors={["#6a1fd6", "#ff2e88"]}
                 onPlay={startAdventure}
               >
                 <AdventurePreview />
               </ModeCard>
               <ModeCard
-                title="Multiplayer"
-                tagline="Curse your friends!"
+                title={t("Multiplayer")}
+                tagline={t("Curse your friends!")}
                 colors={["#6b2fd6", "#3ee6b0"]}
                 onPlay={() => useGameStore.setState({ lobbyOpen: true })}
               >
@@ -151,22 +167,22 @@ export function MainMenu() {
               </ModeCard>
             </div>
             <h2 className="menu-divider">
-              <span>Single modes</span>
+              <span>{t("Single modes")}</span>
             </h2>
             <div className="menu-modes">{modeCards(false)}</div>
             <h2 className="menu-divider">
-              <span>Beta modes</span>
+              <span>{t("Beta modes")}</span>
             </h2>
             <p className="menu-note">
-              Still being worked on. Expect rough edges.
+              {t("Still being worked on. Expect rough edges.")}
             </p>
             <div className="menu-modes">{modeCards(true)}</div>
             <footer className="menu-foot">
               <a href={SITE_URL} target="_blank" rel="noreferrer">
-                Made by Joshua Swanson
+                {t("Made by")} Joshua Swanson
               </a>
               <a href={BUGS_URL} target="_blank" rel="noreferrer">
-                Report a bug
+                {t("Report a bug")}
               </a>
               <a
                 className="menu-foot-coffee"
@@ -174,12 +190,15 @@ export function MainMenu() {
                 target="_blank"
                 rel="noreferrer"
               >
-                Enjoyed playing? Buy me a coffee
+                {t("Enjoyed playing? Buy me a coffee")}
               </a>
             </footer>
           </div>
         )}
       </div>
+      {settingsOpen && (
+        <SettingsDialog onClose={() => setSettingsOpen(false)} />
+      )}
     </div>
   );
 }

@@ -66,6 +66,14 @@
   max-width: 100%;
 }
 
+/* The stickers slapped on under the logo */
+.menu-stickers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
 /* A sticker slapped on under the logo, in the same ink and hard shadow as the cards */
 .menu-credit {
   padding: 7px 16px 6px;
@@ -89,6 +97,20 @@
 .menu-credit b {
   font-weight: inherit;
   color: var(--grape);
+}
+
+.menu-settings {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--mint);
+  rotate: 2deg;
+  cursor: pointer;
+}
+
+.menu-settings .icon {
+  width: 17px;
+  height: 17px;
 }
 
 .menu-credit:hover {

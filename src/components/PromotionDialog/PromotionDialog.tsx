@@ -2,6 +2,7 @@ import { useGameStore } from "../../stores/gameStore";
 import { PieceType } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import "./PromotionDialog.css";
+import { t } from "../../i18n";
 
 const PROMOTION_PIECES = [
   PieceType.Queen,
@@ -22,7 +23,7 @@ export function PromotionDialog() {
       <div
         className="promotion-dialog"
         role="dialog"
-        aria-label="Choose a piece to promote to"
+        aria-label={t("Choose a piece to promote to")}
         onClick={(e) => e.stopPropagation()}
       >
         <span className="promotion-title">Promote to</span>

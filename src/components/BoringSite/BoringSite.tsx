@@ -7,6 +7,7 @@ import type { AuthMode } from "./AuthDialog";
 import "./BoringSite.css";
 import { Chessbot } from "../Chessbot/Chessbot";
 import type { ChessbotMood } from "../Chessbot/Chessbot";
+import { t } from "../../i18n";
 
 const LEET: Record<string, string> = {
   a: "4",
@@ -29,8 +30,9 @@ function useCorrupt(): (text: string) => string {
     s.cursed || !s.curseStage ? 0 : s.corruption,
   );
   return useCallback(
-    (text: string) =>
-      [...text]
+    (english: string) => {
+      const text = t(english);
+      return [...text]
         .map((letter, i) => {
           if (letter === " ") return letter;
           const roll = (i * 31 + text.length * 17 + letter.charCodeAt(0)) % 100;
@@ -38,7 +40,8 @@ function useCorrupt(): (text: string) => string {
           const swap = LEET[letter.toLowerCase()];
           return swap && roll % 2 ? swap : NOISE[roll % NOISE.length];
         })
-        .join(""),
+        .join("");
+    },
     [level],
   );
 }
@@ -67,7 +70,7 @@ export function BoringHeader() {
         <PawnMark />
         <span>{corrupt("Totally Normal Chess")}</span>
       </div>
-      <nav className="boring-nav" aria-label="Site">
+      <nav className="boring-nav" aria-label={t("Site")}>
         {NAV_LINKS.map((link) => (
           <button
             type="button"
@@ -200,8 +203,8 @@ function ComputerCard() {
         />
       </div>
       <span className="boring-player-name boring-bot-name">
-        <span>Chess Bot (Level 1)</span>
-        <span aria-hidden>Ch3ssb0t (L3vel ?)</span>
+        <span>{t("Chess Bot (Level 1)")}</span>
+        <span aria-hidden>{t("Ch3ssb0t (L3vel ?)")}</span>
       </span>
       <span className="boring-rating">(800)</span>
     </div>
@@ -248,7 +251,9 @@ function MoveList() {
   }
   return (
     <ol className="boring-moves" ref={listRef}>
-      {history.length === 0 && <li className="boring-empty">White to move</li>}
+      {history.length === 0 && (
+        <li className="boring-empty">{t("White to move")}</li>
+      )}
       {rows}
     </ol>
   );
@@ -270,7 +275,7 @@ export function BoringSidebar() {
           </button>
         </div>
       </section>
-      <PlayerCard name="Guest" rating={1200} />
+      <PlayerCard name={t("Guest")} rating={1200} />
     </aside>
   );
 }
@@ -282,17 +287,17 @@ export function BoringFooter() {
   const corrupt = useCorrupt();
   return (
     <footer className="boring-footer">
-      <span>&copy; {corrupt("2026 Totally Normal Chess")}</span>
+      <span>&copy; 2026 {corrupt("Totally Normal Chess")}</span>
       {FOOTER_LINKS.map((link) => (
         <button type="button" key={link} onClick={() => setTab(link)}>
           {corrupt(link)}
         </button>
       ))}
       <button type="button" onClick={() => useGameStore.getState().skipIntro()}>
-        Skip intro
+        {t("Skip intro")}
       </button>
       <button type="button" onClick={() => useGameStore.getState().openMenu()}>
-        Main Menu
+        {t("Main menu")}
       </button>
     </footer>
   );

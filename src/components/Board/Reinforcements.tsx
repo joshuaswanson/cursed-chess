@@ -6,6 +6,7 @@ import { pieceImage } from "../../utils/pieceImages";
 import { visualCol } from "./boardGeometry";
 import { sfx } from "../../audio/sfx";
 import "./Reinforcements.css";
+import { t } from "../../i18n";
 
 type Style = React.CSSProperties & Record<`--${string}`, string>;
 
@@ -109,10 +110,10 @@ export function ReinforcementBanner({
   const sides = new Set(arrivals.map((a) => a.piece.color));
   const who =
     sides.size === 2
-      ? "Both sides!"
+      ? t("Both sides!")
       : sides.has(Color.White)
-        ? "For you!"
-        : "For the foe!";
+        ? t("For you!")
+        : t("For the foe!");
   return (
     <div
       className="reinforce-banner"
@@ -121,14 +122,16 @@ export function ReinforcementBanner({
     >
       {onlyKings ? (
         <>
-          <span className="reinforce-title">Kings are back!</span>
-          <span className="reinforce-sub">Protect them again.</span>
+          <span className="reinforce-title">{t("Kings are back!")}</span>
+          <span className="reinforce-sub">{t("Protect them again.")}</span>
         </>
       ) : (
         <>
-          <span className="reinforce-title">Reinforcements!</span>
+          <span className="reinforce-title">{t("Reinforcements!")}</span>
           <span className="reinforce-sub">
-            {style === "parachute" ? "Airdrop incoming." : "Here they come."}{" "}
+            {style === "parachute"
+              ? t("Airdrop incoming.")
+              : t("Here they come.")}{" "}
             {who}
           </span>
         </>

@@ -3,6 +3,7 @@ import { useGameStore } from "../../stores/gameStore";
 import { sfx } from "../../audio/sfx";
 import type { DevNoteText } from "./notes";
 import "./DevNote.css";
+import { t } from "../../i18n";
 
 /** How long Stephen's message is up before Chessbot catches it */
 const CAUGHT_AT_MS = 2600;
@@ -34,14 +35,14 @@ function Note({ note }: { note: DevNoteText }) {
   const [rewritten, setRewritten] = useState<string | null>(null);
   const [hacking, setHacking] = useState(false);
   const ok = useRef<HTMLButtonElement>(null);
-  const done = !note.rewrite || (rewritten === note.rewrite && !hacking);
+  const rewrite = note.rewrite && t(note.rewrite);
+  const done = !rewrite || (rewritten === rewrite && !hacking);
 
   useEffect(() => {
     sfx.notify();
   }, []);
 
   useEffect(() => {
-    const { rewrite } = note;
     if (!rewrite) return;
     let step: ReturnType<typeof setInterval> | undefined;
     const caught = setTimeout(() => {
@@ -60,7 +61,7 @@ function Note({ note }: { note: DevNoteText }) {
       clearTimeout(caught);
       clearInterval(step);
     };
-  }, [note]);
+  }, [rewrite]);
 
   useEffect(() => {
     if (done) ok.current?.focus();
@@ -84,9 +85,9 @@ function Note({ note }: { note: DevNoteText }) {
         </span>
         <span className="dev-note-from" id="dev-note-from">
           <b>Stephen</b>
-          <small>Site Support</small>
+          <small>{t("Site Support")}</small>
         </span>
-        <time className="dev-note-time">{note.sentAt}</time>
+        <time className="dev-note-time">{t(note.sentAt)}</time>
       </div>
       <p
         className={
@@ -94,7 +95,7 @@ function Note({ note }: { note: DevNoteText }) {
         }
         id="dev-note-text"
       >
-        {rewritten ?? note.text}
+        {rewritten ?? t(note.text)}
       </p>
       <button
         ref={ok}

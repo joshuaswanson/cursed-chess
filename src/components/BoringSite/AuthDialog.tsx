@@ -3,6 +3,7 @@ import { Color, PieceType } from "../../engine";
 import type { Piece } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import "./AuthDialog.css";
+import { t } from "../../i18n";
 
 export type AuthMode = "login" | "signup";
 
@@ -15,7 +16,12 @@ const PASSWORD_RULES: { text: string; test: (pw: string) => boolean }[] = [
   { text: "Must include an uppercase letter.", test: (pw) => /[A-Z]/.test(pw) },
   {
     text: "Must include the name of a chess piece.",
-    test: (pw) => PIECE_NAMES.some((name) => pw.toLowerCase().includes(name)),
+    test: (pw) =>
+      PIECE_NAMES.some(
+        (name) =>
+          pw.toLowerCase().includes(name) ||
+          pw.toLowerCase().includes(t(name).toLowerCase()),
+      ),
   },
   {
     text: "The digits must add up to 8.",
@@ -49,9 +55,9 @@ function SignUpForm({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <h2 id="auth-title">Create your account</h2>
+      <h2 id="auth-title">{t("Create your account")}</h2>
       <label className="auth-field">
-        <span>Username</span>
+        <span>{t("Username")}</span>
         <input
           value={username}
           onChange={(e) => {
@@ -64,12 +70,12 @@ function SignUpForm({ onClose }: { onClose: () => void }) {
       </label>
       {nameChecked && name && (
         <p className="auth-error">
-          &ldquo;{name}&rdquo; is already taken by a pawn. Try <b>{name}_2</b>,{" "}
-          <b>{name}_but_worse</b>, or <b>gary</b>.
+          {t("“{name}” is already taken by a pawn. Try", { name })}{" "}
+          <b>{name}_2</b>, <b>{name}_but_worse</b>, {t("or")} <b>gary</b>.
         </p>
       )}
       <label className="auth-field">
-        <span>Password</span>
+        <span>{t("Password")}</span>
         <input
           type="text"
           value={password}
@@ -81,7 +87,7 @@ function SignUpForm({ onClose }: { onClose: () => void }) {
         <ul className="auth-rules">
           {shown.map((rule) => (
             <li key={rule.text} className={rule.ok ? "ok" : "bad"}>
-              {rule.text}
+              {t(rule.text)}
             </li>
           ))}
         </ul>
@@ -91,10 +97,10 @@ function SignUpForm({ onClose }: { onClose: () => void }) {
         className="boring-btn auth-submit"
         disabled={!allPass}
       >
-        Create account
+        {t("Create account")}
       </button>
       <button type="button" className="auth-link" onClick={onClose}>
-        Give up and continue as Guest
+        {t("Give up and continue as Guest")}
       </button>
     </>
   );
@@ -118,13 +124,13 @@ function LogInForm({ onClose }: { onClose: () => void }) {
   if (step === "form") {
     return (
       <>
-        <h2 id="auth-title">Log in</h2>
+        <h2 id="auth-title">{t("Log in")}</h2>
         <label className="auth-field">
-          <span>Username or email</span>
+          <span>{t("Username or email")}</span>
           <input autoComplete="off" />
         </label>
         <label className="auth-field">
-          <span>Password</span>
+          <span>{t("Password")}</span>
           <input type="password" autoComplete="off" />
         </label>
         <button
@@ -132,10 +138,10 @@ function LogInForm({ onClose }: { onClose: () => void }) {
           className="boring-btn auth-submit"
           onClick={() => setStep("captcha")}
         >
-          Log in
+          {t("Log in")}
         </button>
         <button type="button" className="auth-link" onClick={onClose}>
-          Forgot password? So did we.
+          {t("Forgot password? So did we.")}
         </button>
       </>
     );
@@ -143,8 +149,8 @@ function LogInForm({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <h2 id="auth-title">Verify you are human</h2>
-      <p className="auth-note">Select every square with a bishop.</p>
+      <h2 id="auth-title">{t("Verify you are human")}</h2>
+      <p className="auth-note">{t("Select every square with a bishop.")}</p>
       <div className="captcha-grid">
         {CAPTCHA_POSITION.map((piece, i) => (
           <button
@@ -165,7 +171,9 @@ function LogInForm({ onClose }: { onClose: () => void }) {
       </div>
       {step === "failed" && (
         <p className="auth-error">
-          Verification failed. A human would have noticed the third bishop.
+          {t(
+            "Verification failed. A human would have noticed the third bishop.",
+          )}
         </p>
       )}
       <button
@@ -173,11 +181,11 @@ function LogInForm({ onClose }: { onClose: () => void }) {
         className="boring-btn auth-submit"
         onClick={() => setStep("failed")}
       >
-        Verify
+        {t("Verify")}
       </button>
       {step === "failed" && (
         <button type="button" className="auth-link" onClick={onClose}>
-          Continue as Guest
+          {t("Continue as Guest")}
         </button>
       )}
     </>
@@ -212,7 +220,7 @@ export function AuthDialog({
         <button
           type="button"
           className="auth-close"
-          aria-label="Close"
+          aria-label={t("Close")}
           onClick={onClose}
         >
           &times;

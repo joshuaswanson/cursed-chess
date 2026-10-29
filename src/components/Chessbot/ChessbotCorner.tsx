@@ -20,6 +20,7 @@ import {
   spoken,
 } from "./lines";
 import { PRIZED, RATTLED, RATTLED_MS, useChessbot } from "./useChessbot";
+import { t } from "../../i18n";
 
 interface Fidget {
   /** The look on his visor, if it changes */
@@ -263,7 +264,7 @@ function useScream(on: boolean): string | undefined {
     );
     return () => window.clearInterval(timer);
   }, [on]);
-  return on ? FINALE_SCREAM + "O".repeat(held) : undefined;
+  return on ? t(FINALE_SCREAM, { drawn: t("O").repeat(held) }) : undefined;
 }
 
 /** How long he talks about a missed turn */
@@ -455,6 +456,7 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
   );
   // Whatever he was saying, he drops it the moment he is rattled
   const bubble = useBubble(bot.says === RATTLED ? undefined : line);
+  const said = bubble.text && t(bubble.text);
 
   return (
     <aside
@@ -465,17 +467,17 @@ export function ChessbotCorner({ docked = false }: { docked?: boolean }) {
       }
       aria-live="polite"
     >
-      {bubble.text && (
+      {said && (
         <p
           className={`chessbot-speech${bubble.leaving ? " is-leaving" : ""}`}
-          key={bubble.text}
+          key={said}
           style={
-            bubble.text.length > ONE_LINE_CHARS
-              ? { maxWidth: `${Math.ceil(bubble.text.length / 2) + 4}ch` }
+            said.length > ONE_LINE_CHARS
+              ? { maxWidth: `${Math.ceil(said.length / 2) + 4}ch` }
               : undefined
           }
         >
-          {spoken(bubble.text)}
+          {spoken(said)}
         </p>
       )}
       <div className="chessbot-float">

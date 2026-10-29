@@ -1,6 +1,7 @@
 import { useId } from "react";
 import type { ReactNode } from "react";
 import "./Chessbot.css";
+import { t } from "../../i18n";
 
 export type ChessbotMood =
   | "smug"
@@ -632,12 +633,12 @@ export function Chessbot({
           x="100"
           y="126"
           textAnchor="middle"
-          textLength={Math.min(80, says.length * 15)}
+          textLength={Math.min(80, t(says).length * 15)}
           lengthAdjust="spacingAndGlyphs"
           fill={EYE}
           filter={glow}
         >
-          {says}
+          {t(says)}
         </text>
       ) : (
         <g transform="translate(100 118) scale(0.84) translate(-100 -92)">

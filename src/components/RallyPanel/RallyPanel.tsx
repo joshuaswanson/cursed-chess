@@ -9,6 +9,7 @@ import { Coach } from "../Coach/Coach";
 import { centre } from "../Coach/box";
 import type { Box } from "../Coach/box";
 import "./RallyPanel.css";
+import { t } from "../../i18n";
 
 const MAX_ELIXIR = 10;
 const FOE_HAND_SIZE = 4;
@@ -63,7 +64,7 @@ function ElixirMeter({
       <div
         className="elixir-bar"
         role="meter"
-        aria-label={side === "you" ? "Your elixir" : "Foe elixir"}
+        aria-label={side === "you" ? t("Your elixir") : t("Foe elixir")}
         aria-valuemin={0}
         aria-valuemax={MAX_ELIXIR}
         aria-valuenow={full}
@@ -133,7 +134,7 @@ export function FoeRallyBar() {
   return (
     <section
       className="rally-bar rally-bar-foe"
-      aria-label="Foe reinforcements"
+      aria-label={t("Foe reinforcements")}
     >
       <img
         className="rally-crest"
@@ -225,16 +226,16 @@ export function YourRallyBar() {
   return (
     <section
       className="rally-bar rally-bar-you"
-      aria-label="Your reinforcements"
+      aria-label={t("Your reinforcements")}
     >
       <ElixirMeter amount={elixir} side="you" />
       {/* The card that comes into your hand when you play one */}
-      <div className="deploy-next" aria-label="Next card">
-        <span className="deploy-next-label">Next</span>
+      <div className="deploy-next" aria-label={t("Next card")}>
+        <span className="deploy-next-label">{t("Next")}</span>
         <div className="deploy-card deploy-next-card" key={hand.next}>
           <img
             src={pieceImage({ type: hand.next, color: Color.White })}
-            alt={CARD_LABEL[hand.next]}
+            alt={t(CARD_LABEL[hand.next] ?? "")}
             draggable={false}
           />
           <span className="deploy-cost">{PIECE_COST[hand.next]}</span>
@@ -242,7 +243,7 @@ export function YourRallyBar() {
       </div>
       <div className={`deploy-hand${elixir >= MAX_ELIXIR ? " eager" : ""}`}>
         {hand.slots.map((type, slot) => {
-          const label = CARD_LABEL[type] ?? "";
+          const label = t(CARD_LABEL[type] ?? "");
           const img = pieceImage({ type, color: Color.White });
           const cost = PIECE_COST[type];
           const canAfford = elixir >= cost;
@@ -250,7 +251,13 @@ export function YourRallyBar() {
             <div
               // A newly dealt card is a new element, so it comes in afresh
               key={`${slot}-${hand.dealt[slot]}`}
-              title={`Drag onto your half to deploy a ${label.toLowerCase()} for ${cost} elixir`}
+              title={t(
+                "Drag onto your half to deploy: {piece}, {cost} elixir",
+                {
+                  piece: label,
+                  cost,
+                },
+              )}
               className={`deploy-card${hand.dealt[slot] > 0 ? " dealt" : ""}${canAfford ? "" : " disabled"}${selected === type ? " selected" : ""}${drag?.moved && drag.type === type ? " lifted" : ""}`}
               style={{ "--slot": slot } as React.CSSProperties}
               aria-pressed={selected === type}

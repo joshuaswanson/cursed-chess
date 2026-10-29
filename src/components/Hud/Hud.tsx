@@ -12,6 +12,7 @@ import type { PacView } from "../../plugins/pacman";
 import { useTheme } from "../../theme/useTheme";
 import { pieceImage } from "../../utils/pieceImages";
 import { sfx } from "../../audio/sfx";
+import { t } from "../../i18n";
 import "./Hud.css";
 import { PauseIcon } from "./icons";
 import { ChessbotCorner } from "../Chessbot/ChessbotCorner";
@@ -49,9 +50,9 @@ function Scoreboard() {
   const online = useGameStore((s) => s.net !== null);
   const seat = useGameStore((s) => s.seat);
   const nameOf = (color: Color) =>
-    color === seat ? "You" : online ? "Friend" : "Chessbot";
+    color === seat ? t("You") : online ? t("Friend") : "Chessbot";
   return (
-    <section className="hud-card scoreboard" aria-label="Score">
+    <section className="hud-card scoreboard" aria-label={t("Score")}>
       <div className="score-side">
         <img
           className="score-avatar"
@@ -117,15 +118,15 @@ function NowPlaying() {
     : untimed
       ? 1
       : Math.max(0, Math.min(1, remaining / duration));
-  const tagline = theme.catchphrase;
+  const tagline = t(theme.catchphrase);
   const urgent = turns ? turnsLeft <= 1 : !untimed && remaining <= 5;
 
   return (
-    <section className="hud-card now-playing" aria-label="Now playing">
+    <section className="hud-card now-playing" aria-label={t("Now playing")}>
       <div className="now-text">
-        <span className="now-kicker">Now playing</span>
+        <span className="now-kicker">{t("Now playing")}</span>
         <h2 className="now-title" key={theme.id}>
-          {theme.title}
+          {t(theme.title)}
         </h2>
         <p className="now-tagline">{tagline}</p>
       </div>
@@ -134,14 +135,16 @@ function NowPlaying() {
         role="timer"
         aria-label={
           turns
-            ? `${turnsLeft} turns until the board shrinks or the round ends`
+            ? t("{n} turns until the board shrinks or the round ends", {
+                n: turnsLeft,
+              })
             : pellets
-              ? `${turnsLeft} pellets left`
+              ? t("{n} pellets left", { n: turnsLeft })
               : goalsToWin
-                ? `First to ${goalsToWin} goals wins`
+                ? t("First to {n} goals wins", { n: goalsToWin })
                 : untimed
-                  ? "No time limit: play until someone wins"
-                  : `${remaining} seconds left in this mode`
+                  ? t("No time limit: play until someone wins")
+                  : t("{n} seconds left in this mode", { n: remaining })
         }
       >
         <svg viewBox="0 0 64 64">
@@ -161,12 +164,12 @@ function NowPlaying() {
               {turnsLeft}
               <small>
                 {pellets
-                  ? "left"
+                  ? t("left")
                   : goalsToWin
-                    ? "to win"
+                    ? t("to win")
                     : turnsLeft === 1
-                      ? "turn"
-                      : "turns"}
+                      ? t("turn")
+                      : t("turns")}
               </small>
             </span>
           ) : untimed ? (
@@ -189,12 +192,14 @@ function PacScore() {
   if (!tally) return null;
   const [score, power] = tally.split(" ").map(Number);
   return (
-    <section className="hud-card pac-score" aria-label="Points">
+    <section className="hud-card pac-score" aria-label={t("Points")}>
       <div className="pac-score-row">
-        <span className="pac-score-name">You</span>
+        <span className="pac-score-name">{t("You")}</span>
         {power > 0 && (
           <span className="pac-score-power">
-            Power {power} {power === 1 ? "move" : "moves"}
+            {power === 1
+              ? t("Power 1 move")
+              : t("Power {n} moves", { n: power })}
           </span>
         )}
         <span className="pac-score-points">{score}</span>
@@ -216,7 +221,9 @@ function MoveClock() {
   if (autonomous) {
     return (
       <section className="hud-card move-clock">
-        <span className="clock-label">Pieces are moving on their own</span>
+        <span className="clock-label">
+          {t("Pieces are moving on their own")}
+        </span>
       </section>
     );
   }
@@ -224,7 +231,7 @@ function MoveClock() {
     return (
       <section className="hud-card move-clock foe-turn">
         <span className="clock-label">
-          {online ? "Your friend is thinking" : "Chessbot is thinking"}
+          {online ? t("Your friend is thinking") : t("Chessbot is thinking")}
           <span className="thinking-dots" aria-hidden>
             <i />
             <i />
@@ -241,9 +248,9 @@ function MoveClock() {
     <section
       className={`hud-card move-clock${urgent ? " urgent" : ""}`}
       role="timer"
-      aria-label="Your move clock"
+      aria-label={t("Your move clock")}
     >
-      <span className="clock-label">Your move</span>
+      <span className="clock-label">{t("Your move")}</span>
       <div className="clock-bar">
         <div className="clock-fill" style={{ scale: `${fraction} 1` }} />
       </div>
@@ -258,7 +265,7 @@ function PauseButton() {
   return (
     <button type="button" className="hud-pause" onClick={togglePause}>
       <PauseIcon />
-      Pause
+      {t("Pause")}
     </button>
   );
 }

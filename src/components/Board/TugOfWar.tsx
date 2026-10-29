@@ -11,6 +11,7 @@ import {
 import { useTugStruggle } from "./tugStruggle";
 import "./TugOfWar.css";
 import { surfaceOf } from "../../utils/surface";
+import { t } from "../../i18n";
 
 type Style = React.CSSProperties & Record<`--${string}`, string | number>;
 
@@ -768,7 +769,7 @@ export function TugLayer({
               style={{ top: `${fromTop(toWhite, flipped) * 12.5}%` }}
             >
               <span className="tug-win-label">
-                {team === "white" ? "Your win line" : "Their win line"}
+                {team === "white" ? t("Your win line") : t("Their win line")}
               </span>
             </span>
           ))}

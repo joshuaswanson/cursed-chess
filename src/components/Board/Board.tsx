@@ -105,6 +105,7 @@ import {
 import type { GravityFall } from "./useBoardEffects";
 import "./Board.css";
 import "./BoardSkins.css";
+import { t } from "../../i18n";
 
 const FILES = "abcdefghijklmnop";
 /** A beat after a move lands before the portals move */
@@ -160,7 +161,7 @@ function GravityAlert({ delta }: { delta: number }) {
           <path d="M30 6 V44 M14 30 L30 48 L46 30" />
         </svg>
       </div>
-      <span className="gravity-alert-label">Gravity shift!</span>
+      <span className="gravity-alert-label">{t("Gravity shift!")}</span>
     </div>
   );
 }
@@ -527,10 +528,10 @@ export function Board() {
     : null;
   const shotChance = shot?.chance ?? null;
   const noShotReason = !ourBall
-    ? "Win the ball first!"
+    ? t("Win the ball first!")
     : game.turn !== seat
-      ? "Wait for your turn!"
-      : "No clear shot!";
+      ? t("Wait for your turn!")
+      : t("No clear shot!");
   const battleRoyale = overlays.battleRoyale;
   const dangerProgress = battleRoyale?.dangerProgress ?? 0;
   const finale = overlays.finale;
@@ -955,7 +956,9 @@ export function Board() {
           {isCheck && cursed && (
             <span className="square-anchor">
               <span className="check-sticker">
-                {status === GameStatus.Checkmate ? "Checkmate!" : "Check!"}
+                {status === GameStatus.Checkmate
+                  ? t("Checkmate!")
+                  : t("Check!")}
               </span>
             </span>
           )}

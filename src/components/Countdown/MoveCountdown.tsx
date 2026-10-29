@@ -5,6 +5,7 @@ import { Color } from "../../engine";
 import { useTheme } from "../../theme/useTheme";
 import { sfx } from "../../audio/sfx";
 import "./MoveCountdown.css";
+import { t } from "../../i18n";
 
 const COUNTDOWN_FROM = 5;
 /** FIFA's board hangs over the touchline, this many squares wide, half of it over the pitch and half off it */
@@ -182,8 +183,8 @@ export function MoveCountdown() {
             data-time-up={timeUp ? "" : undefined}
             aria-label={
               seconds === null
-                ? "Waiting for the other side to move"
-                : `${seconds} seconds left to move`
+                ? t("Waiting for the other side to move")
+                : t("{n} seconds left to move", { n: seconds })
             }
             style={{
               left: box.left,

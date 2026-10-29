@@ -4,6 +4,7 @@ import type { Piece } from "../../engine";
 import type { SiteTab } from "../../stores/gameStore";
 import { pieceImage } from "../../utils/pieceImages";
 import "./BoringPages.css";
+import { t } from "../../i18n";
 
 const FILES = "abcdefgh";
 
@@ -84,10 +85,11 @@ function PuzzlesPage() {
   return (
     <div className="boring-page">
       <div className="page-head">
-        <h1>Puzzles</h1>
+        <h1>{t("Puzzles")}</h1>
         <p>
-          Puzzle Rush personal best: <b>0</b> (you have not tried). Current
-          streak: <b>0 days</b>. Global rank: <b>#4,812,330</b>.
+          {t("Puzzle Rush personal best:")} <b>0</b>{" "}
+          {t("(you have not tried).")} {t("Current streak:")}{" "}
+          <b>{t("0 days")}</b>. {t("Global rank:")} <b>#4,812,330</b>.
         </p>
       </div>
       <div className="puzzle-grid">
@@ -95,20 +97,21 @@ function PuzzlesPage() {
           <article key={puzzle.title} className="boring-card puzzle-card">
             <MiniBoard position={puzzle.position} />
             <div className="puzzle-body">
-              <h2>{puzzle.title}</h2>
-              <p>{puzzle.prompt}</p>
+              <h2>{t(puzzle.title)}</h2>
+              <p>{t(puzzle.prompt)}</p>
               <p className="muted">
-                Rating {puzzle.rating} &middot; Solved by {puzzle.solved}
+                {t("Rating {rating}", { rating: puzzle.rating })} &middot;{" "}
+                {t("Solved by {share}", { share: puzzle.solved })}
               </p>
               {revealed.has(i) ? (
-                <p className="reveal">{puzzle.solution}</p>
+                <p className="reveal">{t(puzzle.solution)}</p>
               ) : (
                 <button
                   type="button"
                   className="boring-btn"
                   onClick={() => setRevealed(new Set(revealed).add(i))}
                 >
-                  Show solution
+                  {t("Show solution")}
                 </button>
               )}
             </div>
@@ -165,25 +168,26 @@ function LearnPage() {
   return (
     <div className="boring-page">
       <div className="page-head">
-        <h1>Learn</h1>
+        <h1>{t("Learn")}</h1>
         <p>
-          Structured lessons for every level, from beginner to slightly less
-          beginner.
+          {t(
+            "Structured lessons for every level, from beginner to slightly less beginner.",
+          )}
         </p>
       </div>
       <div className="lesson-list">
         {LESSONS.map((lesson, i) => (
           <article key={lesson.title} className="boring-card lesson-card">
             <div className="lesson-text">
-              <h2>{lesson.title}</h2>
-              <p className="muted">{lesson.blurb}</p>
+              <h2>{t(lesson.title)}</h2>
+              <p className="muted">{t(lesson.blurb)}</p>
               <div
                 className="lesson-progress"
-                aria-label={`${lesson.progress}% complete`}
+                aria-label={t("{n}% complete", { n: lesson.progress })}
               >
                 <span style={{ width: `${lesson.progress}%` }} />
               </div>
-              {started.has(i) && <p className="reveal">{lesson.reply}</p>}
+              {started.has(i) && <p className="reveal">{t(lesson.reply)}</p>}
             </div>
             <button
               type="button"
@@ -191,10 +195,10 @@ function LearnPage() {
               onClick={() => setStarted(new Set(started).add(i))}
             >
               {lesson.progress === 100
-                ? "Review"
+                ? t("Review")
                 : lesson.progress > 0
-                  ? "Continue"
-                  : "Start"}
+                  ? t("Continue")
+                  : t("Start")}
             </button>
           </article>
         ))}
@@ -249,8 +253,8 @@ function WatchPage() {
   return (
     <div className="boring-page">
       <div className="page-head">
-        <h1>Watch</h1>
-        <p>Top live streams right now.</p>
+        <h1>{t("Watch")}</h1>
+        <p>{t("Top live streams right now.")}</p>
       </div>
       <div className="stream-grid">
         {STREAMS.map((stream, i) => (
@@ -262,15 +266,17 @@ function WatchPage() {
           >
             <div className="stream-thumb">
               <MiniBoard position={stream.position} />
-              <span className="live-badge">LIVE</span>
-              <span className="viewer-count">{stream.viewers} watching</span>
+              <span className="live-badge">{t("LIVE")}</span>
+              <span className="viewer-count">
+                {t("{n} watching", { n: stream.viewers })}
+              </span>
               {opened === i && (
                 <span className="stream-error">
-                  This stream is not available in your region (Earth).
+                  {t("This stream is not available in your region (Earth).")}
                 </span>
               )}
             </div>
-            <h2>{stream.title}</h2>
+            <h2>{t(stream.title)}</h2>
             <p className="muted">{stream.channel}</p>
           </button>
         ))}
@@ -331,17 +337,18 @@ function CommunityPage() {
   return (
     <div className="boring-page">
       <div className="page-head">
-        <h1>Community</h1>
+        <h1>{t("Community")}</h1>
         <p>
-          Members online: <b>3</b> (one of them is you). Featured club:{" "}
-          <b>Normal Chess Enjoyers</b> (2 members, both normal).
+          {t("Members online:")} <b>3</b> {t("(one of them is you).")}{" "}
+          {t("Featured club:")} <b>{t("Normal Chess Enjoyers")}</b>{" "}
+          {t("(2 members, both normal).")}
         </p>
       </div>
       <div className="boring-card thread-table" role="table">
         <div className="thread-row thread-head" role="row">
-          <span role="columnheader">Topic</span>
-          <span role="columnheader">Replies</span>
-          <span role="columnheader">Views</span>
+          <span role="columnheader">{t("Topic")}</span>
+          <span role="columnheader">{t("Replies")}</span>
+          <span role="columnheader">{t("Views")}</span>
         </div>
         {THREADS.map((thread, i) => (
           <div key={thread.title} className="thread-entry">
@@ -358,17 +365,19 @@ function CommunityPage() {
               }}
             >
               <span className="thread-title" role="cell">
-                {thread.pinned && <span className="tag">Pinned</span>}
+                {thread.pinned && <span className="tag">{t("Pinned")}</span>}
                 {thread.locked && (
-                  <span className="tag tag-locked">Locked</span>
+                  <span className="tag tag-locked">{t("Locked")}</span>
                 )}
-                {thread.title}
-                <span className="muted thread-author">by {thread.author}</span>
+                {t(thread.title)}
+                <span className="muted thread-author">
+                  {t("by {author}", { author: thread.author })}
+                </span>
               </span>
               <span role="cell">{thread.replies.toLocaleString()}</span>
               <span role="cell">{thread.views}</span>
             </button>
-            {opened.has(i) && <p className="thread-body">{thread.body}</p>}
+            {opened.has(i) && <p className="thread-body">{t(thread.body)}</p>}
           </div>
         ))}
       </div>
@@ -392,13 +401,13 @@ function TermsPage() {
   return (
     <div className="boring-page">
       <div className="page-head">
-        <h1>Terms of Service</h1>
-        <p>Last updated: tomorrow.</p>
+        <h1>{t("Terms of Service")}</h1>
+        <p>{t("Last updated: tomorrow.")}</p>
       </div>
       <article className="boring-card legal-card">
         <ol className="legal-list">
           {TERMS.map((term) => (
-            <li key={term}>{term}</li>
+            <li key={term}>{t(term)}</li>
           ))}
         </ol>
       </article>
@@ -437,17 +446,18 @@ function PrivacyPage() {
   return (
     <div className="boring-page">
       <div className="page-head">
-        <h1>Privacy Policy</h1>
+        <h1>{t("Privacy Policy")}</h1>
         <p>
-          We take your privacy as seriously as we take anything, which is not
-          very.
+          {t(
+            "We take your privacy as seriously as we take anything, which is not very.",
+          )}
         </p>
       </div>
       <article className="boring-card legal-card">
         {PRIVACY.map((section) => (
           <section key={section.title} className="legal-section">
-            <h2>{section.title}</h2>
-            <p>{section.body}</p>
+            <h2>{t(section.title)}</h2>
+            <p>{t(section.body)}</p>
           </section>
         ))}
       </article>
@@ -484,9 +494,11 @@ function HelpPage() {
   return (
     <div className="boring-page">
       <div className="page-head">
-        <h1>Help Center</h1>
+        <h1>{t("Help Center")}</h1>
         <p>
-          Answers to the questions people ask most, and to some nobody asked.
+          {t(
+            "Answers to the questions people ask most, and to some nobody asked.",
+          )}
         </p>
       </div>
       <div className="boring-card faq-list">
@@ -503,21 +515,23 @@ function HelpPage() {
                 setOpened(next);
               }}
             >
-              <span>{item.q}</span>
+              <span>{t(item.q)}</span>
               <span className="muted">{opened.has(i) ? "−" : "+"}</span>
             </button>
-            {opened.has(i) && <p className="faq-answer">{item.a}</p>}
+            {opened.has(i) && <p className="faq-answer">{t(item.a)}</p>}
           </div>
         ))}
       </div>
       <div className="boring-card help-contact">
         <div>
-          <h2>Still stuck?</h2>
-          <p className="muted">Open a ticket and we will get to it.</p>
+          <h2>{t("Still stuck?")}</h2>
+          <p className="muted">{t("Open a ticket and we will get to it.")}</p>
         </div>
         {ticket ? (
           <p className="reveal">
-            Ticket #00000001 created. Estimated reply: 6 to 8 business years.
+            {t(
+              "Ticket #00000001 created. Estimated reply: 6 to 8 business years.",
+            )}
           </p>
         ) : (
           <button
@@ -525,7 +539,7 @@ function HelpPage() {
             className="boring-btn"
             onClick={() => setTicket(true)}
           >
-            Open a ticket
+            {t("Open a ticket")}
           </button>
         )}
       </div>

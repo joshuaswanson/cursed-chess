@@ -11,6 +11,7 @@ import { Color, PieceType } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import "./Show.css";
 import { LanternIcon } from "../Board/Lanterns";
+import { t } from "../../i18n";
 
 const CLOSE_MS = 450;
 
@@ -268,7 +269,8 @@ function Flair({ theme }: { theme: ThemeId }) {
 }
 
 function ModeCard({ theme, closing }: { theme: ModeTheme; closing: boolean }) {
-  const catchphrase = theme.catchphrase;
+  const title = t(theme.title);
+  const catchphrase = t(theme.catchphrase);
   return (
     <div
       className={`show-card mode-card${closing ? " closing" : ""}`}
@@ -281,10 +283,10 @@ function ModeCard({ theme, closing }: { theme: ModeTheme; closing: boolean }) {
           <div className="card-beat card-beat-title">
             <h1
               className="card-title"
-              aria-label={theme.title}
-              style={{ "--letters": theme.title.length } as React.CSSProperties}
+              aria-label={title}
+              style={{ "--letters": title.length } as React.CSSProperties}
             >
-              <Letters text={theme.title} />
+              <Letters text={title} />
             </h1>
           </div>
           <div className="card-beat card-beat-catch">
@@ -332,10 +334,10 @@ function ResultCard({
         </svg>
       )}
       <div className="result-plate">
-        <h1 className="result-title" aria-label={copy.title}>
-          <Letters text={copy.title} />
+        <h1 className="result-title" aria-label={t(copy.title)}>
+          <Letters text={t(copy.title)} />
         </h1>
-        <p className="result-detail">{copy.detail}</p>
+        <p className="result-detail">{t(copy.detail)}</p>
       </div>
       {kind === "win" && <Confetti count={110} seed={7} />}
     </div>

@@ -38,8 +38,11 @@ import { BotWindows } from "./components/BoringSite/BotWindows";
 import { DevNote } from "./components/DevNote/DevNote";
 import { FinaleEnding } from "./components/Show/FinaleEnding";
 import type { FinalePlugin } from "./plugins/finale";
+import { t, useLanguage } from "./i18n";
 
 function App() {
+  // Everything is drawn again in a newly chosen language
+  useLanguage();
   useGameLoop();
   useAddress();
   const theme = useTheme();
@@ -67,7 +70,7 @@ function App() {
   const onFakePage = !cursed && siteTab !== "Play";
 
   useEffect(() => {
-    document.title = cursed ? "CURSED CHESS" : "Totally Normal Chess";
+    document.title = cursed ? "CURSED CHESS" : t("Totally Normal Chess");
   }, [cursed]);
 
   // The soundtrack kicks in once the curse takes hold. It stays off in the
@@ -158,7 +161,7 @@ function App() {
           <button
             type="button"
             className="logo-button"
-            aria-label="Pause"
+            aria-label={t("Pause")}
             onClick={pauseFromLogo}
           >
             <Logo />

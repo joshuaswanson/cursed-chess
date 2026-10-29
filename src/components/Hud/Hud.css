@@ -181,8 +181,11 @@
 }
 
 .mode-ring-turns small {
+  max-width: 46px;
   font-size: 10px;
+  line-height: 1;
   letter-spacing: 0.04em;
+  text-align: center;
   text-transform: uppercase;
 }
 

@@ -3,14 +3,17 @@ import { useGameStore } from "../../stores/gameStore";
 import { sfx } from "../../audio/sfx";
 import { Confetti } from "./Confetti";
 import "./Show.css";
+import { t } from "../../i18n";
 
 /** What his installer reports as it finishes, a line at a time */
-const INSTALL_LOG = [
-  "chess .................... deleted",
-  "rules .................... replaced",
-  "fairness ................. not found",
-  "administrator ............ chessbot",
+const INSTALL_LOG: [what: string, outcome: string][] = [
+  ["chess", "deleted"],
+  ["rules", "replaced"],
+  ["fairness", "not found"],
+  ["administrator", "chessbot"],
 ];
+/** How far the dots run before each outcome */
+const INSTALL_DOTS_TO = 26;
 const LOG_LINE_MS = 260;
 const BAR_CELLS = 28;
 
@@ -40,15 +43,20 @@ function CurseInstalled({ launching }: { launching: boolean }) {
         <p className="install-bar" aria-hidden>
           [{"#".repeat(BAR_CELLS)}] 100%
         </p>
-        <h1 className="install-done" data-text="INSTALLATION COMPLETE">
-          INSTALLATION COMPLETE
+        <h1 className="install-done" data-text={t("INSTALLATION COMPLETE")}>
+          {t("INSTALLATION COMPLETE")}
         </h1>
         <pre className="install-log">
-          {INSTALL_LOG.slice(0, logged).join("\n")}
+          {INSTALL_LOG.slice(0, logged)
+            .map(([what, outcome]) => {
+              const said = t(what);
+              return `${said} ${".".repeat(Math.max(3, INSTALL_DOTS_TO - said.length))} ${t(outcome)}`;
+            })
+            .join("\n")}
         </pre>
         {launching && (
           <p className="install-launch">
-            {"> starting cursed chess"}
+            {`> ${t("starting cursed chess")}`}
             <span className="install-caret" aria-hidden />
           </p>
         )}

@@ -3,6 +3,7 @@ import type { Collapse, Zone } from "../../plugins/battleRoyale";
 import { pieceImage } from "../../utils/pieceImages";
 import { fileOf, rankOf } from "../../utils/squareUtils";
 import { visualCol, visualRow } from "./boardGeometry";
+import { t } from "../../i18n";
 
 const WAVE_SPREAD_MS = 650;
 
@@ -177,9 +178,9 @@ export function FinalZone({
       <span className="br-final-label">
         {closed
           ? roundsLeft === 1
-            ? "Last turn! Strongest army wins"
-            : `${roundsLeft} turns left. Strongest army wins`
-          : "Safe zone"}
+            ? t("Last turn! Strongest army wins")
+            : t("{n} turns left. Strongest army wins", { n: roundsLeft })
+          : t("Safe zone")}
       </span>
     </div>
   );

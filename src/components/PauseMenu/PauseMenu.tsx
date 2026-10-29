@@ -1,15 +1,10 @@
-import { useSyncExternalStore } from "react";
+import { useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { useTheme } from "../../theme/useTheme";
-import { sfx } from "../../audio/sfx";
 import { leaveGame } from "../../net/multiplayer";
-import {
-  MenuIcon,
-  MuteIcon,
-  PlayIcon,
-  RestartIcon,
-  SoundIcon,
-} from "../Hud/icons";
+import { t } from "../../i18n";
+import { GearIcon, MenuIcon, PlayIcon, RestartIcon } from "../Hud/icons";
+import { Settings } from "../Settings/Settings";
 import "./PauseMenu.css";
 
 /**
@@ -19,7 +14,7 @@ import "./PauseMenu.css";
  */
 export function PauseMenu() {
   const theme = useTheme();
-  const soundOn = useSyncExternalStore(sfx.subscribe, sfx.isEnabled);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const single = useGameStore((s) => s.playMode === "single");
   const guest = useGameStore((s) => s.net?.role === "guest");
   const { togglePause, openMenu } = useGameStore.getState();
@@ -30,46 +25,61 @@ export function PauseMenu() {
     startSingle(currentModeIndex);
   };
 
+  const options = (
+    <>
+      <h2 className="pause-title">{guest ? t("Menu") : t("Paused")}</h2>
+      <p className="pause-mode">{t(theme.title)}</p>
+      <p className="pause-rules">{t(theme.catchphrase)}</p>
+      <div className="pause-actions">
+        <button
+          type="button"
+          className="pause-btn pause-resume"
+          onClick={togglePause}
+          autoFocus
+        >
+          <PlayIcon />
+          {guest ? t("Back to game") : t("Resume")}
+        </button>
+        <button
+          type="button"
+          className="pause-btn"
+          onClick={() => setSettingsOpen(true)}
+        >
+          <GearIcon />
+          {t("Settings")}
+        </button>
+        {single && !guest && (
+          <button type="button" className="pause-btn" onClick={restart}>
+            <RestartIcon />
+            {t("Restart")}
+          </button>
+        )}
+        <button
+          type="button"
+          className="pause-btn"
+          onClick={guest ? leaveGame : openMenu}
+        >
+          <MenuIcon />
+          {guest ? t("Leave game") : t("Main menu")}
+        </button>
+      </div>
+      <p className="pause-hint">{t("Space or Esc to go back")}</p>
+    </>
+  );
+
   return (
-    <div className="pause-overlay" role="dialog" aria-modal aria-label="Paused">
+    <div
+      className="pause-overlay"
+      role="dialog"
+      aria-modal
+      aria-label={t("Paused")}
+    >
       <div className="pause-card">
-        <h2 className="pause-title">{guest ? "Menu" : "Paused"}</h2>
-        <p className="pause-mode">{theme.title}</p>
-        <p className="pause-rules">{theme.catchphrase}</p>
-        <div className="pause-actions">
-          <button
-            type="button"
-            className="pause-btn pause-resume"
-            onClick={togglePause}
-            autoFocus
-          >
-            <PlayIcon />
-            {guest ? "Back to game" : "Resume"}
-          </button>
-          <button
-            type="button"
-            className="pause-btn"
-            onClick={() => sfx.setEnabled(!soundOn)}
-          >
-            {soundOn ? <SoundIcon /> : <MuteIcon />}
-            {soundOn ? "Sound on" : "Sound off"}
-          </button>
-          {single && !guest && (
-            <button type="button" className="pause-btn" onClick={restart}>
-              <RestartIcon />
-              Restart
-            </button>
-          )}
-          <button
-            type="button"
-            className="pause-btn"
-            onClick={guest ? leaveGame : openMenu}
-          >
-            <MenuIcon />
-            {guest ? "Leave game" : "Main menu"}
-          </button>
-        </div>
-        <p className="pause-hint">Space or Esc to go back</p>
+        {settingsOpen ? (
+          <Settings onClose={() => setSettingsOpen(false)} />
+        ) : (
+          options
+        )}
       </div>
     </div>
   );

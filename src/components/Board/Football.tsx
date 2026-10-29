@@ -8,6 +8,7 @@ import type { PlayCall } from "./useBoardEffects";
 import { Confetti } from "../Show/Confetti";
 import { sfx } from "../../audio/sfx";
 import "./Football.css";
+import { t } from "../../i18n";
 
 /** The kickoff whistle blows as the mode's title card clears */
 const KICKOFF_WHISTLE_MS = 4300;
@@ -235,7 +236,9 @@ export function Goal({
       role={attacked ? "button" : undefined}
       aria-label={
         shootable
-          ? `Shoot, ${Math.round(shotChance * 100)} percent chance`
+          ? t("Shoot, {n} percent chance", {
+              n: Math.round(shotChance * 100),
+            })
           : attacked
             ? noShotReason
             : undefined
@@ -320,7 +323,7 @@ export function Goal({
             aria-hidden
           />
           <span className="shoot-label">
-            Shoot <b>{Math.round(shotChance * 100)}%</b>
+            {t("Shoot")} <b>{Math.round(shotChance * 100)}%</b>
           </span>
         </>
       )}
@@ -438,7 +441,7 @@ function BallFlight({
             } as Style
           }
         >
-          {callout}
+          {t(callout)}
         </span>
       )}
     </>
@@ -492,11 +495,13 @@ function GoalCelebration({
           className="goal-word"
           style={{ "--delay": `${delay}ms` } as Style}
         >
-          {"GOOOAAALLL!".split("").map((ch, i) => (
-            <span key={i} style={{ "--i": i } as Style}>
-              {ch}
-            </span>
-          ))}
+          {t("GOOOAAALLL!")
+            .split("")
+            .map((ch, i) => (
+              <span key={i} style={{ "--i": i } as Style}>
+                {ch}
+              </span>
+            ))}
         </span>
         {ours && <Confetti count={120} seed={kick.id + 11} delayMs={delay} />}
       </div>
@@ -732,7 +737,7 @@ export function Commentary({ call }: { call: PlayCall | null }) {
   const [line, setLine] = useState<{ key: string; text: string } | null>(null);
   useEffect(() => {
     const kickoff = setTimeout(
-      () => setLine({ key: "kickoff", text: LINES.kickoff[0] }),
+      () => setLine({ key: "kickoff", text: t(LINES.kickoff[0]) }),
       KICKOFF_CALL_MS,
     );
     return () => clearTimeout(kickoff);
@@ -743,10 +748,11 @@ export function Commentary({ call }: { call: PlayCall | null }) {
     if (options.length === 0) return;
     const seed = [...call.key].reduce((a, ch) => a + ch.charCodeAt(0), 0);
     const pick = options[seed % options.length];
+    const said = t(pick);
     const filled =
       call.number !== undefined
-        ? pick.replace("{n}", String(call.number))
-        : pick.replace("No. {n}", "the player");
+        ? said.replace("{n}", String(call.number))
+        : said.replace(t("No. {n}"), t("the player"));
     const text = filled.charAt(0).toUpperCase() + filled.slice(1);
     const say = setTimeout(
       () => setLine({ key: call.key, text }),
@@ -757,9 +763,9 @@ export function Commentary({ call }: { call: PlayCall | null }) {
 
   return (
     <div className="commentary" aria-live="polite">
-      <span className="commentary-live">LIVE</span>
+      <span className="commentary-live">{t("LIVE")}</span>
       <span className="commentary-text" key={line?.key ?? "quiet"}>
-        {line?.text ?? "Warming up..."}
+        {line?.text ?? t("Warming up...")}
       </span>
     </div>
   );

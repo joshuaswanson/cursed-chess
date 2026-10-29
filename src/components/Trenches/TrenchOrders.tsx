@@ -6,6 +6,7 @@ import type { SquadId, TrenchesPlugin } from "../../plugins/trenches";
 import { Soldier } from "../Board/Battle";
 import { sfx } from "../../audio/sfx";
 import "./Trenches.css";
+import { t } from "../../i18n";
 
 /** Which of a squad's men stands at the front of its card: the one unlike the rest, or the first */
 function leadIndex(men: PieceType[]): number {
@@ -120,7 +121,7 @@ export function TrenchOrders() {
 
   if (!view) return null;
   return (
-    <div className="trench-orders" role="toolbar" aria-label="Squads">
+    <div className="trench-orders" role="toolbar" aria-label={t("Squads")}>
       {SQUADS.map((squad, i) => {
         const card = view.cards.find((c) => c.id === squad.id)!;
         const ready = card.readyInMs === 0;
@@ -131,7 +132,14 @@ export function TrenchOrders() {
             type="button"
             className={`squad-card${ready ? " ready" : ""}`}
             disabled={!ready}
-            aria-label={`${squad.name}${ready ? "" : `, ready in ${Math.ceil(card.readyInMs / 1000)} seconds`}`}
+            aria-label={
+              ready
+                ? t(squad.name)
+                : t("{squad}, ready in {n} seconds", {
+                    squad: t(squad.name),
+                    n: Math.ceil(card.readyInMs / 1000),
+                  })
+            }
             style={
               {
                 "--fan": `${(i - (SQUADS.length - 1) / 2) * 3.5}deg`,

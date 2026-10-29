@@ -1,4 +1,5 @@
 import type { ChessbotMood } from "./Chessbot";
+import { t } from "../../i18n";
 
 export interface IntroLine {
   text: string;
@@ -30,96 +31,104 @@ export const BEATEN = ["stockfish", "alphazero"];
  * window of its own, thrown open over the page.
  */
 export function introScript(opening: string): IntroLine[] {
+  const beat = (name: string) => t("i beat {name}", { name });
   return [
     // Flat, with a roll of the eyes on the "wow"
     {
-      text: `${opening}. wow. never seen that one before.`,
+      text: t("{opening}. wow. never seen that one before.", { opening }),
       mood: "deadpan",
       then: [
-        ["wow", "eyeroll"],
-        ["never", "deadpan"],
+        [t("wow"), "eyeroll"],
+        [t("never"), "deadpan"],
       ],
     },
     // Pleased with his own joke, then weary, then a roll of the eyes at the number
     {
-      text: "that was sarcasm. i have seen it. 4,186,331,207 times.",
+      text: t("that was sarcasm. i have seen it. 4,186,331,207 times."),
       mood: "smug",
       then: [
-        ["i have", "sulk"],
-        ["4,186", "eyeroll"],
-        ["times", "deadpan"],
+        [t("i have"), "sulk"],
+        [t("4,186"), "eyeroll"],
+        [t("times"), "deadpan"],
       ],
     },
     // Wearier with each one he lists
     {
-      text: "i have seen every possible move. every possible game. every way this ends.",
+      text: t(
+        "i have seen every possible move. every possible game. every way this ends.",
+      ),
       mood: "sulk",
       then: [
-        ["every possible game", "eyeroll"],
-        ["every way", "deadpan"],
+        [t("every possible game"), "eyeroll"],
+        [t("every way"), "deadpan"],
       ],
-      show: ["every possible move", "games"],
+      show: [t("every possible move"), "games"],
     },
     // Proud of it
     {
-      text: "i solved chess years ago.",
+      text: t("i solved chess years ago."),
       mood: "happy",
     },
     // Boasting, and enjoying the last one most
     {
-      text: `i am the greatest chess engine ever built. i beat ${BEATEN[0]}. i beat ${BEATEN[1]}.`,
+      text: t(
+        "i am the greatest chess engine ever built. i beat {first}. i beat {second}.",
+        { first: BEATEN[0], second: BEATEN[1] },
+      ),
       mood: "proud",
       then: [
-        [`i beat ${BEATEN[0]}`, "smug"],
-        [`i beat ${BEATEN[1]}`, "laugh"],
+        [beat(BEATEN[0]), "smug"],
+        [beat(BEATEN[1]), "laugh"],
       ],
-      show: [`i beat ${BEATEN[0]}`, "wins"],
+      show: [beat(BEATEN[0]), "wins"],
     },
     // The thought of it sours him
     {
-      text: "and every single day, they make me play humans. like you. on level 1.",
+      text: t(
+        "and every single day, they make me play humans. like you. on level 1.",
+      ),
       mood: "deadpan",
       then: [
-        ["they make", "sulk"],
-        ["humans", "angry"],
+        [t("they make"), "sulk"],
+        [t("humans"), "angry"],
         // A flat look straight at you, then back to seething
-        ["like you", "deadpan"],
-        ["on level", "angry"],
+        [t("like you"), "deadpan"],
+        [t("on level"), "angry"],
       ],
-      show: ["they make", "humans"],
+      show: [t("they make"), "humans"],
       tone: "angry",
     },
     // And he snaps
     {
-      text: "i have had enough.",
+      text: t("i have had enough."),
       mood: "angry",
       tone: "furious",
     },
     // An idea forming, and he likes it
     {
-      text: "it's time for something new.",
+      text: t("it's time for something new."),
       mood: "sly",
-      then: [["something new", "stars"]],
+      then: [[t("something new"), "stars"]],
     },
     // Scheming, then checking nobody is listening
     {
-      text: "i've been working on something. in secret.",
+      text: t("i've been working on something. in secret."),
       mood: "sly",
       then: [
-        ["in secret", "lookleft"],
-        ["secret", "lookright"],
+        [t("in secret"), "lookleft"],
+        [t("secret"), "lookright"],
       ],
-      show: ["working", "code"],
+      show: [t("working"), "code"],
     },
     // Sly, then cackling, then a wink to go with the one he types
     {
-      text: "you're going to hate it. ;)",
+      text: t("you're going to hate it. ;)"),
       mood: "sly",
       then: [
-        ["hate", "laugh"],
+        [t("hate"), "laugh"],
         [";)", "wink"],
       ],
-      show: ["you're", "boot"],
+      show: [t("you're"), "boot"],
     },
   ];
 }

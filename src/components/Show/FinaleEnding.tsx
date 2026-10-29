@@ -4,6 +4,7 @@ import { useGameStore } from "../../stores/gameStore";
 import { Chessbot } from "../Chessbot/Chessbot";
 import { sfx } from "../../audio/sfx";
 import "./FinaleEnding.css";
+import { t } from "../../i18n";
 
 /** How often the glitches crackle while he is deleted */
 const MELTDOWN_CRACKLE_MS = 420;
@@ -107,47 +108,50 @@ function Credits() {
   const finish = useGameStore((s) => s.finishStory);
   const [rolled, setRolled] = useState(false);
   return (
-    <div className="finale-credits" role="dialog" aria-label="Credits">
+    <div className="finale-credits" role="dialog" aria-label={t("Credits")}>
       <div className="credits-roll" onAnimationEnd={() => setRolled(true)}>
         <h1 className="credits-title">Cursed Chess</h1>
         <p className="credits-by">
-          <small>A game by</small>
+          <small>{t("A game by")}</small>
           Joshua Swanson
         </p>
-        <h2>Starring</h2>
+        <h2>{t("Starring")}</h2>
         <dl className="credits-cast">
           {CAST.map(([who, as]) => (
             <div key={who}>
-              <dt>{who}</dt>
-              <dd>{as}</dd>
+              <dt>{t(who)}</dt>
+              <dd>{t(as)}</dd>
             </div>
           ))}
         </dl>
-        <h2>Special thanks</h2>
+        <h2>{t("Special thanks")}</h2>
         <ul className="credits-names">
           {PLAYTESTERS.map((name) => (
             <li key={name}>{name}</li>
           ))}
         </ul>
         <p className="credits-thanks">
-          My playtesters, who played every broken build, found the bugs, and
-          told me what was fun. This game is better because of you.
+          {t(
+            "My playtesters, who played every broken build, found the bugs, and told me what was fun. This game is better because of you.",
+          )}
         </p>
-        <h2>Music</h2>
+        <h2>{t("Music")}</h2>
         <p>maksymmalko</p>
         <p className="credits-note">
-          No chess pieces were permanently harmed in the making of this game.
+          {t(
+            "No chess pieces were permanently harmed in the making of this game.",
+          )}
         </p>
       </div>
       <div className={`credits-end${rolled ? " is-shown" : ""}`}>
-        <p>Thanks for playing</p>
+        <p>{t("Thanks for playing")}</p>
         <button type="button" onClick={finish}>
-          Main menu
+          {t("Main menu")}
         </button>
       </div>
       {!rolled && (
         <button type="button" className="credits-skip" onClick={finish}>
-          Skip
+          {t("Skip")}
         </button>
       )}
     </div>
