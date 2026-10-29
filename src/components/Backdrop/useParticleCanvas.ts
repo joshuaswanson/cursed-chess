@@ -7,6 +7,10 @@ const FADE_SECONDS = 1;
 const MAX_DT = 0.05;
 /** Where the shadow of something flying high above lands, down and right of it */
 const SHADOW_OFFSET = { x: 48, y: 84 };
+/** How soft a shadow's edge is */
+const SHADOW_BLUR = 14;
+/** How far off the canvas the copy that throws the shadows is drawn */
+const OFFSTAGE = 10000;
 const BOARD_CHECK_MS = 500;
 
 /**
@@ -50,6 +54,7 @@ export function useParticleCanvas(
     // Particles are drawn here first, so the same picture can be laid down twice
     const sprites = shadowOn ? document.createElement("canvas") : null;
     const spriteCtx = sprites?.getContext("2d") ?? null;
+    const cutout = shadowOn ? document.createElement("canvas") : null;
     let ground: DOMRect | null = null;
     let groundCheckedAt = -Infinity;
     // An empty canvas left untouched costs the browser nothing to show
@@ -96,7 +101,7 @@ export function useParticleCanvas(
             document.querySelector(shadowOn!)?.getBoundingClientRect() ?? null;
           groundCheckedAt = now;
         }
-        if (ground) castShadows(ctx, sprites, ground, dpr, w, h);
+        if (ground) castShadows(ctx, sprites, cutout!, ground, dpr, w, h);
         ctx.drawImage(sprites, 0, 0, w, h);
       }
       if (preset) {
@@ -127,6 +132,8 @@ export function useParticleCanvas(
 function castShadows(
   ctx: CanvasRenderingContext2D,
   sprites: HTMLCanvasElement,
+  /** Scratch space for the stretch of sprites that casts the shadows */
+  cutout: HTMLCanvasElement,
   ground: DOMRect,
   dpr: number,
   w: number,
@@ -138,19 +145,39 @@ function castShadows(
   const right = Math.min(w, ground.right - SHADOW_OFFSET.x);
   const bottom = Math.min(h, ground.bottom - SHADOW_OFFSET.y);
   if (right <= left || bottom <= top) return;
+  const width = Math.round((right - left) * dpr);
+  const height = Math.round((bottom - top) * dpr);
+  if (cutout.width !== width || cutout.height !== height) {
+    cutout.width = width;
+    cutout.height = height;
+  }
+  const cut = cutout.getContext("2d")!;
+  cut.clearRect(0, 0, width, height);
+  cut.drawImage(
+    sprites,
+    left * dpr,
+    top * dpr,
+    width,
+    height,
+    0,
+    0,
+    width,
+    height,
+  );
   ctx.save();
   ctx.beginPath();
   ctx.rect(ground.left, ground.top, ground.width, ground.height);
   ctx.clip();
-  ctx.filter = "brightness(0) blur(7px)";
-  ctx.globalAlpha = 0.5;
+  // Safari has no canvas filters, so the shadows are the ones a copy of the
+  // sprites throws from off the canvas. It loses the shadow of part of an
+  // image, so the copy is the whole of the cutout. Shadow offsets and blur
+  // ignore the transform, so they are in device pixels.
+  ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+  ctx.shadowBlur = SHADOW_BLUR * dpr;
+  ctx.shadowOffsetX = OFFSTAGE * dpr;
   ctx.drawImage(
-    sprites,
-    left * dpr,
-    top * dpr,
-    (right - left) * dpr,
-    (bottom - top) * dpr,
-    left + SHADOW_OFFSET.x,
+    cutout,
+    left + SHADOW_OFFSET.x - OFFSTAGE,
     top + SHADOW_OFFSET.y,
     right - left,
     bottom - top,
