@@ -180,39 +180,25 @@ function NowPlaying() {
   );
 }
 
-/** The points each side has eaten in Pac-Man, arcade style, and how long a power pellet lasts */
+/** The points eaten in Pac-Man, arcade style, and how long a power pellet lasts */
 function PacScore() {
-  const seat = useGameStore((s) => s.seat);
-  const online = useGameStore((s) => s.net !== null);
   const tally = useGameStore((s) => {
     const view = pacView(s);
-    return view
-      ? [view.score.w, view.score.b, view.powerLeft.w, view.powerLeft.b].join(
-          " ",
-        )
-      : null;
+    return view ? `${view.score} ${view.powerLeft}` : null;
   });
   if (!tally) return null;
-  const [scoreW, scoreB, powerW, powerB] = tally.split(" ").map(Number);
-  const sides = [
-    { color: Color.White, score: scoreW, power: powerW },
-    { color: Color.Black, score: scoreB, power: powerB },
-  ].sort((a) => (a.color === seat ? -1 : 1));
+  const [score, power] = tally.split(" ").map(Number);
   return (
     <section className="hud-card pac-score" aria-label="Points">
-      {sides.map(({ color, score, power }) => (
-        <div key={color} className={`pac-score-row pac-score-${color}`}>
-          <span className="pac-score-name">
-            {color === seat ? "You" : online ? "Friend" : "Chessbot"}
+      <div className="pac-score-row">
+        <span className="pac-score-name">You</span>
+        {power > 0 && (
+          <span className="pac-score-power">
+            Power {power} {power === 1 ? "move" : "moves"}
           </span>
-          {power > 0 && (
-            <span className="pac-score-power">
-              Power {power} {power === 1 ? "move" : "moves"}
-            </span>
-          )}
-          <span className="pac-score-points">{score}</span>
-        </div>
-      ))}
+        )}
+        <span className="pac-score-points">{score}</span>
+      </div>
     </section>
   );
 }

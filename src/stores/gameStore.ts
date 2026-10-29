@@ -32,7 +32,7 @@ import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { LanternsPlugin } from "../plugins/lanterns";
 import { ThunderstormPlugin } from "../plugins/thunderstorm";
-import { PacManPlugin } from "../plugins/pacman";
+import { GHOSTS_HOLD_MS, PacManPlugin } from "../plugins/pacman";
 import { HEIST_FILES, HEIST_RANKS, HeistPlugin } from "../plugins/heist";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
@@ -292,7 +292,6 @@ export const GAME_MODES: GameMode[] = [
     name: "PAC-MAN",
     theme: "pacman",
     create: () => [new PacManPlugin()],
-    kingsSitOut: true,
     singleOnly: true,
     beta: true,
   },
@@ -965,6 +964,7 @@ function passTurnWithoutMoving(endDelayMs: number): void {
   game.turn = opponent(mover);
   game.enPassant = null;
   pluginManager.invokeOnTurnEnd(mover);
+  if (pluginManager.isSolo()) game.turn = mover;
   const status = pluginManager.invokeModifyGameStatus(game.getStatus());
   useGameStore.setState({
     ...CLEARED_SELECTION,
@@ -1461,6 +1461,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     pluginManager.invokeOnAfterMove(processedMove);
     pluginManager.invokeOnTurnEnd(mover);
+    if (pluginManager.isSolo()) {
+      game.turn = mover;
+      holdPause(GHOSTS_HOLD_MS);
+    }
     // Nobody moves again until the belts have stopped, or the rope has been hauled
     if (pluginManager.find<ConveyorPlugin>("conveyor")) {
       holdPause(BELT_RUN_MS);
@@ -1474,6 +1478,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       ...moveState,
+      turn: game.turn,
       lastPortalMove,
       status,
       timeWhite: isNormalChess
@@ -1820,7 +1825,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       get().pluginManager.find<ThunderstormPlugin>("thunderstorm");
     const bonus = modeSquareBonus(get().pluginManager, game.board);
     const conveyor = get().pluginManager.find<ConveyorPlugin>("conveyor");
-    const pacman = get().pluginManager.find<PacManPlugin>("pacman");
     if (game.turn === Color.Black) dark?.look(game.board);
     const skill = chessbotSkill(get());
     const pick =
@@ -1828,19 +1832,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ? moves[Math.floor(Math.random() * moves.length)]
         : dark
           ? chooseInTheDark(game, allowed, dark.memory(), bonus, skill)
-          : pacman
-            ? pacman.choose(game, allowed)
-            : conveyor
-              ? chooseMove(game, sparingKings(allowed), bonus, {
-                  settle: (board) => void runBelts(board),
-                  judge: (after) =>
-                    conveyor.modifyGameStatus(
-                      { game: after, board: after.board },
-                      after.getStatus(),
-                    ),
-                  skill,
-                })
-              : chooseMove(game, allowed, bonus, { skill });
+          : conveyor
+            ? chooseMove(game, sparingKings(allowed), bonus, {
+                settle: (board) => void runBelts(board),
+                judge: (after) =>
+                  conveyor.modifyGameStatus(
+                    { game: after, board: after.board },
+                    after.getStatus(),
+                  ),
+                skill,
+              })
+            : chooseMove(game, allowed, bonus, { skill });
     get().makeMove(pick.from, pick.to, pick.promotion);
   },
 

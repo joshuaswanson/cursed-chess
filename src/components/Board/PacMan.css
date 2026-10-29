@@ -242,39 +242,10 @@
   }
 }
 
-/* While the other side is powered up, these pieces turn blue and shiver */
-.square.pac-scared .piece-img {
-  filter: grayscale(1) sepia(1) hue-rotate(185deg) saturate(6) brightness(0.9);
-  animation: pac-scared 0.3s ease-in-out infinite alternate;
-}
-
-/* And flash white on its last move */
-.square.pac-scared.pac-ending .piece-img {
-  animation:
-    pac-scared 0.3s ease-in-out infinite alternate,
-    pac-ending 0.4s steps(2) infinite;
-}
-
-@keyframes pac-scared {
-  from {
-    translate: -2% 0;
-  }
-  to {
-    translate: 2% 0;
-  }
-}
-
-@keyframes pac-ending {
-  to {
-    filter: saturate(0) brightness(2.2);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .pac-power,
   .pac-ghost-body,
-  .pac-ghost.in-pen .pac-ghost-art,
-  .square.pac-scared .piece-img {
+  .pac-ghost.in-pen .pac-ghost-art {
     animation: none;
   }
 }

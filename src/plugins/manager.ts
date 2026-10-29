@@ -131,6 +131,10 @@ export class PluginManager {
     return this.plugins.some((p) => p.isAutonomous);
   }
 
+  isSolo(): boolean {
+    return this.plugins.some((p) => p.solo);
+  }
+
   invokeTickAutonomous(tickMs: number): Color | null {
     let winner: Color | null = null;
     for (const p of this.plugins) {

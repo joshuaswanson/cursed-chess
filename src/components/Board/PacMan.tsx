@@ -215,9 +215,8 @@ export function PacGhosts({
   /** How long the ghosts wait for the move before them to land */
   delayMs: number;
 }) {
-  const hunters = [view.powerLeft.w, view.powerLeft.b].filter((n) => n > 0);
-  const scared = hunters.length > 0;
-  const ending = scared && Math.max(...hunters) === 1;
+  const scared = view.powerLeft > 0;
+  const ending = view.powerLeft === 1;
   const caughtAfterMs = delayMs + GHOST_STEP_MS * 0.8;
 
   const heard = useRef(0);

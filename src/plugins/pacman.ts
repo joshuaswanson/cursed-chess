@@ -58,13 +58,15 @@ export const MAZE_WALLS: [SquareIndex, SquareIndex][] = [
   beside(4, 4),
 ];
 const WALLS = new Set(MAZE_WALLS.map(([a, b]) => wallKey(a, b)));
-/** How many of its own moves a side can take pieces for after eating a power pellet */
+/** How many moves the ghosts stay blue, to be eaten, after a power pellet */
 export const POWER_MOVES = 3;
 export const PELLET_POINTS = 10;
 export const POWER_POINTS = 50;
 export const GHOST_POINTS = 200;
-/** Moves in a row without a pellet eaten, after which the game is called on points */
+/** Moves in a row without a pellet eaten, after which the ghosts win */
 const STALL_PLIES = 30;
+/** How long a move, and the ghosts' step after it, take to play out before the next move */
+export const GHOSTS_HOLD_MS = 800;
 /** How many moves an eaten ghost spends back in the pen before it comes out again */
 const GHOST_REST = 4;
 /** How near a piece has to be for Inky to go for the best of them, in steps */
@@ -112,8 +114,6 @@ export interface PacRun {
   powerEaten: SquareIndex[];
   power: boolean;
   ghost: boolean;
-  /** Which side ate */
-  color: Color;
 }
 
 export interface PacView {
@@ -121,17 +121,14 @@ export interface PacView {
   power: SquareIndex[];
   /** How many pellets of either kind there were at the start */
   total: number;
-  score: Record<Color, number>;
-  /** How many more of its own moves each side can take pieces for */
-  powerLeft: Record<Color, number>;
+  score: number;
+  /** How many more moves the ghosts stay blue */
+  powerLeft: number;
   run: PacRun | null;
   ghosts: Ghost[];
   /** The pieces the ghosts caught after the last move */
   bites: GhostBite[];
 }
-
-const other = (color: Color) =>
-  color === Color.White ? Color.Black : Color.White;
 
 /** One step from a square, through the tunnel when it leads off a side on a tunnel rank */
 function reach(sq: SquareIndex, df: number, dr: number): SquareIndex | null {
@@ -166,9 +163,9 @@ function step(sq: SquareIndex, df: number, dr: number): SquareIndex | null {
 
 /** What stands in the pieces' way besides each other */
 export interface Maze {
-  /** Squares no piece lands on or passes over: the pen, and the ghosts it may not eat */
+  /** Squares no piece lands on or passes over: the pen, and the ghosts while they hunt */
   shut: Set<SquareIndex>;
-  /** Blue ghosts the side to move may eat by landing on them */
+  /** Blue ghosts a piece may eat by landing on them */
   prey: Set<SquareIndex>;
 }
 
@@ -352,30 +349,30 @@ export function pacSteps(
 }
 
 /**
- * Pac-Man. The board is the maze, walled in places, with a pellet on every
- * empty square and a power pellet either side of the ghosts' pen in the
- * middle. A piece eats every pellet it passes over. Nobody can take a piece,
- * until a side eats a power pellet: for its next three moves it can take
- * theirs, which turn blue and run, and eat the ghosts, which turn blue too.
- * The rest of the time the four ghosts hunt, a step after every move, and
- * eat any piece they catch, whichever side it is on. The middle two ranks
- * lead into a tunnel at each side, out one end and in at the other.
- * Once the last pellet is eaten, the most points wins.
+ * Pac-Man. White's army alone against the four ghosts, with every move
+ * White's. The board is the maze, walled in places, with a pellet on every
+ * other empty square and a power pellet either side of the ghosts' pen in
+ * the middle. A piece eats every pellet it passes over. The ghosts hunt, a
+ * step after every move, and eat any piece they catch. A power pellet turns
+ * them blue for three moves, to run, and to be eaten. The middle two ranks
+ * lead into a tunnel at each side, out one end and in at the other. Eat the
+ * last pellet to win. The ghosts win once they have eaten every piece.
  */
 export class PacManPlugin implements ModePlugin {
   id = "pacman";
   name = "Pac-Man";
   description =
-    "Eat the pellets and keep clear of the ghosts. A power pellet lets you eat them, and their pieces, for three moves.";
+    "Eat every pellet before the ghosts eat your pieces. A power pellet lets you eat the ghosts for three moves.";
+  solo = true;
 
   private pellets = new Set<SquareIndex>();
   private power = new Set<SquareIndex>();
   private total = 0;
-  private score: Record<Color, number> = { w: 0, b: 0 };
-  private powerLeft: Record<Color, number> = { w: 0, b: 0 };
+  private score = 0;
+  private powerLeft = 0;
   private run: PacRun | null = null;
   private quietPlies = 0;
-  private result: Color | "draw" | null = null;
+  private result: Color | null = null;
   /** The way each move found for the last position goes, by its squares */
   private found: { fen: string; steps: Map<string, PacStep> } | null = null;
   private playing: PacStep | null = null;
@@ -399,6 +396,9 @@ export class PacManPlugin implements ModePlugin {
     }));
     this.bites = [];
     this.lastLanding = null;
+    for (const sq of ALL_SQUARES) {
+      if (ctx.board.get(sq)?.color === Color.Black) ctx.board.remove(sq);
+    }
     const empty = ALL_SQUARES.filter(
       (sq) => !ctx.board.get(sq) && !PEN.includes(sq),
     );
@@ -414,10 +414,14 @@ export class PacManPlugin implements ModePlugin {
           )[0],
       ),
     );
-    this.pellets = new Set(empty.filter((sq) => !this.power.has(sq)));
+    const lightSquare = (sq: SquareIndex) =>
+      (fileOf(sq) + rankOf(sq)) % 2 === 1;
+    this.pellets = new Set(
+      empty.filter((sq) => lightSquare(sq) && !this.power.has(sq)),
+    );
     this.total = this.pellets.size + this.power.size;
-    this.score = { w: 0, b: 0 };
-    this.powerLeft = { w: 0, b: 0 };
+    this.score = 0;
+    this.powerLeft = 0;
     this.run = null;
     this.quietPlies = 0;
     this.result = null;
@@ -449,23 +453,22 @@ export class PacManPlugin implements ModePlugin {
     }
   }
 
-  /** Whether the ghosts are blue: while either side is powered up */
+  /** Whether the ghosts are blue */
   private get scared(): boolean {
-    return this.powerLeft.w > 0 || this.powerLeft.b > 0;
+    return this.powerLeft > 0;
   }
 
   private ghostAt(sq: SquareIndex): Ghost | undefined {
     return this.ghosts.find((g) => g.state !== "eaten" && g.sq === sq);
   }
 
-  /** What stands in the way of `color`'s pieces: the pen, and the ghosts, unless they are blue and its pieces are powered */
-  private maze(color: Color): Maze {
-    const hunting = this.powerLeft[color] > 0;
+  /** What stands in the pieces' way: the pen, and the ghosts, unless they are blue */
+  private maze(): Maze {
     const shut = new Set(PEN);
     const prey = new Set<SquareIndex>();
     for (const ghost of this.ghosts) {
       if (ghost.state !== "out" || PEN.includes(ghost.sq)) continue;
-      (hunting ? prey : shut).add(ghost.sq);
+      (this.scared ? prey : shut).add(ghost.sq);
     }
     return { shut, prey };
   }
@@ -481,17 +484,12 @@ export class PacManPlugin implements ModePlugin {
     );
   }
 
-  /** Every move the side to move has, each by the way that eats the most where two ways land on the same square */
+  /** Every move the pieces have, each by the way that eats the most where two ways land on the same square */
   private steps(game: Game): Map<string, PacStep> {
-    const fen = `${game.toFen()} ${this.powerLeft.w} ${this.powerLeft.b} ${this.ghosts.map((g) => `${g.state}${g.sq}`).join(",")}`;
+    const fen = `${game.toFen()} ${this.powerLeft} ${this.ghosts.map((g) => `${g.state}${g.sq}`).join(",")}`;
     if (this.found?.fen === fen) return this.found.steps;
     const steps = new Map<string, PacStep>();
-    for (const found of pacSteps(
-      game.board,
-      game.turn,
-      this.powerLeft[game.turn] > 0,
-      this.maze(game.turn),
-    )) {
+    for (const found of pacSteps(game.board, game.turn, false, this.maze())) {
       const key = `${found.move.from}-${found.move.to}-${found.move.promotion ?? ""}`;
       const kept = steps.get(key);
       if (!kept || this.feast(found.path) > this.feast(kept.path)) {
@@ -516,7 +514,6 @@ export class PacManPlugin implements ModePlugin {
   }
 
   onAfterMove(ctx: PluginContext, move: Move): void {
-    const color = move.piece.color;
     const path = this.playing?.path ?? [move.to];
     this.playing = null;
     const eaten = path.filter(
@@ -525,17 +522,17 @@ export class PacManPlugin implements ModePlugin {
     const powerEaten = eaten.filter((sq) => this.power.has(sq));
     const power = powerEaten.length > 0;
     for (const sq of eaten) {
-      this.score[color] += this.power.has(sq) ? POWER_POINTS : PELLET_POINTS;
+      this.score += this.power.has(sq) ? POWER_POINTS : PELLET_POINTS;
       this.pellets.delete(sq);
       this.power.delete(sq);
     }
-    const prey = move.captured ? undefined : this.ghostAt(move.to);
+    const prey = this.ghostAt(move.to);
     if (prey) this.sendHome(prey);
-    const ghost = !!move.captured || !!prey;
-    if (ghost) this.score[color] += GHOST_POINTS;
+    const ghost = !!prey;
+    if (ghost) this.score += GHOST_POINTS;
     this.lastLanding = move.to;
-    if (this.powerLeft[color] > 0) this.powerLeft[color]--;
-    if (power) this.powerLeft[color] = POWER_MOVES;
+    if (this.powerLeft > 0) this.powerLeft--;
+    if (power) this.powerLeft = POWER_MOVES;
     this.quietPlies = eaten.length > 0 ? 0 : this.quietPlies + 1;
     this.run = {
       id: (this.run?.id ?? 0) + 1,
@@ -546,7 +543,6 @@ export class PacManPlugin implements ModePlugin {
       powerEaten,
       power,
       ghost,
-      color,
     };
     this.decide(ctx.board);
   }
@@ -608,8 +604,8 @@ export class PacManPlugin implements ModePlugin {
    * Where a ghost steps next. Out hunting, each goes its own way: Blinky
    * after the nearest piece, Pinky after the piece that moved last, Inky
    * after the best piece near him, Clyde after the nearest until it is close,
-   * when he backs off to a corner. Blue, they run from the pieces that can
-   * eat them, and keep off every piece. None turns straight back unless it
+   * when he backs off to a corner. Blue, they run from the pieces, and keep
+   * off every one of them. None turns straight back unless it
    * has to, and once out of the pen none goes back in.
    */
   private ghostStep(board: Board, ghost: Ghost): SquareIndex | null {
@@ -627,10 +623,7 @@ export class PacManPlugin implements ModePlugin {
 
     const pieces = ALL_SQUARES.filter((sq) => board.get(sq));
     if (this.scared) {
-      const hunters = pieces.filter(
-        (sq) => this.powerLeft[board.get(sq)!.color] > 0,
-      );
-      const away = ghostDistances(hunters);
+      const away = ghostDistances(pieces);
       return this.best(choices, ghost, (to) => away.get(to) ?? 99);
     }
     const target = this.ghostTarget(board, ghost, pieces);
@@ -693,38 +686,30 @@ export class PacManPlugin implements ModePlugin {
     }
   }
 
+  /** Eating the last pellet wins. The ghosts win once no piece can move, or the pellets go uneaten too long. */
   private decide(board: Board): void {
-    const left = (color: Color) =>
-      ALL_SQUARES.some((sq) => board.get(sq)?.color === color);
-    if (!left(Color.White)) this.result = Color.Black;
-    else if (!left(Color.Black)) this.result = Color.White;
+    if (this.pellets.size + this.power.size === 0) this.result = Color.White;
     else if (
-      this.pellets.size + this.power.size === 0 ||
-      this.quietPlies >= STALL_PLIES
+      this.quietPlies >= STALL_PLIES ||
+      pacSteps(board, Color.White, false, {
+        shut: new Set(PEN),
+        prey: new Set(),
+      }).length === 0
     ) {
-      const { w, b } = this.score;
-      this.result = w > b ? Color.White : b > w ? Color.Black : "draw";
+      this.result = Color.Black;
     }
   }
 
   modifyGameStatus(): GameStatus {
-    if (this.result === null) return GameStatus.Active;
-    return this.result === "draw" ? GameStatus.Stalemate : GameStatus.Checkmate;
+    return this.result === null ? GameStatus.Active : GameStatus.Checkmate;
   }
 
   getWinner(): Color | null {
-    return this.result === "draw" ? null : this.result;
+    return this.result;
   }
 
-  getSquareModifiers(ctx: PluginContext, sq: SquareIndex): SquareModifier[] {
-    if (PEN.includes(sq)) return [{ className: "pac-pen" }];
-    const piece = ctx.board.get(sq);
-    if (!piece) return [];
-    const hunter = this.powerLeft[other(piece.color)];
-    if (hunter === 0) return [];
-    return [
-      { className: hunter === 1 ? "pac-scared pac-ending" : "pac-scared" },
-    ];
+  getSquareModifiers(_ctx: PluginContext, sq: SquareIndex): SquareModifier[] {
+    return PEN.includes(sq) ? [{ className: "pac-pen" }] : [];
   }
 
   getBoardOverlays(): BoardOverlay[] {
@@ -732,88 +717,12 @@ export class PacManPlugin implements ModePlugin {
       pellets: [...this.pellets],
       power: [...this.power],
       total: this.total,
-      score: { ...this.score },
-      powerLeft: { ...this.powerLeft },
+      score: this.score,
+      powerLeft: this.powerLeft,
       run: this.run,
       ghosts: this.ghosts.map((g) => ({ ...g })),
       bites: this.bites,
     };
     return [{ type: "pacman", squares: view.pellets, data: view }];
-  }
-
-  /**
-   * Chessbot's move: the most pellets he can eat, a power pellet above all,
-   * any of yours or any blue ghost he can take while he is powered up,
-   * keeping clear of yours while you are and of the ghosts while they hunt,
-   * and otherwise heading for the nearest pellets
-   */
-  choose(game: Game, moves: Move[]): Move {
-    const steps = this.steps(game);
-    const me = game.turn;
-    const foe = other(me);
-    const food = [...this.pellets, ...this.power];
-    const nearest = (sq: SquareIndex) =>
-      food.reduce(
-        (best, p) =>
-          Math.min(
-            best,
-            Math.max(
-              Math.abs(fileOf(p) - fileOf(sq)),
-              Math.abs(rankOf(p) - rankOf(sq)),
-            ),
-          ),
-        8,
-      );
-    // The squares the hunting ghosts can reach with their next step
-    const haunted = new Set<SquareIndex>();
-    if (!this.scared) {
-      for (const ghost of this.ghosts) {
-        if (ghost.state !== "out") continue;
-        for (const [df, dr] of ORTHOGONAL) {
-          const to = step(ghost.sq, df, dr);
-          if (to !== null) haunted.add(to);
-        }
-      }
-    }
-    const prey = this.maze(me).prey;
-    let best = moves[0];
-    let bestScore = -Infinity;
-    for (const move of moves) {
-      const way = steps.get(`${move.from}-${move.to}-${move.promotion ?? ""}`)
-        ?.path ?? [move.to];
-      let score = this.feast(way) / PELLET_POINTS;
-      // A power pellet is worth most with ghosts out to eat, and is saved while there are none
-      if (way.some((sq) => this.power.has(sq)) && this.powerLeft[me] === 0) {
-        score += this.ghosts.some((g) => g.state === "out") ? 4 : -6;
-      }
-      if (move.captured) {
-        score += GHOST_POINTS / PELLET_POINTS + PIECE_VALUE[move.captured.type];
-      }
-      score += (nearest(move.from) - nearest(move.to)) * 0.4;
-      if (prey.has(move.to)) score += GHOST_POINTS / PELLET_POINTS;
-      const worth = PIECE_VALUE[move.piece.type] + 3;
-      if (haunted.has(move.to)) score -= worth;
-      if (haunted.has(move.from)) score += worth;
-      // While you are powered up, he keeps whatever you could take next out of reach
-      if (this.powerLeft[foe] > 0) {
-        const after = game.board.clone();
-        after.remove(move.from);
-        after.put(move.to, move.piece);
-        const threat = pacSteps(after, foe, true, this.maze(foe)).reduce(
-          (worst, s) =>
-            s.move.captured
-              ? Math.max(worst, PIECE_VALUE[s.move.captured.type])
-              : worst,
-          -1,
-        );
-        if (threat >= 0) score -= GHOST_POINTS / PELLET_POINTS + threat;
-      }
-      score += Math.random() * 0.3;
-      if (score > bestScore) {
-        bestScore = score;
-        best = move;
-      }
-    }
-    return best;
   }
 }

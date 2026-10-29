@@ -26,6 +26,8 @@ export interface ModePlugin {
 
   /** When true, pieces move autonomously (no player turns) */
   isAutonomous?: boolean;
+  /** When true, White plays alone and moves every turn */
+  solo?: boolean;
 
   onGameStart?(ctx: PluginContext): void;
   /** Called once the mode's title cards have cleared and play is about to begin */
