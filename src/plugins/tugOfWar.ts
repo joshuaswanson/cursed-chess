@@ -65,8 +65,9 @@ export interface Haul {
 /**
  * Tug of war on a chessboard. A rope runs up the middle of the board and any
  * piece on the two center files has hold of it. After each move, the side
- * that made it hauls the flag toward itself if it has more hands on the
- * rope. Drag it three squares into your half to win.
+ * waiting to reply hauls the flag toward itself if it has more hands on the
+ * rope, so a lead only pays once it has outlasted a reply. Drag it three
+ * squares into your half to win.
  */
 export class TugOfWarPlugin implements ModePlugin {
   id = "tug-of-war";
@@ -129,10 +130,11 @@ export class TugOfWarPlugin implements ModePlugin {
   onTurnEnd(ctx: PluginContext, color: Color): void {
     const white = this.hands(ctx.board, Color.White);
     const black = this.hands(ctx.board, Color.Black);
-    const ahead = color === Color.White ? white > black : black > white;
+    const hauler = color === Color.White ? Color.Black : Color.White;
+    const ahead = hauler === Color.White ? white > black : black > white;
     this.heaved = ahead;
     if (!ahead) return;
-    const pull = color === Color.White ? 1 : -1;
+    const pull = hauler === Color.White ? 1 : -1;
     this.flag = Math.max(-this.reach, Math.min(this.reach, this.flag + pull));
     this.heave++;
     this.heaveDir = pull;
