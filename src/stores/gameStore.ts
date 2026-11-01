@@ -30,7 +30,7 @@ import { MinefieldPlugin } from "../plugins/minefield";
 import { checkOnTurn } from "../utils/checkers";
 import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
-import { LanternsPlugin } from "../plugins/lanterns";
+import { LANTERN_HOLD_MS, LanternsPlugin } from "../plugins/lanterns";
 import { ThunderstormPlugin } from "../plugins/thunderstorm";
 import { GHOSTS_HOLD_MS, PacManPlugin } from "../plugins/pacman";
 import { HEIST_FILES, HEIST_RANKS, HeistPlugin } from "../plugins/heist";
@@ -1465,12 +1465,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       game.turn = mover;
       holdPause(GHOSTS_HOLD_MS);
     }
-    // Nobody moves again until the belts have stopped, or the rope has been hauled
+    // Nobody moves again until the belts have stopped, the rope has been hauled, or a lantern has landed
     if (pluginManager.find<ConveyorPlugin>("conveyor")) {
       holdPause(BELT_RUN_MS);
     }
     if (pluginManager.find<TugOfWarPlugin>("tug-of-war")?.heaved) {
       holdPause(HEAVE_HOLD_MS);
+    }
+    if (pluginManager.find<LanternsPlugin>("lanterns")?.flying) {
+      holdPause(LANTERN_HOLD_MS);
     }
 
     const status = pluginManager.invokeModifyGameStatus(game.getStatus());

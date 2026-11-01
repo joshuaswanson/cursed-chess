@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { SquareIndex } from "../../engine";
 import { useGameStore } from "../../stores/gameStore";
-import type { Lantern } from "../../plugins/lanterns";
+import { LANTERN_FLIGHT_MS } from "../../plugins/lanterns";
+import type { Lantern, LanternFlight } from "../../plugins/lanterns";
 import { visualCol, visualRow } from "./boardGeometry";
 import { lightningAt } from "./lightning";
 import "./Lanterns.css";
@@ -41,101 +43,150 @@ const BRASS = "#d9a441";
 const BRASS_DARK = "#8a5f1c";
 const LAMP_INK = "#2a1706";
 
-/** The lantern a piece carries, hung beside it: one for each it holds */
-export function LanternIcon({ count }: { count: number }) {
+/** The lantern a piece carries, hung beside it */
+export function LanternIcon({
+  className = "lantern-held",
+  arriveMs,
+}: {
+  className?: string;
+  /** How long until it comes down from flying here, showing nothing until then */
+  arriveMs?: number;
+}) {
   return (
-    <span className="lantern-held" aria-hidden>
-      {Array.from({ length: count }, (_, i) => (
-        <svg key={i} viewBox="0 0 32 46">
-          <defs>
-            <radialGradient id="lantern-glass" cx="0.5" cy="0.6" r="0.7">
-              <stop offset="0" stopColor="#fffbe0" />
-              <stop offset="0.55" stopColor="#ffd666" />
-              <stop offset="1" stopColor="#ff9d2e" />
-            </radialGradient>
-          </defs>
-          {/* The carrying ring */}
-          <path
-            d="M9 13 Q16 -3 23 13"
-            fill="none"
-            stroke={LAMP_INK}
-            strokeWidth="4.4"
-            strokeLinecap="round"
-          />
-          <path
-            d="M9 13 Q16 -3 23 13"
-            fill="none"
-            stroke={BRASS}
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          {/* The chimney and the cap over the glass */}
-          <rect
-            x="13"
-            y="8.5"
-            width="6"
-            height="4.5"
-            rx="1"
-            fill={BRASS_DARK}
-            stroke={LAMP_INK}
-            strokeWidth="1.6"
-          />
-          <path
-            d="M9.5 12.5 h13 l3 5 h-19 z"
-            fill={BRASS}
-            stroke={LAMP_INK}
-            strokeWidth="1.8"
-            strokeLinejoin="round"
-          />
-          {/* The glass, wider at the foot, with the flame inside */}
-          <path
-            d="M8 17.5 h16 l2.5 16 h-21 z"
-            fill="url(#lantern-glass)"
-            stroke={LAMP_INK}
-            strokeWidth="1.8"
-            strokeLinejoin="round"
-          />
-          <path
-            className="lantern-flame"
-            d="M16 20.5 q5.5 6.5 0 11.5 q-5.5 -5 0 -11.5 z"
-            fill="#ff7a1a"
-          />
-          <path
-            className="lantern-flame"
-            d="M16 25 q2.6 3.4 0 6.4 q-2.6 -3 0 -6.4 z"
-            fill="#fff3b0"
-          />
-          {/* The wire guards across the glass */}
-          <path
-            d="M12.4 17.5 L11.2 33.5 M19.6 17.5 L20.8 33.5 M6.8 25.5 H25.2"
-            fill="none"
-            stroke={LAMP_INK}
-            strokeWidth="1.3"
-            strokeLinecap="round"
-            opacity="0.75"
-          />
-          {/* The oil pot it stands on */}
-          <path
-            d="M4.5 33.5 h23 l-1.5 6 h-20 z"
-            fill={BRASS}
-            stroke={LAMP_INK}
-            strokeWidth="1.8"
-            strokeLinejoin="round"
-          />
-          <rect
-            x="7"
-            y="39.5"
-            width="18"
-            height="4"
-            rx="1.5"
-            fill={BRASS_DARK}
-            stroke={LAMP_INK}
-            strokeWidth="1.6"
-          />
-        </svg>
-      ))}
+    <span
+      className={`${className}${arriveMs === undefined ? "" : " lantern-arrives"}`}
+      style={
+        arriveMs === undefined
+          ? undefined
+          : ({ "--arrive": `${arriveMs}ms` } as CSSProperties)
+      }
+      aria-hidden
+    >
+      <svg viewBox="0 0 32 46">
+        <defs>
+          <radialGradient id="lantern-glass" cx="0.5" cy="0.6" r="0.7">
+            <stop offset="0" stopColor="#fffbe0" />
+            <stop offset="0.55" stopColor="#ffd666" />
+            <stop offset="1" stopColor="#ff9d2e" />
+          </radialGradient>
+        </defs>
+        {/* The carrying ring */}
+        <path
+          d="M9 13 Q16 -3 23 13"
+          fill="none"
+          stroke={LAMP_INK}
+          strokeWidth="4.4"
+          strokeLinecap="round"
+        />
+        <path
+          d="M9 13 Q16 -3 23 13"
+          fill="none"
+          stroke={BRASS}
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        {/* The chimney and the cap over the glass */}
+        <rect
+          x="13"
+          y="8.5"
+          width="6"
+          height="4.5"
+          rx="1"
+          fill={BRASS_DARK}
+          stroke={LAMP_INK}
+          strokeWidth="1.6"
+        />
+        <path
+          d="M9.5 12.5 h13 l3 5 h-19 z"
+          fill={BRASS}
+          stroke={LAMP_INK}
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        {/* The glass, wider at the foot, with the flame inside */}
+        <path
+          d="M8 17.5 h16 l2.5 16 h-21 z"
+          fill="url(#lantern-glass)"
+          stroke={LAMP_INK}
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path
+          className="lantern-flame"
+          d="M16 20.5 q5.5 6.5 0 11.5 q-5.5 -5 0 -11.5 z"
+          fill="#ff7a1a"
+        />
+        <path
+          className="lantern-flame"
+          d="M16 25 q2.6 3.4 0 6.4 q-2.6 -3 0 -6.4 z"
+          fill="#fff3b0"
+        />
+        {/* The wire guards across the glass */}
+        <path
+          d="M12.4 17.5 L11.2 33.5 M19.6 17.5 L20.8 33.5 M6.8 25.5 H25.2"
+          fill="none"
+          stroke={LAMP_INK}
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          opacity="0.75"
+        />
+        {/* The oil pot it stands on */}
+        <path
+          d="M4.5 33.5 h23 l-1.5 6 h-20 z"
+          fill={BRASS}
+          stroke={LAMP_INK}
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <rect
+          x="7"
+          y="39.5"
+          width="18"
+          height="4"
+          rx="1.5"
+          fill={BRASS_DARK}
+          stroke={LAMP_INK}
+          strokeWidth="1.6"
+        />
+      </svg>
     </span>
   );
+}
+
+/** The lanterns knocked flying by the last move, spinning through the air to where they come down */
+export function LanternFlights({
+  flights,
+  flipped,
+  squareSize,
+  delayMs,
+}: {
+  flights: LanternFlight[];
+  flipped: boolean;
+  squareSize: number;
+  /** How long they wait for the move that knocked them to land */
+  delayMs: number;
+}) {
+  return flights.map(({ id, from, to }) => (
+    <span
+      key={id}
+      className="lantern-flight"
+      style={
+        {
+          left: `${(visualCol(from, flipped) + 0.5) * 12.5}%`,
+          top: `${(visualRow(from, flipped) + 0.5) * 12.5}%`,
+          "--fly-x": `${(visualCol(to, flipped) - visualCol(from, flipped)) * squareSize}px`,
+          "--fly-y": `${(visualRow(to, flipped) - visualRow(from, flipped)) * squareSize}px`,
+          "--fly-ms": `${LANTERN_FLIGHT_MS}ms`,
+          "--fly-after": `${delayMs}ms`,
+        } as CSSProperties
+      }
+      aria-hidden
+    >
+      <span className="lantern-flight-hop">
+        <LanternIcon className="lantern-flight-spin" />
+      </span>
+    </span>
+  ));
 }
 
 /**
@@ -206,6 +257,8 @@ export function LanternFeel({
  */
 export function LanternDark({
   lanterns,
+  flights = [],
+  flightDelayMs = 0,
   shown,
   targets,
   flipped,
@@ -213,6 +266,10 @@ export function LanternDark({
   lightning = null,
 }: {
   lanterns: Lantern[];
+  /** Lanterns in the air, whose light goes with them */
+  flights?: LanternFlight[];
+  /** How long those wait for the move that knocked them to land */
+  flightDelayMs?: number;
   /** Squares lit with no lantern near: your king in check, and the piece checking it */
   shown: SquareIndex[];
   targets: SquareIndex[];
@@ -225,9 +282,27 @@ export function LanternDark({
   // The lanterns stay out while the mode's title cards are up, and are lit as play begins
   const lit = useGameStore((s) => s.introDone);
   // Read by the drawing loop, which outlives any one render
-  const scene = useRef({ lanterns, shown, targets, flipped, squareSize, lit });
+  const scene = useRef({
+    lanterns,
+    flights,
+    flightDelayMs,
+    shown,
+    targets,
+    flipped,
+    squareSize,
+    lit,
+  });
   useEffect(() => {
-    scene.current = { lanterns, shown, targets, flipped, squareSize, lit };
+    scene.current = {
+      lanterns,
+      flights,
+      flightDelayMs,
+      shown,
+      targets,
+      flipped,
+      squareSize,
+      lit,
+    };
   });
   const struckAt = useRef(-Infinity);
   // A bolt that struck before the board was drawn has already been and gone
@@ -244,6 +319,8 @@ export function LanternDark({
     if (!canvas || !ctx) return;
     /** Where each light is on screen now, in squares, as it follows its carrier */
     const at = new Map<number, { x: number; y: number }>();
+    /** When each flight was first seen */
+    const flightSeen = new Map<number, number>();
     let frame = 0;
     let last = 0;
     /** How far up the lanterns are, from out to fully alight */
@@ -255,8 +332,16 @@ export function LanternDark({
       frame = requestAnimationFrame(draw);
       if (now - last < FRAME_MS) return;
       last = now;
-      const { lanterns, shown, targets, flipped, squareSize, lit } =
-        scene.current;
+      const {
+        lanterns,
+        flights,
+        flightDelayMs,
+        shown,
+        targets,
+        flipped,
+        squareSize,
+        lit,
+      } = scene.current;
       glow += ((lit ? 1 : 0) - glow) * KINDLE;
       const lifted = lightningAt(now - struckAt.current);
       // Lanterns flicker and a check pulses, but otherwise the dark only changes with what it shows
@@ -327,10 +412,26 @@ export function LanternDark({
       const lights = lanterns.map((lantern) => {
         const goal = centre(lantern.sq);
         const here = at.get(lantern.id) ?? goal;
-        const next = {
-          x: here.x + (goal.x - here.x) * FOLLOW,
-          y: here.y + (goal.y - here.y) * FOLLOW,
-        };
+        const flight = flights.find((f) => f.lantern === lantern.id);
+        if (flight && !flightSeen.has(flight.id)) {
+          flightSeen.set(flight.id, now);
+        }
+        const flown = flight
+          ? (now - flightSeen.get(flight.id)! - flightDelayMs) /
+            LANTERN_FLIGHT_MS
+          : 1;
+        const start = flight ? centre(flight.from) : goal;
+        const share = Math.max(0, flown);
+        const next =
+          flown < 1
+            ? {
+                x: start.x + (goal.x - start.x) * share,
+                y: start.y + (goal.y - start.y) * share,
+              }
+            : {
+                x: here.x + (goal.x - here.x) * FOLLOW,
+                y: here.y + (goal.y - here.y) * FOLLOW,
+              };
         at.set(lantern.id, next);
         // The flame is never quite steady
         const flicker =

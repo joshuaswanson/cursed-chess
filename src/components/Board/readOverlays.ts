@@ -8,7 +8,11 @@ import type { FootballView } from "../../plugins/football";
 import type { TugView } from "../../plugins/tugOfWar";
 import type { ZombieView } from "../../plugins/zombies";
 import type { TrenchView } from "../../plugins/trenches";
-import type { Lantern, LanternView } from "../../plugins/lanterns";
+import type {
+  Lantern,
+  LanternFlight,
+  LanternView,
+} from "../../plugins/lanterns";
 import type { HeistView } from "../../plugins/heist";
 import type { StormView } from "../../plugins/thunderstorm";
 import type { PacView } from "../../plugins/pacman";
@@ -32,6 +36,8 @@ export interface BoardOverlays {
   trenches: TrenchView | null;
   /** The lanterns alight on a dark board, or nothing when the board is lit */
   lanterns: Lantern[] | null;
+  /** Lanterns the last move knocked flying */
+  lanternFlights: LanternFlight[];
   /** The thunderstorm over a dark board, or nothing when there is none */
   storm: StormView | null;
   /** The pellets and points of Pac-Man, or nothing in any other mode */
@@ -65,6 +71,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     zombies: null,
     trenches: null,
     lanterns: null,
+    lanternFlights: [],
     storm: null,
     pac: null,
     heist: null,
@@ -101,6 +108,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
         break;
       case "lanterns":
         result.lanterns = (overlay.data as LanternView).lanterns;
+        result.lanternFlights = (overlay.data as LanternView).flights;
         break;
       case "thunderstorm":
         result.storm = overlay.data as StormView;

@@ -171,10 +171,10 @@ function Flair({ theme }: { theme: ThemeId }) {
         <>
           {/* A lantern is carried across the dark, once for the title and once for what follows, and the letters show as its light reaches them */}
           <span className="card-lamp card-lamp-title">
-            <LanternIcon count={1} />
+            <LanternIcon />
           </span>
           <span className="card-lamp card-lamp-catch">
-            <LanternIcon count={1} />
+            <LanternIcon />
           </span>
         </>
       );

@@ -501,7 +501,7 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <span className="pv-lamplight">
         {/* Set down and to the left, so the lantern it carries is at the middle of the light */}
         <Piece is="wP" x={27} y={65} size={72}>
-          <LanternIcon count={1} />
+          <LanternIcon />
         </Piece>
       </span>
     </>

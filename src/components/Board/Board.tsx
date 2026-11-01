@@ -27,7 +27,13 @@ import { BoardShatter } from "../HexWarp/HexWarp";
 import { MineBlast } from "./MineBlast";
 import { Crater } from "./Crater";
 import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
-import { LanternDark, LanternFeel, LanternIcon } from "./Lanterns";
+import {
+  LanternDark,
+  LanternFeel,
+  LanternFlights,
+  LanternIcon,
+} from "./Lanterns";
+import { LANTERN_FLIGHT_MS } from "../../plugins/lanterns";
 import { StormBolt, StormScars } from "./Thunderstorm";
 import { FinaleOver, FinaleUnder } from "./Finale";
 import { PacGhosts, PacMaze, PacPellet } from "./PacMan";
@@ -350,8 +356,8 @@ export function Board() {
 
   useGravitySpin(shellRef, overlays.gravityDirection !== null);
   useFinaleSpin(shellRef, !!overlays.finale?.zones.gravity);
-  // A heave waits for the move that set it off to land, and for any capture's burst
-  const heaveDelay = moveHistory[moveHistory.length - 1]?.move.captured
+  // A heave or a flying lantern waits for the move that set it off to land, and for any capture's burst
+  const settleDelay = moveHistory[moveHistory.length - 1]?.move.captured
     ? SLIDE_MS + CAPTURE_BURST_MS
     : SLIDE_MS + 100;
   const tugDrags = useTugDrags(
@@ -360,13 +366,13 @@ export function Board() {
     overlays.tug?.dragged ?? [],
     flipped,
     squareSize,
-    heaveDelay,
+    settleDelay,
   );
   const tugYank = useHeave(
     overlays.tug?.heave ?? 0,
     overlays.tug?.heaveDir ?? 0,
     flipped,
-    heaveDelay,
+    settleDelay,
   );
   const shotDives = useShotDives(
     overlays.football?.lastKick ?? null,
@@ -634,8 +640,10 @@ export function Board() {
       if (isDeployTarget) className += " deploy-target";
       if (minesArmed.has(sq)) className += " mine-armed";
       const passChance = kickOptions.find((k) => k.to === sq)?.chance;
-      const lanternsHeld =
-        overlays.lanterns?.filter((lantern) => lantern.sq === sq).length ?? 0;
+      const lantern = overlays.lanterns?.find((l) => l.sq === sq);
+      const lanternLanding =
+        lantern &&
+        overlays.lanternFlights.some((f) => f.lantern === lantern.id);
       if (passChance !== undefined) className += " kick-target";
       className += riverClasses(file, rank, sq);
 
@@ -670,8 +678,8 @@ export function Board() {
                 "--off-y": `${hauled.off.y}px`,
               }),
               animation: hauled.off
-                ? `tug-runoff ${RUNOFF_MS}ms linear ${heaveDelay}ms both`
-                : `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) ${heaveDelay}ms both`,
+                ? `tug-runoff ${RUNOFF_MS}ms linear ${settleDelay}ms both`
+                : `tug-haul ${DRAG_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1) ${settleDelay}ms both`,
             } as React.CSSProperties)
           : ride
             ? ({
@@ -916,7 +924,14 @@ export function Board() {
 
           {minesArmed.has(sq) && <span className="mine-pop" aria-hidden />}
           {passChance !== undefined && <PassMarker chance={passChance} />}
-          {lanternsHeld > 0 && <LanternIcon count={lanternsHeld} />}
+          {lantern && (
+            <LanternIcon
+              className={piece ? "lantern-held" : "lantern-loose"}
+              arriveMs={
+                lanternLanding ? settleDelay + LANTERN_FLIGHT_MS : undefined
+              }
+            />
+          )}
           {overlays.heist?.sq === sq && (
             <HeistLoot held={overlays.heist.carrier !== null} />
           )}
@@ -996,7 +1011,7 @@ export function Board() {
   const { gravityAngle } = overlays;
   const boardStyle = {
     "--yank": tugYank,
-    "--heave-delay": `${heaveDelay}ms`,
+    "--heave-delay": `${settleDelay}ms`,
     "--flip": flipped ? -1 : 1,
     ...(finale?.zones.gravity && { "--patch-angle": `${finale.settledAt}deg` }),
     ...(deployPieceType && {
@@ -1053,7 +1068,7 @@ export function Board() {
             <TugLayer
               view={overlays.tug}
               flipped={flipped}
-              delayMs={heaveDelay}
+              delayMs={settleDelay}
             />
           )}
           {overlays.trenches && (
@@ -1145,6 +1160,8 @@ export function Board() {
           {dark && (
             <LanternDark
               lanterns={overlays.lanterns ?? []}
+              flights={overlays.lanternFlights}
+              flightDelayMs={settleDelay}
               shown={shownByCheck}
               targets={legalMoveSquares.filter(
                 (sq) => !unseenCaptures.includes(sq),
@@ -1154,6 +1171,12 @@ export function Board() {
               lightning={overlays.storm ? stormStrike : null}
             />
           )}
+          <LanternFlights
+            flights={overlays.lanternFlights}
+            flipped={flipped}
+            squareSize={squareSize}
+            delayMs={settleDelay}
+          />
           {strikes && <StormBolt strikes={strikes} flipped={flipped} />}
           {finale && (
             <FinaleOver
