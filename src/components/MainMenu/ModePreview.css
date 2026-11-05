@@ -3981,7 +3981,7 @@
   filter: drop-shadow(0 0 2px #ff7a2a);
 }
 
-/* --- Immortal Snail: it creeps after the king a step at a time, and gets him --- */
+/* --- Immortal Snail: it creeps after the king a step at a time, taps him, and he drops dead --- */
 
 .pv-snail {
   position: absolute;
@@ -3998,33 +3998,29 @@
   filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
 }
 
-/* Each step a slow glide, with a long wait between */
+/* Each step a slow glide, with a long wait between, the last one up to him */
 @keyframes pv-snail-creep {
   0%,
-  14% {
-    left: 8%;
+  12% {
+    left: 6%;
   }
-  24%,
-  38% {
-    left: 26%;
+  22%,
+  34% {
+    left: 22%;
   }
-  48%,
-  62% {
-    left: 44%;
+  44%,
+  56% {
+    left: 38%;
   }
-  72%,
-  84% {
-    left: 62%;
-  }
-  92%,
+  66%,
   100% {
-    left: 74%;
+    left: 54%;
   }
 }
 
 .pv-snail-slime {
   position: absolute;
-  left: 4%;
+  left: 2%;
   top: 60%;
   height: 9%;
   border-radius: 99px;
@@ -4038,54 +4034,85 @@
 
 @keyframes pv-snail-slime {
   0%,
-  14% {
+  12% {
     width: 4%;
   }
-  24%,
-  38% {
-    width: 22%;
+  22%,
+  34% {
+    width: 20%;
   }
-  48%,
-  62% {
-    width: 40%;
+  44%,
+  56% {
+    width: 36%;
   }
-  72%,
-  84% {
-    width: 58%;
-  }
-  92%,
+  66%,
   100% {
-    width: 70%;
+    width: 48%;
   }
 }
 
-/* The king shuffles about, nowhere left to go, and is gone when it reaches him */
+/* The king shuffles about with nowhere to go; one touch, and he keels over dead */
 .pv-snail-prey {
-  animation: pv-snail-prey 7s ease-in infinite;
+  transform-origin: 78% 92%;
+  animation: pv-snail-prey 7s linear infinite;
 }
 
 @keyframes pv-snail-prey {
   0%,
-  60% {
+  40% {
     translate: -50% -50%;
+    rotate: 0deg;
     opacity: 1;
-    scale: 1;
   }
-  70% {
+  48% {
     translate: -42% -50%;
   }
-  80% {
+  56% {
     translate: -56% -50%;
   }
-  90% {
+  64%,
+  70% {
     translate: -50% -50%;
-    opacity: 1;
-    scale: 1;
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
   }
-  97%,
+  76% {
+    rotate: 90deg;
+    animation-timing-function: ease-out;
+  }
+  78% {
+    rotate: 82deg;
+    animation-timing-function: ease-in;
+  }
+  80%,
+  92% {
+    translate: -50% -50%;
+    rotate: 90deg;
+    opacity: 1;
+  }
+  98%,
   100% {
-    translate: -50% -10%;
+    translate: -50% -50%;
+    rotate: 90deg;
     opacity: 0;
-    scale: 0.4 0.1;
+  }
+}
+
+/* The light tap of its head that does it */
+.pv-snail svg {
+  animation: pv-snail-tap 7s ease-out infinite;
+}
+
+@keyframes pv-snail-tap {
+  0%,
+  68% {
+    transform: none;
+  }
+  70% {
+    transform: translateX(8%) rotate(-4deg);
+  }
+  73%,
+  100% {
+    transform: none;
   }
 }

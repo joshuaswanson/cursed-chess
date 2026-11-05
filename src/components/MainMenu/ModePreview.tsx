@@ -793,11 +793,11 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <Piece is="wR" x={0} y={52} size={20} className="pv-pac-runner" />
     </>
   ),
-  // The snail creeps after a king, a step at a time, leaving its slime, and catches him
+  // The snail creeps after a king, a step at a time, leaving its slime, taps him, and he drops dead
   snail: (
     <>
       <span className="pv-snail-slime" />
-      <Piece is="wK" x={74} y={56} size={24} className="pv-snail-prey" />
+      <Piece is="wK" x={70} y={56} size={24} className="pv-snail-prey" />
       <span className="pv-snail">
         <SnailArt color={Color.Black} look={0} />
       </span>
