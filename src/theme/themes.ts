@@ -296,19 +296,19 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     dark: "#000000",
     text: "#ffe600",
   },
-  // Deep space, warm light bending round the black point in the middle
+  // The black of an event horizon, lit gold by the disc falling into it
   singularity: {
     id: "singularity",
     title: "Singularity",
     catchphrase: "Space bends round the middle!",
-    sky: ["#02010a", "#120a2e", "#2b0f3d"],
-    accent: "#ff9d2e",
-    accent2: "#7ad7ff",
-    ink: "#05030f",
-    frame: "#0d0820",
-    light: "#e9dcff",
-    dark: "#5b3f9a",
-    text: "#f3eaff",
+    sky: ["#000000", "#0d0603", "#24100a"],
+    accent: "#ffb547",
+    accent2: "#ff6a2a",
+    ink: "#0a0402",
+    frame: "#1a0c06",
+    light: "#f7ecd6",
+    dark: "#573a29",
+    text: "#fff1dc",
   },
   // Chessbot at his angriest, on the plain board the story started on
   finale: {

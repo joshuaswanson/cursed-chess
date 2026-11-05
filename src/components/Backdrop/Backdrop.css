@@ -1246,59 +1246,79 @@
   }
 }
 
-/* --- Singularity: a black hole far off, its disc of gas turning round it --- */
+/* --- Singularity: space pulled down into a well, a black hole at its throat --- */
 
-.black-hole {
+.warped-space {
   position: absolute;
-  right: 6vw;
-  top: 12vh;
-  width: 34vmin;
-  aspect-ratio: 1;
+  width: 0;
+  height: 0;
 }
 
-.black-hole-disc {
+.warped-grid {
   position: absolute;
-  inset: -40% -70%;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    rgba(255, 196, 110, 0.95),
-    rgba(255, 110, 40, 0.5),
-    rgba(255, 196, 110, 0.95),
-    rgba(255, 70, 30, 0.45),
-    rgba(255, 196, 110, 0.95)
-  );
-  mask: radial-gradient(
-    closest-side,
-    transparent 38%,
-    #000 46%,
-    transparent 100%
-  );
-  rotate: -14deg;
-  scale: 1 0.32;
-  filter: blur(2px);
-  animation: black-hole-spin 14s linear infinite;
+  left: -2400px;
+  top: -1800px;
+  width: 4800px;
+  height: 3000px;
+  overflow: visible;
 }
 
-@keyframes black-hole-spin {
+.warp-ring,
+.warp-spoke {
+  fill: none;
+  stroke: #ff9d4d;
+  stroke-width: 1.4;
+}
+
+.warp-spoke {
+  opacity: 0.16;
+}
+
+.warp-halo {
+  fill: none;
+  stroke: #ffc46b;
+  stroke-width: 7;
+  filter: blur(3px);
+  opacity: 0.9;
+}
+
+.warp-disc {
+  fill: none;
+  stroke: url(#warp-disc);
+  stroke-width: 14;
+  filter: blur(1.5px) drop-shadow(0 0 14px #ff7a2a);
+}
+
+/* Hot clumps of gas going round in the disc */
+.warp-disc-sparkle {
+  fill: none;
+  stroke: #fff1c8;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1 9 3 14;
+  opacity: 0.8;
+  animation: warp-disc 2.4s linear infinite;
+}
+
+@keyframes warp-disc {
   to {
-    transform: rotate(360deg);
+    stroke-dashoffset: -108;
   }
 }
 
-.black-hole-core {
-  position: absolute;
-  inset: 22%;
-  border-radius: 50%;
-  background: #000;
-  box-shadow:
-    0 0 0 0.6vmin rgba(255, 190, 110, 0.9),
-    0 0 4vmin 1.5vmin rgba(255, 140, 50, 0.55),
-    0 0 12vmin 4vmin rgba(160, 90, 255, 0.25);
+.warp-core {
+  fill: #000;
+}
+
+.warp-photon {
+  fill: none;
+  stroke: #fff2d0;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px #ffcf86);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .black-hole-disc {
+  .warp-disc-sparkle {
     animation: none;
   }
 }

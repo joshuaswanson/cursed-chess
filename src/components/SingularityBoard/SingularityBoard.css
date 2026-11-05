@@ -1,6 +1,8 @@
-/* --- Singularity Chess: the board curved round the singularity in its middle --- */
+/* --- Singularity Chess: the board curved round the black hole at its middle --- */
 
+/* No square frame: the board is its own round shape */
 .singularity-shell {
+  position: relative;
   width: calc(var(--square-size) * 8);
   aspect-ratio: 1;
 }
@@ -11,8 +13,6 @@
   height: 100%;
   user-select: none;
   -webkit-user-select: none;
-  filter: drop-shadow(0 0 18px rgba(255, 140, 50, 0.35))
-    drop-shadow(6px 8px 0 var(--ink));
 }
 
 .singularity-squares {
@@ -22,78 +22,153 @@
   overflow: visible;
 }
 
+/* The light of the disc spilling off the board's edge, and its hard shadow */
+.sing-rim-glow {
+  fill: #0a0402;
+  stroke: #ff9d3d;
+  stroke-width: 0.06;
+  filter: drop-shadow(0 0 0.35px #ff9d3d) drop-shadow(0 0 1.1px #ff6a1f)
+    drop-shadow(0.16px 0.22px 0 #000);
+}
+
+.sing-rim {
+  fill: none;
+  stroke-width: 0.16;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
 .sing-sq {
-  stroke: var(--ink);
-  stroke-width: 0.025;
+  stroke: #120604;
+  stroke-width: 0.022;
   stroke-linejoin: round;
   cursor: pointer;
   transition: filter 0.15s;
 }
 
-.sing-sq.light {
-  fill: var(--tile-light);
-}
-
-.sing-sq.dark {
-  fill: var(--tile-dark);
-}
-
 .sing-sq:hover {
-  filter: brightness(1.15);
+  filter: brightness(1.18);
 }
 
 .sing-sq.last {
-  fill: color-mix(in srgb, var(--accent) 45%, var(--tile-dark));
-}
-
-.sing-sq.light.last {
-  fill: color-mix(in srgb, var(--accent) 45%, var(--tile-light));
+  filter: sepia(0.6) saturate(1.8) brightness(1.15);
 }
 
 .sing-sq.picked {
-  fill: color-mix(in srgb, var(--accent-2) 60%, var(--tile-light));
+  fill: #ffd36b !important;
+  filter: drop-shadow(0 0 0.12px #ffd36b);
 }
 
 .sing-sq.takes {
-  fill: color-mix(in srgb, #ff3b5c 55%, var(--tile-dark));
+  fill: #ff4b3a !important;
 }
 
 .sing-sq.checked {
-  fill: #ff3b5c;
+  fill: #ff2d55 !important;
   animation: sing-check 0.7s ease-in-out infinite alternate;
 }
 
 @keyframes sing-check {
   to {
-    fill: #ff9aa9;
+    fill: #ffa0b2 !important;
   }
+}
+
+.sing-haze {
+  pointer-events: none;
+  mix-blend-mode: screen;
 }
 
 .sing-dot {
-  fill: var(--accent-2);
-  stroke: var(--ink);
-  stroke-width: 0.03;
+  fill: #ffe7a8;
+  stroke: #3a1504;
+  stroke-width: 0.035;
+  filter: drop-shadow(0 0 0.1px #ffb547);
   pointer-events: none;
 }
 
-/* The singularity itself, a black point with the light bending round it */
-.singularity-hole {
+.sing-file {
+  fill: #ffcf86;
+  font: 0.24px var(--font-display);
+  text-anchor: middle;
   pointer-events: none;
-  transform-origin: 0 0;
-  animation: sing-hole 3s ease-in-out infinite alternate;
+  opacity: 0.8;
 }
 
-@keyframes sing-hole {
+/* The singularity: a black point, its photon ring, and its disc turning round it */
+.sing-hole {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 15%;
+  aspect-ratio: 3 / 2;
+  translate: -50% -50%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sing-disc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #fff1c8,
+    #ff9d2e 18%,
+    #ff4d1a 32%,
+    #ffd27a 50%,
+    #ff7a24 68%,
+    #b8360f 82%,
+    #fff1c8
+  );
+  mask: radial-gradient(
+    closest-side,
+    transparent 30%,
+    #000 40%,
+    #000 62%,
+    transparent 100%
+  );
+  -webkit-mask: radial-gradient(
+    closest-side,
+    transparent 30%,
+    #000 40%,
+    #000 62%,
+    transparent 100%
+  );
+  filter: blur(0.6px) drop-shadow(0 0 6px rgba(255, 140, 40, 0.9));
+  animation: sing-disc 5s linear infinite;
+}
+
+@keyframes sing-disc {
   to {
-    scale: 1.25;
+    rotate: 360deg;
   }
+}
+
+.sing-core {
+  position: absolute;
+  inset: 32%;
+  border-radius: 50%;
+  background: #000;
+  box-shadow:
+    0 0 0 1.5px #fff3d4,
+    0 0 6px 2px rgba(255, 200, 120, 0.9);
 }
 
 .sing-piece {
   position: absolute;
+  z-index: 2;
   aspect-ratio: 1;
+  translate: -50% -50%;
   pointer-events: none;
-  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.45))
+    drop-shadow(0 0 4px rgba(0, 0, 0, 0.35));
+}
+
+@keyframes sing-slide {
+  from {
+    translate: calc(-50% + var(--slide-from-x)) calc(-50% + var(--slide-from-y));
+  }
 }
 
 .sing-piece.lifted {
@@ -110,6 +185,7 @@
 
 .sing-burst {
   position: absolute;
+  z-index: 3;
   width: 12.5%;
   aspect-ratio: 1;
   translate: -50% -50%;
@@ -117,7 +193,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .singularity-hole,
+  .sing-disc,
   .sing-sq.checked {
     animation: none;
   }

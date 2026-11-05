@@ -9,6 +9,7 @@ import {
 } from "../../utils/pieceImages";
 import { SoccerBall } from "../Board/Football";
 import { LanternIcon } from "../Board/Lanterns";
+import { RING_DARK, RING_LIGHT, SQUEEZE } from "../SingularityBoard/rings";
 import { Jewel } from "../Board/Heist";
 import { Chessbot } from "../Chessbot/Chessbot";
 import { MineBlast } from "../Board/MineBlast";
@@ -460,6 +461,125 @@ const CONFETTI = [
   "#ffffff",
 ];
 
+/** The width of a file on the little Singularity board, which stands in the middle of the scene */
+const SING_FILE = 11;
+const SING_RINGS = [6, 5, 4, 3, 2, 1];
+/** How long the rook takes to go round and come back */
+const SING_LOOP_S = 5;
+
+/**
+ * A small Singularity board, its rings cut across by the files, the disc
+ * turning round the hole in the middle, and a rook on a1 going up its file,
+ * round the singularity, and down again to h1
+ */
+function SingularityScene() {
+  const rx = (ring: number) => ring * SING_FILE;
+  const ry = (ring: number) => ring * SING_FILE * SQUEEZE;
+  const files = (parity: number) =>
+    Array.from({ length: 4 }, (_, i) => (
+      <rect
+        key={i}
+        x={100 - 4 * SING_FILE + (i * 2 + parity) * SING_FILE}
+        y="0"
+        width={SING_FILE}
+        height="100"
+      />
+    ));
+  const a = 100 - 3.5 * SING_FILE;
+  const h = 100 + 3.5 * SING_FILE;
+  const home = 50 + 4.2 * SING_FILE * SQUEEZE;
+  // The board's edge: its outer ring, cut off straight at the a and h files
+  const edge = (sign: number) =>
+    Array.from({ length: 33 }, (_, i) => {
+      const x = (i / 32) * 8 - 4;
+      return `${100 + x * SING_FILE} ${50 + sign * SQUEEZE * SING_FILE * Math.sqrt(36 - x * x)}`;
+    });
+  const rim = `M${[...edge(1), ...edge(-1).reverse()].join(" L")} Z`;
+  const loop = `M${a} ${home} L${a} 50 A${3.5 * SING_FILE} ${3.5 * SING_FILE * SQUEEZE} 0 0 1 ${h} 50 L${h} ${home}`;
+  return (
+    <svg className="pv-sing" viewBox="0 0 200 100">
+      <defs>
+        <clipPath id="pv-sing-board">
+          <rect
+            x={100 - 4 * SING_FILE}
+            y="0"
+            width={8 * SING_FILE}
+            height="100"
+          />
+        </clipPath>
+        <clipPath id="pv-sing-even">{files(0)}</clipPath>
+        <clipPath id="pv-sing-odd">{files(1)}</clipPath>
+        <radialGradient id="pv-sing-glow">
+          <stop offset="0" stopColor="#ffb547" stopOpacity="0.9" />
+          <stop offset="0.4" stopColor="#ff6a2a" stopOpacity="0.35" />
+          <stop offset="1" stopColor="#ff6a2a" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {[3, 4.6, 6.4, 8.6].map((scale) => (
+        <ellipse
+          key={scale}
+          className="pv-sing-warp"
+          cx="100"
+          cy="50"
+          rx={rx(scale)}
+          ry={ry(scale) * 0.55}
+        />
+      ))}
+      <g clipPath="url(#pv-sing-board)" className="pv-sing-board">
+        {SING_RINGS.map((ring) => (
+          <g key={ring}>
+            <ellipse
+              cx="100"
+              cy="50"
+              rx={rx(ring)}
+              ry={ry(ring)}
+              fill={RING_DARK[ring]}
+            />
+            <ellipse
+              cx="100"
+              cy="50"
+              rx={rx(ring)}
+              ry={ry(ring)}
+              fill={RING_LIGHT[ring]}
+              clipPath={`url(#pv-sing-${ring % 2 ? "even" : "odd"})`}
+            />
+          </g>
+        ))}
+      </g>
+      <path className="pv-sing-rim" d={rim} />
+      <path className="pv-sing-path" d={loop} />
+      <circle cx="100" cy="50" r="16" fill="url(#pv-sing-glow)" />
+      <ellipse className="pv-sing-disc" cx="100" cy="50" rx="10" ry="3.6" />
+      <circle cx="100" cy="50" r="3.4" className="pv-sing-core" />
+      <image
+        href={themedPieceImage("bK", "singularity")}
+        x={100 + 0.5 * SING_FILE - 6}
+        y={50 - 4.2 * SING_FILE * SQUEEZE - 6}
+        width="12"
+        height="12"
+      />
+      <g>
+        <animateMotion
+          dur={`${SING_LOOP_S}s`}
+          repeatCount="indefinite"
+          path={loop}
+          keyPoints="0;1;1;0;0"
+          keyTimes="0;0.42;0.5;0.92;1"
+          calcMode="spline"
+          keySplines="0.45 0 0.55 1;0 0 1 1;0.45 0 0.55 1;0 0 1 1"
+        />
+        <image
+          href={themedPieceImage("wR", "singularity")}
+          x="-6.5"
+          y="-6.5"
+          width="13"
+          height="13"
+        />
+      </g>
+    </svg>
+  );
+}
+
 /** Something that happens in each mode, played on a loop in a little window */
 const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // A knight hops up to the blue portal, is sucked in, and walks out of the orange one
@@ -606,18 +726,8 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <Piece is="wR" x={0} y={52} size={20} className="pv-pac-runner" />
     </>
   ),
-  // A bishop swings round the singularity and comes out on the other side
-  singularity: (
-    <>
-      <span className="pv-sing-ring pv-sing-ring-outer" />
-      <span className="pv-sing-ring" />
-      <span className="pv-sing-hole" />
-      <span className="pv-sing-orbit">
-        <Piece is="wB" x={50} y={0} size={40} />
-      </span>
-      <Piece is="bK" x={84} y={50} size={22} />
-    </>
-  ),
+  // A rook goes up its file, round the singularity, and back down to the far corner of its own side
+  singularity: <SingularityScene />,
   // Searchlights cross a dark hall while a pawn creeps up on the jewel
   heist: (
     <>

@@ -566,6 +566,84 @@ const vortex: Preset = {
   },
 };
 
+/** Where the black hole of Singularity sits on screen, as a share of the width and height */
+export const HOLE_AT = { x: 0.8, y: 0.74 };
+/** How flat the disc and the well round the hole look, tipped away from us */
+export const HOLE_TILT = 0.28;
+/** How far out the hole swallows anything, in CSS pixels */
+const HORIZON_PX = 70;
+
+/**
+ * Singularity: a few far stars that hardly move, and sparks of gas that
+ * circle the black hole faster the closer in they get, spiral down, and
+ * are gone at the horizon
+ */
+const infall: Preset = {
+  count: 150,
+  spawn: (w, h, initial) => {
+    if (Math.random() < 0.45) {
+      return {
+        x: rand(0, w),
+        y: rand(0, h),
+        vx: 0,
+        vy: 0,
+        size: rand(0.4, 1.2),
+        age: 0,
+        life: Infinity,
+        phase: rand(0, Math.PI * 2),
+        color: pick(["#ffffff", "#ffe9c9", "#ffd2a0"]),
+        draw: (ctx, p, t) => {
+          ctx.globalAlpha *= 0.45 + 0.4 * Math.sin(t * 1.4 + p.phase);
+          ctx.fillStyle = p.color;
+          dot(ctx, p.x, p.y, p.size);
+        },
+      };
+    }
+    // vx holds the orbit's radius and vy the angle round it
+    return {
+      x: 0,
+      y: 0,
+      vx: initial ? rand(HORIZON_PX * 1.5, w * 0.7) : rand(w * 0.35, w * 0.75),
+      vy: rand(0, Math.PI * 2),
+      size: rand(0.8, 2.2),
+      age: 0,
+      life: Infinity,
+      phase: 0,
+      color: pick(["#fff1c8", "#ffb547", "#ff7a2a", "#ffd27a"]),
+      draw: (ctx, p) => {
+        const near = Math.max(0, Math.min(1, 1 - p.vx / (w * 0.6)));
+        ctx.globalAlpha *= 0.25 + 0.75 * near;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = p.size;
+        ctx.lineCap = "round";
+        // A short streak behind it along its orbit
+        const back = Math.min(0.5, 30 / p.vx);
+        const cx = w * HOLE_AT.x;
+        const cy = h * HOLE_AT.y;
+        ctx.beginPath();
+        for (let i = 0; i <= 4; i++) {
+          const a = p.vy - (back * i) / 4;
+          const px = cx + Math.cos(a) * p.vx;
+          const py = cy + Math.sin(a) * p.vx * HOLE_TILT;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      },
+      step: (p, dt, cw, ch) => {
+        p.vy += dt * 26 * Math.pow(Math.max(p.vx, HORIZON_PX) / 100, -1.5);
+        p.vx -= dt * (6 + 9000 / p.vx);
+        if (p.vx < HORIZON_PX) {
+          p.vx = rand(cw * 0.35, cw * 0.75);
+          p.vy = rand(0, Math.PI * 2);
+        }
+        p.x = cw * HOLE_AT.x + Math.cos(p.vy) * p.vx;
+        p.y = ch * HOLE_AT.y + Math.sin(p.vy) * p.vx * HOLE_TILT;
+      },
+    };
+  },
+};
+
 const neon: Preset = {
   count: 60,
   spawn: (w, h, initial) => ({
@@ -654,7 +732,7 @@ export const FRONT_PRESETS: Partial<Record<ThemeId, Preset>> = {
 
 export const PRESETS: Partial<Record<ThemeId, Preset>> = {
   portals: stars,
-  singularity: stars,
+  singularity: infall,
   fog: wisps,
   royale: embers,
   conveyor: embers,

@@ -12,6 +12,7 @@ import { Museum } from "./Museum";
 import { Factory } from "./Factory";
 import { StormSky } from "./StormSky";
 import { Corrupted } from "./Corrupted";
+import { WarpedSpace } from "./WarpedSpace";
 import "./Backdrop.css";
 
 /** How long the spirals take to slow, stop, and wind up the other way */
@@ -175,15 +176,7 @@ function Scene({ theme }: { theme: ThemeId }) {
     case "finale":
       return <Corrupted />;
     case "singularity":
-      return (
-        <>
-          <div className="nebula nebula-a" />
-          <div className="black-hole">
-            <div className="black-hole-disc" />
-            <div className="black-hole-core" />
-          </div>
-        </>
-      );
+      return <WarpedSpace />;
     default:
       return null;
   }

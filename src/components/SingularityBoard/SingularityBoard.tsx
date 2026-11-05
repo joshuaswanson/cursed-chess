@@ -7,32 +7,45 @@ import { pieceImage } from "../../utils/pieceImages";
 import { CELLS, placeOf, squareOf } from "../../plugins/singularity";
 import type { Place, SingularityPlugin } from "../../plugins/singularity";
 import { SLIDE_MS, useCaptureBurst } from "../Board/useBoardEffects";
+import { RING_DARK, RING_LIGHT, SQUEEZE } from "./rings";
 import "./SingularityBoard.css";
 
 /**
  * The board is drawn as the original is made: eight files laid side by side,
- * a to h, cut across by rings round the singularity at the middle. Along
- * the files it is squeezed to two thirds, so the whole board is as tall as
- * it is wide. Board units: the files are one wide, the board runs from -4
- * to 4 both ways, and White's end is at the bottom.
+ * a to h, cut across by rings round the singularity at the middle. Board
+ * units: the files are one wide, the board runs from -4 to 4 both ways,
+ * and White's end is at the bottom.
  */
-const SQUEEZE = 2 / 3;
-const EDGE_STEPS = 18;
+const EDGE_STEPS = 24;
 /** Pointer travel that turns a press on a piece into a drag */
 const DRAG_THRESHOLD_PX = 6;
+/** How finely each square is searched for the roomiest spot to stand its piece */
+const ROOM_STEPS = 48;
+/** How much of its room a piece's artwork takes, and the most of a file it ever takes */
+const PIECE_FILL = 2.05;
+const PIECE_MAX = 0.86;
+const FILES = "abcdefgh";
+
+type Point = [number, number];
 
 interface Shape {
   sq: SquareIndex;
   path: string;
-  /** Where its piece stands, and how big the piece can be there */
+  /** Where its piece stands: the middle of the biggest circle that fits in the square */
   x: number;
   y: number;
   size: number;
+  ring: number;
   light: boolean;
 }
 
+const toPath = (points: Point[]) =>
+  points
+    .map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(3)} ${y.toFixed(3)}`)
+    .join(" ") + "Z";
+
 /** The outline of a square: across its file, between its two rings, on its half or both */
-function outline({ file, ring, half }: Place): [number, number][] {
+function outline({ file, ring, half }: Place): Point[] {
   // Distance across the board from its long middle line, and along it from the middle
   const from = 3 - file;
   const across = Array.from(
@@ -48,46 +61,96 @@ function outline({ file, ring, half }: Place): [number, number][] {
     // White's half is the near half, down the screen
     return half === Color.White ? [-outer, -inner] : [inner, outer];
   };
-  const point = (u: number, v: number): [number, number] => [-v, -u * SQUEEZE];
+  const point = (u: number, v: number): Point => [-v, -u * SQUEEZE];
   return [
     ...across.map((v) => point(span(v)[0], v)),
     ...[...across].reverse().map((v) => point(span(v)[1], v)),
   ];
 }
 
+function inside([x, y]: Point, points: Point[]): boolean {
+  let within = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const [xi, yi] = points[i];
+    const [xj, yj] = points[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
+      within = !within;
+    }
+  }
+  return within;
+}
+
+function distanceToEdge([x, y]: Point, points: Point[]): number {
+  let nearest = Infinity;
+  for (let i = 0; i < points.length; i++) {
+    const [ax, ay] = points[i];
+    const [bx, by] = points[(i + 1) % points.length];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const along = Math.max(
+      0,
+      Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1)),
+    );
+    nearest = Math.min(
+      nearest,
+      Math.hypot(x - (ax + along * dx), y - (ay + along * dy)),
+    );
+  }
+  return nearest;
+}
+
+/** The middle of the biggest circle that fits in the square, and its radius */
+function roomiest(points: Point[]): { at: Point; room: number } {
+  const xs = points.map(([x]) => x);
+  const ys = points.map(([, y]) => y);
+  const [left, right] = [Math.min(...xs), Math.max(...xs)];
+  const [top, bottom] = [Math.min(...ys), Math.max(...ys)];
+  let best = { at: [(left + right) / 2, (top + bottom) / 2] as Point, room: 0 };
+  for (let i = 1; i < ROOM_STEPS; i++) {
+    for (let j = 1; j < ROOM_STEPS; j++) {
+      const at: Point = [
+        left + ((right - left) * i) / ROOM_STEPS,
+        top + ((bottom - top) * j) / ROOM_STEPS,
+      ];
+      if (!inside(at, points)) continue;
+      const room = distanceToEdge(at, points);
+      if (room > best.room) best = { at, room };
+    }
+  }
+  return best;
+}
+
 function shapeOf(c: number, r: number): Shape {
   const place = placeOf({ c, r });
   const points = outline(place);
-  let area = 0;
-  let cx = 0;
-  let cy = 0;
-  points.forEach(([x0, y0], i) => {
-    const [x1, y1] = points[(i + 1) % points.length];
-    const cross = x0 * y1 - x1 * y0;
-    area += cross;
-    cx += (x0 + x1) * cross;
-    cy += (y0 + y1) * cross;
-  });
-  area /= 2;
-  const xs = points.map(([x]) => x);
-  const ys = points.map(([, y]) => y);
-  const width = Math.max(...xs) - Math.min(...xs);
-  const height = Math.max(...ys) - Math.min(...ys);
+  const { at, room } = roomiest(points);
   return {
     sq: squareOf(c, r),
-    path:
-      points
-        .map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(3)} ${y.toFixed(3)}`)
-        .join(" ") + "Z",
-    x: cx / (6 * area),
-    y: cy / (6 * area),
-    size: Math.min(0.8, 0.9 * Math.min(width, height)),
+    path: toPath(points),
+    x: at[0],
+    y: at[1],
+    size: Math.min(PIECE_MAX, room * PIECE_FILL),
+    ring: place.ring,
     light: (place.file + place.ring) % 2 === 1,
   };
 }
 
 const SHAPES = CELLS.map(({ c, r }) => shapeOf(c, r));
 const SHAPE_OF = new Map(SHAPES.map((shape) => [shape.sq, shape]));
+
+/** The edge of the whole board: the eight files, rounded off at each end by the outermost ring */
+const RIM = (() => {
+  const end = (sign: number) =>
+    Array.from({ length: 65 }, (_, i) => {
+      const x = -4 + (i / 64) * 8;
+      return [x, sign * SQUEEZE * Math.sqrt(36 - x * x)] as Point;
+    });
+  return toPath([...end(1), ...end(-1).reverse()]);
+})();
+
+/** How far down from the middle White's end of a file is, where its letter goes */
+const fileEnd = (file: number) =>
+  SQUEEZE * Math.sqrt(36 - (file - 3.5) * (file - 3.5));
 
 /** A share of the board's width or height, from a position in board units */
 const pct = (units: number) => `${((units + 4) / 8) * 100}%`;
@@ -113,7 +176,6 @@ const squareUnder = (x: number, y: number): SquareIndex | null => {
 /** The Singularity Chess board, round its singularity, with the game on it */
 export function SingularityBoard() {
   const game = useGameStore((s) => s.game);
-  // Read so the board is drawn again after every move
   const history = useGameStore((s) => s.moveHistory);
   const selected = useGameStore((s) => s.selectedSquare);
   const targets = useGameStore((s) => s.legalMoveSquares);
@@ -195,62 +257,90 @@ export function SingularityBoard() {
   };
 
   const burst = capture ? SHAPE_OF.get(capture.sq) : undefined;
+  /** How a square is marked, if at all: the king in check, the piece picked up, a piece it could take, or the last move */
+  const mark = ({ sq }: Shape) => {
+    if (checked === sq) return " checked";
+    if (selected === sq) return " picked";
+    if (targets.includes(sq) && game.board.get(sq)) return " takes";
+    if (lastMove && (lastMove.from === sq || lastMove.to === sq)) {
+      return " last";
+    }
+    return "";
+  };
 
   return (
-    <div className="board-shell singularity-shell">
+    <div className="singularity-shell">
       <div
         className={`singularity-board${capture ? " capture-jolt" : ""}`}
         aria-label="Singularity Chess"
       >
         <svg className="singularity-squares" viewBox="-4 -4 8 8">
           <defs>
-            <radialGradient id="singularity-glow">
-              <stop offset="0" stopColor="#000" />
-              <stop offset="0.35" stopColor="#000" />
-              <stop offset="0.55" stopColor="#ff9d2e" stopOpacity="0.9" />
-              <stop offset="1" stopColor="#ff5a1f" stopOpacity="0" />
+            <clipPath id="sing-rim">
+              <path d={RIM} />
+            </clipPath>
+            {/* The warm haze of the disc lying over the inner rings */}
+            <radialGradient
+              id="sing-haze"
+              cx="0"
+              cy="0"
+              r="4"
+              gradientUnits="userSpaceOnUse"
+              gradientTransform={`scale(1 ${SQUEEZE})`}
+            >
+              <stop offset="0" stopColor="#ffb547" stopOpacity="0.55" />
+              <stop offset="0.25" stopColor="#ff7a2a" stopOpacity="0.2" />
+              <stop offset="0.6" stopColor="#ff7a2a" stopOpacity="0" />
             </radialGradient>
+            <linearGradient id="sing-rim-metal" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#ffe2a3" />
+              <stop offset="0.5" stopColor="#c07a30" />
+              <stop offset="1" stopColor="#6b3a12" />
+            </linearGradient>
           </defs>
-          {SHAPES.map((shape) => {
-            const { sq } = shape;
-            const target = targets.includes(sq);
-            let className = shape.light ? "sing-sq light" : "sing-sq dark";
-            if (lastMove && (lastMove.from === sq || lastMove.to === sq)) {
-              className += " last";
-            }
-            if (selected === sq) className += " picked";
-            if (target && game.board.get(sq)) className += " takes";
-            if (checked === sq) className += " checked";
-            return (
+          <path className="sing-rim-glow" d={RIM} />
+          <g clipPath="url(#sing-rim)">
+            {SHAPES.map((shape) => (
               <path
-                key={sq}
+                key={shape.sq}
                 d={shape.path}
-                data-sq={sq}
-                className={className}
-                onPointerDown={(e) => press(e, sq)}
+                data-sq={shape.sq}
+                className={`sing-sq${mark(shape)}`}
+                style={{
+                  fill: (shape.light ? RING_LIGHT : RING_DARK)[shape.ring],
+                }}
+                onPointerDown={(e) => press(e, shape.sq)}
               />
-            );
-          })}
-          {SHAPES.filter(
-            ({ sq }) => targets.includes(sq) && !game.board.get(sq),
-          ).map(({ sq, x, y, size }) => (
-            <circle
-              key={sq}
-              className="sing-dot"
-              cx={x}
-              cy={y}
-              r={Math.min(0.15, size * 0.22)}
-            />
+            ))}
+            <path className="sing-haze" d={RIM} fill="url(#sing-haze)" />
+            {SHAPES.filter(
+              ({ sq }) => targets.includes(sq) && !game.board.get(sq),
+            ).map(({ sq, x, y, size }) => (
+              <circle
+                key={sq}
+                className="sing-dot"
+                cx={x}
+                cy={y}
+                r={Math.max(0.08, Math.min(0.14, size * 0.18))}
+              />
+            ))}
+          </g>
+          <path className="sing-rim" d={RIM} stroke="url(#sing-rim-metal)" />
+          {[...FILES].map((letter, file) => (
+            <text
+              key={letter}
+              className="sing-file"
+              x={file - 3.5}
+              y={fileEnd(file) + 0.3}
+            >
+              {letter}
+            </text>
           ))}
-          <ellipse
-            className="singularity-hole"
-            cx="0"
-            cy="0"
-            rx="0.28"
-            ry={0.28 * SQUEEZE}
-            fill="url(#singularity-glow)"
-          />
         </svg>
+        <div className="sing-hole" aria-hidden>
+          <span className="sing-disc" />
+          <span className="sing-core" />
+        </div>
         {SHAPES.map(({ sq, x, y, size }) => {
           const piece = game.board.get(sq);
           if (!piece) return null;
@@ -266,13 +356,13 @@ export function SingularityBoard() {
               draggable={false}
               style={
                 {
-                  left: pct(x - size / 2),
-                  top: pct(y - size / 2),
+                  left: pct(x),
+                  top: pct(y),
                   width: `${(size / 8) * 100}%`,
                   ...(from && {
                     "--slide-from-x": `${((from.x - x) / size) * 100}%`,
                     "--slide-from-y": `${((from.y - y) / size) * 100}%`,
-                    animation: `slide-in ${SLIDE_MS}ms ease-out`,
+                    animation: `sing-slide ${SLIDE_MS}ms ease-out`,
                   }),
                 } as CSSProperties
               }

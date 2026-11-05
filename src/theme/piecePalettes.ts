@@ -69,10 +69,10 @@ export const PIECE_PALETTES: Partial<
     light: ["#fffbd0", "#ffe600", "#b38f00"],
     dark: ["#ffb0b0", "#ff2020", "#7a0000"],
   },
-  // Starlight against the glow of the accretion disc
+  // Cold starlight against light stretched red as it falls in
   singularity: {
-    light: ["#ffffff", "#d7e6ff", "#7f9bd6"],
-    dark: ["#ffd08a", "#e8701e", "#5a1d06"],
+    light: ["#ffffff", "#e4eeff", "#9cb2dc"],
+    dark: ["#ff8a94", "#c41e4a", "#3a0414"],
   },
   // Rain-washed silver against storm-cloud slate
   storm: {
