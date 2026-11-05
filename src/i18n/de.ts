@@ -703,4 +703,7 @@ export const de: Record<string, string> = {
   "Ticket #00000001 created. Estimated reply: 6 to 8 business years.":
     "Ticket #00000001 erstellt. Voraussichtliche Antwort: in 6 bis 8 Werkjahren.",
   "Open a ticket": "Ticket eröffnen",
+  "Promote to": "Umwandeln in",
+  Singularity: "Singularität",
+  "Space bends round the middle!": "Der Raum krümmt sich um die Mitte!",
 };

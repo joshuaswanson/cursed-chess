@@ -1245,3 +1245,60 @@
     opacity: 0;
   }
 }
+
+/* --- Singularity: a black hole far off, its disc of gas turning round it --- */
+
+.black-hole {
+  position: absolute;
+  right: 6vw;
+  top: 12vh;
+  width: 34vmin;
+  aspect-ratio: 1;
+}
+
+.black-hole-disc {
+  position: absolute;
+  inset: -40% -70%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 196, 110, 0.95),
+    rgba(255, 110, 40, 0.5),
+    rgba(255, 196, 110, 0.95),
+    rgba(255, 70, 30, 0.45),
+    rgba(255, 196, 110, 0.95)
+  );
+  mask: radial-gradient(
+    closest-side,
+    transparent 38%,
+    #000 46%,
+    transparent 100%
+  );
+  rotate: -14deg;
+  scale: 1 0.32;
+  filter: blur(2px);
+  animation: black-hole-spin 14s linear infinite;
+}
+
+@keyframes black-hole-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.black-hole-core {
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: #000;
+  box-shadow:
+    0 0 0 0.6vmin rgba(255, 190, 110, 0.9),
+    0 0 4vmin 1.5vmin rgba(255, 140, 50, 0.55),
+    0 0 12vmin 4vmin rgba(160, 90, 255, 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .black-hole-disc {
+    animation: none;
+  }
+}

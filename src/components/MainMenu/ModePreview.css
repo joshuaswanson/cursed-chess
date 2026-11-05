@@ -3919,3 +3919,68 @@
     translate: -50% -110%;
   }
 }
+
+/* --- Singularity: a bishop swings round the black point in the middle --- */
+
+.pv-sing-hole {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: #000;
+  box-shadow:
+    0 0 0 3px #ffb347,
+    0 0 18px 6px rgba(255, 140, 40, 0.8);
+}
+
+.pv-sing-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border: 2px solid rgba(233, 220, 255, 0.55);
+  border-radius: 50%;
+}
+
+.pv-sing-ring-outer {
+  width: 58%;
+  border-color: rgba(233, 220, 255, 0.3);
+}
+
+/* The orbit is a square the height of the scene, turned round its middle */
+.pv-sing-orbit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  animation: pv-sing-orbit 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.pv-sing-orbit .pv-piece {
+  animation: pv-sing-upright 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes pv-sing-orbit {
+  from {
+    rotate: 0deg;
+  }
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes pv-sing-upright {
+  from {
+    rotate: 0deg;
+  }
+  to {
+    rotate: -360deg;
+  }
+}

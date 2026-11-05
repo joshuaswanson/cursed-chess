@@ -606,6 +606,18 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <Piece is="wR" x={0} y={52} size={20} className="pv-pac-runner" />
     </>
   ),
+  // A bishop swings round the singularity and comes out on the other side
+  singularity: (
+    <>
+      <span className="pv-sing-ring pv-sing-ring-outer" />
+      <span className="pv-sing-ring" />
+      <span className="pv-sing-hole" />
+      <span className="pv-sing-orbit">
+        <Piece is="wB" x={50} y={0} size={40} />
+      </span>
+      <Piece is="bK" x={84} y={50} size={22} />
+    </>
+  ),
   // Searchlights cross a dark hall while a pawn creeps up on the jewel
   heist: (
     <>

@@ -18,6 +18,7 @@ export type ThemeId =
   | "heist"
   | "storm"
   | "pacman"
+  | "singularity"
   | "finale";
 
 /** Which animated scene sits behind the board */
@@ -294,6 +295,20 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#0b0b26",
     dark: "#000000",
     text: "#ffe600",
+  },
+  // Deep space, warm light bending round the black point in the middle
+  singularity: {
+    id: "singularity",
+    title: "Singularity",
+    catchphrase: "Space bends round the middle!",
+    sky: ["#02010a", "#120a2e", "#2b0f3d"],
+    accent: "#ff9d2e",
+    accent2: "#7ad7ff",
+    ink: "#05030f",
+    frame: "#0d0820",
+    light: "#e9dcff",
+    dark: "#5b3f9a",
+    text: "#f3eaff",
   },
   // Chessbot at his angriest, on the plain board the story started on
   finale: {

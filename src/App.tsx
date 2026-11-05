@@ -37,6 +37,7 @@ import { ModeSwap } from "./components/Show/ModeSwap";
 import { BotWindows } from "./components/BoringSite/BotWindows";
 import { DevNote } from "./components/DevNote/DevNote";
 import { FinaleEnding } from "./components/Show/FinaleEnding";
+import { SingularityBoard } from "./components/SingularityBoard/SingularityBoard";
 import type { FinalePlugin } from "./plugins/finale";
 import { t, useLanguage } from "./i18n";
 
@@ -53,6 +54,7 @@ function App() {
   const aside = useGameStore((s) => s.aside);
   const corruption = useGameStore((s) => s.corruption);
   const isHexMode = useGameStore((s) => s.isHexMode);
+  const singular = useGameStore((s) => !!s.pluginManager.find("singularity"));
   const hexTransition = useGameStore((s) => s.hexTransition);
   const introDone = useGameStore((s) => s.introDone);
   const siteTab = useGameStore((s) => s.siteTab);
@@ -103,6 +105,10 @@ function App() {
       className={hexTransition === "morph-in" ? "hex-morph-in" : ""}
     >
       <HexBoard />
+    </div>
+  ) : singular ? (
+    <div key={`singularity-${modeIndex}`}>
+      <SingularityBoard />
     </div>
   ) : (
     <div

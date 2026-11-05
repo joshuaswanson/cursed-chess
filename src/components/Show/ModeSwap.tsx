@@ -32,6 +32,7 @@ const RULES: Record<ThemeId, string> = {
   heist: "alarms.arm()",
   storm: "lights.off(); sky.storm()",
   pacman: "pellets.scatter()",
+  singularity: "space.bend(center)",
   finale: "modes.enable(ALL)",
 };
 

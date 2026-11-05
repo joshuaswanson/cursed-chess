@@ -33,6 +33,7 @@ import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { LANTERN_HOLD_MS, LanternsPlugin } from "../plugins/lanterns";
 import { ThunderstormPlugin } from "../plugins/thunderstorm";
 import { GHOSTS_HOLD_MS, PacManPlugin } from "../plugins/pacman";
+import { SingularityPlugin } from "../plugins/singularity";
 import { HEIST_FILES, HEIST_RANKS, HeistPlugin } from "../plugins/heist";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
@@ -292,6 +293,15 @@ export const GAME_MODES: GameMode[] = [
     name: "PAC-MAN",
     theme: "pacman",
     create: () => [new PacManPlugin()],
+    singleOnly: true,
+    beta: true,
+  },
+  {
+    name: "SINGULARITY",
+    theme: "singularity",
+    create: () => [new SingularityPlugin()],
+    noReinforcements: true,
+    untilWon: true,
     singleOnly: true,
     beta: true,
   },
@@ -1828,24 +1838,29 @@ export const useGameStore = create<GameStore>((set, get) => ({
       get().pluginManager.find<ThunderstormPlugin>("thunderstorm");
     const bonus = modeSquareBonus(get().pluginManager, game.board);
     const conveyor = get().pluginManager.find<ConveyorPlugin>("conveyor");
+    const chooser = get()
+      .pluginManager.getPlugins()
+      .find((plugin) => plugin.choose);
     if (game.turn === Color.Black) dark?.look(game.board);
     const skill = chessbotSkill(get());
     const pick =
       game.turn !== Color.Black
         ? moves[Math.floor(Math.random() * moves.length)]
-        : dark
-          ? chooseInTheDark(game, allowed, dark.memory(), bonus, skill)
-          : conveyor
-            ? chooseMove(game, sparingKings(allowed), bonus, {
-                settle: (board) => void runBelts(board),
-                judge: (after) =>
-                  conveyor.modifyGameStatus(
-                    { game: after, board: after.board },
-                    after.getStatus(),
-                  ),
-                skill,
-              })
-            : chooseMove(game, allowed, bonus, { skill });
+        : chooser?.choose
+          ? chooser.choose(game, allowed)
+          : dark
+            ? chooseInTheDark(game, allowed, dark.memory(), bonus, skill)
+            : conveyor
+              ? chooseMove(game, sparingKings(allowed), bonus, {
+                  settle: (board) => void runBelts(board),
+                  judge: (after) =>
+                    conveyor.modifyGameStatus(
+                      { game: after, board: after.board },
+                      after.getStatus(),
+                    ),
+                  skill,
+                })
+              : chooseMove(game, allowed, bonus, { skill });
     get().makeMove(pick.from, pick.to, pick.promotion);
   },
 

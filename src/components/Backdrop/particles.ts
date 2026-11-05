@@ -654,6 +654,7 @@ export const FRONT_PRESETS: Partial<Record<ThemeId, Preset>> = {
 
 export const PRESETS: Partial<Record<ThemeId, Preset>> = {
   portals: stars,
+  singularity: stars,
   fog: wisps,
   royale: embers,
   conveyor: embers,

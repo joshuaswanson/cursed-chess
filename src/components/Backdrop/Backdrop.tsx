@@ -174,6 +174,16 @@ function Scene({ theme }: { theme: ThemeId }) {
       return <StormSky />;
     case "finale":
       return <Corrupted />;
+    case "singularity":
+      return (
+        <>
+          <div className="nebula nebula-a" />
+          <div className="black-hole">
+            <div className="black-hole-disc" />
+            <div className="black-hole-core" />
+          </div>
+        </>
+      );
     default:
       return null;
   }

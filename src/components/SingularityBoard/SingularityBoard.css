@@ -1,0 +1,124 @@
+/* --- Singularity Chess: the board curved round the singularity in its middle --- */
+
+.singularity-shell {
+  width: calc(var(--square-size) * 8);
+  aspect-ratio: 1;
+}
+
+.singularity-board {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  filter: drop-shadow(0 0 18px rgba(255, 140, 50, 0.35))
+    drop-shadow(6px 8px 0 var(--ink));
+}
+
+.singularity-squares {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sing-sq {
+  stroke: var(--ink);
+  stroke-width: 0.025;
+  stroke-linejoin: round;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.sing-sq.light {
+  fill: var(--tile-light);
+}
+
+.sing-sq.dark {
+  fill: var(--tile-dark);
+}
+
+.sing-sq:hover {
+  filter: brightness(1.15);
+}
+
+.sing-sq.last {
+  fill: color-mix(in srgb, var(--accent) 45%, var(--tile-dark));
+}
+
+.sing-sq.light.last {
+  fill: color-mix(in srgb, var(--accent) 45%, var(--tile-light));
+}
+
+.sing-sq.picked {
+  fill: color-mix(in srgb, var(--accent-2) 60%, var(--tile-light));
+}
+
+.sing-sq.takes {
+  fill: color-mix(in srgb, #ff3b5c 55%, var(--tile-dark));
+}
+
+.sing-sq.checked {
+  fill: #ff3b5c;
+  animation: sing-check 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes sing-check {
+  to {
+    fill: #ff9aa9;
+  }
+}
+
+.sing-dot {
+  fill: var(--accent-2);
+  stroke: var(--ink);
+  stroke-width: 0.03;
+  pointer-events: none;
+}
+
+/* The singularity itself, a black point with the light bending round it */
+.singularity-hole {
+  pointer-events: none;
+  transform-origin: 0 0;
+  animation: sing-hole 3s ease-in-out infinite alternate;
+}
+
+@keyframes sing-hole {
+  to {
+    scale: 1.25;
+  }
+}
+
+.sing-piece {
+  position: absolute;
+  aspect-ratio: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
+}
+
+.sing-piece.lifted {
+  opacity: 0.35;
+}
+
+.sing-piece-dragging {
+  position: fixed;
+  z-index: 50;
+  width: calc(var(--square-size) * 1.1);
+  translate: -50% -55%;
+  pointer-events: none;
+}
+
+.sing-burst {
+  position: absolute;
+  width: 12.5%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .singularity-hole,
+  .sing-sq.checked {
+    animation: none;
+  }
+}

@@ -709,4 +709,7 @@ export const fr: Record<string, string> = {
   "Ticket #00000001 created. Estimated reply: 6 to 8 business years.":
     "Ticket n° 00000001 créé. Réponse estimée\u00a0: 6 à 8 années ouvrées.",
   "Open a ticket": "Ouvrir un ticket",
+  "Promote to": "Promouvoir en",
+  Singularity: "Singularité",
+  "Space bends round the middle!": "L'espace se courbe autour du centre\u00a0!",
 };

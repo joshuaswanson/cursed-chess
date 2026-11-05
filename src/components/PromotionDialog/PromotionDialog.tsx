@@ -26,7 +26,7 @@ export function PromotionDialog() {
         aria-label={t("Choose a piece to promote to")}
         onClick={(e) => e.stopPropagation()}
       >
-        <span className="promotion-title">Promote to</span>
+        <span className="promotion-title">{t("Promote to")}</span>
         <div className="promotion-choices">
           {PROMOTION_PIECES.map((type) => (
             <button

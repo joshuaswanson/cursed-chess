@@ -48,6 +48,8 @@ export interface ModePlugin {
   getWinner?(ctx: PluginContext): Color | null;
 
   getBoardOverlays?(ctx: PluginContext): BoardOverlay[];
+  /** Chessbot's pick from `moves`, by the mode's own rules where his usual search does not know them */
+  choose?(game: Game, moves: Move[]): Move;
   getSquareModifiers?(
     ctx: PluginContext,
     square: SquareIndex,
