@@ -707,5 +707,5 @@ export const de: Record<string, string> = {
   Singularity: "Singularität",
   "Mind the event horizon.": "Vorsicht, Ereignishorizont.",
   "Immortal Snail": "Unsterbliche Schnecke",
-  "It never stops coming.": "Sie kommt immer näher.",
+  "It follows.": "Sie folgt dir.",
 };

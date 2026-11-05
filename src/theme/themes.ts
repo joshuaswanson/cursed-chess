@@ -301,7 +301,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   snail: {
     id: "snail",
     title: "Immortal Snail",
-    catchphrase: "It never stops coming.",
+    catchphrase: "It follows.",
     sky: ["#173b2a", "#447a46", "#e8cf86"],
     accent: "#f2a65a",
     accent2: "#9fe0c8",

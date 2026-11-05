@@ -23,7 +23,7 @@ const SHELLS: Record<Color, [string, string, string]> = {
 export function SnailArt({ color, look }: { color: Color; look: number }) {
   const [outer, inner, line] = SHELLS[color];
   return (
-    <svg className="snail-art" viewBox="0 0 64 48" aria-hidden>
+    <svg className="snail-art" viewBox="0 -6 72 54" aria-hidden>
       {/* The foot, and its shine */}
       <path
         d="M6 40 C 10 33, 30 33, 50 34 C 56 34.5, 60 37, 60 40 C 60 43, 54 44, 48 44 L 10 44 C 6 44, 4 42, 6 40 Z"
