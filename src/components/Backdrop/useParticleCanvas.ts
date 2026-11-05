@@ -75,7 +75,9 @@ export function useParticleCanvas(
       blank = true;
     };
     resize();
-    window.addEventListener("resize", resize);
+    // Its size is only known once its styles apply, which can be after it is first drawn
+    const watcher = new ResizeObserver(resize);
+    watcher.observe(canvas);
 
     const tick = (now: number) => {
       const dt = Math.min(MAX_DT, (now - last) / 1000);
@@ -121,7 +123,7 @@ export function useParticleCanvas(
     frame = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(frame);
-      window.removeEventListener("resize", resize);
+      watcher.disconnect();
     };
   }, [shadowOn]);
 
