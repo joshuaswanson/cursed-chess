@@ -708,5 +708,4 @@ export const de: Record<string, string> = {
   "Mind the event horizon.": "Vorsicht, Ereignishorizont.",
   "Immortal Snail": "Unsterbliche Schnecke",
   "It follows.": "Sie folgt dir.",
-  "SLURP!": "SCHLÜRF!",
 };
