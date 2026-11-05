@@ -1,11 +1,26 @@
+import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import { Color } from "../../engine";
 import type { SquareIndex } from "../../engine";
 import { SNAIL_CRAWL_MS } from "../../plugins/immortalSnail";
 import type { Snail, SnailView } from "../../plugins/immortalSnail";
 import { pieceImage } from "../../utils/pieceImages";
+import { sfx } from "../../audio/sfx";
+import { t } from "../../i18n";
 import { visualCol, visualRow } from "./boardGeometry";
 import "./Snails.css";
+
+/** How far into its crawl the snail is when it reaches the piece it eats */
+const REACHES = 0.85;
+/** Which way each drop of slime splashes when it eats: across, and up or down, in shares of a square */
+const SPLASH: [number, number][] = [
+  [-0.55, -0.35],
+  [-0.2, -0.6],
+  [0.25, -0.55],
+  [0.6, -0.25],
+  [0.5, 0.25],
+  [-0.45, 0.3],
+];
 
 /** Where a square is on the board, as shares of its width and height */
 const at = (sq: SquareIndex, flipped: boolean): CSSProperties => ({
@@ -119,6 +134,20 @@ export function Snails({
   /** How long a crawl waits for the move before it to land */
   delayMs: number;
 }) {
+  const reachesMs = delayMs + SNAIL_CRAWL_MS * REACHES;
+  // A slurp for each piece eaten, once, as the snail gets to it
+  const heard = useRef(new Set<string>());
+  const meals = view.snails
+    .filter((snail) => snail.ate?.crawl === snail.crawls)
+    .map((snail) => `${snail.color}-${snail.crawls}`)
+    .join(" ");
+  useEffect(() => {
+    const fresh = meals.split(" ").filter((m) => m && !heard.current.has(m));
+    if (fresh.length === 0) return;
+    for (const meal of fresh) heard.current.add(meal);
+    const timer = setTimeout(() => sfx.slurp(), reachesMs);
+    return () => clearTimeout(timer);
+  }, [meals, reachesMs]);
   return (
     <div
       className="snails"
@@ -142,21 +171,9 @@ export function Snails({
           />
         )),
       )}
-      {view.snails.map(
-        (snail) =>
-          snail.ate && (
-            <img
-              key={`${snail.color}-ate-${snail.ate.crawl}`}
-              className="snail-eaten"
-              src={pieceImage(snail.ate.piece)}
-              alt=""
-              draggable={false}
-              style={at(snail.ate.sq, flipped)}
-            />
-          ),
-      )}
       {view.snails.map((snail) => {
         const { faceLeft, look } = gaze(snail, flipped);
+        const eating = snail.ate?.crawl === snail.crawls;
         return (
           <div
             key={snail.color}
@@ -164,9 +181,52 @@ export function Snails({
             style={at(snail.sq, flipped)}
           >
             <div className={`snail-body${faceLeft ? " faces-left" : ""}`}>
-              <SnailArt color={snail.color} look={look} />
+              {/* A gulp, squashing and stretching, as it gets the piece down */}
+              <div
+                key={eating ? `gulp-${snail.crawls}` : "still"}
+                className={eating ? "snail-gulp" : undefined}
+              >
+                <SnailArt color={snail.color} look={look} />
+              </div>
             </div>
             <span className="snail-count">{snail.movesLeft}</span>
+          </div>
+        );
+      })}
+      {/* What it eats: wobbling and going green, then sucked into its mouth in a splash of slime */}
+      {view.snails.map((snail) => {
+        if (!snail.ate || snail.ate.crawl !== snail.crawls) return null;
+        const { faceLeft } = gaze(snail, flipped);
+        return (
+          <div
+            key={`${snail.color}-meal-${snail.crawls}`}
+            className="snail-meal"
+            style={
+              {
+                ...at(snail.ate.sq, flipped),
+                "--mouth": faceLeft ? "-24%" : "24%",
+              } as CSSProperties
+            }
+          >
+            <img
+              className="snail-eaten"
+              src={pieceImage(snail.ate.piece)}
+              alt=""
+              draggable={false}
+            />
+            {SPLASH.map(([dx, dy], i) => (
+              <span
+                key={i}
+                className="snail-splash"
+                style={
+                  {
+                    "--dx": `${dx * 100}%`,
+                    "--dy": `${dy * 100}%`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+            <span className="snail-slurp">{t("SLURP!")}</span>
           </div>
         );
       })}

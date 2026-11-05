@@ -1714,6 +1714,44 @@ export const sfx = {
     }
   },
 
+  /** A snail eating a piece: a long wet slurp that rises as it sucks, and a gulp */
+  slurp(): void {
+    const a = audio();
+    if (!a) return;
+    const { ctx: c, out } = a;
+    const t = c.currentTime;
+    squelch(c, out, t, 0.55, 0.6);
+    const suck = c.createOscillator();
+    suck.type = "sine";
+    suck.frequency.setValueAtTime(220, t + 0.05);
+    suck.frequency.exponentialRampToValueAtTime(720, t + 0.5);
+    const wobble = c.createOscillator();
+    wobble.frequency.value = 18;
+    const depth = c.createGain();
+    depth.gain.value = 60;
+    wobble.connect(depth).connect(suck.frequency);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.16, t + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.52);
+    suck.connect(gain).connect(out);
+    suck.start(t + 0.05);
+    suck.stop(t + 0.55);
+    wobble.start(t + 0.05);
+    wobble.stop(t + 0.55);
+    const gulp = c.createOscillator();
+    gulp.type = "sine";
+    gulp.frequency.setValueAtTime(160, t + 0.58);
+    gulp.frequency.exponentialRampToValueAtTime(55, t + 0.74);
+    const down = c.createGain();
+    down.gain.setValueAtTime(0.0001, t + 0.58);
+    down.gain.exponentialRampToValueAtTime(0.45, t + 0.6);
+    down.gain.exponentialRampToValueAtTime(0.001, t + 0.78);
+    gulp.connect(down).connect(out);
+    gulp.start(t + 0.58);
+    gulp.stop(t + 0.8);
+  },
+
   ghostEaten(): void {
     const a = audio();
     if (!a) return;

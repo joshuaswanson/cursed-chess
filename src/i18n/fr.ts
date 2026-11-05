@@ -714,4 +714,5 @@ export const fr: Record<string, string> = {
   "Mind the event horizon.": "Attention à l'horizon des événements.",
   "Immortal Snail": "Escargot immortel",
   "It follows.": "Il te suit.",
+  "SLURP!": "SLURP\u00a0!",
 };
