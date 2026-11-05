@@ -17,13 +17,11 @@ const TURN_SECONDS = 240;
 /** The black hole's shadow, and the disc of gas round it, in pixels */
 const SHADOW = 44;
 const DISC_OUTER = 250;
-const DISC_INNER = 62;
+const DISC_INNER = SHADOW;
 /** How flat the disc looks, seen nearly edge on */
 const DISC_FLAT = HOLE_TILT * 0.42;
 /** Where the hot clumps go round, as shares of the disc's reach */
 const CLUMPS = [0.5, 0.68, 0.86];
-/** How far the light from the far side of the disc is bent up over the shadow */
-const LENSED_OUTER = 1.5 * SHADOW;
 
 /** How far up from the throat, where the hole is, a ring of the well lies */
 const rise = (radius: number) =>
@@ -167,8 +165,7 @@ function useWindowSize() {
  * Space round the black hole drawn the way physicists draw it: a sheet of
  * grid pulled down into a well, pouring into the hole at the bottom of its
  * throat. The disc of gas lies flat round the hole, brighter on the side
- * turning toward us, and the light from its far side is bent up over the
- * top of the shadow and, fainter, under it.
+ * turning toward us, and the hole itself is a flat black circle over it all.
  */
 export function WarpedSpace() {
   const { farRef, nearRef } = useWellGrid();
@@ -182,11 +179,6 @@ export function WarpedSpace() {
       <canvas ref={farRef} className="warp-grid" />
       <svg className="warp-hole" viewBox={view} width={w} height={h}>
         <defs>
-          <radialGradient id="warp-glow">
-            <stop offset="0" stopColor="#ffb547" stopOpacity="0.5" />
-            <stop offset="0.3" stopColor="#ff6a2a" stopOpacity="0.16" />
-            <stop offset="1" stopColor="#ff6a2a" stopOpacity="0" />
-          </radialGradient>
           {/* Gas coming toward us is brighter: the left of the disc, where it turns our way */}
           <linearGradient
             id="warp-doppler"
@@ -233,35 +225,12 @@ export function WarpedSpace() {
               fill="url(#warp-disc-fade)"
             />
           </mask>
-          <radialGradient
-            id="warp-lensed"
-            cx="0"
-            cy="0"
-            r={LENSED_OUTER}
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop offset={SHADOW / LENSED_OUTER} stopColor="#fffaf0" />
-            <stop offset={(SHADOW + 6) / LENSED_OUTER} stopColor="#ffe0a3" />
-            <stop offset="0.82" stopColor="#ff9a3c" stopOpacity="0.75" />
-            <stop offset="1" stopColor="#ff6a2a" stopOpacity="0" />
-          </radialGradient>
         </defs>
-        <circle r="460" fill="url(#warp-glow)" />
         <path
           className="warp-disc"
           mask="url(#warp-disc-mask)"
           d={halfRing(DISC_OUTER, DISC_INNER, false)}
         />
-        <path
-          className="warp-lensed"
-          d={`M ${-LENSED_OUTER} 0 A ${LENSED_OUTER} ${LENSED_OUTER} 0 0 1 ${LENSED_OUTER} 0 L ${SHADOW} 0 A ${SHADOW} ${SHADOW} 0 0 0 ${-SHADOW} 0 Z`}
-        />
-        <path
-          className="warp-lensed warp-lensed-under"
-          d={`M ${-SHADOW * 1.1} 0 A ${SHADOW * 1.1} ${SHADOW * 1.1} 0 0 0 ${SHADOW * 1.1} 0 L ${SHADOW} 0 A ${SHADOW} ${SHADOW} 0 0 1 ${-SHADOW} 0 Z`}
-        />
-        <circle className="warp-core" r={SHADOW} />
-        <circle className="warp-photon" r={SHADOW + 1.2} />
         <path
           className="warp-disc"
           mask="url(#warp-disc-mask)"
@@ -280,7 +249,7 @@ export function WarpedSpace() {
         }}
       >
         <defs>
-          {/* The far half of each clump's round is hidden where it passes behind the shadow */}
+          {/* Nothing shows where the shadow is */}
           <clipPath id="warp-behind">
             <path
               clipRule="evenodd"
@@ -295,11 +264,29 @@ export function WarpedSpace() {
               clipPath="url(#warp-behind)"
               d={clumpArc(share, false)}
             />
-            <path className="warp-clump" d={clumpArc(share, true)} />
+            <path
+              className="warp-clump"
+              clipPath="url(#warp-behind)"
+              d={clumpArc(share, true)}
+            />
           </g>
         ))}
       </svg>
       <canvas ref={nearRef} className="warp-grid" />
+      {/* The hole itself: a flat black circle with a thin ring of light, over everything */}
+      <svg
+        className="warp-shadow"
+        viewBox={`${-SHADOW - 4} ${-SHADOW - 4} ${SHADOW * 2 + 8} ${SHADOW * 2 + 8}`}
+        width={SHADOW * 2 + 8}
+        height={SHADOW * 2 + 8}
+        style={{
+          left: w * HOLE_AT.x - SHADOW - 4,
+          top: h * HOLE_AT.y - SHADOW - 4,
+        }}
+      >
+        <circle className="warp-photon" r={SHADOW + 1.2} />
+        <circle className="warp-core" r={SHADOW} />
+      </svg>
     </div>
   );
 }

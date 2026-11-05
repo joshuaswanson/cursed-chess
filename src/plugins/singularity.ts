@@ -192,6 +192,9 @@ const PROMOTIONS = [
   PieceType.Knight,
 ];
 
+/** The squares each move passes over on its way, its landing square last */
+const ROUTE = new WeakMap<Move, SquareIndex[]>();
+
 /** Every move `color` has, leaving its king in check or not */
 function pseudoMoves(board: Board, color: Color): Move[] {
   const moves: Move[] = [];
@@ -200,8 +203,11 @@ function pseudoMoves(board: Board, color: Color): Move[] {
     const piece = at(from);
     if (piece?.color !== color) continue;
     const fromSq = squareOf(from.c, from.r);
-    /** A move to `to`, as long as no piece of its own is there and `quiet` or `takes` allows it */
-    const add = (to: Cell, quiet = true, takes = true) => {
+    /**
+     * A move to `to` by way of `via`, as long as no piece of its own is
+     * there and `quiet` or `takes` allows it
+     */
+    const add = (to: Cell, quiet = true, takes = true, via: Cell[] = []) => {
       if (to.c === from.c && to.r === from.r) return;
       const toSq = squareOf(to.c, to.r);
       const there = board.get(toSq) ?? undefined;
@@ -211,8 +217,9 @@ function pseudoMoves(board: Board, color: Color): Move[] {
       const promotes =
         piece.type === PieceType.Pawn &&
         (color === Color.White ? isBlackHome(to) : isWhiteHome(to));
+      const route = [...via, to].map(({ c, r }) => squareOf(c, r));
       for (const promotion of promotes ? PROMOTIONS : [undefined]) {
-        moves.push({
+        const move: Move = {
           from: fromSq,
           to: toSq,
           piece,
@@ -222,18 +229,22 @@ function pseudoMoves(board: Board, color: Color): Move[] {
             MoveFlag.ModeMove |
             (there ? MoveFlag.Capture : 0) |
             (promotion ? MoveFlag.Promotion : 0),
-        });
+        };
+        ROUTE.set(move, route);
+        moves.push(move);
       }
     };
     const slide = (dirs: Dir[], reach: number) => {
       for (const dir of dirs) {
         let here: Step = { ...from, dir };
         const passed = new Set([cellKey(from.c, from.r)]);
+        const way: Cell[] = [];
         for (let i = 0; i < reach; i++) {
           const next = step(here.c, here.r, here.dir);
           if (!next || passed.has(cellKey(next.c, next.r))) break;
           passed.add(cellKey(next.c, next.r));
-          add(next);
+          add(next, true, true, [...way]);
+          way.push(next);
           if (at(next)) break;
           here = next;
         }
@@ -270,7 +281,7 @@ function pseudoMoves(board: Board, color: Color): Move[] {
                 ];
           for (const turn of sideways) {
             const to = step(first.c, first.r, turn);
-            if (to) add(to);
+            if (to) add(to, true, true, [first]);
           }
         }
         for (const dir of DIAGONAL) {
@@ -282,7 +293,7 @@ function pseudoMoves(board: Board, color: Color): Move[] {
             [0, dr],
           ] as Dir[]) {
             const to = step(first.c, first.r, on);
-            if (to) add(to);
+            if (to) add(to, true, true, [first]);
           }
         }
         break;
@@ -298,7 +309,7 @@ function pseudoMoves(board: Board, color: Color): Move[] {
           // The first step can be two, as long as it stays out of the other side's half
           const two = starting && step(one.c, one.r, forward(one, color));
           if (two && !at(two) && placeOf(two).half !== other(color)) {
-            add(two, true, false);
+            add(two, true, false, [one]);
           }
         }
         for (const dir of captureDirs(ahead)) {
@@ -348,6 +359,13 @@ function legalMoves(board: Board, color: Color): Move[] {
   );
 }
 
+/** How long a piece takes to travel a way of so many squares */
+export const travelMs = (squares: number) =>
+  Math.min(TRAVEL_MAX_MS, Math.max(TRAVEL_MIN_MS, squares * TRAVEL_STEP_MS));
+const TRAVEL_STEP_MS = 130;
+const TRAVEL_MIN_MS = 220;
+const TRAVEL_MAX_MS = 1500;
+
 /**
  * Singularity Chess. The board is curved round a singularity in the middle,
  * so a straight move goes in at one side of a square and out at the side
@@ -367,6 +385,8 @@ export class SingularityPlugin implements ModePlugin {
 
   /** The moves for the last position asked about */
   private found: { fen: string; moves: Move[] } | null = null;
+  /** The way the last move went, square by square, its landing square last */
+  route: SquareIndex[] = [];
 
   onGameStart(ctx: PluginContext): void {
     const { board } = ctx;
@@ -399,8 +419,18 @@ export class SingularityPlugin implements ModePlugin {
     return this.moves(ctx.game);
   }
 
+  onBeforeMove(_ctx: PluginContext, move: Move): Move {
+    this.route = ROUTE.get(move) ?? [move.to];
+    return move;
+  }
+
   onAfterMove(ctx: PluginContext): void {
     ctx.game.enPassant = null;
+  }
+
+  /** How long the last move takes to travel its way, for the game to wait on */
+  get travelMs(): number {
+    return travelMs(this.route.length);
   }
 
   modifyGameStatus(ctx: PluginContext): GameStatus {

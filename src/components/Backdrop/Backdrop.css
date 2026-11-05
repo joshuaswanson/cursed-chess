@@ -1249,7 +1249,7 @@
 /* --- Singularity: space pulled down into a well, a black hole at its throat --- */
 
 /* Each part on a layer of its own: the grid and the clumps are redrawn as
-   they move, and the black hole, filters and all, is drawn once */
+   they move, and the rest is drawn once */
 .warped-space {
   position: absolute;
   inset: 0;
@@ -1257,7 +1257,8 @@
 
 .warp-grid,
 .warp-hole,
-.warp-clumps {
+.warp-clumps,
+.warp-shadow {
   position: absolute;
   will-change: transform;
 }
@@ -1276,32 +1277,10 @@
 
 .warp-disc {
   fill: url(#warp-doppler);
-  filter: blur(0.6px) drop-shadow(0 0 12px rgba(255, 140, 50, 0.7));
 }
 
-/* The far side of the disc, its light bent up over the shadow, and a thin rim of it under */
-.warp-lensed {
-  fill: url(#warp-lensed);
-  filter: drop-shadow(0 0 10px rgba(255, 170, 80, 0.85));
-}
-
-.warp-lensed-under {
-  opacity: 0.8;
-}
-
-.warp-core {
-  fill: #000;
-}
-
-/* Light that has gone round the hole once, a hair outside its shadow */
-.warp-photon {
-  fill: none;
-  stroke: #fffaf0;
-  stroke-width: 1.4;
-  filter: drop-shadow(0 0 3px #ffe4b0) drop-shadow(0 0 8px #ffb547);
-}
-
-.warp-clumps {
+.warp-clumps,
+.warp-shadow {
   overflow: visible;
 }
 
@@ -1327,6 +1306,17 @@
   to {
     stroke-dashoffset: 132;
   }
+}
+
+.warp-core {
+  fill: #000;
+}
+
+/* Light that has gone round the hole once, a hair outside its shadow */
+.warp-photon {
+  fill: none;
+  stroke: #ffe9c2;
+  stroke-width: 1.6;
 }
 
 @media (prefers-reduced-motion: reduce) {

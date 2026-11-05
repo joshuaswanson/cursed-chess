@@ -1475,7 +1475,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       game.turn = mover;
       holdPause(GHOSTS_HOLD_MS);
     }
-    // Nobody moves again until the belts have stopped, the rope has been hauled, or a lantern has landed
+    // Nobody moves again until the belts have stopped, the rope has been hauled, a lantern has landed, or a piece has come round the singularity
     if (pluginManager.find<ConveyorPlugin>("conveyor")) {
       holdPause(BELT_RUN_MS);
     }
@@ -1485,6 +1485,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (pluginManager.find<LanternsPlugin>("lanterns")?.flying) {
       holdPause(LANTERN_HOLD_MS);
     }
+    const singularity = pluginManager.find<SingularityPlugin>("singularity");
+    if (singularity) holdPause(singularity.travelMs);
 
     const status = pluginManager.invokeModifyGameStatus(game.getStatus());
     const isNormalChess = state.currentModeIndex < 0;

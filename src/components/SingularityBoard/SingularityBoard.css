@@ -80,10 +80,6 @@
   stroke: #ff2d55 !important;
 }
 
-.sing-haze {
-  pointer-events: none;
-}
-
 .sing-dot {
   fill: #ffe7a8;
   stroke: #3a1504;
@@ -105,71 +101,20 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 15%;
-  aspect-ratio: 3 / 2;
+  width: 7%;
+  aspect-ratio: 1;
   translate: -50% -50%;
   pointer-events: none;
   z-index: 1;
 }
 
-/* A round disc turning, squashed flat by its frame like the board */
-.sing-swirl {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 100%;
-  aspect-ratio: 1;
-  translate: 0 -50%;
-  scale: 1 0.667;
-}
-
-.sing-disc {
+/* The singularity: a flat black circle with a thin ring of light */
+.sing-core {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    #fff1c8,
-    #ff9d2e 18%,
-    #ff4d1a 32%,
-    #ffd27a 50%,
-    #ff7a24 68%,
-    #b8360f 82%,
-    #fff1c8
-  );
-  mask: radial-gradient(
-    closest-side,
-    transparent 30%,
-    #000 40%,
-    #000 62%,
-    transparent 100%
-  );
-  -webkit-mask: radial-gradient(
-    closest-side,
-    transparent 30%,
-    #000 40%,
-    #000 62%,
-    transparent 100%
-  );
-  /* Turned on a layer of its own, so turning it never redraws it */
-  will-change: transform;
-  animation: sing-disc 5s linear infinite;
-}
-
-@keyframes sing-disc {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.sing-core {
-  position: absolute;
-  inset: 32%;
-  border-radius: 50%;
   background: #000;
-  box-shadow:
-    0 0 0 1.5px #fff3d4,
-    0 0 6px 2px rgba(255, 200, 120, 0.9);
+  box-shadow: 0 0 0 1.5px #ffe9c2;
 }
 
 .sing-piece {
@@ -180,12 +125,6 @@
   pointer-events: none;
   filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.45))
     drop-shadow(0 0 4px rgba(0, 0, 0, 0.35));
-}
-
-@keyframes sing-slide {
-  from {
-    translate: calc(-50% + var(--slide-from-x)) calc(-50% + var(--slide-from-y));
-  }
 }
 
 .sing-piece.lifted {
@@ -207,10 +146,4 @@
   aspect-ratio: 1;
   translate: -50% -50%;
   pointer-events: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sing-disc {
-    animation: none;
-  }
 }

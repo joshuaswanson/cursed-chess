@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { Color, GameStatus } from "../../engine";
 import type { Piece, SquareIndex } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
-import { CELLS, placeOf, squareOf } from "../../plugins/singularity";
+import { CELLS, placeOf, squareOf, travelMs } from "../../plugins/singularity";
 import type { Place, SingularityPlugin } from "../../plugins/singularity";
-import { SLIDE_MS, useCaptureBurst } from "../Board/useBoardEffects";
+import { useCaptureBurst } from "../Board/useBoardEffects";
 import { RING_DARK, RING_LIGHT, SQUEEZE } from "./rings";
 import "./SingularityBoard.css";
 
@@ -163,11 +163,15 @@ export function SingularityBoard() {
   const [droppedAt, setDroppedAt] = useState<number | null>(null);
   const moveCount = history.length;
   const dropped = droppedAt === moveCount;
+  // The way the last move went, which the piece travels square by square
+  const route = plugin?.route ?? [];
+  const travel = travelMs(route.length);
+  const travelled = useRef(0);
 
   const capture = useCaptureBurst(
     lastMove && history[history.length - 1]?.move.captured ? lastMove.to : null,
     moveCount,
-    dropped ? 0 : SLIDE_MS,
+    dropped ? 0 : travel,
   );
 
   const checked =
@@ -256,19 +260,6 @@ export function SingularityBoard() {
             <clipPath id="sing-rim">
               <path d={RIM} />
             </clipPath>
-            {/* The warm haze of the disc lying over the inner rings */}
-            <radialGradient
-              id="sing-haze"
-              cx="0"
-              cy="0"
-              r="4"
-              gradientUnits="userSpaceOnUse"
-              gradientTransform={`scale(1 ${SQUEEZE})`}
-            >
-              <stop offset="0" stopColor="#ffb547" stopOpacity="0.55" />
-              <stop offset="0.25" stopColor="#ff7a2a" stopOpacity="0.2" />
-              <stop offset="0.6" stopColor="#ff7a2a" stopOpacity="0" />
-            </radialGradient>
             <linearGradient id="sing-rim-metal" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#ffe2a3" />
               <stop offset="0.5" stopColor="#c07a30" />
@@ -289,7 +280,6 @@ export function SingularityBoard() {
                 onPointerDown={(e) => press(e, shape.sq)}
               />
             ))}
-            <path className="sing-haze" d={RIM} fill="url(#sing-haze)" />
             {SHAPES.filter(
               ({ sq }) => targets.includes(sq) && !game.board.get(sq),
             ).map(({ sq, x, y, size }) => (
@@ -315,20 +305,32 @@ export function SingularityBoard() {
           ))}
         </svg>
         <div className="sing-hole" aria-hidden>
-          <span className="sing-swirl">
-            <span className="sing-disc" />
-          </span>
           <span className="sing-core" />
         </div>
         {SHAPES.map(({ sq, x, y, size }) => {
           const piece = game.board.get(sq);
           if (!piece) return null;
           const arriving = lastMove?.to === sq && !dropped;
-          const from = arriving ? SHAPE_OF.get(lastMove.from) : undefined;
           const lifted = drag?.moving && drag.from === sq;
+          /** Sends the piece along every square of the way it went, not straight across */
+          const travelThrough = (img: HTMLImageElement | null) => {
+            if (!img || !arriving || travelled.current === moveCount) return;
+            travelled.current = moveCount;
+            const stops = [lastMove.from, ...route, sq].flatMap(
+              (stop, i, all) =>
+                i > 0 && all[i - 1] === stop ? [] : [SHAPE_OF.get(stop)!],
+            );
+            img.animate(
+              stops.map((stop) => ({
+                translate: `calc(-50% + ${((stop.x - x) / size) * 100}%) calc(-50% + ${((stop.y - y) / size) * 100}%)`,
+              })),
+              { duration: travel, easing: "ease-in-out" },
+            );
+          };
           return (
             <img
               key={arriving ? `${sq}-${moveCount}` : sq}
+              ref={travelThrough}
               className={`sing-piece${lifted ? " lifted" : ""}`}
               src={pieceImage(piece)}
               alt=""
@@ -338,11 +340,6 @@ export function SingularityBoard() {
                   left: pct(x),
                   top: pct(y),
                   width: `${(size / 8) * 100}%`,
-                  ...(from && {
-                    "--slide-from-x": `${((from.x - x) / size) * 100}%`,
-                    "--slide-from-y": `${((from.y - y) / size) * 100}%`,
-                    animation: `sing-slide ${SLIDE_MS}ms ease-out`,
-                  }),
                 } as CSSProperties
               }
             />
