@@ -18,8 +18,8 @@ const TURN_SECONDS = 240;
 const SHADOW = 44;
 const DISC_OUTER = 250;
 const DISC_INNER = SHADOW;
-/** How flat the disc looks, seen nearly edge on */
-const DISC_FLAT = HOLE_TILT * 0.42;
+/** The disc lies flat in the same plane as the hole, at the foot of the well */
+const DISC_FLAT = HOLE_TILT;
 /** Where the hot clumps go round, as shares of the disc's reach */
 const CLUMPS = [0.5, 0.68, 0.86];
 
@@ -165,7 +165,7 @@ function useWindowSize() {
  * Space round the black hole drawn the way physicists draw it: a sheet of
  * grid pulled down into a well, pouring into the hole at the bottom of its
  * throat. The disc of gas lies flat round the hole, brighter on the side
- * turning toward us, and the hole itself is a flat black circle over it all.
+ * turning toward us, and the hole itself lies flat and black at the bottom.
  */
 export function WarpedSpace() {
   const { farRef, nearRef } = useWellGrid();
@@ -253,7 +253,7 @@ export function WarpedSpace() {
           <clipPath id="warp-behind">
             <path
               clipRule="evenodd"
-              d={`M ${-DISC_OUTER} ${-DISC_OUTER} H ${DISC_OUTER} V ${DISC_OUTER} H ${-DISC_OUTER} Z M ${-SHADOW} 0 A ${SHADOW} ${SHADOW} 0 1 0 ${SHADOW} 0 A ${SHADOW} ${SHADOW} 0 1 0 ${-SHADOW} 0 Z`}
+              d={`M ${-DISC_OUTER} ${-DISC_OUTER} H ${DISC_OUTER} V ${DISC_OUTER} H ${-DISC_OUTER} Z M ${-SHADOW} 0 A ${SHADOW} ${SHADOW * HOLE_TILT} 0 1 0 ${SHADOW} 0 A ${SHADOW} ${SHADOW * HOLE_TILT} 0 1 0 ${-SHADOW} 0 Z`}
             />
           </clipPath>
         </defs>
@@ -273,19 +273,18 @@ export function WarpedSpace() {
         ))}
       </svg>
       <canvas ref={nearRef} className="warp-grid" />
-      {/* The hole itself: a flat black circle with a thin ring of light, over everything */}
+      {/* The hole itself, lying flat at the foot of the well, over everything */}
       <svg
         className="warp-shadow"
-        viewBox={`${-SHADOW - 4} ${-SHADOW - 4} ${SHADOW * 2 + 8} ${SHADOW * 2 + 8}`}
-        width={SHADOW * 2 + 8}
-        height={SHADOW * 2 + 8}
+        viewBox={`${-SHADOW} ${-SHADOW * HOLE_TILT} ${SHADOW * 2} ${SHADOW * 2 * HOLE_TILT}`}
+        width={SHADOW * 2}
+        height={SHADOW * 2 * HOLE_TILT}
         style={{
-          left: w * HOLE_AT.x - SHADOW - 4,
-          top: h * HOLE_AT.y - SHADOW - 4,
+          left: w * HOLE_AT.x - SHADOW,
+          top: h * HOLE_AT.y - SHADOW * HOLE_TILT,
         }}
       >
-        <circle className="warp-photon" r={SHADOW + 1.2} />
-        <circle className="warp-core" r={SHADOW} />
+        <ellipse className="warp-core" rx={SHADOW} ry={SHADOW * HOLE_TILT} />
       </svg>
     </div>
   );

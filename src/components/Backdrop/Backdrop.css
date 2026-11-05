@@ -1312,13 +1312,6 @@
   fill: #000;
 }
 
-/* Light that has gone round the hole once, a hair outside its shadow */
-.warp-photon {
-  fill: none;
-  stroke: #ffe9c2;
-  stroke-width: 1.6;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .warp-clump {
     animation: none;
