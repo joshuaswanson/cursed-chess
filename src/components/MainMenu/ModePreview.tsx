@@ -467,10 +467,9 @@ const HOLE = { x: 100, y: 50 };
 const TILT = 0.36;
 
 /** A ring round the hole, as a path a piece can follow, starting at its near side */
-const orbit = (radius: number, backwards = false) => {
+const orbit = (radius: number) => {
   const ry = radius * TILT;
-  const sweep = backwards ? 0 : 1;
-  return `M ${HOLE.x} ${HOLE.y + ry} A ${radius} ${ry} 0 1 ${sweep} ${HOLE.x} ${HOLE.y - ry} A ${radius} ${ry} 0 1 ${sweep} ${HOLE.x} ${HOLE.y + ry}`;
+  return `M ${HOLE.x} ${HOLE.y + ry} A ${radius} ${ry} 0 1 1 ${HOLE.x} ${HOLE.y - ry} A ${radius} ${ry} 0 1 1 ${HOLE.x} ${HOLE.y + ry}`;
 };
 
 /** A spiral falling in to the hole from `radius` out, turning `turns` times */
@@ -483,11 +482,20 @@ const spiral = (radius: number, turns: number, start: number) =>
     return `${(HOLE.x + Math.cos(a) * r).toFixed(1)} ${(HOLE.y + Math.sin(a) * r * TILT).toFixed(1)}`;
   }).join(" L ");
 
-/** The rook's slingshot: in from the left under the hole, round it, and back out over the top */
-const SLINGSHOT =
-  "M 6 70 C 60 92, 148 86, 160 56 C 170 30, 118 18, 78 30 C 52 38, 28 50, 6 70";
+/** The pieces going round, each on its ring, how long one lap takes, and how far round it starts */
+const ORBITERS: [
+  is: string,
+  ring: number,
+  lapSeconds: number,
+  start: number,
+][] = [
+  ["wP", 30, 3.6, 0],
+  ["bN", 46, 6, 0],
+  ["wB", 46, 6, 0.5],
+  ["wR", 64, 10, 0.25],
+];
 
-/** A piece in the scene, drawn round its middle so it can be moved and stretched about it */
+/** A piece in the scene, drawn round its middle so it can be moved about it */
 function Body({ is, size = 18 }: { is: string; size?: number }) {
   return (
     <image
@@ -500,11 +508,7 @@ function Body({ is, size = 18 }: { is: string; size?: number }) {
   );
 }
 
-/**
- * A black hole with pieces round it: a pawn and a bishop going round on
- * their rings, a rook that swings in, round the hole and back out the way
- * it came, and a knight that spirals in and is stretched thin as it goes
- */
+/** A black hole with pieces going round and round it, the nearer ones faster, and sparks of gas falling in */
 function SingularityScene() {
   return (
     <svg className="pv-sing" viewBox="0 0 200 100">
@@ -547,8 +551,9 @@ function SingularityScene() {
         </circle>
       ))}
       <circle cx={HOLE.x} cy={HOLE.y} r="44" fill="url(#pv-sing-glow)" />
-      <path className="pv-sing-ring" d={orbit(34)} />
-      <path className="pv-sing-ring" d={orbit(58)} />
+      {[30, 46, 64].map((ring) => (
+        <path key={ring} className="pv-sing-ring" d={orbit(ring)} />
+      ))}
       {/* Sparks of gas spiralling in */}
       {[0, 1, 2, 3, 4].map((i) => (
         <circle key={i} className="pv-sing-spark" r="0.9">
@@ -572,77 +577,17 @@ function SingularityScene() {
         className="pv-sing-disc"
         d={`M ${HOLE.x - 22} ${HOLE.y} A 22 ${22 * TILT} 0 0 0 ${HOLE.x + 22} ${HOLE.y}`}
       />
-      {/* The rook's trail, drawn as it goes, then fading */}
-      <path className="pv-sing-trail" d={SLINGSHOT} pathLength="1">
-        <animate
-          attributeName="stroke-dashoffset"
-          values="1;0;0"
-          keyTimes="0;0.8;1"
-          dur="4s"
-          repeatCount="indefinite"
-        />
-        <animate
-          attributeName="opacity"
-          values="0.9;0.9;0"
-          keyTimes="0;0.8;1"
-          dur="4s"
-          repeatCount="indefinite"
-        />
-      </path>
-      <g>
-        <animateMotion dur="3.2s" repeatCount="indefinite" path={orbit(34)} />
-        <Body is="wP" size={14} />
-      </g>
-      <g>
-        <animateMotion
-          dur="5.2s"
-          repeatCount="indefinite"
-          path={orbit(58, true)}
-        />
-        <Body is="bB" size={17} />
-      </g>
-      <g>
-        <animateMotion
-          dur="4s"
-          repeatCount="indefinite"
-          path={SLINGSHOT}
-          keyPoints="0;1;1"
-          keyTimes="0;0.8;1"
-          calcMode="spline"
-          keySplines="0.4 0 0.6 1;0 0 1 1"
-        />
-        <Body is="wR" size={19} />
-      </g>
-      {/* The knight falls in, stretched thinner and thinner, and is gone */}
-      <g>
-        <animateMotion
-          dur="5s"
-          repeatCount="indefinite"
-          path={spiral(84, 1.15, 3.6)}
-          keyPoints="0;1;1"
-          keyTimes="0;0.72;1"
-          calcMode="spline"
-          keySplines="0.55 0 0.9 0.6;0 0 1 1"
-        />
-        <g>
-          <animateTransform
-            attributeName="transform"
-            type="scale"
-            values="1 1;1 1;0.35 1.9;0.05 2.6;0.05 2.6"
-            keyTimes="0;0.45;0.68;0.74;1"
-            dur="5s"
+      {ORBITERS.map(([is, ring, lap, start]) => (
+        <g key={is}>
+          <animateMotion
+            dur={`${lap}s`}
+            begin={`${-start * lap}s`}
             repeatCount="indefinite"
+            path={orbit(ring)}
           />
-          <animate
-            attributeName="opacity"
-            values="1;1;1;0;0"
-            keyTimes="0;0.45;0.68;0.74;1"
-            dur="5s"
-            repeatCount="indefinite"
-          />
-          <Body is="bN" size={17} />
+          <Body is={is} size={ring > 50 ? 19 : 16} />
         </g>
-      </g>
+      ))}
     </svg>
   );
 }

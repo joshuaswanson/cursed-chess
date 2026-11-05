@@ -3920,7 +3920,7 @@
   }
 }
 
-/* --- Singularity: pieces round a black hole, one slung round it and one falling in --- */
+/* --- Singularity: pieces going round and round a black hole --- */
 
 .mode-preview.scene-singularity {
   background: radial-gradient(
@@ -3970,15 +3970,6 @@
 
 .pv-sing-core {
   fill: #000;
-}
-
-.pv-sing-trail {
-  fill: none;
-  stroke: #ffd27a;
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  stroke-dasharray: 1;
-  filter: drop-shadow(0 0 2px #ff7a2a);
 }
 
 /* --- Immortal Snail: it creeps after the king a step at a time, taps him, and he drops dead --- */
@@ -4051,7 +4042,7 @@
   }
 }
 
-/* The king shuffles about with nowhere to go; one touch, and he keels over dead */
+/* The king stands there; one touch, and he keels over dead */
 .pv-snail-prey {
   transform-origin: 78% 92%;
   animation: pv-snail-prey 7s linear infinite;
@@ -4059,21 +4050,10 @@
 
 @keyframes pv-snail-prey {
   0%,
-  40% {
-    translate: -50% -50%;
-    rotate: 0deg;
-    opacity: 1;
-  }
-  48% {
-    translate: -42% -50%;
-  }
-  56% {
-    translate: -56% -50%;
-  }
-  64%,
   70% {
     translate: -50% -50%;
     rotate: 0deg;
+    opacity: 1;
     animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
   }
   76% {
