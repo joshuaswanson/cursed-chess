@@ -19,10 +19,8 @@ import "./SingularityBoard.css";
 const EDGE_STEPS = 24;
 /** Pointer travel that turns a press on a piece into a drag */
 const DRAG_THRESHOLD_PX = 6;
-/** How finely each square is searched for the roomiest spot to stand its piece */
-const ROOM_STEPS = 48;
-/** How much of its room a piece's artwork takes, and the most of a file it ever takes */
-const PIECE_FILL = 2.05;
+/** How big a piece is for the room round where it stands, and the most of a file it ever takes */
+const PIECE_FILL = 2.2;
 const PIECE_MAX = 0.86;
 const FILES = "abcdefgh";
 
@@ -31,7 +29,7 @@ type Point = [number, number];
 interface Shape {
   sq: SquareIndex;
   path: string;
-  /** Where its piece stands: the middle of the biggest circle that fits in the square */
+  /** Where its piece stands: on its file's middle line, halfway across the square */
   x: number;
   y: number;
   size: number;
@@ -44,40 +42,32 @@ const toPath = (points: Point[]) =>
     .map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(3)} ${y.toFixed(3)}`)
     .join(" ") + "Z";
 
+const reach = (radius: number, v: number) =>
+  Math.sqrt(Math.max(0, radius * radius - v * v));
+
+/** How far along the board a square runs, at `v` across it, from its inner ring to its outer one */
+function span({ ring, half }: Place, v: number): [number, number] {
+  const outer = reach(ring, v);
+  const inner = reach(ring - 1, v);
+  if (half === null) return [-outer, outer];
+  // White's half is the near half, down the screen
+  return half === Color.White ? [-outer, -inner] : [inner, outer];
+}
+
+const onScreen = (u: number, v: number): Point => [-v, -u * SQUEEZE];
+
 /** The outline of a square: across its file, between its two rings, on its half or both */
-function outline({ file, ring, half }: Place): Point[] {
+function outline(place: Place): Point[] {
   // Distance across the board from its long middle line, and along it from the middle
-  const from = 3 - file;
+  const from = 3 - place.file;
   const across = Array.from(
     { length: EDGE_STEPS + 1 },
     (_, i) => from + i / EDGE_STEPS,
   );
-  const reach = (radius: number, v: number) =>
-    Math.sqrt(Math.max(0, radius * radius - v * v));
-  const span = (v: number): [number, number] => {
-    const outer = reach(ring, v);
-    const inner = reach(ring - 1, v);
-    if (half === null) return [-outer, outer];
-    // White's half is the near half, down the screen
-    return half === Color.White ? [-outer, -inner] : [inner, outer];
-  };
-  const point = (u: number, v: number): Point => [-v, -u * SQUEEZE];
   return [
-    ...across.map((v) => point(span(v)[0], v)),
-    ...[...across].reverse().map((v) => point(span(v)[1], v)),
+    ...across.map((v) => onScreen(span(place, v)[0], v)),
+    ...[...across].reverse().map((v) => onScreen(span(place, v)[1], v)),
   ];
-}
-
-function inside([x, y]: Point, points: Point[]): boolean {
-  let within = false;
-  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
-    const [xi, yi] = points[i];
-    const [xj, yj] = points[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
-      within = !within;
-    }
-  }
-  return within;
 }
 
 function distanceToEdge([x, y]: Point, points: Point[]): number {
@@ -99,31 +89,14 @@ function distanceToEdge([x, y]: Point, points: Point[]): number {
   return nearest;
 }
 
-/** The middle of the biggest circle that fits in the square, and its radius */
-function roomiest(points: Point[]): { at: Point; room: number } {
-  const xs = points.map(([x]) => x);
-  const ys = points.map(([, y]) => y);
-  const [left, right] = [Math.min(...xs), Math.max(...xs)];
-  const [top, bottom] = [Math.min(...ys), Math.max(...ys)];
-  let best = { at: [(left + right) / 2, (top + bottom) / 2] as Point, room: 0 };
-  for (let i = 1; i < ROOM_STEPS; i++) {
-    for (let j = 1; j < ROOM_STEPS; j++) {
-      const at: Point = [
-        left + ((right - left) * i) / ROOM_STEPS,
-        top + ((bottom - top) * j) / ROOM_STEPS,
-      ];
-      if (!inside(at, points)) continue;
-      const room = distanceToEdge(at, points);
-      if (room > best.room) best = { at, room };
-    }
-  }
-  return best;
-}
-
 function shapeOf(c: number, r: number): Shape {
   const place = placeOf({ c, r });
   const points = outline(place);
-  const { at, room } = roomiest(points);
+  // Down the middle of its file, halfway between its two rings
+  const middle = 3.5 - place.file;
+  const [near, far] = span(place, middle);
+  const at = onScreen((near + far) / 2, middle);
+  const room = distanceToEdge(at, points);
   return {
     sq: squareOf(c, r),
     path: toPath(points),
@@ -274,6 +247,10 @@ export function SingularityBoard() {
         className={`singularity-board${capture ? " capture-jolt" : ""}`}
         aria-label="Singularity Chess"
       >
+        {/* The glow round the board on a layer of its own, so it is not redrawn with the squares */}
+        <svg className="singularity-glow" viewBox="-4 -4 8 8" aria-hidden>
+          <path className="sing-rim-glow" d={RIM} />
+        </svg>
         <svg className="singularity-squares" viewBox="-4 -4 8 8">
           <defs>
             <clipPath id="sing-rim">
@@ -298,7 +275,6 @@ export function SingularityBoard() {
               <stop offset="1" stopColor="#6b3a12" />
             </linearGradient>
           </defs>
-          <path className="sing-rim-glow" d={RIM} />
           <g clipPath="url(#sing-rim)">
             {SHAPES.map((shape) => (
               <path
@@ -308,6 +284,7 @@ export function SingularityBoard() {
                 className={`sing-sq${mark(shape)}`}
                 style={{
                   fill: (shape.light ? RING_LIGHT : RING_DARK)[shape.ring],
+                  stroke: (shape.light ? RING_LIGHT : RING_DARK)[shape.ring],
                 }}
                 onPointerDown={(e) => press(e, shape.sq)}
               />
@@ -338,7 +315,9 @@ export function SingularityBoard() {
           ))}
         </svg>
         <div className="sing-hole" aria-hidden>
-          <span className="sing-disc" />
+          <span className="sing-swirl">
+            <span className="sing-disc" />
+          </span>
           <span className="sing-core" />
         </div>
         {SHAPES.map(({ sq, x, y, size }) => {

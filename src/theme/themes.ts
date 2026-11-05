@@ -300,7 +300,7 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
   singularity: {
     id: "singularity",
     title: "Singularity",
-    catchphrase: "Space bends round the middle!",
+    catchphrase: "Mind the event horizon.",
     sky: ["#000000", "#0d0603", "#24100a"],
     accent: "#ffb547",
     accent2: "#ff6a2a",

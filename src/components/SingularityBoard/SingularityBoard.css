@@ -15,7 +15,17 @@
   -webkit-user-select: none;
 }
 
+.singularity-glow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  will-change: transform;
+}
+
 .singularity-squares {
+  position: relative;
   display: block;
   width: 100%;
   height: 100%;
@@ -38,9 +48,9 @@
   pointer-events: none;
 }
 
+/* Each square drawn a hair over its edge in its own colour, so no seam shows where two meet */
 .sing-sq {
-  stroke: #120604;
-  stroke-width: 0.022;
+  stroke-width: 0.02;
   stroke-linejoin: round;
   cursor: pointer;
   transition: filter 0.15s;
@@ -56,27 +66,22 @@
 
 .sing-sq.picked {
   fill: #ffd36b !important;
+  stroke: #ffd36b !important;
   filter: drop-shadow(0 0 0.12px #ffd36b);
 }
 
 .sing-sq.takes {
   fill: #ff4b3a !important;
+  stroke: #ff4b3a !important;
 }
 
 .sing-sq.checked {
   fill: #ff2d55 !important;
-  animation: sing-check 0.7s ease-in-out infinite alternate;
-}
-
-@keyframes sing-check {
-  to {
-    fill: #ffa0b2 !important;
-  }
+  stroke: #ff2d55 !important;
 }
 
 .sing-haze {
   pointer-events: none;
-  mix-blend-mode: screen;
 }
 
 .sing-dot {
@@ -107,6 +112,17 @@
   z-index: 1;
 }
 
+/* A round disc turning, squashed flat by its frame like the board */
+.sing-swirl {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  aspect-ratio: 1;
+  translate: 0 -50%;
+  scale: 1 0.667;
+}
+
 .sing-disc {
   position: absolute;
   inset: 0;
@@ -135,13 +151,14 @@
     #000 62%,
     transparent 100%
   );
-  filter: blur(0.6px) drop-shadow(0 0 6px rgba(255, 140, 40, 0.9));
+  /* Turned on a layer of its own, so turning it never redraws it */
+  will-change: transform;
   animation: sing-disc 5s linear infinite;
 }
 
 @keyframes sing-disc {
   to {
-    rotate: 360deg;
+    transform: rotate(360deg);
   }
 }
 
@@ -193,8 +210,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sing-disc,
-  .sing-sq.checked {
+  .sing-disc {
     animation: none;
   }
 }

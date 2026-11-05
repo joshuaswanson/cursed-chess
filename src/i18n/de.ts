@@ -705,5 +705,5 @@ export const de: Record<string, string> = {
   "Open a ticket": "Ticket eröffnen",
   "Promote to": "Umwandeln in",
   Singularity: "Singularität",
-  "Space bends round the middle!": "Der Raum krümmt sich um die Mitte!",
+  "Mind the event horizon.": "Vorsicht, Ereignishorizont.",
 };
