@@ -11,7 +11,6 @@ import { SoccerBall } from "../Board/Football";
 import { Color } from "../../engine";
 import { LanternIcon } from "../Board/Lanterns";
 import { SnailArt } from "../Board/Snails";
-import { RING_DARK, RING_LIGHT, SQUEEZE } from "../SingularityBoard/rings";
 import { Jewel } from "../Board/Heist";
 import { Chessbot } from "../Chessbot/Chessbot";
 import { MineBlast } from "../Board/MineBlast";
@@ -463,120 +462,186 @@ const CONFETTI = [
   "#ffffff",
 ];
 
-/** The width of a file on the little Singularity board, which stands in the middle of the scene */
-const SING_FILE = 11;
-const SING_RINGS = [6, 5, 4, 3, 2, 1];
-/** How long the rook takes to go round and come back */
-const SING_LOOP_S = 5;
+/** The middle of the scene, where the black hole is, and how flat everything round it lies */
+const HOLE = { x: 100, y: 50 };
+const TILT = 0.36;
+
+/** A ring round the hole, as a path a piece can follow, starting at its near side */
+const orbit = (radius: number, backwards = false) => {
+  const ry = radius * TILT;
+  const sweep = backwards ? 0 : 1;
+  return `M ${HOLE.x} ${HOLE.y + ry} A ${radius} ${ry} 0 1 ${sweep} ${HOLE.x} ${HOLE.y - ry} A ${radius} ${ry} 0 1 ${sweep} ${HOLE.x} ${HOLE.y + ry}`;
+};
+
+/** A spiral falling in to the hole from `radius` out, turning `turns` times */
+const spiral = (radius: number, turns: number, start: number) =>
+  "M " +
+  Array.from({ length: 61 }, (_, i) => {
+    const t = i / 60;
+    const r = radius * (1 - t) ** 1.4 + 2;
+    const a = start + t * turns * Math.PI * 2;
+    return `${(HOLE.x + Math.cos(a) * r).toFixed(1)} ${(HOLE.y + Math.sin(a) * r * TILT).toFixed(1)}`;
+  }).join(" L ");
+
+/** The rook's slingshot: in from the left under the hole, round it, and back out over the top */
+const SLINGSHOT =
+  "M 6 70 C 60 92, 148 86, 160 56 C 170 30, 118 18, 78 30 C 52 38, 28 50, 6 70";
+
+/** A piece in the scene, drawn round its middle so it can be moved and stretched about it */
+function Body({ is, size = 18 }: { is: string; size?: number }) {
+  return (
+    <image
+      href={themedPieceImage(is, "singularity")}
+      x={-size / 2}
+      y={-size / 2}
+      width={size}
+      height={size}
+    />
+  );
+}
 
 /**
- * A small Singularity board, its rings cut across by the files, the disc
- * turning round the hole in the middle, and a rook on a1 going up its file,
- * round the singularity, and down again to h1
+ * A black hole with pieces round it: a pawn and a bishop going round on
+ * their rings, a rook that swings in, round the hole and back out the way
+ * it came, and a knight that spirals in and is stretched thin as it goes
  */
 function SingularityScene() {
-  const rx = (ring: number) => ring * SING_FILE;
-  const ry = (ring: number) => ring * SING_FILE * SQUEEZE;
-  const files = (parity: number) =>
-    Array.from({ length: 4 }, (_, i) => (
-      <rect
-        key={i}
-        x={100 - 4 * SING_FILE + (i * 2 + parity) * SING_FILE}
-        y="0"
-        width={SING_FILE}
-        height="100"
-      />
-    ));
-  const a = 100 - 3.5 * SING_FILE;
-  const h = 100 + 3.5 * SING_FILE;
-  const home = 50 + 4.2 * SING_FILE * SQUEEZE;
-  // The board's edge: its outer ring, cut off straight at the a and h files
-  const edge = (sign: number) =>
-    Array.from({ length: 33 }, (_, i) => {
-      const x = (i / 32) * 8 - 4;
-      return `${100 + x * SING_FILE} ${50 + sign * SQUEEZE * SING_FILE * Math.sqrt(36 - x * x)}`;
-    });
-  const rim = `M${[...edge(1), ...edge(-1).reverse()].join(" L")} Z`;
-  const loop = `M${a} ${home} L${a} 50 A${3.5 * SING_FILE} ${3.5 * SING_FILE * SQUEEZE} 0 0 1 ${h} 50 L${h} ${home}`;
   return (
     <svg className="pv-sing" viewBox="0 0 200 100">
       <defs>
-        <clipPath id="pv-sing-board">
-          <rect
-            x={100 - 4 * SING_FILE}
-            y="0"
-            width={8 * SING_FILE}
-            height="100"
-          />
-        </clipPath>
-        <clipPath id="pv-sing-even">{files(0)}</clipPath>
-        <clipPath id="pv-sing-odd">{files(1)}</clipPath>
         <radialGradient id="pv-sing-glow">
-          <stop offset="0" stopColor="#ffb547" stopOpacity="0.9" />
-          <stop offset="0.4" stopColor="#ff6a2a" stopOpacity="0.35" />
+          <stop offset="0" stopColor="#ffb547" stopOpacity="0.85" />
+          <stop offset="0.35" stopColor="#ff6a2a" stopOpacity="0.3" />
           <stop offset="1" stopColor="#ff6a2a" stopOpacity="0" />
         </radialGradient>
+        <linearGradient id="pv-sing-doppler" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#ffd28a" stopOpacity="0" />
+          <stop offset="0.3" stopColor="#fff3d6" />
+          <stop offset="0.7" stopColor="#ff8a35" />
+          <stop offset="1" stopColor="#c2421a" stopOpacity="0" />
+        </linearGradient>
       </defs>
-      {[3, 4.6, 6.4, 8.6].map((scale) => (
-        <ellipse
-          key={scale}
-          className="pv-sing-warp"
-          cx="100"
-          cy="50"
-          rx={rx(scale)}
-          ry={ry(scale) * 0.55}
-        />
+      {[
+        [14, 14],
+        [38, 84],
+        [62, 10],
+        [148, 12],
+        [176, 30],
+        [186, 80],
+        [24, 40],
+        [128, 90],
+      ].map(([x, y], i) => (
+        <circle
+          key={i}
+          className="pv-sing-star"
+          cx={x}
+          cy={y}
+          r={i % 3 ? 0.7 : 1.1}
+        >
+          <animate
+            attributeName="opacity"
+            values="0.2;1;0.2"
+            dur={`${2 + (i % 4) * 0.7}s`}
+            repeatCount="indefinite"
+          />
+        </circle>
       ))}
-      <g clipPath="url(#pv-sing-board)" className="pv-sing-board">
-        {SING_RINGS.map((ring) => (
-          <g key={ring}>
-            <ellipse
-              cx="100"
-              cy="50"
-              rx={rx(ring)}
-              ry={ry(ring)}
-              fill={RING_DARK[ring]}
-            />
-            <ellipse
-              cx="100"
-              cy="50"
-              rx={rx(ring)}
-              ry={ry(ring)}
-              fill={RING_LIGHT[ring]}
-              clipPath={`url(#pv-sing-${ring % 2 ? "even" : "odd"})`}
-            />
-          </g>
-        ))}
-      </g>
-      <path className="pv-sing-rim" d={rim} />
-      <path className="pv-sing-path" d={loop} />
-      <circle cx="100" cy="50" r="16" fill="url(#pv-sing-glow)" />
-      <ellipse className="pv-sing-disc" cx="100" cy="50" rx="10" ry="3.6" />
-      <circle cx="100" cy="50" r="3.4" className="pv-sing-core" />
-      <image
-        href={themedPieceImage("bK", "singularity")}
-        x={100 + 0.5 * SING_FILE - 6}
-        y={50 - 4.2 * SING_FILE * SQUEEZE - 6}
-        width="12"
-        height="12"
+      <circle cx={HOLE.x} cy={HOLE.y} r="44" fill="url(#pv-sing-glow)" />
+      <path className="pv-sing-ring" d={orbit(34)} />
+      <path className="pv-sing-ring" d={orbit(58)} />
+      {/* Sparks of gas spiralling in */}
+      {[0, 1, 2, 3, 4].map((i) => (
+        <circle key={i} className="pv-sing-spark" r="0.9">
+          <animateMotion
+            dur="2.6s"
+            begin={`${-i * 0.52}s`}
+            repeatCount="indefinite"
+            path={spiral(70, 1.6, i * 1.3)}
+          />
+        </circle>
+      ))}
+      <ellipse
+        className="pv-sing-disc"
+        cx={HOLE.x}
+        cy={HOLE.y}
+        rx="22"
+        ry={22 * TILT}
       />
+      <circle className="pv-sing-core" cx={HOLE.x} cy={HOLE.y} r="7.5" />
+      <path
+        className="pv-sing-disc"
+        d={`M ${HOLE.x - 22} ${HOLE.y} A 22 ${22 * TILT} 0 0 0 ${HOLE.x + 22} ${HOLE.y}`}
+      />
+      {/* The rook's trail, drawn as it goes, then fading */}
+      <path className="pv-sing-trail" d={SLINGSHOT} pathLength="1">
+        <animate
+          attributeName="stroke-dashoffset"
+          values="1;0;0"
+          keyTimes="0;0.8;1"
+          dur="4s"
+          repeatCount="indefinite"
+        />
+        <animate
+          attributeName="opacity"
+          values="0.9;0.9;0"
+          keyTimes="0;0.8;1"
+          dur="4s"
+          repeatCount="indefinite"
+        />
+      </path>
+      <g>
+        <animateMotion dur="3.2s" repeatCount="indefinite" path={orbit(34)} />
+        <Body is="wP" size={14} />
+      </g>
       <g>
         <animateMotion
-          dur={`${SING_LOOP_S}s`}
+          dur="5.2s"
           repeatCount="indefinite"
-          path={loop}
-          keyPoints="0;1;1;0;0"
-          keyTimes="0;0.42;0.5;0.92;1"
+          path={orbit(58, true)}
+        />
+        <Body is="bB" size={17} />
+      </g>
+      <g>
+        <animateMotion
+          dur="4s"
+          repeatCount="indefinite"
+          path={SLINGSHOT}
+          keyPoints="0;1;1"
+          keyTimes="0;0.8;1"
           calcMode="spline"
-          keySplines="0.45 0 0.55 1;0 0 1 1;0.45 0 0.55 1;0 0 1 1"
+          keySplines="0.4 0 0.6 1;0 0 1 1"
         />
-        <image
-          href={themedPieceImage("wR", "singularity")}
-          x="-6.5"
-          y="-6.5"
-          width="13"
-          height="13"
+        <Body is="wR" size={19} />
+      </g>
+      {/* The knight falls in, stretched thinner and thinner, and is gone */}
+      <g>
+        <animateMotion
+          dur="5s"
+          repeatCount="indefinite"
+          path={spiral(84, 1.15, 3.6)}
+          keyPoints="0;1;1"
+          keyTimes="0;0.72;1"
+          calcMode="spline"
+          keySplines="0.55 0 0.9 0.6;0 0 1 1"
         />
+        <g>
+          <animateTransform
+            attributeName="transform"
+            type="scale"
+            values="1 1;1 1;0.35 1.9;0.05 2.6;0.05 2.6"
+            keyTimes="0;0.45;0.68;0.74;1"
+            dur="5s"
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="opacity"
+            values="1;1;1;0;0"
+            keyTimes="0;0.45;0.68;0.74;1"
+            dur="5s"
+            repeatCount="indefinite"
+          />
+          <Body is="bN" size={17} />
+        </g>
       </g>
     </svg>
   );

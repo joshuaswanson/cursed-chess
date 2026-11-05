@@ -3920,13 +3920,13 @@
   }
 }
 
-/* --- Singularity: a rook loops round the black hole and comes back --- */
+/* --- Singularity: pieces round a black hole, one slung round it and one falling in --- */
 
 .mode-preview.scene-singularity {
   background: radial-gradient(
     ellipse at 50% 50%,
     #2a1208 0%,
-    #0d0603 55%,
+    #0d0603 60%,
     #000 100%
   );
 }
@@ -3938,47 +3938,28 @@
   height: 100%;
 }
 
-.pv-sing-warp {
+.pv-sing-star {
+  fill: #fff4dc;
+}
+
+.pv-sing-ring {
   fill: none;
   stroke: #ff9d4d;
   stroke-width: 0.6;
-  opacity: 0.3;
+  stroke-dasharray: 2 2.5;
+  opacity: 0.45;
 }
 
-.pv-sing-board ellipse {
-  stroke: #120604;
-  stroke-width: 0.35;
-}
-
-.pv-sing-rim {
-  fill: none;
-  stroke: #e0a050;
-  stroke-width: 1.6;
-  filter: drop-shadow(0 0 3px #ff7a2a);
-}
-
-.pv-sing-path {
-  fill: none;
-  stroke: #ffe2a3;
-  stroke-width: 0.9;
-  stroke-dasharray: 2.4 2;
-  opacity: 0.75;
-  animation: pv-sing-march 1s linear infinite;
-}
-
-@keyframes pv-sing-march {
-  to {
-    stroke-dashoffset: -4.4;
-  }
+.pv-sing-spark {
+  fill: #ffe2a3;
 }
 
 .pv-sing-disc {
   fill: none;
-  stroke: #ffd27a;
-  stroke-width: 1.8;
-  stroke-dasharray: 5 3 2 3;
-  filter: drop-shadow(0 0 2px #ff7a2a);
-  animation: pv-sing-spin 1.6s linear infinite;
+  stroke: url(#pv-sing-doppler);
+  stroke-width: 3;
+  stroke-dasharray: 6 2 3 2;
+  animation: pv-sing-spin 1.4s linear infinite;
 }
 
 @keyframes pv-sing-spin {
@@ -3989,8 +3970,15 @@
 
 .pv-sing-core {
   fill: #000;
-  stroke: #fff2d0;
-  stroke-width: 0.7;
+}
+
+.pv-sing-trail {
+  fill: none;
+  stroke: #ffd27a;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  filter: drop-shadow(0 0 2px #ff7a2a);
 }
 
 /* --- Immortal Snail: it creeps after the king a step at a time, and gets him --- */
