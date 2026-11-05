@@ -13,6 +13,7 @@ import { Factory } from "./Factory";
 import { StormSky } from "./StormSky";
 import { Corrupted } from "./Corrupted";
 import { WarpedSpace } from "./WarpedSpace";
+import { Garden } from "./Garden";
 import "./Backdrop.css";
 
 /** How long the spirals take to slow, stop, and wind up the other way */
@@ -177,6 +178,8 @@ function Scene({ theme }: { theme: ThemeId }) {
       return <Corrupted />;
     case "singularity":
       return <WarpedSpace />;
+    case "snail":
+      return <Garden />;
     default:
       return null;
   }

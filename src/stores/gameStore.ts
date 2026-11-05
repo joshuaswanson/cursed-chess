@@ -34,6 +34,7 @@ import { LANTERN_HOLD_MS, LanternsPlugin } from "../plugins/lanterns";
 import { ThunderstormPlugin } from "../plugins/thunderstorm";
 import { GHOSTS_HOLD_MS, PacManPlugin } from "../plugins/pacman";
 import { SingularityPlugin } from "../plugins/singularity";
+import { ImmortalSnailPlugin, SNAIL_CRAWL_MS } from "../plugins/immortalSnail";
 import { HEIST_FILES, HEIST_RANKS, HeistPlugin } from "../plugins/heist";
 import { StrategoPlugin } from "../plugins/stratego";
 import { FootballPlugin } from "../plugins/football";
@@ -293,6 +294,15 @@ export const GAME_MODES: GameMode[] = [
     name: "PAC-MAN",
     theme: "pacman",
     create: () => [new PacManPlugin()],
+    singleOnly: true,
+    beta: true,
+  },
+  {
+    name: "IMMORTAL SNAIL",
+    theme: "snail",
+    create: () => [new ImmortalSnailPlugin()],
+    noReinforcements: true,
+    untilWon: true,
     singleOnly: true,
     beta: true,
   },
@@ -1114,6 +1124,7 @@ function modeSquareBonus(
   const heist = pluginManager.find<HeistPlugin>("heist");
   const hill = pluginManager.find<KingOfTheHillPlugin>("king-of-hill");
   const royale = pluginManager.find<BattleRoyalePlugin>("battle-royale");
+  const snails = pluginManager.find<ImmortalSnailPlugin>("immortal-snail");
   return (square, piece, from) => {
     const classes = pluginManager
       .getSquareModifiers(square)
@@ -1131,6 +1142,7 @@ function modeSquareBonus(
     if (heist) bonus += heist.squareBonus(square, piece, from);
     if (hill) bonus += hill.squareBonus(board, square, piece, from);
     if (royale) bonus += royale.squareBonus(square, piece, from);
+    if (snails) bonus += snails.squareBonus(board, square, piece, from);
     return bonus;
   };
 }
@@ -1487,6 +1499,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
     const singularity = pluginManager.find<SingularityPlugin>("singularity");
     if (singularity) holdPause(singularity.travelMs);
+    if (pluginManager.find<ImmortalSnailPlugin>("immortal-snail")?.crawled) {
+      holdPause(SNAIL_CRAWL_MS);
+    }
 
     const status = pluginManager.invokeModifyGameStatus(game.getStatus());
     const isNormalChess = state.currentModeIndex < 0;

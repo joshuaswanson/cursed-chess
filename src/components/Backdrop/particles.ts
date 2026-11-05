@@ -644,6 +644,28 @@ const infall: Preset = {
   },
 };
 
+/** Immortal Snail: pollen and spores drifting up through the low sun */
+const motes: Preset = {
+  count: 55,
+  spawn: (w, h, initial) => ({
+    x: rand(0, w),
+    y: initial ? rand(0, h) : h + 10,
+    vx: rand(-6, 6),
+    vy: rand(-16, -6),
+    size: rand(0.8, 2.4),
+    age: 0,
+    life: rand(14, 26),
+    phase: rand(0, Math.PI * 2),
+    fadeInSeconds: 3,
+    color: pick(["#fff6cc", "#f4ffd8", "#ffe7a8"]),
+    draw: (ctx, p, t) => {
+      ctx.globalAlpha *= 0.5 + 0.3 * Math.sin(t * 1.6 + p.phase);
+      ctx.fillStyle = p.color;
+      dot(ctx, p.x + Math.sin(t * 0.7 + p.phase) * 6, p.y, p.size);
+    },
+  }),
+};
+
 const neon: Preset = {
   count: 60,
   spawn: (w, h, initial) => ({
@@ -733,6 +755,7 @@ export const FRONT_PRESETS: Partial<Record<ThemeId, Preset>> = {
 export const PRESETS: Partial<Record<ThemeId, Preset>> = {
   portals: stars,
   singularity: infall,
+  snail: motes,
   fog: wisps,
   royale: embers,
   conveyor: embers,

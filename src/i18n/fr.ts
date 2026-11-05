@@ -712,4 +712,6 @@ export const fr: Record<string, string> = {
   "Promote to": "Promouvoir en",
   Singularity: "Singularité",
   "Mind the event horizon.": "Attention à l'horizon des événements.",
+  "Immortal Snail": "Escargot immortel",
+  "It never stops coming.": "Il ne s'arrête jamais.",
 };

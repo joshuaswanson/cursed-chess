@@ -3992,3 +3992,112 @@
   stroke: #fff2d0;
   stroke-width: 0.7;
 }
+
+/* --- Immortal Snail: it creeps after the king a step at a time, and gets him --- */
+
+.pv-snail {
+  position: absolute;
+  left: 6%;
+  top: 56%;
+  width: 22%;
+  translate: -50% -60%;
+  animation: pv-snail-creep 7s ease-in-out infinite;
+}
+
+.pv-snail svg {
+  display: block;
+  width: 100%;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
+}
+
+/* Each step a slow glide, with a long wait between */
+@keyframes pv-snail-creep {
+  0%,
+  14% {
+    left: 8%;
+  }
+  24%,
+  38% {
+    left: 26%;
+  }
+  48%,
+  62% {
+    left: 44%;
+  }
+  72%,
+  84% {
+    left: 62%;
+  }
+  92%,
+  100% {
+    left: 74%;
+  }
+}
+
+.pv-snail-slime {
+  position: absolute;
+  left: 4%;
+  top: 60%;
+  height: 9%;
+  border-radius: 99px;
+  background: linear-gradient(
+    90deg,
+    rgba(214, 255, 238, 0.15),
+    rgba(214, 255, 238, 0.7)
+  );
+  animation: pv-snail-slime 7s ease-in-out infinite;
+}
+
+@keyframes pv-snail-slime {
+  0%,
+  14% {
+    width: 4%;
+  }
+  24%,
+  38% {
+    width: 22%;
+  }
+  48%,
+  62% {
+    width: 40%;
+  }
+  72%,
+  84% {
+    width: 58%;
+  }
+  92%,
+  100% {
+    width: 70%;
+  }
+}
+
+/* The king shuffles about, nowhere left to go, and is gone when it reaches him */
+.pv-snail-prey {
+  animation: pv-snail-prey 7s ease-in infinite;
+}
+
+@keyframes pv-snail-prey {
+  0%,
+  60% {
+    translate: -50% -50%;
+    opacity: 1;
+    scale: 1;
+  }
+  70% {
+    translate: -42% -50%;
+  }
+  80% {
+    translate: -56% -50%;
+  }
+  90% {
+    translate: -50% -50%;
+    opacity: 1;
+    scale: 1;
+  }
+  97%,
+  100% {
+    translate: -50% -10%;
+    opacity: 0;
+    scale: 0.4 0.1;
+  }
+}

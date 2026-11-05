@@ -33,6 +33,7 @@ const RULES: Record<ThemeId, string> = {
   storm: "lights.off(); sky.storm()",
   pacman: "pellets.scatter()",
   singularity: "space.bend(center)",
+  snail: "new Snail({ immortal: true })",
   finale: "modes.enable(ALL)",
 };
 

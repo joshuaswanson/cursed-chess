@@ -1324,3 +1324,77 @@
     animation: none;
   }
 }
+
+/* --- Immortal Snail: a garden at dawn, and something huge on the ridge --- */
+
+.garden-sun {
+  position: absolute;
+  left: 58%;
+  top: 34%;
+  width: 46vmin;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #fff2c4 0%,
+    #ffd88a 18%,
+    rgba(255, 196, 120, 0.35) 42%,
+    transparent 70%
+  );
+}
+
+.garden-hills {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 62vh;
+}
+
+/* Across the far ridge, so slowly it hardly seems to move */
+.garden-far-snail {
+  position: absolute;
+  top: 35vh;
+  width: 9vmin;
+  opacity: 0.85;
+  will-change: transform;
+  animation: garden-far-snail 240s linear infinite;
+}
+
+/* It comes from the right, facing the way it goes */
+.garden-far-snail svg {
+  display: block;
+  width: 100%;
+  scale: -1 1;
+}
+
+@keyframes garden-far-snail {
+  from {
+    transform: translateX(110vw);
+  }
+  to {
+    transform: translateX(-20vw);
+  }
+}
+
+.garden-leaves {
+  position: absolute;
+  bottom: -2vh;
+  height: 58vh;
+}
+
+.garden-leaves-left {
+  left: -3vw;
+}
+
+.garden-leaves-right {
+  right: -3vw;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .garden-far-snail {
+    animation: none;
+    transform: translateX(70vw);
+  }
+}

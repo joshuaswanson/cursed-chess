@@ -37,6 +37,7 @@ import { LANTERN_FLIGHT_MS } from "../../plugins/lanterns";
 import { StormBolt, StormScars } from "./Thunderstorm";
 import { FinaleOver, FinaleUnder } from "./Finale";
 import { PacGhosts, PacMaze, PacPellet } from "./PacMan";
+import { Snails } from "./Snails";
 import { TUNNEL_MS, eatTimes, tunnelWay, usePacSounds } from "./pacMotion";
 import { HeistLights, HeistLoot } from "./Heist";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
@@ -1132,6 +1133,13 @@ export function Board() {
               tip="Get your pieces on the rope to pull it your way"
               tipOver=".board-shell"
               tipAt={0}
+            />
+          )}
+          {overlays.snails && (
+            <Snails
+              view={overlays.snails}
+              flipped={flipped}
+              delayMs={settleDelay}
             />
           )}
           {pac && <PacMaze flipped={flipped} />}

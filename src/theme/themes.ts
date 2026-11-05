@@ -19,6 +19,7 @@ export type ThemeId =
   | "storm"
   | "pacman"
   | "singularity"
+  | "snail"
   | "finale";
 
 /** Which animated scene sits behind the board */
@@ -295,6 +296,20 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#0b0b26",
     dark: "#000000",
     text: "#ffe600",
+  },
+  // A wet garden at dawn: moss and young leaves, bark, a caramel shell and its slime
+  snail: {
+    id: "snail",
+    title: "Immortal Snail",
+    catchphrase: "It never stops coming.",
+    sky: ["#173b2a", "#447a46", "#e8cf86"],
+    accent: "#f2a65a",
+    accent2: "#9fe0c8",
+    ink: "#18120a",
+    frame: "#5a3a22",
+    light: "#eef3cf",
+    dark: "#7fa55a",
+    text: "#f6fbe9",
   },
   // The black of an event horizon, lit gold by the disc falling into it
   singularity: {

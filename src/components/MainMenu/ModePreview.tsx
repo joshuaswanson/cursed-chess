@@ -8,7 +8,9 @@ import {
   zombieImage,
 } from "../../utils/pieceImages";
 import { SoccerBall } from "../Board/Football";
+import { Color } from "../../engine";
 import { LanternIcon } from "../Board/Lanterns";
+import { SnailArt } from "../Board/Snails";
 import { RING_DARK, RING_LIGHT, SQUEEZE } from "../SingularityBoard/rings";
 import { Jewel } from "../Board/Heist";
 import { Chessbot } from "../Chessbot/Chessbot";
@@ -724,6 +726,16 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       <Piece is="bN" x={80} y={52} size={20} className="pv-pac-ghost" />
       <span className="pv-pac-points">200</span>
       <Piece is="wR" x={0} y={52} size={20} className="pv-pac-runner" />
+    </>
+  ),
+  // The snail creeps after a king, a step at a time, leaving its slime, and catches him
+  snail: (
+    <>
+      <span className="pv-snail-slime" />
+      <Piece is="wK" x={74} y={56} size={24} className="pv-snail-prey" />
+      <span className="pv-snail">
+        <SnailArt color={Color.Black} look={0} />
+      </span>
     </>
   ),
   // A rook goes up its file, round the singularity, and back down to the far corner of its own side

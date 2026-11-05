@@ -69,6 +69,11 @@ export const PIECE_PALETTES: Partial<
     light: ["#fffbd0", "#ffe600", "#b38f00"],
     dark: ["#ffb0b0", "#ff2020", "#7a0000"],
   },
+  // Eggshell against the brown of a snail's shell
+  snail: {
+    light: ["#fffdf4", "#f1e6c6", "#b9a476"],
+    dark: ["#a5734a", "#5f3a1f", "#24130a"],
+  },
   // Cold starlight against light stretched red as it falls in
   singularity: {
     light: ["#ffffff", "#e4eeff", "#9cb2dc"],

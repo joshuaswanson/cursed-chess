@@ -16,6 +16,7 @@ import type {
 import type { HeistView } from "../../plugins/heist";
 import type { StormView } from "../../plugins/thunderstorm";
 import type { PacView } from "../../plugins/pacman";
+import type { SnailView } from "../../plugins/immortalSnail";
 import type { FinaleView } from "../../plugins/finale";
 
 export interface PortalPair {
@@ -43,6 +44,8 @@ export interface BoardOverlays {
   /** The pellets and points of Pac-Man, or nothing in any other mode */
   pac: PacView | null;
   heist: HeistView | null;
+  /** The immortal snails, or nothing in any other mode */
+  snails: SnailView | null;
   hillSquares: SquareIndex[];
   /** Rounds each side has held the hill in a row, and how many it takes to win */
   hillStreak: { white: number; black: number; needed: number };
@@ -74,6 +77,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     lanternFlights: [],
     storm: null,
     pac: null,
+    snails: null,
     heist: null,
     hillSquares: [],
     hillStreak: { white: 0, black: 0, needed: 3 },
@@ -115,6 +119,9 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
         break;
       case "pacman":
         result.pac = overlay.data as PacView;
+        break;
+      case "immortal-snail":
+        result.snails = overlay.data as SnailView;
         break;
       case "rally-resources":
         result.hasRally = true;
