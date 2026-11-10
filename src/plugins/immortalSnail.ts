@@ -2,6 +2,7 @@ import { Color, GameStatus, MoveFlag, PieceType } from "../engine/types";
 import type { Move, Piece, SquareIndex } from "../engine/types";
 import type { Board } from "../engine/board";
 import { Game } from "../engine/game";
+import { generatePseudoLegalMoves } from "../engine/moves";
 import type { BoardOverlay, ModePlugin, PluginContext } from "./types";
 import { ALL_SQUARES, fileOf, rankOf, toIndex } from "../utils/squareUtils";
 
@@ -11,6 +12,10 @@ export const SNAIL_EVERY = 3;
 export const SNAIL_CRAWL_MS = 1400;
 /** How many squares of slime a snail leaves behind it before the oldest dries */
 const TRAIL_LENGTH = 6;
+/** What it costs Chessbot to leave a piece where the snail hunting his king will crawl next */
+const IN_ITS_WAY_COST = 1.5;
+/** What each square of the other king's flight from his snail is worth to him to cover */
+const FLIGHT_CUT_WORTH = 0.25;
 /** Where each side's snail starts, on the a-file either side of the middle */
 const SNAIL_START: Record<Color, SquareIndex> = {
   [Color.White]: toIndex(0, 3),
@@ -185,7 +190,8 @@ export class ImmortalSnailPlugin implements ModePlugin {
 
   /**
    * What a square is worth to Chessbot's pieces: his king keeps his
-   * distance from the snail hunting it, and nothing of his waits in its way
+   * distance from the snail hunting it, nothing of his waits in its way,
+   * and his pieces cover the squares your king would run to from his snail
    */
   squareBonus(
     board: Board,
@@ -203,7 +209,45 @@ export class ImmortalSnailPlugin implements ModePlugin {
       prey !== null &&
       distance(to, hunter.sq) === 1 &&
       distance(to, prey) < distance(hunter.sq, prey);
-    return inItsWay ? -1.5 : 0;
+    return (
+      (inItsWay ? -IN_ITS_WAY_COST : 0) +
+      this.flightsCut(board, to, piece, from) * FLIGHT_CUT_WORTH
+    );
+  }
+
+  /**
+   * How many more of the squares the other king could run to, away from the
+   * snail hunting him, a piece covers from `to` than it does from `from`
+   */
+  private flightsCut(
+    board: Board,
+    to: SquareIndex,
+    piece: Piece,
+    from: SquareIndex,
+  ): number {
+    if (piece.type === PieceType.Pawn) return 0;
+    const mine = this.snails.find((s) => s.color === piece.color);
+    const king = board.findKing(other(piece.color));
+    if (!mine || king === null) return 0;
+    const flights = ALL_SQUARES.filter(
+      (sq) =>
+        distance(sq, king) === 1 &&
+        distance(sq, mine.sq) > distance(king, mine.sq) &&
+        board.get(sq)?.color !== other(piece.color),
+    );
+    if (flights.length === 0) return 0;
+    const covered = (at: SquareIndex) => {
+      const placed = board.clone();
+      placed.remove(from);
+      placed.put(at, piece);
+      const reach = new Set(
+        generatePseudoLegalMoves(placed, piece.color, null)
+          .filter((move) => move.from === at)
+          .map((move) => move.to),
+      );
+      return flights.filter((sq) => reach.has(sq)).length;
+    };
+    return covered(to) - covered(from);
   }
 
   getBoardOverlays(ctx: PluginContext): BoardOverlay[] {

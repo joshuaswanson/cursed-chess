@@ -3,7 +3,7 @@ import { PieceType } from "../engine";
 import { ALL_SQUARES } from "../utils/squareUtils";
 import { ImmortalSnailPlugin } from "./immortalSnail";
 import type { SnailView } from "./immortalSnail";
-import { Table, nameOf, seeded } from "../test/harness";
+import { Table, nameOf, seeded, sq } from "../test/harness";
 
 function snailsOf(table: Table) {
   const view = table.manager.getAllOverlays()[0].data as SnailView;
@@ -61,5 +61,17 @@ describe("Immortal Snail", () => {
       ).length;
       if (kings < 2) expect(table.over).toBe(true);
     }
+  });
+
+  it("has Chessbot value covering the squares your king would run to from his snail", () => {
+    const plugin = new ImmortalSnailPlugin();
+    // His snail is on a5, your king on c5: your king's way out is toward the d file
+    const table = new Table([plugin], "4k3/8/8/2K5/8/8/8/7r b - - 0 1");
+    const rook = table.game.board.get(sq("h1"))!;
+    const { board } = table.game;
+    expect(plugin.squareBonus(board, sq("d1"), rook, sq("h1"))).toBeGreaterThan(
+      0,
+    );
+    expect(plugin.squareBonus(board, sq("h2"), rook, sq("h1"))).toBe(0);
   });
 });
