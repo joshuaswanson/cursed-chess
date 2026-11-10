@@ -428,8 +428,7 @@ export class SingularityPlugin implements ModePlugin {
     ctx.game.enPassant = null;
   }
 
-  /** How long the last move takes to travel its way, for the game to wait on */
-  get travelMs(): number {
+  holdAfterMoveMs(): number {
     return travelMs(this.route.length);
   }
 

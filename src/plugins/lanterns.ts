@@ -60,9 +60,8 @@ export class LanternsPlugin implements ModePlugin {
     this.seen.reset(ctx.board);
   }
 
-  /** Whether the last move knocked a lantern flying */
-  get flying(): boolean {
-    return this.flights.length > 0;
+  holdAfterMoveMs(): number {
+    return this.flights.length > 0 ? LANTERN_HOLD_MS : 0;
   }
 
   /** Your pieces as Chessbot remembers them */

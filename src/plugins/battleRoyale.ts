@@ -206,7 +206,12 @@ export class BattleRoyalePlugin implements ModePlugin {
    * falls, and a little for getting into the final zone. His king also
    * keeps off a line that is going to fall.
    */
-  squareBonus(to: SquareIndex, piece: Piece, from: SquareIndex): number {
+  squareBonus(
+    _board: Board,
+    to: SquareIndex,
+    piece: Piece,
+    from: SquareIndex,
+  ): number {
     const isKing = piece.type === PieceType.King;
     const doomed = this.doomedSquares();
     const final = this.final();

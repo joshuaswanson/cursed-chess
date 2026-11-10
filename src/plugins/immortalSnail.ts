@@ -63,7 +63,11 @@ export class ImmortalSnailPlugin implements ModePlugin {
   /** The legal moves for the last position asked about */
   private found: { key: string; moves: Move[] } | null = null;
   /** Whether the last turn ended with a crawl, which the game waits to see */
-  crawled = false;
+  private crawled = false;
+
+  holdAfterMoveMs(): number {
+    return this.crawled ? SNAIL_CRAWL_MS : 0;
+  }
 
   onGameStart(ctx: PluginContext): void {
     this.snails = [Color.White, Color.Black].map((color) => {

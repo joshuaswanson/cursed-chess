@@ -131,6 +131,11 @@ export class PluginManager {
     return this.plugins.some((p) => p.isAutonomous);
   }
 
+  /** How long the modes ask everyone to wait after the move just played: the longest any of them asks */
+  holdAfterMoveMs(): number {
+    return Math.max(0, ...this.plugins.map((p) => p.holdAfterMoveMs?.() ?? 0));
+  }
+
   isSolo(): boolean {
     return this.plugins.some((p) => p.solo);
   }

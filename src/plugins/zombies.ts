@@ -513,7 +513,7 @@ export class ZombiesPlugin implements ModePlugin {
    * The computer puts zombies down when it can and keeps its pieces from
    * standing where one could bite them
    */
-  squareBonus(square: SquareIndex, piece: Piece): number {
+  squareBonus(_board: Board, square: SquareIndex, piece: Piece): number {
     if (this.zombies.has(square)) return 2.5;
     if (this.biters(this.zombies, square).length === 0) return 0;
     return piece.type === PieceType.King ? -50 : -1.5;

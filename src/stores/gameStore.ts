@@ -27,21 +27,15 @@ import {
 } from "../utils/squareUtils";
 import { PortalChessPlugin } from "../plugins/portalChess";
 import type { PortalMoveInfo } from "../plugins/portalChess";
-import { BattleRoyalePlugin } from "../plugins/battleRoyale";
-import { BELT_RUN_MS, ConveyorPlugin, runBelts } from "../plugins/conveyor";
+import { ConveyorPlugin, runBelts } from "../plugins/conveyor";
 import { RallyPlugin } from "../plugins/clashRoyale";
 import { MinefieldPlugin } from "../plugins/minefield";
 import { checkOnTurn } from "../utils/checkers";
-import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
-import { LANTERN_HOLD_MS, LanternsPlugin } from "../plugins/lanterns";
+import { LanternsPlugin } from "../plugins/lanterns";
 import { ThunderstormPlugin } from "../plugins/thunderstorm";
-import { GHOSTS_HOLD_MS } from "../plugins/pacman";
-import { SingularityPlugin } from "../plugins/singularity";
-import { ImmortalSnailPlugin, SNAIL_CRAWL_MS } from "../plugins/immortalSnail";
-import { HeistPlugin } from "../plugins/heist";
 import { FootballPlugin } from "../plugins/football";
-import { HEAVE_HOLD_MS, TugOfWarPlugin } from "../plugins/tugOfWar";
+import { TugOfWarPlugin } from "../plugins/tugOfWar";
 import { ZOMBIE_FINISH_MS, ZombiesPlugin } from "../plugins/zombies";
 import { TrenchesPlugin } from "../plugins/trenches";
 import { FinalePlugin } from "../plugins/finale";
@@ -946,13 +940,6 @@ function modeSquareBonus(
   pluginManager: PluginManager,
   board: Board,
 ): SquareBonus {
-  const football = pluginManager.find<FootballPlugin>("football");
-  const tug = pluginManager.find<TugOfWarPlugin>("tug-of-war");
-  const zombies = pluginManager.find<ZombiesPlugin>("zombies");
-  const heist = pluginManager.find<HeistPlugin>("heist");
-  const hill = pluginManager.find<KingOfTheHillPlugin>("king-of-hill");
-  const royale = pluginManager.find<BattleRoyalePlugin>("battle-royale");
-  const snails = pluginManager.find<ImmortalSnailPlugin>("immortal-snail");
   return (square, piece, from) => {
     const classes = pluginManager
       .getSquareModifiers(square)
@@ -964,13 +951,9 @@ function modeSquareBonus(
     if (classes.includes("mine-warning") && piece.type !== PieceType.King) {
       bonus -= value;
     }
-    if (football) bonus += football.squareBonus(board, square, piece, from);
-    if (tug) bonus += tug.squareBonus(board, square, piece, from);
-    if (zombies) bonus += zombies.squareBonus(square, piece);
-    if (heist) bonus += heist.squareBonus(square, piece, from);
-    if (hill) bonus += hill.squareBonus(board, square, piece, from);
-    if (royale) bonus += royale.squareBonus(square, piece, from);
-    if (snails) bonus += snails.squareBonus(board, square, piece, from);
+    for (const plugin of pluginManager.getPlugins()) {
+      bonus += plugin.squareBonus?.(board, square, piece, from) ?? 0;
+    }
     return bonus;
   };
 }
@@ -1311,25 +1294,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     pluginManager.invokeOnAfterMove(processedMove);
     pluginManager.invokeOnTurnEnd(mover);
-    if (pluginManager.isSolo()) {
-      game.turn = mover;
-      holdPause(GHOSTS_HOLD_MS);
-    }
-    // Nobody moves again until the belts have stopped, the rope has been hauled, a lantern has landed, or a piece has come round the singularity
-    if (pluginManager.find<ConveyorPlugin>("conveyor")) {
-      holdPause(BELT_RUN_MS);
-    }
-    if (pluginManager.find<TugOfWarPlugin>("tug-of-war")?.heaved) {
-      holdPause(HEAVE_HOLD_MS);
-    }
-    if (pluginManager.find<LanternsPlugin>("lanterns")?.flying) {
-      holdPause(LANTERN_HOLD_MS);
-    }
-    const singularity = pluginManager.find<SingularityPlugin>("singularity");
-    if (singularity) holdPause(singularity.travelMs);
-    if (pluginManager.find<ImmortalSnailPlugin>("immortal-snail")?.crawled) {
-      holdPause(SNAIL_CRAWL_MS);
-    }
+    if (pluginManager.isSolo()) game.turn = mover;
+    // Nobody moves again until whatever the move set off has played out
+    const hold = pluginManager.holdAfterMoveMs();
+    if (hold > 0) holdPause(hold);
 
     const status = pluginManager.invokeModifyGameStatus(game.getStatus());
     const isNormalChess = state.currentModeIndex < 0;

@@ -112,6 +112,10 @@ export class TugOfWarPlugin implements ModePlugin {
   /** Whether the move just made set off a heave */
   heaved = false;
 
+  holdAfterMoveMs(): number {
+    return this.heaved ? HEAVE_HOLD_MS : 0;
+  }
+
   onGameStart(): void {
     this.flag = 0;
     this.heave = 0;

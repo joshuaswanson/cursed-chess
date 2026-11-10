@@ -1,4 +1,10 @@
-import type { Color, Move, SquareIndex, GameStatus } from "../engine/types";
+import type {
+  Color,
+  Move,
+  Piece,
+  SquareIndex,
+  GameStatus,
+} from "../engine/types";
 import type { Game } from "../engine/game";
 import type { Board } from "../engine/board";
 
@@ -48,6 +54,15 @@ export interface ModePlugin {
   getWinner?(ctx: PluginContext): Color | null;
 
   getBoardOverlays?(ctx: PluginContext): BoardOverlay[];
+  /** How long nobody moves after the move just played, while what it set off plays out */
+  holdAfterMoveMs?(): number;
+  /** What a move is worth to Chessbot for the mode's sake, on top of the chess of it */
+  squareBonus?(
+    board: Board,
+    to: SquareIndex,
+    piece: Piece,
+    from: SquareIndex,
+  ): number;
   /** Chessbot's pick from `moves`, by the mode's own rules where his usual search does not know them */
   choose?(game: Game, moves: Move[]): Move;
   getSquareModifiers?(

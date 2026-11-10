@@ -412,7 +412,12 @@ export class HeistPlugin implements ModePlugin {
   }
 
   /** How much the computer likes a move for the sake of the jewel, and for keeping out of the lights */
-  squareBonus(to: SquareIndex, piece: Piece, from: SquareIndex): number {
+  squareBonus(
+    _board: Board,
+    to: SquareIndex,
+    piece: Piece,
+    from: SquareIndex,
+  ): number {
     // Where the lights will be when this move has been made
     const next = this.patrol.map((light) => this.stepped(light));
     const caught = next.some(

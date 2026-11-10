@@ -365,6 +365,10 @@ export class PacManPlugin implements ModePlugin {
     "Eat every pellet before the ghosts eat your pieces. A power pellet lets you eat the ghosts for three moves.";
   solo = true;
 
+  holdAfterMoveMs(): number {
+    return GHOSTS_HOLD_MS;
+  }
+
   private pellets = new Set<SquareIndex>();
   private power = new Set<SquareIndex>();
   private total = 0;

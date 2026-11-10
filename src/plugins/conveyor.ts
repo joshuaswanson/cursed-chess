@@ -115,6 +115,11 @@ export class ConveyorPlugin implements ModePlugin {
 
   private run = 0;
   private rides: BeltRide[] = [];
+
+  holdAfterMoveMs(): number {
+    return BELT_RUN_MS;
+  }
+
   private crowned: SquareIndex[] = [];
   private move: ConveyorView["move"] = null;
   /** The move of the turn being played, until the turn ends; a skipped turn has none */
