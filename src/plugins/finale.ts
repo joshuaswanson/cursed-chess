@@ -22,6 +22,7 @@ import { MinefieldPlugin } from "./minefield";
 import { RallyPlugin } from "./clashRoyale";
 import { fallStep } from "./gravity";
 import { TugOfWarPlugin } from "./tugOfWar";
+import { LanternsPlugin } from "./lanterns";
 import type { Rope } from "./tugOfWar";
 import type { BattleView } from "./clashRoyale";
 import type { Strike } from "./thunderstorm";
@@ -92,7 +93,6 @@ function corner(): Box {
 /** Where each mode lands on the board as it glitches in, somewhere new each time */
 const ZONES: Partial<Record<FinaleAct, () => Box>> = {
   fog: () => anywhere(3, 3),
-  lanterns: () => anywhere(3, 3),
   gravity: () => anywhere(3, 3, 1, 6),
   hex: corner,
   mines: () => anywhere(4, 2, 2, 5),
@@ -272,7 +272,10 @@ export interface FinaleView {
   collapse: Collapse | null;
   holes: SquareIndex[];
   zombies: Zombie[];
+  /** Where the ball lies, or the square of the piece carrying it */
   ball: SquareIndex;
+  /** How many times the player has carried it into the goal */
+  goals: number;
   /** Counts the shifts of gravity in its patch of the board */
   tilts: number;
   /** The angle gravity's patch last settled at, and the pieces that fell then */
@@ -290,7 +293,8 @@ const STRIKE_GAP_MS: [number, number] = [2400, 4200];
 const STRIKE_KILL_CHANCE = 0.3;
 const ZOMBIE_RISE_MS = 1800;
 const SHAMBLE_MS = 2400;
-const BALL_MS = 1300;
+/** How much of the deletion a goal is worth: Chessbot cannot look away from one */
+const GOAL_SHARE = 0.06;
 /** How fast gravity's patch of the board turns, in degrees per second */
 const SPIN_RATE = 9;
 /** Gravity changes direction each time the patch has turned this far */
@@ -299,8 +303,6 @@ const SHIFT_STEP = 45;
 const FALL_HOLD_MS = 1600;
 /** The longest the patch is drawn turning on past its last tick, so it stops with the battle */
 const SMOOTH_MS = 150;
-/** How many ranks the rope runs over */
-const ROPE_LENGTH = 4;
 const RECENT_STRIKES = 4;
 const BRAWLER_TYPES = [
   PieceType.Pawn,
@@ -356,7 +358,7 @@ export class FinalePlugin implements ModePlugin {
   private untilRise = ZOMBIE_RISE_MS;
   private hidden = new Set<SquareIndex>();
   private ball: SquareIndex = toIndex(4, 4);
-  private untilBall = BALL_MS;
+  private goals = 0;
   private tilts = 0;
   /** How far gravity's patch has turned, the angle it last settled at, and which way it turns */
   private spin = 0;
@@ -394,6 +396,7 @@ export class FinalePlugin implements ModePlugin {
     if (move.captured && move.piece.color === Color.White) {
       this.bonus += CAPTURE_SHARE * PIECE_VALUE[move.captured.type];
     }
+    if (this.has("fifa")) this.carryBall(ctx.board, move);
     if (this.hidden.delete(move.from)) this.hidden.add(move.to);
     if (move.captured) this.hidden.delete(move.to);
     if (this.has("stratego")) this.hideSome(ctx.board);
@@ -435,14 +438,6 @@ export class FinalePlugin implements ModePlugin {
     if (this.has("storm")) killed = this.storm(ctx, ms);
     if (this.has("clash")) this.brawl(ctx, ms);
     if (this.has("zombies")) this.shamble(ctx.board, ms);
-    if (this.has("fifa")) {
-      this.untilBall -= ms;
-      if (this.untilBall <= 0) {
-        this.untilBall = BALL_MS;
-        const pitch = squaresIn(this.zones.fifa!);
-        this.ball = pitch[Math.floor(Math.random() * pitch.length)];
-      }
-    }
     const fell = this.has("gravity") && this.turnPatch(ctx.board, ms);
     return {
       killed,
@@ -473,6 +468,7 @@ export class FinalePlugin implements ModePlugin {
       this.collapse?.id,
       this.zombies.map((z) => [z.sq, z.risen]),
       this.ball,
+      this.goals,
       this.tilts,
       this.fell,
       [...this.hidden],
@@ -513,6 +509,8 @@ export class FinalePlugin implements ModePlugin {
       this.borrow(ctx, new MinefieldPlugin(3, (sq) => inBox(sq, zone!)));
     }
     if (act === "stratego") this.hideSome(ctx.board);
+    if (act === "lanterns") this.borrow(ctx, new LanternsPlugin());
+    if (act === "fifa") this.ball = this.kickOffSquare(ctx.board);
     if (act === "clash") this.dropBrawlers(ctx.board, zone!);
     if (rope) {
       const [f0, f1] = rope.files;
@@ -549,8 +547,40 @@ export class FinalePlugin implements ModePlugin {
   }
 
   /**
-   * A short rope, clear of the other modes, somewhere both sides have a
-   * piece on it or one that can move onto it, or null if there is nowhere
+   * The ball goes with whichever piece moves off its square. Carried into
+   * the goal by one of the player's pieces, it is a goal, and the ball goes
+   * back to the near edge of the pitch.
+   */
+  private carryBall(board: Board, move: Move): void {
+    if (move.from !== this.ball) return;
+    this.ball = move.to;
+    const pitch = this.zones.fifa!;
+    const scored =
+      move.piece.color === Color.White &&
+      rankOf(move.to) === 7 &&
+      fileOf(move.to) >= pitch.f0 &&
+      fileOf(move.to) <= pitch.f1;
+    if (!scored) return;
+    this.goals++;
+    this.bonus += GOAL_SHARE;
+    this.ball = this.kickOffSquare(board);
+  }
+
+  /** Where the ball is put down: an empty square on the near edge of the pitch, by the middle if it can be */
+  private kickOffSquare(board: Board): SquareIndex {
+    const { f0, f1, r0 } = this.zones.fifa!;
+    const nearEdge = squaresIn({ f0, f1, r0, r1: r0 });
+    const fromMiddle = (sq: SquareIndex) => Math.abs(fileOf(sq) - 3.5);
+    const empty = nearEdge
+      .filter((sq) => !board.get(sq))
+      .sort((a, b) => fromMiddle(a) - fromMiddle(b));
+    return empty[0] ?? nearEdge[1];
+  }
+
+  /**
+   * A rope the length of the board, on two files both sides have a piece
+   * on or one that can move onto, clear of the other modes where there is
+   * room, or null if there is nowhere
    */
   private placeRope(board: Board): Rope | null {
     const blocked = this.occupied();
@@ -562,26 +592,29 @@ export class FinalePlugin implements ModePlugin {
       ]);
     const white = reach(Color.White);
     const black = reach(Color.Black);
-    const fits: Rope[] = [];
+    const overlaps = (box: Box) =>
+      others.filter(
+        (o) =>
+          box.f0 <= o.f1 && o.f0 <= box.f1 && box.r0 <= o.r1 && o.r0 <= box.r1,
+      ).length;
+    const fits: { rope: Rope; overlaps: number }[] = [];
     // The flag flies to the right of the rope, so the rope keeps a file clear of the right edge
     for (let f0 = 0; f0 < 6; f0++) {
-      for (let r0 = 1; r0 + ROPE_LENGTH - 1 <= 6; r0++) {
-        const box = { f0, f1: f0 + 1, r0, r1: r0 + ROPE_LENGTH - 1 };
-        const clear = others.every(
-          (o) =>
-            box.f1 < o.f0 || o.f1 < box.f0 || box.r1 < o.r0 || o.r1 < box.r0,
-        );
-        const squares = squaresIn(box).filter((sq) => !blocked.has(sq));
-        if (
-          clear &&
-          squares.some((sq) => white.has(sq)) &&
-          squares.some((sq) => black.has(sq))
-        ) {
-          fits.push({ files: [f0, f0 + 1], ranks: [box.r0, box.r1] });
-        }
+      const box = { f0, f1: f0 + 1, r0: 0, r1: 7 };
+      const squares = squaresIn(box).filter((sq) => !blocked.has(sq));
+      if (
+        squares.some((sq) => white.has(sq)) &&
+        squares.some((sq) => black.has(sq))
+      ) {
+        fits.push({
+          rope: { files: [f0, f0 + 1], ranks: [0, 7] },
+          overlaps: overlaps(box),
+        });
       }
     }
-    return fits[Math.floor(Math.random() * fits.length)] ?? null;
+    const fewest = Math.min(...fits.map((fit) => fit.overlaps));
+    const best = fits.filter((fit) => fit.overlaps === fewest);
+    return best[Math.floor(Math.random() * best.length)]?.rope ?? null;
   }
 
   /** Runs one of the modes' own plugins, ahead of this one, so this one has the last word on moves */
@@ -854,6 +887,7 @@ export class FinalePlugin implements ModePlugin {
       holes: this.holes,
       zombies: this.zombies,
       ball: this.ball,
+      goals: this.goals,
       tilts: this.tilts,
       settledAt: this.settledAt,
       fell: this.fell,

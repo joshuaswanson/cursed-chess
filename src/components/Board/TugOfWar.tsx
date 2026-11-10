@@ -787,8 +787,8 @@ export function TugLayer({
           style={{ "--yank": yank } as Style}
         >
           {/* The loose ends lie piled past the board's edges, where there is room for them */}
-          {!short && <Coil end="top" hauled={flagTop - 4} />}
-          {!short && <Coil end="bottom" hauled={flagTop - 4} />}
+          {length === 8 && <Coil end="top" hauled={flagTop - 4} />}
+          {length === 8 && <Coil end="bottom" hauled={flagTop - 4} />}
           <div className="tug-rope-shadow">
             <div
               className="tug-rope"

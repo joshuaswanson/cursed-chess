@@ -11,6 +11,7 @@ import { visualCol, visualRow } from "./boardGeometry";
 import { BoardFog } from "../Fog/Fog";
 import { SoccerBall } from "./Football";
 import { Tombstone, ZombiePiece } from "./Zombies";
+import { t } from "../../i18n";
 import "./Finale.css";
 
 const CELL = 12.5;
@@ -76,7 +77,12 @@ export function FinaleOver({
   squareSize: number;
 }) {
   const has = (act: FinaleView["acts"][number]) => view.acts.includes(act);
-  const { fog, lanterns, gravity } = view.zones;
+  const { fog, gravity, fifa } = view.zones;
+  useEffect(() => {
+    if (view.goals === 0) return;
+    sfx.whistle(true);
+    sfx.crowd("roar");
+  }, [view.goals]);
   useEffect(() => {
     if (view.wave > 0) sfx.glitch();
   }, [view.wave]);
@@ -87,7 +93,7 @@ export function FinaleOver({
       {gravity && view.tilts > 0 && (
         <div className="finale-zone" style={boxStyle(gravity, flipped)}>
           <span className="finale-callout" key={view.tilts}>
-            Gravity shift!
+            {t("Gravity shift!")}
           </span>
         </div>
       )}
@@ -98,12 +104,6 @@ export function FinaleOver({
         >
           <BoardFog active enemyOnTop />
         </div>
-      )}
-      {lanterns && (
-        <div
-          className="finale-zone finale-dark finale-glitch-in"
-          style={boxStyle(lanterns, flipped)}
-        />
       )}
       {view.zombies.map((zombie) => (
         <div
@@ -151,6 +151,13 @@ export function FinaleOver({
           >
             <SoccerBall className="finale-ball-art" />
           </div>
+          {fifa && view.goals > 0 && (
+            <div className="finale-zone" style={boxStyle(fifa, flipped)}>
+              <span className="finale-callout" key={view.goals}>
+                {t("GOAL!")}
+              </span>
+            </div>
+          )}
         </>
       )}
       {view.arrived && (
