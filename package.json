@@ -1,5 +1,5 @@
 {
-  "name": "chaos-chess",
+  "name": "cursed-chess",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "check:i18n": "node scripts/check-translations.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "check": "tsc -b && eslint . && prettier --check . && node scripts/check-translations.mjs && vitest run"
   },
   "dependencies": {
     "peerjs": "^1.5.5",
@@ -26,8 +28,10 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "prettier": "^3.9.10",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^5.1.0"
   }
 }
