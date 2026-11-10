@@ -1,5 +1,5 @@
 import { Color, GameStatus, MoveFlag, PieceType } from "../engine/types";
-import type { Move, Piece, SquareIndex } from "../engine/types";
+import type { Move, SquareIndex } from "../engine/types";
 import type { Board } from "../engine/board";
 import type { Game } from "../engine/game";
 import type { ModePlugin, PluginContext } from "./types";
@@ -359,6 +359,16 @@ function legalMoves(board: Board, color: Color): Move[] {
   );
 }
 
+const MATE_SCORE = 10_000;
+const STALEMATE_COST = 5;
+/** How much of what a reply could win Chessbot counts against a move */
+const CAUTION = 0.9;
+const CHECK_WORTH = 0.3;
+/** What each move his pieces would have afterwards is worth to him */
+const MOBILITY_WORTH = 0.02;
+/** How much chance sways him between moves that are much alike */
+const WHIM = 0.3;
+
 /** How long a piece takes to travel a way of so many squares */
 export const travelMs = (squares: number) =>
   Math.min(TRAVEL_MAX_MS, Math.max(TRAVEL_MIN_MS, squares * TRAVEL_STEP_MS));
@@ -447,29 +457,46 @@ export class SingularityPlugin implements ModePlugin {
   }
 
   /**
-   * Chessbot's move: mate if he has one, then whatever wins the most
-   * material once your best reply has been taken off it
+   * Chessbot's move: mate if he has one, then whatever leaves him best off
+   * once your best reply has been made and he has taken back what he can,
+   * with a little weight on keeping his pieces free to move
    */
   choose(game: Game, moves: Move[]): Move {
     const me = game.turn;
     const foe = other(me);
-    const worth = (piece: Piece | undefined) =>
-      piece ? PIECE_VALUE[piece.type] : 0;
+    const gain = (move: Move) =>
+      (move.captured ? PIECE_VALUE[move.captured.type] : 0) +
+      (move.promotion
+        ? PIECE_VALUE[move.promotion] - PIECE_VALUE[PieceType.Pawn]
+        : 0);
     let best = moves[0];
     let bestScore = -Infinity;
     for (const move of moves) {
       const after = played(game.board, move);
       const replies = legalMoves(after, foe);
-      let score =
-        worth(move.captured) +
-        (move.promotion ? PIECE_VALUE[move.promotion] - 1 : 0);
+      let score = gain(move);
       if (replies.length === 0) {
-        score += inCheck(after, foe) ? 10000 : -5;
+        score += inCheck(after, foe) ? MATE_SCORE : -STALEMATE_COST;
       } else {
-        score -= 0.9 * Math.max(0, ...replies.map((r) => worth(r.captured)));
-        if (inCheck(after, foe)) score += 0.3;
+        const worstReply = Math.max(
+          0,
+          ...replies
+            .filter((reply) => gain(reply) > 0)
+            .map((reply) => {
+              const takenBack = pseudoMoves(played(after, reply), me).some(
+                (back) => back.to === reply.to,
+              );
+              const lost = PIECE_VALUE[reply.promotion ?? reply.piece.type];
+              return (
+                gain(reply) - (takenBack ? Math.min(lost, gain(reply)) : 0)
+              );
+            }),
+        );
+        score -= worstReply * CAUTION;
+        if (inCheck(after, foe)) score += CHECK_WORTH;
+        score += pseudoMoves(after, me).length * MOBILITY_WORTH;
       }
-      score += Math.random() * 0.4;
+      score += Math.random() * WHIM;
       if (score > bestScore) {
         bestScore = score;
         best = move;

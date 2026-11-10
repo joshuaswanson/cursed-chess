@@ -86,4 +86,35 @@ describe("Singularity", () => {
       Math.random = restore;
     }
   });
+
+  it("has a Chessbot who beats random play, and takes back what is taken from him", () => {
+    const restore = Math.random;
+    let wins = 0;
+    let slowest = 0;
+    try {
+      for (let seed = 1; seed <= 8; seed++) {
+        const random = seeded(seed);
+        Math.random = random;
+        const plugin = new SingularityPlugin();
+        const table = new Table([plugin]);
+        for (let ply = 0; ply < 160 && !table.over; ply++) {
+          const moves = table.moves();
+          if (table.game.turn === Color.White) {
+            table.play(moves[Math.floor(random() * moves.length)]);
+            continue;
+          }
+          const began = performance.now();
+          table.play(plugin.choose(table.game, moves));
+          slowest = Math.max(slowest, performance.now() - began);
+        }
+        if (table.status === "checkmate" && table.game.turn === Color.White) {
+          wins++;
+        }
+      }
+    } finally {
+      Math.random = restore;
+    }
+    expect(wins).toBeGreaterThanOrEqual(6);
+    expect(slowest).toBeLessThan(1500);
+  });
 });
