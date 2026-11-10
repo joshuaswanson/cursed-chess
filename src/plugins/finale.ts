@@ -563,7 +563,8 @@ export class FinalePlugin implements ModePlugin {
     const white = reach(Color.White);
     const black = reach(Color.Black);
     const fits: Rope[] = [];
-    for (let f0 = 0; f0 < 7; f0++) {
+    // The flag flies to the right of the rope, so the rope keeps a file clear of the right edge
+    for (let f0 = 0; f0 < 6; f0++) {
       for (let r0 = 1; r0 + ROPE_LENGTH - 1 <= 6; r0++) {
         const box = { f0, f1: f0 + 1, r0, r1: r0 + ROPE_LENGTH - 1 };
         const clear = others.every(
