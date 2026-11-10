@@ -23,7 +23,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
               lang={id}
               className="pause-btn settings-choice"
               aria-pressed={language === id}
-              onClick={() => setLanguage(id)}
+              onClick={() => void setLanguage(id)}
             >
               {name}
             </button>

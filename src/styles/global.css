@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=Rubik:wght@400;500;700;800;900&display=swap");
-
 /* Registered so channel changes blend colors smoothly */
 @property --sky-1 {
   syntax: "<color>";

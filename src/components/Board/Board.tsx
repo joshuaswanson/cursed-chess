@@ -22,11 +22,7 @@ import type { SquareIndex } from "../../engine";
 import { pieceImage } from "../../utils/pieceImages";
 import { useKitImages } from "../../utils/kitImages";
 import { Portal } from "./Portal";
-import { Battlefield, WorldRiver } from "./Battlefield";
 import { BoardShatter } from "../HexWarp/HexWarp";
-import { MineBlast } from "./MineBlast";
-import { Crater } from "./Crater";
-import { FootballLayer, Goal, PassMarker, Pitch, Commentary } from "./Football";
 import {
   LanternDark,
   LanternFeel,
@@ -34,33 +30,20 @@ import {
   LanternIcon,
 } from "./Lanterns";
 import { LANTERN_FLIGHT_MS } from "../../plugins/lanterns";
-import { StormBolt, StormScars } from "./Thunderstorm";
-import { FinaleOver, FinaleUnder } from "./Finale";
-import { PacGhosts, PacMaze, PacPellet } from "./PacMan";
-import { Snails } from "./Snails";
 import { TUNNEL_MS, eatTimes, tunnelWay, usePacSounds } from "./pacMotion";
-import { HeistLights, HeistLoot } from "./Heist";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
 import type { GravityPlugin } from "../../plugins/gravity";
 import type { FinalePlugin } from "../../plugins/finale";
-import { BattleEffects, BattleUnit } from "./Battle";
 import {
   visualCol as colOnScreen,
   visualRow as rowOnScreen,
 } from "./boardGeometry";
 import { PortalArrows } from "./PortalArrows";
-import { Sideline } from "./Sideline";
-import { HillThrone } from "./HillThrone";
-import { TugLayer } from "./TugOfWar";
-import { Tombstone, ZombiePiece } from "./Zombies";
 import type { TrenchView } from "../../plugins/trenches";
 import { TRENCH_RANKS } from "../../plugins/trenches";
-import { BoardCraters, TrenchField } from "./TrenchField";
 import { behindSandbags } from "./trenchFront";
-import { RainRipples } from "./RainRipples";
-import { LineOrders } from "../Trenches/LineOrders";
 import {
   WorldCraters,
   WorldTrenches,
@@ -78,7 +61,6 @@ import {
   Fissure,
 } from "./BattleRoyale";
 import { useCollapse } from "./useCollapse";
-import { BeltRails } from "./Conveyor";
 import { beltTurn, useBeltRun } from "./useBeltRun";
 import { BELT_RUN_MS, carried, fedFrom } from "../../plugins/conveyor";
 import { checkOnTurn } from "../../utils/checkers";
@@ -113,6 +95,61 @@ import type { GravityFall } from "./useBoardEffects";
 import "./Board.css";
 import "./BoardSkins.css";
 import { t } from "../../i18n";
+import { later } from "../../utils/later";
+
+const Battlefield = later(() =>
+  import("./Battlefield").then((m) => m.Battlefield),
+);
+const WorldRiver = later(() =>
+  import("./Battlefield").then((m) => m.WorldRiver),
+);
+const MineBlast = later(() => import("./MineBlast").then((m) => m.MineBlast));
+const Crater = later(() => import("./Crater").then((m) => m.Crater));
+const FootballLayer = later(() =>
+  import("./Football").then((m) => m.FootballLayer),
+);
+const Goal = later(() => import("./Football").then((m) => m.Goal));
+const PassMarker = later(() => import("./Football").then((m) => m.PassMarker));
+const Pitch = later(() => import("./Football").then((m) => m.Pitch));
+const Commentary = later(() => import("./Football").then((m) => m.Commentary));
+const StormBolt = later(() =>
+  import("./Thunderstorm").then((m) => m.StormBolt),
+);
+const StormScars = later(() =>
+  import("./Thunderstorm").then((m) => m.StormScars),
+);
+const FinaleOver = later(() => import("./Finale").then((m) => m.FinaleOver));
+const FinaleUnder = later(() => import("./Finale").then((m) => m.FinaleUnder));
+const PacGhosts = later(() => import("./PacMan").then((m) => m.PacGhosts));
+const PacMaze = later(() => import("./PacMan").then((m) => m.PacMaze));
+const PacPellet = later(() => import("./PacMan").then((m) => m.PacPellet));
+const Snails = later(() => import("./Snails").then((m) => m.Snails));
+const HeistLights = later(() => import("./Heist").then((m) => m.HeistLights));
+const HeistLoot = later(() => import("./Heist").then((m) => m.HeistLoot));
+const BattleEffects = later(() =>
+  import("./Battle").then((m) => m.BattleEffects),
+);
+const BattleUnit = later(() => import("./Battle").then((m) => m.BattleUnit));
+const Sideline = later(() => import("./Sideline").then((m) => m.Sideline));
+const HillThrone = later(() =>
+  import("./HillThrone").then((m) => m.HillThrone),
+);
+const TugLayer = later(() => import("./TugOfWar").then((m) => m.TugLayer));
+const Tombstone = later(() => import("./Zombies").then((m) => m.Tombstone));
+const ZombiePiece = later(() => import("./Zombies").then((m) => m.ZombiePiece));
+const BoardCraters = later(() =>
+  import("./TrenchField").then((m) => m.BoardCraters),
+);
+const TrenchField = later(() =>
+  import("./TrenchField").then((m) => m.TrenchField),
+);
+const RainRipples = later(() =>
+  import("./RainRipples").then((m) => m.RainRipples),
+);
+const LineOrders = later(() =>
+  import("../Trenches/LineOrders").then((m) => m.LineOrders),
+);
+const BeltRails = later(() => import("./Conveyor").then((m) => m.BeltRails));
 
 const FILES = "abcdefghijklmnop";
 /** A beat after a move lands before the portals move */
@@ -280,11 +317,20 @@ export function Board() {
   useLayoutEffect(() => {
     const board = boardRef.current;
     if (!board) return;
-    const observer = new ResizeObserver(() =>
-      setSquareSize(board.offsetWidth / boardFiles()),
-    );
+    const measure = () => setSquareSize(board.offsetWidth / boardFiles());
+    measure();
+    // Measured on the next frame: redrawing inside the observer's own pass can
+    // resize the board again before the pass is over, which browsers report as an error
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    });
     observer.observe(board);
-    return () => observer.disconnect();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
   }, []);
 
   const overlays = readOverlays(pluginManager.getAllOverlays());

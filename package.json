@@ -13,6 +13,9 @@
     "check": "tsc -b && eslint . && prettier --check . && node scripts/check-translations.mjs && vitest run"
   },
   "dependencies": {
+    "@fontsource/bungee": "^5.3.0",
+    "@fontsource/bungee-shade": "^5.3.0",
+    "@fontsource/rubik": "^5.3.0",
     "peerjs": "^1.5.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

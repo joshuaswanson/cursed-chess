@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { Board } from "./components/Board/Board";
-import { HexBoard } from "./components/HexBoard/HexBoard";
 import { PromotionDialog } from "./components/PromotionDialog/PromotionDialog";
 import { ShowCards } from "./components/Show/ShowCards";
 import { CurseIntro } from "./components/Show/CurseIntro";
@@ -8,13 +7,6 @@ import { HexWarp } from "./components/HexWarp/HexWarp";
 import { MoveCountdown } from "./components/Countdown/MoveCountdown";
 import { SkipBanner } from "./components/Board/SkipBanner";
 import { Hud } from "./components/Hud/Hud";
-import { FoeRallyBar, YourRallyBar } from "./components/RallyPanel/RallyPanel";
-import { Backdrop } from "./components/Backdrop/Backdrop";
-import { SpaceTraffic } from "./components/Backdrop/SpaceTraffic";
-import { TrenchOrders } from "./components/Trenches/TrenchOrders";
-import { TrenchWeather } from "./components/Trenches/TrenchWeather";
-import { StormWeather } from "./components/Board/StormWeather";
-import { BoringPage } from "./components/BoringSite/BoringPages";
 import { PageFog } from "./components/Fog/Fog";
 import { Logo } from "./components/Logo/Logo";
 import {
@@ -31,15 +23,58 @@ import { useTheme } from "./theme/useTheme";
 import { themeVars } from "./theme/themes";
 import "./styles/global.css";
 import { ChessbotCorner } from "./components/Chessbot/ChessbotCorner";
-import { MainMenu } from "./components/MainMenu/MainMenu";
-import { PauseMenu } from "./components/PauseMenu/PauseMenu";
-import { ModeSwap } from "./components/Show/ModeSwap";
 import { BotWindows } from "./components/BoringSite/BotWindows";
-import { DevNote } from "./components/DevNote/DevNote";
-import { FinaleEnding } from "./components/Show/FinaleEnding";
-import { SingularityBoard } from "./components/SingularityBoard/SingularityBoard";
 import type { FinalePlugin } from "./plugins/finale";
 import { t, useLanguage } from "./i18n";
+import { later } from "./utils/later";
+
+const HexBoard = later(() =>
+  import("./components/HexBoard/HexBoard").then((m) => m.HexBoard),
+);
+const FoeRallyBar = later(() =>
+  import("./components/RallyPanel/RallyPanel").then((m) => m.FoeRallyBar),
+);
+const YourRallyBar = later(() =>
+  import("./components/RallyPanel/RallyPanel").then((m) => m.YourRallyBar),
+);
+const Backdrop = later(() =>
+  import("./components/Backdrop/Backdrop").then((m) => m.Backdrop),
+);
+const SpaceTraffic = later(() =>
+  import("./components/Backdrop/SpaceTraffic").then((m) => m.SpaceTraffic),
+);
+const TrenchOrders = later(() =>
+  import("./components/Trenches/TrenchOrders").then((m) => m.TrenchOrders),
+);
+const TrenchWeather = later(() =>
+  import("./components/Trenches/TrenchWeather").then((m) => m.TrenchWeather),
+);
+const StormWeather = later(() =>
+  import("./components/Board/StormWeather").then((m) => m.StormWeather),
+);
+const BoringPage = later(() =>
+  import("./components/BoringSite/BoringPages").then((m) => m.BoringPage),
+);
+const MainMenu = later(() =>
+  import("./components/MainMenu/MainMenu").then((m) => m.MainMenu),
+);
+const PauseMenu = later(() =>
+  import("./components/PauseMenu/PauseMenu").then((m) => m.PauseMenu),
+);
+const ModeSwap = later(() =>
+  import("./components/Show/ModeSwap").then((m) => m.ModeSwap),
+);
+const DevNote = later(() =>
+  import("./components/DevNote/DevNote").then((m) => m.DevNote),
+);
+const FinaleEnding = later(() =>
+  import("./components/Show/FinaleEnding").then((m) => m.FinaleEnding),
+);
+const SingularityBoard = later(() =>
+  import("./components/SingularityBoard/SingularityBoard").then(
+    (m) => m.SingularityBoard,
+  ),
+);
 
 function App() {
   // Everything is drawn again in a newly chosen language

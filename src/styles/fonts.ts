@@ -1,0 +1,14 @@
+import "@fontsource/bungee/latin-400.css";
+import "@fontsource/bungee/latin-ext-400.css";
+import "@fontsource/bungee-shade/latin-400.css";
+import "@fontsource/bungee-shade/latin-ext-400.css";
+import "@fontsource/rubik/latin-400.css";
+import "@fontsource/rubik/latin-ext-400.css";
+import "@fontsource/rubik/latin-500.css";
+import "@fontsource/rubik/latin-ext-500.css";
+import "@fontsource/rubik/latin-700.css";
+import "@fontsource/rubik/latin-ext-700.css";
+import "@fontsource/rubik/latin-800.css";
+import "@fontsource/rubik/latin-ext-800.css";
+import "@fontsource/rubik/latin-900.css";
+import "@fontsource/rubik/latin-ext-900.css";
