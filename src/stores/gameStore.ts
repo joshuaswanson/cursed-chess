@@ -10,6 +10,11 @@ import {
 } from "../engine";
 import type { Board, SquareIndex, Move, MoveRecord, Piece } from "../engine";
 import { PluginManager } from "../plugins/manager";
+import { GAME_MODES, HEX_MORPH_DONE_MS, MODE_CARD_MS } from "../modes";
+import type { GameMode } from "../modes";
+
+export { GAME_MODES };
+export type { GameMode };
 import type { ModePlugin } from "../plugins/types";
 import {
   ALL_SQUARES,
@@ -22,7 +27,6 @@ import {
 } from "../utils/squareUtils";
 import { PortalChessPlugin } from "../plugins/portalChess";
 import type { PortalMoveInfo } from "../plugins/portalChess";
-import { FogOfWarPlugin } from "../plugins/fogOfWar";
 import { BattleRoyalePlugin } from "../plugins/battleRoyale";
 import { BELT_RUN_MS, ConveyorPlugin, runBelts } from "../plugins/conveyor";
 import { RallyPlugin } from "../plugins/clashRoyale";
@@ -32,11 +36,10 @@ import { KingOfTheHillPlugin } from "../plugins/kingOfTheHill";
 import { GRAVITY_SHIFT_MS, GravityPlugin } from "../plugins/gravity";
 import { LANTERN_HOLD_MS, LanternsPlugin } from "../plugins/lanterns";
 import { ThunderstormPlugin } from "../plugins/thunderstorm";
-import { GHOSTS_HOLD_MS, PacManPlugin } from "../plugins/pacman";
+import { GHOSTS_HOLD_MS } from "../plugins/pacman";
 import { SingularityPlugin } from "../plugins/singularity";
 import { ImmortalSnailPlugin, SNAIL_CRAWL_MS } from "../plugins/immortalSnail";
-import { HEIST_FILES, HEIST_RANKS, HeistPlugin } from "../plugins/heist";
-import { StrategoPlugin } from "../plugins/stratego";
+import { HeistPlugin } from "../plugins/heist";
 import { FootballPlugin } from "../plugins/football";
 import { HEAVE_HOLD_MS, TugOfWarPlugin } from "../plugins/tugOfWar";
 import { ZOMBIE_FINISH_MS, ZombiesPlugin } from "../plugins/zombies";
@@ -55,7 +58,6 @@ import { HexGame } from "../engine/hex/game";
 import { chooseMove, PIECE_VALUE } from "../ai/chooseMove";
 import { pickBySkill, storySkill } from "../ai/skill";
 import { setLean, storyLean } from "../ai/luck";
-import type { ThemeId } from "../theme/themes";
 import type { SquareBonus } from "../ai/chooseMove";
 import type { HexCoord, HexMove } from "../engine/hex";
 import {
@@ -94,8 +96,6 @@ const CURSE_OOPS_MS = 2800;
 const CURSE_REVEAL_MS = 3200;
 
 const MODE_ANNOUNCE_MS = 2000;
-/** How long the mode's title card owns the screen: the title, then its catchphrase */
-const MODE_CARD_MS = 4200;
 const INTRO_HOLD_MS = 4700;
 /** How long Chessbot gets to say his opening line before he starts on a move that is his to make */
 const OPENING_LINE_MS = 3000;
@@ -121,7 +121,6 @@ export const MODE_SWAP_CLEAR_MS = 1050;
 /** The square board shatters right after the hex title card leaves */
 const HEX_MORPH_OUT_MS = 4600;
 const HEX_MORPH_IN_MS = 5500;
-const HEX_MORPH_DONE_MS = 6900;
 
 /** Modes that hold back their setup until the title card clears start here */
 const INTRO_END_MS = MODE_CARD_MS + 100;
@@ -143,35 +142,6 @@ export type FinaleStage =
   | "iris"
   | "credits";
 
-export interface GameMode {
-  name: string;
-  theme: ThemeId;
-  create: () => ModePlugin[];
-  durationSeconds?: number;
-  /** How long play stays paused after the mode starts */
-  introHoldMs?: number;
-  isHex?: boolean;
-  /** Modes with their own way to add pieces skip the top-up */
-  noReinforcements?: boolean;
-  /**
-   * Modes won some other way than checkmate, so the kings walk off and leave
-   * it to the troops. These have no clock: they run until one side wins.
-   */
-  kingsSitOut?: boolean;
-  /** Modes with no clock that run until one side wins, kings and all */
-  untilWon?: boolean;
-  /** How many ranks deep its board is, where that is not the usual eight */
-  ranks?: number;
-  /** How many files wide its board is, where that is not the usual eight */
-  files?: number;
-  /** Left out of the adventure: played only when picked from the main menu */
-  singleOnly?: boolean;
-  /** Still being tried out: listed apart from the finished modes on the main menu */
-  beta?: boolean;
-  /** The battle that ends Story Mode, reached only by playing through it */
-  finale?: boolean;
-}
-
 /**
  * Only the adventure gives each mode a clock, and even there the modes won
  * some other way than checkmate run until someone wins them
@@ -182,148 +152,6 @@ export function modeIsTimed(
   const mode = GAME_MODES[s.currentModeIndex];
   return s.playMode === "adventure" && !mode?.kingsSitOut && !mode?.untilWon;
 }
-
-export const GAME_MODES: GameMode[] = [
-  {
-    name: "PORTALS",
-    theme: "portals",
-    create: () => [new PortalChessPlugin()],
-  },
-  {
-    name: "FOG OF WAR",
-    theme: "fog",
-    create: () => [new FogOfWarPlugin()],
-    // The fog drifts in for 5s once the title cards clear
-    introHoldMs: MODE_CARD_MS + 5200,
-  },
-  {
-    name: "FIFA",
-    theme: "fifa",
-    create: () => [new FootballPlugin()],
-    kingsSitOut: true,
-  },
-  {
-    name: "TUG OF WAR",
-    theme: "tug",
-    create: () => [new TugOfWarPlugin()],
-    kingsSitOut: true,
-  },
-  {
-    name: "MINEFIELD",
-    theme: "mines",
-    create: () => [new MinefieldPlugin()],
-  },
-  {
-    name: "BATTLE ROYALE",
-    theme: "royale",
-    create: () => [new BattleRoyalePlugin()],
-    untilWon: true,
-  },
-  {
-    name: "CLASH ROYALE",
-    theme: "clash",
-    create: () => [new RallyPlugin()],
-    noReinforcements: true,
-    durationSeconds: 75,
-  },
-  {
-    name: "KING OF THE HILL",
-    theme: "hill",
-    create: () => [new KingOfTheHillPlugin()],
-    kingsSitOut: true,
-  },
-  {
-    name: "THUNDERSTORM",
-    theme: "storm",
-    create: () => [new ThunderstormPlugin()],
-  },
-  {
-    name: "GRAVITY",
-    theme: "gravity",
-    create: () => [new GravityPlugin()],
-  },
-  {
-    name: "HEX CHESS",
-    theme: "hex",
-    create: () => [],
-    durationSeconds: 60,
-    introHoldMs: HEX_MORPH_DONE_MS,
-    isHex: true,
-  },
-  {
-    name: "SINGULARITY",
-    theme: "singularity",
-    create: () => [new SingularityPlugin()],
-    noReinforcements: true,
-    untilWon: true,
-    singleOnly: true,
-    beta: true,
-  },
-  {
-    name: "IMMORTAL SNAIL",
-    theme: "snail",
-    create: () => [new ImmortalSnailPlugin()],
-    noReinforcements: true,
-    untilWon: true,
-    singleOnly: true,
-    beta: true,
-  },
-  {
-    name: "TRENCHES",
-    theme: "trenches",
-    create: () => [new TrenchesPlugin()],
-    noReinforcements: true,
-    untilWon: true,
-    singleOnly: true,
-    beta: true,
-  },
-  {
-    name: "PAC-MAN",
-    theme: "pacman",
-    create: () => [new PacManPlugin()],
-    singleOnly: true,
-    beta: true,
-  },
-  {
-    name: "HEIST",
-    theme: "heist",
-    create: () => [new HeistPlugin()],
-    ranks: HEIST_RANKS,
-    files: HEIST_FILES,
-    kingsSitOut: true,
-    noReinforcements: true,
-    singleOnly: true,
-    beta: true,
-  },
-  {
-    name: "ZOMBIES",
-    theme: "zombies",
-    create: () => [new ZombiesPlugin()],
-  },
-  {
-    name: "STRATEGO",
-    theme: "stratego",
-    create: () => [new StrategoPlugin()],
-  },
-  {
-    name: "FACTORY FLOOR",
-    theme: "conveyor",
-    create: () => [new ConveyorPlugin()],
-  },
-  {
-    name: "LANTERNS",
-    theme: "lanterns",
-    create: () => [new LanternsPlugin()],
-  },
-  {
-    name: "FINAL BATTLE",
-    theme: "finale",
-    create: () => [new FinalePlugin()],
-    noReinforcements: true,
-    untilWon: true,
-    finale: true,
-  },
-];
 
 /** The next mode of the adventure after this one, or -1 once the last has been played */
 function nextAdventureMode(after: number): number {
