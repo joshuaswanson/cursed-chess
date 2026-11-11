@@ -897,7 +897,6 @@
 .pv-belt {
   left: 0;
   right: 0;
-  height: 26%;
   border-block: 4px solid #ffc21a;
   background: linear-gradient(90deg, #2b3138 75%, #1a1e22 0) 0 0 / 3.125% 100%;
 }

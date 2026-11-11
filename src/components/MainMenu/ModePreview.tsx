@@ -56,6 +56,17 @@ function Piece({
   );
 }
 
+/** How tall a belt is, as a share of the scene's height */
+const BELT_HEIGHT = 26;
+/** How wide a piece riding a belt is, as a share of its lane, which is twice the scene's width */
+const RIDER_SIZE = 10;
+/** How tall that makes it, as a share of the scene's height, the scene being twice as wide as it is tall */
+const RIDER_HEIGHT = RIDER_SIZE * 4;
+/** How far below its middle a piece's foot is, as a share of its height */
+const BASE_FOOT = 0.4;
+/** How far in from the belt's near edge a piece's foot stands, as a share of the scene's height */
+const FOOT_INSET = 4;
+
 /**
  * One belt and its pieces, two scene widths long, so the pieces carried off
  * one edge come back round from the other. A full run moves it one scene
@@ -73,14 +84,18 @@ function BeltLane({
   const spacing = 100 / pieces.length;
   return (
     <span className={`pv-lane pv-lane-${way}`}>
-      <span className="pv-belt" style={{ top: `${y - 13}%` }} />
+      <span
+        className="pv-belt"
+        style={{ top: `${y - BELT_HEIGHT / 2}%`, height: `${BELT_HEIGHT}%` }}
+      />
       {[...pieces, ...pieces].map((is, i) => (
         <Piece
           key={i}
           is={is}
           x={(spacing / 2 + spacing * i) / 2}
-          y={y}
-          size={10}
+          // Its foot a little in from the belt's near edge, the rest of it standing up over the far one
+          y={y + BELT_HEIGHT / 2 - FOOT_INSET - BASE_FOOT * RIDER_HEIGHT}
+          size={RIDER_SIZE}
         />
       ))}
     </span>
@@ -764,8 +779,8 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   // Two belts run opposite ways, clunking their pieces along a place at a time
   conveyor: (
     <>
-      <BeltLane pieces={["wR", "bN", "wP", "bB"]} y={30} way="right" />
-      <BeltLane pieces={["bP", "wQ", "bR", "wN"]} y={70} way="left" />
+      <BeltLane pieces={["wR", "bN", "wP", "bB"]} y={34} way="right" />
+      <BeltLane pieces={["bP", "wQ", "bR", "wN"]} y={78} way="left" />
     </>
   ),
   // A pawn steps forward onto exactly the wrong square
