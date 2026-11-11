@@ -11,6 +11,62 @@ import "./Snails.css";
 
 /** How far into its crawl the snail is when its head touches the piece in its way */
 const TOUCHES = 0.55;
+/** The slime is drawn in units of a hundred to a square, and is this many of them wide at its widest, either side of its middle */
+const SLIME_UNIT = 100;
+const SLIME_WIDTH = 9;
+
+/** How wide the trail is at a point along it: uneven, as slime is, and tapering where it starts */
+function slimeHalfWidth(x: number, length: number, seed: number): number {
+  const taper = Math.min(1, x / 22) ** 0.6;
+  const uneven =
+    0.78 +
+    0.14 * Math.sin(x * 0.11 + seed * 1.7) +
+    0.08 * Math.sin(x * 0.29 + seed * 0.6);
+  return SLIME_WIDTH * taper * uneven * (0.92 + 0.08 * (x / length));
+}
+
+/** The edge of the trail, out along one side and back along the other */
+function slimeOutline(length: number, seed: number): string {
+  const steps = Math.max(8, Math.round(length / 6));
+  const along = Array.from(
+    { length: steps + 1 },
+    (_, i) => (i / steps) * length,
+  );
+  const side = (sign: number, xs: number[]) =>
+    xs.map(
+      (x) =>
+        `${x.toFixed(1)} ${(sign * slimeHalfWidth(x, length, seed)).toFixed(1)}`,
+    );
+  return `M${[...side(-1, along), ...side(1, [...along].reverse())].join(" L")}Z`;
+}
+
+/** A wavering line of light along the trail, a little off its middle */
+function slimeShine(length: number, seed: number): string {
+  const steps = Math.max(6, Math.round(length / 10));
+  return (
+    "M" +
+    Array.from({ length: steps + 1 }, (_, i) => {
+      const x = 8 + (i / steps) * (length - 14);
+      const y = -2.2 + 1.3 * Math.sin(x * 0.13 + seed);
+      return `${x.toFixed(1)} ${y.toFixed(1)}`;
+    }).join(" L")
+  );
+}
+
+/** A few beads of light on the trail: where each is, and how big */
+function slimeGlints(length: number, seed: number): [number, number, number][] {
+  const count = Math.max(2, Math.round(length / 40));
+  return Array.from({ length: count }, (_, i) => {
+    const x =
+      ((i + 0.5 + 0.3 * Math.sin(seed * 3.1 + i * 2.3)) / count) * length;
+    return [
+      x,
+      2.4 * Math.sin(seed + i * 1.9),
+      1 + 0.5 * Math.abs(Math.sin(i * 7 + seed)),
+    ];
+  });
+}
+
 /** How far down its square a snail's foot is, where its slime is laid */
 const FOOT_HEIGHT = 0.68;
 /** How long after the touch the piece hits the board */
@@ -188,28 +244,47 @@ export function Snails({
       }
       aria-hidden
     >
-      {/* A streak of slime for each square it has crawled, laid as it goes and fainter the older it is */}
+      {/* The slime behind it: laid as it crawls, then drying away once it has stopped */}
       {view.snails.flatMap((snail) =>
         snail.trail.map((from, i) => {
           const to = snail.trail[i + 1] ?? snail.sq;
           const dx = visualCol(to, flipped) - visualCol(from, flipped);
           const dy = visualRow(to, flipped) - visualRow(from, flipped);
-          const newest = i === snail.trail.length - 1;
+          // Counted from the crawl that laid it, so it is the same trail until it is gone
+          const crawl = snail.crawls - (snail.trail.length - 1 - i);
+          const length = Math.hypot(dx, dy) * SLIME_UNIT;
           return (
-            <span
-              // Counted from the crawl that laid it, so it is the same streak as it ages
-              key={`${snail.color}-${snail.crawls - (snail.trail.length - 1 - i)}`}
-              className={`snail-streak${newest ? " is-fresh" : ""}`}
-              style={
-                {
-                  left: `${(visualCol(from, flipped) + 0.5) * 12.5}%`,
-                  top: `${(visualRow(from, flipped) + FOOT_HEIGHT) * 12.5}%`,
-                  width: `${Math.hypot(dx, dy) * 12.5}%`,
-                  rotate: `${Math.atan2(dy, dx)}rad`,
-                  "--age": (i + 1) / snail.trail.length,
-                } as CSSProperties
-              }
-            />
+            <svg
+              key={`${snail.color}-${crawl}`}
+              className="snail-slime"
+              viewBox={`0 ${-SLIME_WIDTH} ${length} ${SLIME_WIDTH * 2}`}
+              preserveAspectRatio="none"
+              style={{
+                left: `${(visualCol(from, flipped) + 0.5) * 12.5}%`,
+                top: `${(visualRow(from, flipped) + FOOT_HEIGHT) * 12.5}%`,
+                width: `${Math.hypot(dx, dy) * 12.5}%`,
+                height: `${((SLIME_WIDTH * 2) / SLIME_UNIT) * 12.5}%`,
+                rotate: `${Math.atan2(dy, dx)}rad`,
+              }}
+            >
+              <path
+                className="snail-slime-wet"
+                d={slimeOutline(length, crawl)}
+              />
+              <path
+                className="snail-slime-shine"
+                d={slimeShine(length, crawl)}
+              />
+              {slimeGlints(length, crawl).map(([x, y, r]) => (
+                <circle
+                  key={x}
+                  className="snail-slime-glint"
+                  cx={x}
+                  cy={y}
+                  r={r}
+                />
+              ))}
+            </svg>
           );
         }),
       )}

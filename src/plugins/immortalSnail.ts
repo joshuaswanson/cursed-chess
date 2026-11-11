@@ -10,8 +10,8 @@ import { ALL_SQUARES, fileOf, rankOf, toIndex } from "../utils/squareUtils";
 export const SNAIL_EVERY = 3;
 /** How long a crawl to the next square takes to play out */
 export const SNAIL_CRAWL_MS = 1400;
-/** How many squares of slime a snail leaves behind it before the oldest dries */
-const TRAIL_LENGTH = 6;
+/** How many of its last crawls the board is told about, for the slime of them to finish drying */
+const TRAIL_LENGTH = 2;
 /** What it costs Chessbot to leave a piece where the snail hunting his king will crawl next */
 const IN_ITS_WAY_COST = 1.5;
 /** What each square of the other king's flight from his snail is worth to him to cover */

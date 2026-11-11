@@ -207,33 +207,52 @@
   background: #f2a65a;
 }
 
-/* The slime it leaves: a glistening streak, drier and fainter the older it is */
-.snail-streak {
+/* The slime it leaves: wet and glistening as it is laid behind the snail, then drying away */
+.snail-slime {
   position: absolute;
-  height: 1.3%;
-  margin-top: -0.65%;
-  border-radius: 999px;
+  translate: 0 -50%;
   transform-origin: 0 50%;
-  opacity: calc(var(--age) * 0.7);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0 22%, transparent 30%),
-    linear-gradient(90deg, rgba(160, 230, 205, 0.5), rgba(214, 255, 238, 0.9));
-  transition: opacity 1.2s ease-out;
+  overflow: visible;
+  animation:
+    slime-lay var(--crawl-ms) cubic-bezier(0.45, 0, 0.55, 1) var(--crawl-after)
+      both,
+    slime-dry 4.5s ease-in calc(var(--crawl-after) + var(--crawl-ms) + 1s)
+      forwards;
 }
 
-/* Laid down behind it as it goes */
-.snail-streak.is-fresh {
-  animation: snail-streak-lay var(--crawl-ms) cubic-bezier(0.45, 0, 0.55, 1)
-    var(--crawl-after) both;
-}
-
-@keyframes snail-streak-lay {
+@keyframes slime-lay {
   from {
-    clip-path: inset(0 100% 0 0 round 999px);
+    clip-path: inset(-50% 100% -50% 0);
   }
   to {
-    clip-path: inset(0 0 0 0 round 999px);
+    clip-path: inset(-50% 0 -50% 0);
   }
+}
+
+@keyframes slime-dry {
+  to {
+    opacity: 0;
+  }
+}
+
+.snail-slime-wet {
+  fill: rgba(188, 240, 220, 0.42);
+  stroke: rgba(120, 190, 165, 0.35);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+
+.snail-slime-shine {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 14 6 5 9;
+}
+
+.snail-slime-glint {
+  fill: rgba(255, 255, 255, 0.85);
 }
 
 /* --- The touch: a light tap, and the piece keels over dead --- */
@@ -298,7 +317,6 @@
   .snail-body,
   .snail-tap,
   .snail-stalk,
-  .snail-streak,
   .snail-crawling .snail-foot,
   .snail-crawling .snail-head,
   .snail-crawling .snail-shell,
@@ -306,7 +324,8 @@
     animation: none;
   }
 
-  .snail-victim {
+  .snail-victim,
+  .snail-slime {
     display: none;
   }
 }
