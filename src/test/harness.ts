@@ -59,9 +59,6 @@ export class Table {
     if (!played) return false;
     this.manager.invokeOnAfterMove(processed);
     this.manager.invokeOnTurnEnd(mover);
-    if (this.manager.getPlugins().some((plugin) => plugin.solo)) {
-      this.game.turn = mover;
-    }
     return true;
   }
 

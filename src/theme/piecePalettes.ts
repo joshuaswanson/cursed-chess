@@ -64,11 +64,6 @@ export const PIECE_PALETTES: Partial<
     light: ["#fff6dc", "#f0d79a", "#b98f4a"],
     dark: ["#8f86c9", "#3b3378", "#141033"],
   },
-  // Pac-Man yellow against the red of the ghost who chases hardest
-  pacman: {
-    light: ["#fffbd0", "#ffe600", "#b38f00"],
-    dark: ["#ffb0b0", "#ff2020", "#7a0000"],
-  },
   // Eggshell against the brown of a snail's shell
   snail: {
     light: ["#fffdf4", "#f1e6c6", "#b9a476"],
@@ -93,11 +88,6 @@ export const PIECE_PALETTES: Partial<
   conveyor: {
     light: ["#fffbe8", "#ffd84d", "#c08a00"],
     dark: ["#9fb4c4", "#3d5468", "#121c26"],
-  },
-  // The museum's guards in ivory and brass against burglars dressed for the dark
-  heist: {
-    light: ["#fbf3dc", "#e6cf98", "#a8843e"],
-    dark: ["#7f8ea6", "#333f55", "#0d131d"],
   },
   stratego: {
     light: ["#e9f0ff", "#86a6e2", "#2b569c"],

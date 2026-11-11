@@ -1631,89 +1631,6 @@ export const sfx = {
     for (let i = 0; i < 10; i++) crackle(c, out, 1.2);
   },
 
-  /** Pellets eaten: the arcade's waka, a quick fall and rise for each one */
-  chomp(pellets: number): void {
-    const a = audio();
-    if (!a) return;
-    const { ctx: c, out } = a;
-    const t = c.currentTime;
-    for (let i = 0; i < pellets; i++) {
-      const at = t + i * 0.13;
-      const up = i % 2 === 1;
-      const osc = c.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(up ? 260 : 520, at);
-      osc.frequency.linearRampToValueAtTime(up ? 520 : 260, at + 0.11);
-      const gain = c.createGain();
-      gain.gain.setValueAtTime(0.0001, at);
-      gain.gain.exponentialRampToValueAtTime(0.22, at + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.12);
-      osc.connect(gain).connect(out);
-      osc.start(at);
-      osc.stop(at + 0.13);
-    }
-  },
-
-  /** A power pellet: a siren that wails up and down while the ghosts turn blue */
-  powerPellet(): void {
-    const a = audio();
-    if (!a) return;
-    const { ctx: c, out } = a;
-    const t = c.currentTime;
-    const osc = c.createOscillator();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(200, t);
-    for (let i = 0; i < 6; i++) {
-      osc.frequency.linearRampToValueAtTime(700, t + i * 0.18 + 0.09);
-      osc.frequency.linearRampToValueAtTime(200, t + i * 0.18 + 0.18);
-    }
-    const gain = c.createGain();
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.09, t + 0.03);
-    gain.gain.setValueAtTime(0.09, t + 0.95);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
-    osc.connect(gain).connect(out);
-    osc.start(t);
-    osc.stop(t + 1.12);
-  },
-
-  /** A ghost eaten: a fast climbing zip */
-  /** A piece caught by a ghost: the arcade's dying warble, falling away, then two pops */
-  pacDeath(): void {
-    const a = audio();
-    if (!a) return;
-    const { ctx: c, out } = a;
-    const t = c.currentTime;
-    for (let i = 0; i < 9; i++) {
-      const at = t + i * 0.1;
-      const top = 820 - i * 70;
-      const osc = c.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(top, at);
-      osc.frequency.linearRampToValueAtTime(top * 0.55, at + 0.09);
-      const gain = c.createGain();
-      gain.gain.setValueAtTime(0.0001, at);
-      gain.gain.exponentialRampToValueAtTime(0.16, at + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.1);
-      osc.connect(gain).connect(out);
-      osc.start(at);
-      osc.stop(at + 0.11);
-    }
-    for (const at of [t + 1.0, t + 1.18]) {
-      const osc = c.createOscillator();
-      osc.type = "square";
-      osc.frequency.setValueAtTime(140, at);
-      osc.frequency.exponentialRampToValueAtTime(60, at + 0.08);
-      const gain = c.createGain();
-      gain.gain.setValueAtTime(0.0001, at);
-      gain.gain.exponentialRampToValueAtTime(0.14, at + 0.005);
-      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.09);
-      osc.connect(gain).connect(out);
-      osc.start(at);
-      osc.stop(at + 0.1);
-    }
-  },
-
   /** The lightest of touches: a soft tick */
   tap(): void {
     const a = audio();
@@ -1731,24 +1648,5 @@ export const sfx = {
     tick.connect(gain).connect(out);
     tick.start(t);
     tick.stop(t + 0.07);
-  },
-
-  ghostEaten(): void {
-    const a = audio();
-    if (!a) return;
-    const { ctx: c, out } = a;
-    const t = c.currentTime;
-    const osc = c.createOscillator();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(150, t);
-    osc.frequency.exponentialRampToValueAtTime(1600, t + 0.42);
-    const gain = c.createGain();
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.12, t + 0.02);
-    gain.gain.setValueAtTime(0.12, t + 0.38);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
-    osc.connect(gain).connect(out);
-    osc.start(t);
-    osc.stop(t + 0.47);
   },
 };

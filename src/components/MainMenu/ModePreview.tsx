@@ -11,7 +11,6 @@ import { SoccerBall } from "../Board/Football";
 import { Color } from "../../engine";
 import { LanternIcon } from "../Board/Lanterns";
 import { SnailArt } from "../Board/Snails";
-import { Jewel } from "../Board/Heist";
 import { Chessbot } from "../Chessbot/Chessbot";
 import { MineBlast } from "../Board/MineBlast";
 import { Portal } from "../Board/Portal";
@@ -723,21 +722,6 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
       </span>
     </span>
   ),
-  // A rook eats its way along a corridor of the maze, takes a power pellet, eats the ghost that turns blue, and goes out through the tunnel
-  pacman: (
-    <>
-      <span className="pv-pac-wall pv-pac-wall-top" />
-      <span className="pv-pac-wall pv-pac-wall-bottom" />
-      {[10, 20, 30, 40, 66, 74, 88].map((x) => (
-        <span key={x} className="pv-pac-dot" style={{ left: `${x}%` }} />
-      ))}
-      <span className="pv-pac-power" style={{ left: "52%" }} />
-      <span className="pv-pac-eaten" />
-      <Piece is="bN" x={80} y={52} size={20} className="pv-pac-ghost" />
-      <span className="pv-pac-points">200</span>
-      <Piece is="wR" x={0} y={52} size={20} className="pv-pac-runner" />
-    </>
-  ),
   // The snail creeps after a king, a step at a time, leaving its slime, taps him, and he drops dead
   snail: (
     <>
@@ -750,19 +734,6 @@ const SCENES: Partial<Record<ThemeId, ReactNode>> = {
   ),
   // A rook goes up its file, round the singularity, and back down to the far corner of its own side
   singularity: <SingularityScene />,
-  // Searchlights cross a dark hall while a pawn creeps up on the jewel
-  heist: (
-    <>
-      <Piece is="bP" x={20} y={62} size={24} className="pv-thief" />
-      <span className="pv-gloom" />
-      <span className="pv-searchlight pv-searchlight-a" />
-      <span className="pv-searchlight pv-searchlight-b" />
-      {/* The jewel shines through the dark by itself */}
-      <span className="pv-loot">
-        <Jewel />
-      </span>
-    </>
-  ),
   // A rook runs up and belts the ball into the net
   fifa: (
     <>

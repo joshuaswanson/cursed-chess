@@ -8,7 +8,6 @@ import { Stands } from "./Stands";
 import { TugField } from "./TugField";
 import { Graveyard } from "./Graveyard";
 import { MudField } from "./MudField";
-import { Museum } from "./Museum";
 import { Factory } from "./Factory";
 import { StormSky } from "./StormSky";
 import { Corrupted } from "./Corrupted";
@@ -166,8 +165,6 @@ function Scene({ theme }: { theme: ThemeId }) {
       return <MudField />;
     case "tug":
       return <TugField />;
-    case "heist":
-      return <Museum />;
     case "conveyor":
       return <Factory />;
     case "stratego":

@@ -13,9 +13,7 @@ import type {
   LanternFlight,
   LanternView,
 } from "../../plugins/lanterns";
-import type { HeistView } from "../../plugins/heist";
 import type { StormView } from "../../plugins/thunderstorm";
-import type { PacView } from "../../plugins/pacman";
 import type { SnailView } from "../../plugins/immortalSnail";
 import type { FinaleView } from "../../plugins/finale";
 
@@ -41,9 +39,6 @@ export interface BoardOverlays {
   lanternFlights: LanternFlight[];
   /** The thunderstorm over a dark board, or nothing when there is none */
   storm: StormView | null;
-  /** The pellets and points of Pac-Man, or nothing in any other mode */
-  pac: PacView | null;
-  heist: HeistView | null;
   /** The immortal snails, or nothing in any other mode */
   snails: SnailView | null;
   hillSquares: SquareIndex[];
@@ -76,9 +71,7 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
     lanterns: null,
     lanternFlights: [],
     storm: null,
-    pac: null,
     snails: null,
-    heist: null,
     hillSquares: [],
     hillStreak: { white: 0, black: 0, needed: 3 },
     battleRoyale: null,
@@ -107,18 +100,12 @@ export function readOverlays(overlays: BoardOverlay[]): BoardOverlays {
       case "fog-overlay":
         result.hasFog = true;
         break;
-      case "heist":
-        result.heist = overlay.data as HeistView;
-        break;
       case "lanterns":
         result.lanterns = (overlay.data as LanternView).lanterns;
         result.lanternFlights = (overlay.data as LanternView).flights;
         break;
       case "thunderstorm":
         result.storm = overlay.data as StormView;
-        break;
-      case "pacman":
-        result.pac = overlay.data as PacView;
         break;
       case "immortal-snail":
         result.snails = overlay.data as SnailView;

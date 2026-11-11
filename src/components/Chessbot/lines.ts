@@ -14,13 +14,11 @@ export const PITCHES: Partial<Record<ThemeId, string>> = {
   gravity: "i found a setting called gravity. it was off.",
   lanterns: "i turned the lights off. i can see in the dark. can you?",
   conveyor: "i put the board on conveyor belts. productivity is up.",
-  heist: "i turned off the lights again. try not to trip the alarm.",
   hex: "squares are a beginner shape.",
   stratego: "you don't need to know what my pieces are.",
   zombies: "captured pieces were going to waste.",
   trenches: "after 1,400 simulations i conclude chess needed mud.",
   storm: "i've been controlling the weather. it's going well.",
-  pacman: "chess is an arcade game now. insert coin.",
   finale: "fine. you want a game? have all of them.",
 };
 

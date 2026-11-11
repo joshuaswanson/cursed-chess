@@ -6,12 +6,10 @@ import { FinalePlugin } from "./plugins/finale";
 import { FogOfWarPlugin } from "./plugins/fogOfWar";
 import { FootballPlugin } from "./plugins/football";
 import { GravityPlugin } from "./plugins/gravity";
-import { HEIST_FILES, HEIST_RANKS, HeistPlugin } from "./plugins/heist";
 import { ImmortalSnailPlugin } from "./plugins/immortalSnail";
 import { KingOfTheHillPlugin } from "./plugins/kingOfTheHill";
 import { LanternsPlugin } from "./plugins/lanterns";
 import { MinefieldPlugin } from "./plugins/minefield";
-import { PacManPlugin } from "./plugins/pacman";
 import { PortalChessPlugin } from "./plugins/portalChess";
 import { RallyPlugin } from "./plugins/clashRoyale";
 import { SingularityPlugin } from "./plugins/singularity";
@@ -146,24 +144,6 @@ export const GAME_MODES: GameMode[] = [
     create: () => [new TrenchesPlugin()],
     noReinforcements: true,
     untilWon: true,
-    singleOnly: true,
-    beta: true,
-  },
-  {
-    name: "PAC-MAN",
-    theme: "pacman",
-    create: () => [new PacManPlugin()],
-    singleOnly: true,
-    beta: true,
-  },
-  {
-    name: "HEIST",
-    theme: "heist",
-    create: () => [new HeistPlugin()],
-    ranks: HEIST_RANKS,
-    files: HEIST_FILES,
-    kingsSitOut: true,
-    noReinforcements: true,
     singleOnly: true,
     beta: true,
   },

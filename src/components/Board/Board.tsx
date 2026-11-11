@@ -30,7 +30,6 @@ import {
   LanternIcon,
 } from "./Lanterns";
 import { LANTERN_FLIGHT_MS } from "../../plugins/lanterns";
-import { TUNNEL_MS, eatTimes, tunnelWay, usePacSounds } from "./pacMotion";
 import { ArrivingPiece, ReinforcementBanner } from "./Reinforcements";
 import type { FootballPlugin } from "../../plugins/football";
 import type { PortalChessPlugin } from "../../plugins/portalChess";
@@ -120,12 +119,7 @@ const StormScars = later(() =>
 );
 const FinaleOver = later(() => import("./Finale").then((m) => m.FinaleOver));
 const FinaleUnder = later(() => import("./Finale").then((m) => m.FinaleUnder));
-const PacGhosts = later(() => import("./PacMan").then((m) => m.PacGhosts));
-const PacMaze = later(() => import("./PacMan").then((m) => m.PacMaze));
-const PacPellet = later(() => import("./PacMan").then((m) => m.PacPellet));
 const Snails = later(() => import("./Snails").then((m) => m.Snails));
-const HeistLights = later(() => import("./Heist").then((m) => m.HeistLights));
-const HeistLoot = later(() => import("./Heist").then((m) => m.HeistLoot));
 const BattleEffects = later(() =>
   import("./Battle").then((m) => m.BattleEffects),
 );
@@ -505,7 +499,6 @@ export function Board() {
     hillWhite > hillBlack ? "white" : hillBlack > hillWhite ? "black" : null;
   const arrivals = new Map(reinforcements.map((r) => [r.sq, r]));
   const football = overlays.football;
-  const heistLit = new Set(overlays.heist?.shown ?? []);
   // The fog lies over the enemy half of the board
   const fogged = (sq: SquareIndex) =>
     overlays.hasFog &&
@@ -517,15 +510,7 @@ export function Board() {
       ? checkOnTurn(game, pluginManager)
       : null;
   const checkers = (checked?.checkers ?? []).filter(
-    ({ sq }) =>
-      !overlays.strategoHidden.has(sq) &&
-      !fogged(sq) &&
-      !(
-        overlays.heist != null &&
-        game.board.get(sq)?.color === Color.Black &&
-        !heistLit.has(sq) &&
-        overlays.heist.sq !== sq
-      ),
+    ({ sq }) => !overlays.strategoHidden.has(sq) && !fogged(sq),
   );
   // A game won some other way also ends as mate; only a king that could be taken is in it
   const checkedKing =
@@ -534,15 +519,6 @@ export function Board() {
       : null;
   const checkerSquares = new Set(checkers.map(({ sq }) => sq));
   const dark = overlays.lanterns !== null || overlays.storm !== null;
-  const pac = overlays.pac;
-  usePacSounds(pac);
-  const pacRun = pac?.run ?? null;
-  // A move through a tunnel goes out at one side and comes in at the other
-  const pacTunnel =
-    pacRun && pacRun.from === lastMove?.from && pacRun.to === lastMove?.to
-      ? tunnelWay(pacRun, flipped, squareSize)
-      : null;
-  const pacEats = pacRun ? eatTimes(pacRun, pacTunnel !== null) : null;
   // In the dark, a check on you shows your king and whatever is giving it
   const kingInCheck =
     dark && status === GameStatus.Check && game.turn === seat
@@ -642,7 +618,6 @@ export function Board() {
       const grave = overlays.zombies?.graves.find((g) => g.sq === sq);
       const zombieAct = zombieActs.get(sq);
       const rising = zombieAct?.kind === "rise" ? zombieAct : null;
-      // In the dark of the heist a move leaves no mark to give it away
       // On the belts, the squares of the last move have since been carried one place along
       const markedMove =
         lastMove && conveyor
@@ -650,15 +625,8 @@ export function Board() {
           : lastMove;
       const isLastMove =
         !battle &&
-        !overlays.heist &&
         markedMove &&
         (sq === markedMove.from || sq === markedMove.to);
-      // Their pieces cannot be seen there, except in a searchlight or holding the jewel
-      const unseen =
-        overlays.heist != null &&
-        piece?.color === Color.Black &&
-        !heistLit.has(sq) &&
-        overlays.heist.sq !== sq;
       const isCheck = sq === checkedKing;
       const isDeployTarget =
         overlays.hasRally && deployPieceType && !piece && !isDead && rank <= 3;
@@ -680,8 +648,6 @@ export function Board() {
       if (sq === selectedSquare) className += " selected";
       if (isLastMove && !isDead) className += " last-move";
       if (isCheck) className += " in-check";
-      if (unseen) className += " heist-unseen";
-      if (overlays.heist?.dodged.includes(sq)) className += " heist-dodged";
       if (menace?.king === sq) className += " zombie-target";
       if (drag?.isDragging && isLegalTarget) className += " drag-target";
       if (isDeployTarget) className += " deploy-target";
@@ -695,7 +661,6 @@ export function Board() {
       className += riverClasses(file, rank, sq);
 
       const slide = slides.get(sq);
-      const tunnel = slide && sq === pacRun?.to ? pacTunnel : null;
       const fall = gravityFalls.get(sq);
       const dive = shotDives.get(sq);
       const walk = kickoffWalks.get(sq);
@@ -736,48 +701,38 @@ export function Board() {
                 "--ride-via-y": `${ride.via.y}px`,
                 animation: `belt-ride ${BELT_RUN_MS}ms both`,
               } as React.CSSProperties)
-            : tunnel
+            : slide
               ? ({
-                  "--from-x": `${tunnel.from.x}px`,
-                  "--from-y": `${tunnel.from.y}px`,
-                  "--exit-x": `${tunnel.exit.x}px`,
-                  "--exit-y": `${tunnel.exit.y}px`,
-                  "--entry-x": `${tunnel.entry.x}px`,
-                  "--entry-y": `${tunnel.entry.y}px`,
-                  animation: `pac-tunnel ${TUNNEL_MS}ms linear both`,
+                  "--slide-from-x": `${slide.x}px`,
+                  "--slide-from-y": `${slide.y}px`,
+                  animation: `slide-in ${SLIDE_MS}ms ease-out forwards`,
                 } as React.CSSProperties)
-              : slide
+              : fall
                 ? ({
-                    "--slide-from-x": `${slide.x}px`,
-                    "--slide-from-y": `${slide.y}px`,
-                    animation: `slide-in ${SLIDE_MS}ms ease-out forwards`,
+                    "--grav-x": `${fall.x}px`,
+                    "--grav-y": `${fall.y}px`,
+                    animation: `gravity-drop ${fall.durationMs}ms ${fall.delayMs}ms both`,
                   } as React.CSSProperties)
-                : fall
+                : dive
                   ? ({
-                      "--grav-x": `${fall.x}px`,
-                      "--grav-y": `${fall.y}px`,
-                      animation: `gravity-drop ${fall.durationMs}ms ${fall.delayMs}ms both`,
+                      "--slide-from-x": `${dive.x}px`,
+                      "--slide-from-y": `${dive.y}px`,
+                      "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
+                      animation: `${dive.x === 0 && dive.y === 0 ? "fifa-jump" : "fifa-dive"} ${DIVE_MS}ms ${dive.delayMs}ms both`,
                     } as React.CSSProperties)
-                  : dive
+                  : walk
                     ? ({
-                        "--slide-from-x": `${dive.x}px`,
-                        "--slide-from-y": `${dive.y}px`,
-                        "--dive-tilt": `${dive.x > 0 ? -1 : 1}`,
-                        animation: `${dive.x === 0 && dive.y === 0 ? "fifa-jump" : "fifa-dive"} ${DIVE_MS}ms ${dive.delayMs}ms both`,
+                        "--slide-from-x": `${walk.x}px`,
+                        "--slide-from-y": `${walk.y}px`,
+                        animation: `slide-in ${KICKOFF_WALK_MS}ms ease-in-out both`,
                       } as React.CSSProperties)
-                    : walk
-                      ? ({
-                          "--slide-from-x": `${walk.x}px`,
-                          "--slide-from-y": `${walk.y}px`,
-                          animation: `slide-in ${KICKOFF_WALK_MS}ms ease-in-out both`,
-                        } as React.CSSProperties)
-                      : piece
-                        ? goalReaction(
-                            overlays.football?.lastKick ?? null,
-                            sq,
-                            piece.color,
-                          )
-                        : undefined;
+                    : piece
+                      ? goalReaction(
+                          overlays.football?.lastKick ?? null,
+                          sq,
+                          piece.color,
+                        )
+                      : undefined;
 
       // Pieces next to a detonating mine are shoved away from it
       const blastFrom = [...minesBlasting].find(
@@ -813,17 +768,6 @@ export function Board() {
             if (!drag) selectSquare(sq);
           }}
         >
-          {pac &&
-            (pac.pellets.includes(sq) ||
-              pac.power.includes(sq) ||
-              pacEats?.has(sq)) && (
-              <PacPellet
-                power={
-                  pac.power.includes(sq) || !!pacRun?.powerEaten.includes(sq)
-                }
-                eatenAfterMs={pacEats?.get(sq)}
-              />
-            )}
           {squareMods.some((m) => m.className === "finale-belt") && (
             <span className="belt-tile">
               <span className="belt-chevrons" />
@@ -870,9 +814,7 @@ export function Board() {
           {isLegalTarget && !drag?.isDragging && (
             <div
               className={
-                (piece && !unseen) || zombie !== undefined
-                  ? "capture-hint"
-                  : "move-hint"
+                piece || zombie !== undefined ? "capture-hint" : "move-hint"
               }
             />
           )}
@@ -978,9 +920,6 @@ export function Board() {
                 lanternLanding ? settleDelay + LANTERN_FLIGHT_MS : undefined
               }
             />
-          )}
-          {overlays.heist?.sq === sq && (
-            <HeistLoot held={overlays.heist.carrier !== null} />
           )}
           {fall && piece && (
             <span
@@ -1149,14 +1088,6 @@ export function Board() {
             />
           )}
           {football && <Pitch />}
-          {overlays.heist && (
-            <HeistLights
-              view={overlays.heist}
-              targets={legalMoveSquares}
-              flipped={flipped}
-              squareSize={squareSize}
-            />
-          )}
           {lesson === "portals" && (
             <Coach
               lit={[{ selector: ".board-shell" }]}
@@ -1186,14 +1117,6 @@ export function Board() {
               view={overlays.snails}
               flipped={flipped}
               delayMs={settleDelay}
-            />
-          )}
-          {pac && <PacMaze flipped={flipped} />}
-          {pac && (
-            <PacGhosts
-              view={pac}
-              flipped={flipped}
-              delayMs={pacTunnel ? TUNNEL_MS : SLIDE_MS}
             />
           )}
           {strikes && <StormScars strikes={strikes} flipped={flipped} />}

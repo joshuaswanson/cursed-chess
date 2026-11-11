@@ -136,10 +136,6 @@ export class PluginManager {
     return Math.max(0, ...this.plugins.map((p) => p.holdAfterMoveMs?.() ?? 0));
   }
 
-  isSolo(): boolean {
-    return this.plugins.some((p) => p.solo);
-  }
-
   invokeTickAutonomous(tickMs: number): Color | null {
     let winner: Color | null = null;
     for (const p of this.plugins) {

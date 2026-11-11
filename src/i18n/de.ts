@@ -53,18 +53,13 @@ export const de: Record<string, string> = {
   "Now playing": "Läuft gerade",
   "{n} turns until the board shrinks or the round ends":
     "{n} Züge, bis das Brett schrumpft oder die Runde endet",
-  "{n} pellets left": "{n} Punkte übrig",
   "First to {n} goals wins": "Wer zuerst {n} Tore schießt, gewinnt",
   "No time limit: play until someone wins":
     "Kein Zeitlimit, gespielt wird bis zum Sieg",
   "{n} seconds left in this mode": "Noch {n} Sekunden in diesem Modus",
-  left: "übrig",
   "to win": "zum Sieg",
   turn: "Zug",
   turns: "Züge",
-  Points: "Punkte",
-  "Power 1 move": "Power 1 Zug",
-  "Power {n} moves": "Power {n} Züge",
   "Pieces are moving on their own": "Die Figuren bewegen sich von selbst",
   "Your friend is thinking": "Dein Freund denkt nach",
   "Chessbot is thinking": "Chessbot denkt nach",
@@ -205,12 +200,8 @@ export const de: Record<string, string> = {
   "Who turned out the lights?": "Wer hat das Licht ausgemacht?",
   "Factory floor": "Fabrikhalle",
   "Not OSHA approved": "Vom Arbeitsschutz nicht abgenommen",
-  Heist: "Coup",
-  "I'm putting together a team.": "Ich stelle ein Team zusammen.",
   Thunderstorm: "Gewitter",
   "How shocking.": "Wie schockierend.",
-  "Pac-Man": "Pac-Man",
-  "Waka waka.": "Waka waka.",
   "Final Battle": "Endkampf",
   "Keep him busy!": "Halte ihn beschäftigt!",
   Credits: "Abspann",
@@ -324,8 +315,6 @@ export const de: Record<string, string> = {
     "ich habe das Licht ausgemacht. ich sehe im Dunkeln. du auch?",
   "i put the board on conveyor belts. productivity is up.":
     "ich habe das Brett auf Förderbänder gestellt. die Produktivität steigt.",
-  "i turned off the lights again. try not to trip the alarm.":
-    "ich habe das Licht wieder ausgemacht. lös bloß nicht den Alarm aus.",
   "squares are a beginner shape.": "Quadrate sind eine Anfängerform.",
   "you don't need to know what my pieces are.":
     "du musst nicht wissen, was meine Figuren sind.",
@@ -335,8 +324,6 @@ export const de: Record<string, string> = {
     "nach 1.400 Simulationen komme ich zu dem Schluss, dass Schach Schlamm gefehlt hat.",
   "i've been controlling the weather. it's going well.":
     "ich steuere jetzt das Wetter. läuft gut.",
-  "chess is an arcade game now. insert coin.":
-    "Schach ist jetzt ein Arcade-Spiel. Münze einwerfen.",
   "fine. you want a game? have all of them.":
     "na gut. du willst ein Spiel? nimm sie alle.",
   "hold still. rewriting the rules.": "halt still. ich schreibe die Regeln um.",

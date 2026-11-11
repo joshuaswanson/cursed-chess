@@ -806,7 +806,6 @@ function passTurnWithoutMoving(endDelayMs: number): void {
   game.turn = opponent(mover);
   game.enPassant = null;
   pluginManager.invokeOnTurnEnd(mover);
-  if (pluginManager.isSolo()) game.turn = mover;
   const status = pluginManager.invokeModifyGameStatus(game.getStatus());
   useGameStore.setState({
     ...CLEARED_SELECTION,
@@ -1294,7 +1293,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     pluginManager.invokeOnAfterMove(processedMove);
     pluginManager.invokeOnTurnEnd(mover);
-    if (pluginManager.isSolo()) game.turn = mover;
     // Nobody moves again until whatever the move set off has played out
     const hold = pluginManager.holdAfterMoveMs();
     if (hold > 0) holdPause(hold);

@@ -52,18 +52,13 @@ export const fr: Record<string, string> = {
   "Now playing": "En cours",
   "{n} turns until the board shrinks or the round ends":
     "{n} tours avant que le plateau rétrécisse ou que la manche finisse",
-  "{n} pellets left": "{n} pastilles restantes",
   "First to {n} goals wins": "Le premier à {n} buts gagne",
   "No time limit: play until someone wins":
     "Pas de limite de temps, jouez jusqu'à la victoire",
   "{n} seconds left in this mode": "{n} secondes restantes dans ce mode",
-  left: "en jeu",
   "to win": "pour gagner",
   turn: "tour",
   turns: "tours",
-  Points: "Points",
-  "Power 1 move": "Super pouvoir 1 coup",
-  "Power {n} moves": "Super pouvoir {n} coups",
   "Pieces are moving on their own": "Les pièces bougent toutes seules",
   "Your friend is thinking": "Ton ami réfléchit",
   "Chessbot is thinking": "Chessbot réfléchit",
@@ -209,12 +204,8 @@ export const fr: Record<string, string> = {
   "Who turned out the lights?": "Qui a éteint la lumière\u00a0?",
   "Factory floor": "Usine",
   "Not OSHA approved": "Non conforme aux normes de sécurité",
-  Heist: "Casse",
-  "I'm putting together a team.": "Je monte une équipe.",
   Thunderstorm: "Orage",
   "How shocking.": "C'est électrisant.",
-  "Pac-Man": "Pac-Man",
-  "Waka waka.": "Waka waka.",
   "Final Battle": "Bataille finale",
   "Keep him busy!": "Occupe-le\u00a0!",
   Credits: "Générique",
@@ -330,8 +321,6 @@ export const fr: Record<string, string> = {
     "j'ai éteint la lumière. je vois dans le noir. et toi\u00a0?",
   "i put the board on conveyor belts. productivity is up.":
     "j'ai mis le plateau sur des tapis roulants. la productivité grimpe.",
-  "i turned off the lights again. try not to trip the alarm.":
-    "j'ai encore éteint la lumière. essaie de ne pas déclencher l'alarme.",
   "squares are a beginner shape.": "les carrés, c'est une forme de débutant.",
   "you don't need to know what my pieces are.":
     "tu n'as pas besoin de savoir ce que sont mes pièces.",
@@ -341,8 +330,6 @@ export const fr: Record<string, string> = {
     "après 1 400 simulations, j'en conclus qu'il manquait de la boue aux échecs.",
   "i've been controlling the weather. it's going well.":
     "je contrôle la météo. ça se passe bien.",
-  "chess is an arcade game now. insert coin.":
-    "les échecs sont un jeu d'arcade maintenant. insère une pièce.",
   "fine. you want a game? have all of them.":
     "très bien. tu veux une partie\u00a0? prends-les toutes.",
   "hold still. rewriting the rules.": "bouge pas. je réécris les règles.",

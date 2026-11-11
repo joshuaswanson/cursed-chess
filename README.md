@@ -19,7 +19,7 @@ bored, takes the site over, and rewrites the rules every 45 seconds.
   Minefield, Battle Royale, Clash Royale, King of the Hill, Thunderstorm,
   Gravity, Hex Chess, Zombies, Stratego, Factory Floor, Lanterns.
 - **Beta modes** are still being worked on: Singularity, Immortal Snail,
-  Trenches, Pac-Man, Heist.
+  Trenches.
 - **Multiplayer** lets you play a friend online with a five-letter code.
 
 The game is in English, French and German.

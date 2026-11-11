@@ -15,9 +15,7 @@ export type ThemeId =
   | "trenches"
   | "lanterns"
   | "conveyor"
-  | "heist"
   | "storm"
-  | "pacman"
   | "singularity"
   | "snail"
   | "finale";
@@ -257,19 +255,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     dark: "#8d969b",
     text: "#f2efe6",
   },
-  heist: {
-    id: "heist",
-    title: "Heist",
-    catchphrase: "I'm putting together a team.",
-    sky: ["#05070f", "#0c1428", "#1b2440"],
-    accent: "#f5c542",
-    accent2: "#e2304a",
-    ink: "#05070f",
-    frame: "#4a3516",
-    light: "#e8e2d2",
-    dark: "#7f8b9b",
-    text: "#f1ead6",
-  },
   storm: {
     id: "storm",
     title: "Thunderstorm",
@@ -283,19 +268,6 @@ export const THEMES: Record<ThemeId, ModeTheme> = {
     light: "#c7cfdc",
     dark: "#6c7890",
     text: "#e3ebff",
-  },
-  pacman: {
-    id: "pacman",
-    title: "Pac-Man",
-    catchphrase: "Waka waka.",
-    sky: ["#000000", "#000000", "#000000"],
-    accent: "#ffe600",
-    accent2: "#2121ff",
-    ink: "#000000",
-    frame: "#000000",
-    light: "#0b0b26",
-    dark: "#000000",
-    text: "#ffe600",
   },
   // A wet garden at dawn: moss and young leaves, bark, a caramel shell and its slime
   snail: {
