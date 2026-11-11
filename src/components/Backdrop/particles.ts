@@ -25,6 +25,8 @@ export interface Preset {
   /** Particles kept alive at once */
   count: number;
   spawn: (w: number, h: number, initial: boolean) => Particle;
+  /** For particles that drift slowly: the least time between one drawing and the next */
+  frameMs?: number;
   /** Rare events, like shooting stars or a meteor shower, each with its chance per second */
   extras?: { rate: number; spawn: (w: number, h: number) => Particle[] }[];
 }
@@ -688,8 +690,30 @@ const neon: Preset = {
   }),
 };
 
+/** Each colour of smoke puff, drawn once and stamped wherever a puff is */
+const puffs = new Map<string, HTMLCanvasElement>();
+const PUFF_PX = 128;
+
+function puff(color: string): HTMLCanvasElement {
+  const made = puffs.get(color);
+  if (made) return made;
+  const sprite = document.createElement("canvas");
+  sprite.width = PUFF_PX;
+  sprite.height = PUFF_PX;
+  const ctx = sprite.getContext("2d")!;
+  const half = PUFF_PX / 2;
+  const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
+  grad.addColorStop(0, `rgba(${color},0.16)`);
+  grad.addColorStop(1, `rgba(${color},0)`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, PUFF_PX, PUFF_PX);
+  puffs.set(color, sprite);
+  return sprite;
+}
+
 const smoke: Preset = {
-  count: 34,
+  count: 26,
+  frameMs: 1000 / 30,
   spawn: (w, h, initial) => ({
     x: rand(-100, w),
     y: initial ? rand(0, h) : h + 80,
@@ -702,11 +726,7 @@ const smoke: Preset = {
     color: pick(["60,52,40", "90,80,64", "40,34,26"]),
     draw: (ctx, p) => {
       const r = p.size * (1 + p.age / p.life);
-      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-      grad.addColorStop(0, `rgba(${p.color},0.16)`);
-      grad.addColorStop(1, `rgba(${p.color},0)`);
-      ctx.fillStyle = grad;
-      dot(ctx, p.x, p.y, r);
+      ctx.drawImage(puff(p.color), p.x - r, p.y - r, r * 2, r * 2);
     },
   }),
 };

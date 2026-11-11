@@ -2,8 +2,12 @@ import { useEffect, useRef } from "react";
 import { bendSource } from "./meander";
 import type { Meander } from "./meander";
 
-/** The water is soft, so it renders at half resolution and scales up */
-const RESOLUTION = 0.5;
+/** The water is soft, so it renders well under full resolution and scales up */
+const RESOLUTION = 0.4;
+/** The current is slow, so half the screen's frames are plenty to show it */
+const FRAME_MS = 1000 / 30;
+/** How often the canvas is measured again, in case the page has been laid out afresh */
+const MEASURE_MS = 500;
 
 const VERTEX = `
 attribute vec2 position;
@@ -44,7 +48,7 @@ float noise(vec2 p) {
 float fbm(vec2 p) {
   float v = 0.0;
   float a = 0.5;
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 4; i++) {
     v += a * noise(p);
     p = p * 2.03 + vec2(1.7, 9.2);
     a *= 0.5;
@@ -170,8 +174,18 @@ export function RiverWater({
 
     const start = performance.now();
     let frame = 0;
+    let drawnAt = -Infinity;
+    let measuredAt = -Infinity;
+    let rect = canvas.getBoundingClientRect();
     const draw = (now: number) => {
-      const rect = canvas.getBoundingClientRect();
+      frame = requestAnimationFrame(draw);
+      if (now - drawnAt < FRAME_MS - 2) return;
+      drawnAt = now;
+      // Measuring forces the page to be laid out, so it is not done every frame
+      if (now - measuredAt > MEASURE_MS) {
+        rect = canvas.getBoundingClientRect();
+        measuredAt = now;
+      }
       const w = Math.max(1, Math.round(rect.width * RESOLUTION));
       const h = Math.max(1, Math.round(rect.height * RESOLUTION));
       if (canvas.width !== w || canvas.height !== h) {
@@ -185,7 +199,6 @@ export function RiverWater({
       gl.uniform1f(uScale, RESOLUTION);
       gl.uniform1f(uPad, pad);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      frame = requestAnimationFrame(draw);
     };
     frame = requestAnimationFrame(draw);
     return () => {

@@ -80,6 +80,11 @@ export function useParticleCanvas(
     watcher.observe(canvas);
 
     const tick = (now: number) => {
+      const unhurried = presetsRef.current[themeRef.current]?.frameMs;
+      if (unhurried && now - last < unhurried - 2) {
+        frame = requestAnimationFrame(tick);
+        return;
+      }
       const dt = Math.min(MAX_DT, (now - last) / 1000);
       last = now;
       if (!blank || particlesRef.current.length > 0) {

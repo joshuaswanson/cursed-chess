@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { memo, useId } from "react";
 import { RiverWater } from "./RiverWater";
 import { meanderAt } from "./meander";
 import type { Meander } from "./meander";
@@ -392,15 +392,25 @@ function Bridge({
  * A painted battlefield under the Stratego board: grass, dirt roads, craters,
  * and a river with wooden bridges where the board is passable.
  */
-export function Battlefield({
-  riverRows,
-  lakeCols,
-}: {
+interface BattlefieldProps {
   /** On-screen rows the river runs through */
   riverRows: number[];
   /** On-screen columns where the river is open water */
   lakeCols: number[];
-}) {
+}
+
+/**
+ * The ground is a couple of thousand shapes that never change in a game, so
+ * it is drawn again only when the river is somewhere else
+ */
+export const Battlefield = memo(
+  BattlefieldGround,
+  (was, now) =>
+    was.riverRows.join() === now.riverRows.join() &&
+    was.lakeCols.join() === now.lakeCols.join(),
+);
+
+function BattlefieldGround({ riverRows, lakeCols }: BattlefieldProps) {
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const grassId = `bf-grass-${id}`;
   const grainId = `bf-grain-${id}`;
@@ -619,7 +629,9 @@ const meander = (x: number) => meanderAt(BENDS, x);
  * The river continuing off both sides of the board, behind its frame, so the
  * board sits on one stretch of a longer river.
  */
-export function WorldRiver({ rows }: { rows: number }) {
+export const WorldRiver = memo(WorldRiverStretch);
+
+function WorldRiverStretch({ rows }: { rows: number }) {
   const height = rows * SQ;
   // Room above and below for the river to meander into
   const pad = 200;
