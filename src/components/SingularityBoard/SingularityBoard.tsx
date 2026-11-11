@@ -19,9 +19,15 @@ import "./SingularityBoard.css";
 const EDGE_STEPS = 24;
 /** Pointer travel that turns a press on a piece into a drag */
 const DRAG_THRESHOLD_PX = 6;
-/** How big a piece is for the room round where it stands, and the most of a file it ever takes */
-const PIECE_FILL = 2.2;
-const PIECE_MAX = 0.86;
+/** How wide a piece is drawn, in files, and the least it is shrunk to where its square is cramped */
+const PIECE_SIZE = 0.82;
+const PIECE_MIN = 0.45;
+/** Where a piece's base is in its artwork: how wide, how tall, and how far down its foot is, as shares of the artwork */
+const BASE_WIDTH = 0.62;
+const BASE_HEIGHT = 0.2;
+const BASE_FOOT = 0.9;
+/** The gap kept between a piece's foot and the near edge of its square, in files */
+const FOOT_GAP = 0.05;
 const FILES = "abcdefgh";
 
 type Point = [number, number];
@@ -29,10 +35,12 @@ type Point = [number, number];
 interface Shape {
   sq: SquareIndex;
   path: string;
-  /** Where its piece stands: on its file's middle line, halfway across the square */
+  /** The middle of its piece's artwork: the piece stands on its file's middle line, its base inside the square and its foot by the square's near edge */
   x: number;
   y: number;
   size: number;
+  /** The middle of the square itself, down its file's middle line */
+  middleY: number;
   ring: number;
   light: boolean;
 }
@@ -70,39 +78,43 @@ function outline(place: Place): Point[] {
   ];
 }
 
-function distanceToEdge([x, y]: Point, points: Point[]): number {
-  let nearest = Infinity;
-  for (let i = 0; i < points.length; i++) {
-    const [ax, ay] = points[i];
-    const [bx, by] = points[(i + 1) % points.length];
-    const dx = bx - ax;
-    const dy = by - ay;
-    const along = Math.max(
-      0,
-      Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1)),
-    );
-    nearest = Math.min(
-      nearest,
-      Math.hypot(x - (ax + along * dx), y - (ay + along * dy)),
-    );
-  }
-  return nearest;
+/**
+ * Where a piece of a given width stands in a square: its foot as near the
+ * square's near edge as leaves the whole base inside, or null if the base
+ * does not fit
+ */
+function footing(place: Place, size: number): number | null {
+  const middle = 3.5 - place.file;
+  const half = (size * BASE_WIDTH) / 2;
+  const across = [-1, -0.5, 0, 0.5, 1].map((share) => middle + share * half);
+  const edges = across.map((v) => {
+    const [a, b] = span(place, v).map((u) => onScreen(u, v)[1]);
+    return { top: Math.min(a, b), bottom: Math.max(a, b) };
+  });
+  const foot = Math.min(...edges.map((edge) => edge.bottom)) - FOOT_GAP;
+  const baseTop = foot - size * BASE_HEIGHT;
+  return baseTop >= Math.max(...edges.map((edge) => edge.top)) ? foot : null;
 }
 
 function shapeOf(c: number, r: number): Shape {
   const place = placeOf({ c, r });
   const points = outline(place);
-  // Down the middle of its file, halfway between its two rings
   const middle = 3.5 - place.file;
   const [near, far] = span(place, middle);
-  const at = onScreen((near + far) / 2, middle);
-  const room = distanceToEdge(at, points);
+  const centre = onScreen((near + far) / 2, middle);
+  let size = PIECE_SIZE;
+  let foot = footing(place, size);
+  while (foot === null && size > PIECE_MIN) {
+    size -= 0.04;
+    foot = footing(place, size);
+  }
   return {
     sq: squareOf(c, r),
     path: toPath(points),
-    x: at[0],
-    y: at[1],
-    size: Math.min(PIECE_MAX, room * PIECE_FILL),
+    x: centre[0],
+    y: (foot ?? centre[1]) - (BASE_FOOT - 0.5) * size,
+    size,
+    middleY: centre[1],
     ring: place.ring,
     light: (place.file + place.ring) % 2 === 1,
   };
@@ -282,13 +294,13 @@ export function SingularityBoard() {
             ))}
             {SHAPES.filter(
               ({ sq }) => targets.includes(sq) && !game.board.get(sq),
-            ).map(({ sq, x, y, size }) => (
+            ).map(({ sq, x, middleY }) => (
               <circle
                 key={sq}
                 className="sing-dot"
                 cx={x}
-                cy={y}
-                r={Math.max(0.08, Math.min(0.14, size * 0.18))}
+                cy={middleY}
+                r={0.12}
               />
             ))}
           </g>
@@ -340,6 +352,8 @@ export function SingularityBoard() {
                   left: pct(x),
                   top: pct(y),
                   width: `${(size / 8) * 100}%`,
+                  // Pieces nearer the bottom of the screen stand in front of those behind them
+                  zIndex: 10 + Math.round((y + 4) * 10),
                 } as CSSProperties
               }
             />
@@ -348,7 +362,7 @@ export function SingularityBoard() {
         {capture && burst && (
           <div
             className="sing-burst"
-            style={{ left: pct(burst.x), top: pct(burst.y) }}
+            style={{ left: pct(burst.x), top: pct(burst.middleY) }}
           >
             <div className="capture-burst" key={capture.id} aria-hidden>
               <span

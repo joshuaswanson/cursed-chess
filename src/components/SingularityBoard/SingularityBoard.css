@@ -140,7 +140,7 @@
 
 .sing-burst {
   position: absolute;
-  z-index: 3;
+  z-index: 200;
   width: 12.5%;
   aspect-ratio: 1;
   translate: -50% -50%;
