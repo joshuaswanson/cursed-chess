@@ -11,6 +11,8 @@ import "./Snails.css";
 
 /** How far into its crawl the snail is when its head touches the piece in its way */
 const TOUCHES = 0.55;
+/** How far down its square a snail's foot is, where its slime is laid */
+const FOOT_HEIGHT = 0.68;
 /** How long after the touch the piece hits the board */
 const FALL_MS = 420;
 
@@ -26,76 +28,108 @@ const SHELLS: Record<Color, [string, string, string]> = {
   [Color.Black]: ["#9b5a2e", "#5e3216", "#24110a"],
 };
 
-/** A snail, side on, facing right: its foot, its shell, and its eyes on stalks */
+/** One eye on its stalk, which sways and springs about the stalk's foot */
+function Stalk({
+  foot,
+  eye,
+  bend,
+  late = false,
+}: {
+  foot: [number, number];
+  eye: [number, number];
+  /** The point the stalk curves by on its way up */
+  bend: [number, number];
+  /** The second stalk moves a beat behind the first */
+  late?: boolean;
+}) {
+  const d = `M${foot[0]} ${foot[1]} Q ${bend[0]} ${bend[1]}, ${eye[0]} ${eye[1] + 1}`;
+  return (
+    <g
+      className={`snail-stalk${late ? " is-late" : ""}`}
+      style={{ transformOrigin: `${foot[0]}px ${foot[1]}px` }}
+    >
+      <path
+        d={d}
+        fill="none"
+        stroke="#1b2414"
+        strokeWidth="4.2"
+        strokeLinecap="round"
+      />
+      <path
+        d={d}
+        fill="none"
+        stroke="#b8c7a1"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <circle cx={eye[0]} cy={eye[1]} r="3.2" fill="#1b2414" />
+      <circle cx={eye[0] + 0.8} cy={eye[1] - 0.8} r="1" fill="#fff" />
+    </g>
+  );
+}
+
+/**
+ * A snail, side on, facing right: its foot, its shell, and its eyes on
+ * stalks. Its parts are apart so that, crawling, the foot can stretch and
+ * gather, the head ride the front of it, and the shell bob along on top.
+ */
 export function SnailArt({ color, look }: { color: Color; look: number }) {
   const [outer, inner, line] = SHELLS[color];
   return (
     <svg className="snail-art" viewBox="0 -6 72 54" aria-hidden>
-      {/* The foot, and its shine */}
-      <path
-        d="M6 40 C 10 33, 30 33, 50 34 C 56 34.5, 60 37, 60 40 C 60 43, 54 44, 48 44 L 10 44 C 6 44, 4 42, 6 40 Z"
-        fill="#b8c7a1"
-        stroke="#1b2414"
-        strokeWidth="2"
-      />
-      <path
-        d="M14 39 C 26 37, 40 37, 52 38"
-        fill="none"
-        stroke="#e9f2dc"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        opacity="0.8"
-      />
-      {/* The eyes on their stalks, leaning toward the king it is after */}
-      <g className="snail-stalks" style={{ rotate: `${look}deg` }}>
+      <g className="snail-foot">
         <path
-          d="M51 35 C 52 28, 53 22, 55 16 M55 35 C 57 29, 59 24, 62 19"
-          fill="none"
+          d="M6 40 C 10 33, 30 33, 50 34 C 56 34.5, 60 37, 60 40 C 60 43, 54 44, 48 44 L 10 44 C 6 44, 4 42, 6 40 Z"
+          fill="#b8c7a1"
           stroke="#1b2414"
-          strokeWidth="4.2"
-          strokeLinecap="round"
+          strokeWidth="2"
         />
         <path
-          d="M51 35 C 52 28, 53 22, 55 16 M55 35 C 57 29, 59 24, 62 19"
+          d="M14 39 C 26 37, 40 37, 52 38"
           fill="none"
-          stroke="#b8c7a1"
+          stroke="#e9f2dc"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          opacity="0.8"
+        />
+      </g>
+      <g className="snail-head">
+        {/* Leaning toward the king it is after */}
+        <g className="snail-stalks" style={{ rotate: `${look}deg` }}>
+          <Stalk foot={[51, 35]} bend={[52.5, 25]} eye={[55, 15]} />
+          <Stalk foot={[55, 35]} bend={[58, 27]} eye={[62, 18]} late />
+        </g>
+      </g>
+      <g className="snail-shell">
+        <circle
+          cx="28"
+          cy="24"
+          r="15"
+          fill={outer}
+          stroke="#1b2414"
+          strokeWidth="2.2"
+        />
+        <path
+          d="M28 24 m0 -2 a2 2 0 1 1 -0.1 0 M28 24 C 33 24, 33 17, 27.5 16.5 C 20 16, 19 27, 25 30.5 C 32 34.5, 40 28, 38 19.5 C 36 11, 24 8, 17 14"
+          fill="none"
+          stroke={line}
           strokeWidth="2.2"
           strokeLinecap="round"
         />
-        <circle cx="55" cy="15" r="3.2" fill="#1b2414" />
-        <circle cx="62" cy="18" r="3.2" fill="#1b2414" />
-        <circle cx="55.8" cy="14.2" r="1" fill="#fff" />
-        <circle cx="62.8" cy="17.2" r="1" fill="#fff" />
+        <path
+          d="M28 24 C 33 24, 33 17, 27.5 16.5 C 20 16, 19 27, 25 30.5"
+          fill={inner}
+          opacity="0.45"
+        />
+        <path
+          d="M18 15 C 21 12, 25 11, 29 11.5"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="2"
+          strokeLinecap="round"
+          opacity="0.6"
+        />
       </g>
-      {/* The shell, coiled */}
-      <circle
-        cx="28"
-        cy="24"
-        r="15"
-        fill={outer}
-        stroke="#1b2414"
-        strokeWidth="2.2"
-      />
-      <path
-        d="M28 24 m0 -2 a2 2 0 1 1 -0.1 0 M28 24 C 33 24, 33 17, 27.5 16.5 C 20 16, 19 27, 25 30.5 C 32 34.5, 40 28, 38 19.5 C 36 11, 24 8, 17 14"
-        fill="none"
-        stroke={line}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M28 24 C 33 24, 33 17, 27.5 16.5 C 20 16, 19 27, 25 30.5"
-        fill={inner}
-        opacity="0.45"
-      />
-      <path
-        d="M18 15 C 21 12, 25 11, 29 11.5"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.6"
-      />
     </svg>
   );
 }
@@ -154,17 +188,30 @@ export function Snails({
       }
       aria-hidden
     >
+      {/* A streak of slime for each square it has crawled, laid as it goes and fainter the older it is */}
       {view.snails.flatMap((snail) =>
-        snail.trail.map((sq, i) => (
-          <span
-            key={`${snail.color}-${sq}-${i}`}
-            className="snail-slime"
-            style={{
-              ...at(sq, flipped),
-              opacity: ((i + 1) / snail.trail.length) * 0.75,
-            }}
-          />
-        )),
+        snail.trail.map((from, i) => {
+          const to = snail.trail[i + 1] ?? snail.sq;
+          const dx = visualCol(to, flipped) - visualCol(from, flipped);
+          const dy = visualRow(to, flipped) - visualRow(from, flipped);
+          const newest = i === snail.trail.length - 1;
+          return (
+            <span
+              // Counted from the crawl that laid it, so it is the same streak as it ages
+              key={`${snail.color}-${snail.crawls - (snail.trail.length - 1 - i)}`}
+              className={`snail-streak${newest ? " is-fresh" : ""}`}
+              style={
+                {
+                  left: `${(visualCol(from, flipped) + 0.5) * 12.5}%`,
+                  top: `${(visualRow(from, flipped) + FOOT_HEIGHT) * 12.5}%`,
+                  width: `${Math.hypot(dx, dy) * 12.5}%`,
+                  rotate: `${Math.atan2(dy, dx)}rad`,
+                  "--age": (i + 1) / snail.trail.length,
+                } as CSSProperties
+              }
+            />
+          );
+        }),
       )}
       {/* Whatever it touches keels over, dead, and lies there a moment */}
       {view.snails.map((snail) => {
@@ -195,10 +242,14 @@ export function Snails({
             style={at(snail.sq, flipped)}
           >
             <div className={`snail-body${faceLeft ? " faces-left" : ""}`}>
-              {/* A light tap with its head on whatever is in its way */}
+              {/* Each crawl it stretches and gathers its way along, with a light tap of its head on whatever is in its way */}
               <div
-                key={tapping ? `tap-${snail.crawls}` : "still"}
-                className={tapping ? "snail-tap" : undefined}
+                key={`crawl-${snail.crawls}`}
+                className={
+                  snail.crawls === 0
+                    ? undefined
+                    : `snail-crawling${tapping ? " snail-tap" : ""}`
+                }
               >
                 <SnailArt color={snail.color} look={look} />
               </div>
